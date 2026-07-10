@@ -1,0 +1,119 @@
+{
+  "asset_id": "prop.data-rack-open",
+  "source_sheet": "prop_hotel-data-lineup_v01.png",
+  "source_cell": 4,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_data-rack-open_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        72,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-open_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        72,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-open_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        72,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-open_active_00.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        72,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-open_active_01.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        72,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-open_active_02.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        72,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-open_active_03.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        72,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-open_failed.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        72,
+        106
+      ]
+    }
+  ]
+}

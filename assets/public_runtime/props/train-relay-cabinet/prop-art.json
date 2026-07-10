@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.train-relay-cabinet",
+  "source_sheet": "prop_train-salvage-lineup_v01.png",
+  "source_cell": 0,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_train-relay-cabinet_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        80,
+        106
+      ]
+    },
+    {
+      "file": "prop_train-relay-cabinet_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        80,
+        106
+      ]
+    },
+    {
+      "file": "prop_train-relay-cabinet_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        80,
+        106
+      ]
+    }
+  ]
+}

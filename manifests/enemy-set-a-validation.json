@@ -1,0 +1,96 @@
+{
+  "task": "enemy-set-a",
+  "revision": 1,
+  "date": "2026-07-09",
+  "pipeline": {
+    "generation": "built-in-imagegen",
+    "extraction": "remove_chroma_key.py auto-key border soft-matte despill",
+    "runtime_builder": "tools/build_enemy_set_a.py",
+    "palette": "red-ledger-master-40-plus-alpha"
+  },
+  "anchors": [
+    {
+      "asset_id": "enemy.returned-mail",
+      "size": [1983, 793],
+      "mode": "RGBA",
+      "corner_alpha": [0, 0, 0, 0],
+      "opaque_coverage": 0.2543,
+      "key_like_opaque_pixels": 0,
+      "status": "approved-for-production"
+    },
+    {
+      "asset_id": "enemy.desk-warden",
+      "size": [2172, 724],
+      "mode": "RGBA",
+      "corner_alpha": [0, 0, 0, 0],
+      "opaque_coverage": 0.2937,
+      "key_like_opaque_pixels": 0,
+      "status": "approved-for-production"
+    },
+    {
+      "asset_id": "enemy.ember-clerk",
+      "size": [1717, 916],
+      "mode": "RGBA",
+      "corner_alpha": [0, 0, 0, 0],
+      "opaque_coverage": 0.3036,
+      "key_like_opaque_pixels": 0,
+      "status": "approved-for-production"
+    }
+  ],
+  "runtime": [
+    {
+      "asset_id": "enemy.returned-mail",
+      "canvas": [64, 72],
+      "pivot": [32, 68],
+      "inventory": {"idle": 10, "walk": 20, "attack": 15, "pain": 5, "death": 6, "gib": 6, "corpse": 1, "emerge": 15},
+      "expected_files": 78,
+      "actual_files": 78,
+      "dimensions_ok": true,
+      "rgba_ok": true,
+      "transparent_corners_ok": true,
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "asset_id": "enemy.desk-warden",
+      "canvas": [96, 112],
+      "pivot": [48, 106],
+      "inventory": {"idle": 16, "walk": 32, "attack": 32, "pain": 8, "death": 6, "gib": 6, "corpse": 1, "aim": 16},
+      "expected_files": 117,
+      "actual_files": 117,
+      "dimensions_ok": true,
+      "rgba_ok": true,
+      "transparent_corners_ok": true,
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "asset_id": "enemy.ember-clerk",
+      "canvas": [96, 112],
+      "pivot": [48, 106],
+      "inventory": {"idle": 10, "walk": 20, "attack": 20, "pain": 5, "death": 6, "gib": 6, "corpse": 1, "charge": 10},
+      "expected_files": 78,
+      "actual_files": 78,
+      "dimensions_ok": true,
+      "rgba_ok": true,
+      "transparent_corners_ok": true,
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    }
+  ],
+  "hashes": {
+    "art/source/imagegen/enemy_returned-mail_anchor-v01.png": "9b530f88ed481d71df1c806f936fe05dce0069ff767c7c14297d859c521b2b2b",
+    "art/source/imagegen/enemy_desk-warden_anchor-v01.png": "90f47492c0932f6596221c14c5479968664e424b17ad6d3367ba18fad2def3ed",
+    "art/source/imagegen/enemy_ember-clerk_anchor-v01.png": "7264770b283870dec1ec2a00caa9936a211c0c473069206bf7299b6a9792c876",
+    "art/source/alpha/enemy_returned-mail_anchor-v01.png": "c5109d892e8102948c5ee2caf387b1df643231cd3860d11452351ca25d71bb2c",
+    "art/source/alpha/enemy_desk-warden_anchor-v01.png": "92e15f95e33beb67389b48677f0bad08c2d6fb4027e8df25ee72f9ebd4cc658c",
+    "art/source/alpha/enemy_ember-clerk_anchor-v01.png": "952cc6beec2f4e01e6333f21c955ac5fe848ed4a1c96bf26f47b5fa5561e1590",
+    "art/approval/enemy_returned-mail_contact-v01.png": "c2266917d8fb449774c7eff36db20b3d5311c215c7df912a3b523b9e0afa496c",
+    "art/approval/enemy_desk-warden_contact-v01.png": "797c2e73ba8fded812a90a79b1adacfb32f7fa45778bb2c9bdfce410d3266398",
+    "art/approval/enemy_ember-clerk_contact-v01.png": "1a84a6b0d060d82004628e5a6c7396a517611f882f2c700ae4e9981b9774810d"
+  },
+  "passed": true
+}

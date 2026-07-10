@@ -1,0 +1,167 @@
+{
+  "source": "art/source/alpha/normalized/overlay_environment-grid_v01.png",
+  "frames": [
+    {
+      "id": "rain",
+      "frame": 1,
+      "file": "assets/public_runtime/effects/overlays/rain/overlay_rain_F_01.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rain",
+      "frame": 2,
+      "file": "assets/public_runtime/effects/overlays/rain/overlay_rain_F_02.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rain",
+      "frame": 3,
+      "file": "assets/public_runtime/effects/overlays/rain/overlay_rain_F_03.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rain",
+      "frame": 4,
+      "file": "assets/public_runtime/effects/overlays/rain/overlay_rain_F_04.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "water-drip",
+      "frame": 1,
+      "file": "assets/public_runtime/effects/overlays/water-drip/overlay_water-drip_F_01.png",
+      "size": [
+        32,
+        64
+      ]
+    },
+    {
+      "id": "water-drip",
+      "frame": 2,
+      "file": "assets/public_runtime/effects/overlays/water-drip/overlay_water-drip_F_02.png",
+      "size": [
+        32,
+        64
+      ]
+    },
+    {
+      "id": "water-drip",
+      "frame": 3,
+      "file": "assets/public_runtime/effects/overlays/water-drip/overlay_water-drip_F_03.png",
+      "size": [
+        32,
+        64
+      ]
+    },
+    {
+      "id": "water-drip",
+      "frame": 4,
+      "file": "assets/public_runtime/effects/overlays/water-drip/overlay_water-drip_F_04.png",
+      "size": [
+        32,
+        64
+      ]
+    },
+    {
+      "id": "water-drip",
+      "frame": 5,
+      "file": "assets/public_runtime/effects/overlays/water-drip/overlay_water-drip_F_05.png",
+      "size": [
+        32,
+        64
+      ]
+    },
+    {
+      "id": "water-drip",
+      "frame": 6,
+      "file": "assets/public_runtime/effects/overlays/water-drip/overlay_water-drip_F_06.png",
+      "size": [
+        32,
+        64
+      ]
+    },
+    {
+      "id": "ash",
+      "frame": 1,
+      "file": "assets/public_runtime/effects/overlays/ash/overlay_ash_F_01.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "ash",
+      "frame": 2,
+      "file": "assets/public_runtime/effects/overlays/ash/overlay_ash_F_02.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "ash",
+      "frame": 3,
+      "file": "assets/public_runtime/effects/overlays/ash/overlay_ash_F_03.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "ash",
+      "frame": 4,
+      "file": "assets/public_runtime/effects/overlays/ash/overlay_ash_F_04.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "frame": 1,
+      "file": "assets/public_runtime/effects/overlays/redaction/overlay_redaction_F_01.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "frame": 2,
+      "file": "assets/public_runtime/effects/overlays/redaction/overlay_redaction_F_02.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "frame": 3,
+      "file": "assets/public_runtime/effects/overlays/redaction/overlay_redaction_F_03.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "frame": 4,
+      "file": "assets/public_runtime/effects/overlays/redaction/overlay_redaction_F_04.png",
+      "size": [
+        64,
+        64
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1039 @@
+[
+    {
+        "file":  "assets/public_runtime/weapons/view/staple-driver/weapon_staple-driver_idle_F_00.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            106,
+                            14,
+                            215,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/staple-driver/weapon_staple-driver_fire_F_01.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            109,
+                            14,
+                            212,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/staple-driver/weapon_staple-driver_fire_F_02.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            108,
+                            14,
+                            212,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/staple-driver/weapon_staple-driver_fire_F_03.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            109,
+                            14,
+                            212,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/staple-driver/weapon_staple-driver_fire_F_04.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            110,
+                            14,
+                            211,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/staple-driver/weapon_staple-driver_dry_F_00.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            106,
+                            14,
+                            215,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/twin-bore-riveter/weapon_twin-bore-riveter_idle_F_00.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            111,
+                            14,
+                            210,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/twin-bore-riveter/weapon_twin-bore-riveter_fire_F_01.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            112,
+                            14,
+                            209,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/twin-bore-riveter/weapon_twin-bore-riveter_fire_F_02.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            113,
+                            14,
+                            207,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/twin-bore-riveter/weapon_twin-bore-riveter_fire_F_03.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            119,
+                            14,
+                            201,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/twin-bore-riveter/weapon_twin-bore-riveter_fire_F_04.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            114,
+                            14,
+                            207,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/twin-bore-riveter/weapon_twin-bore-riveter_fire_F_05.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            112,
+                            14,
+                            209,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/twin-bore-riveter/weapon_twin-bore-riveter_dry_F_00.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            112,
+                            14,
+                            208,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/audit-repeater/weapon_audit-repeater_idle_F_00.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            113,
+                            14,
+                            208,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/audit-repeater/weapon_audit-repeater_idle_F_01.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            113,
+                            14,
+                            207,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/audit-repeater/weapon_audit-repeater_fire_F_01.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            114,
+                            14,
+                            207,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/audit-repeater/weapon_audit-repeater_fire_F_02.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            114,
+                            14,
+                            207,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/audit-repeater/weapon_audit-repeater_fire_F_03.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            115,
+                            14,
+                            206,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/audit-repeater/weapon_audit-repeater_fire_F_04.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            115,
+                            14,
+                            206,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/audit-repeater/weapon_audit-repeater_dry_F_00.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            116,
+                            14,
+                            205,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/catastrophe-launcher/weapon_catastrophe-launcher_idle_F_00.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            95,
+                            14,
+                            225,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/catastrophe-launcher/weapon_catastrophe-launcher_fire_F_01.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            98,
+                            14,
+                            223,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/catastrophe-launcher/weapon_catastrophe-launcher_fire_F_02.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            104,
+                            14,
+                            216,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/catastrophe-launcher/weapon_catastrophe-launcher_fire_F_03.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            99,
+                            14,
+                            221,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/catastrophe-launcher/weapon_catastrophe-launcher_fire_F_04.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            98,
+                            14,
+                            222,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/catastrophe-launcher/weapon_catastrophe-launcher_fire_F_05.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            97,
+                            14,
+                            224,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/weapons/view/catastrophe-launcher/weapon_catastrophe-launcher_dry_F_00.png",
+        "size":  [
+                     320,
+                     168
+                 ],
+        "pivot":  [
+                      160,
+                      168
+                  ],
+        "opaque_bbox":  [
+                            95,
+                            14,
+                            225,
+                            168
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-0_neutral_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-0_glance-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-0_glance-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-0_pain-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-0_pain-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-0_pain-center_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-1_neutral_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-1_glance-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-1_glance-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-1_pain-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-1_pain-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-1_pain-center_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-2_neutral_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-2_glance-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            6,
+                            0,
+                            22,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-2_glance-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            6,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-2_pain-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            6,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-2_pain-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-2_pain-center_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-3_neutral_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-3_glance-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-3_glance-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-3_pain-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-3_pain-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-3_pain-center_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-4_neutral_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-4_glance-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-4_glance-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-4_pain-left_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-4_pain-right_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_damage-4_pain-center_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            5,
+                            0,
+                            23,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_weapon-acquired-grin_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_overcharge_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_invulnerable_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    },
+    {
+        "file":  "assets/public_runtime/ui/portrait/ui_portrait_dead_F_00.png",
+        "size":  [
+                     28,
+                     28
+                 ],
+        "pivot":  [
+                      14,
+                      28
+                  ],
+        "opaque_bbox":  [
+                            4,
+                            0,
+                            24,
+                            28
+                        ]
+    }
+]

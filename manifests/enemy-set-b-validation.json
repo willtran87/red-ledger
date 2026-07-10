@@ -1,0 +1,55 @@
+{
+  "task": "enemy-set-b-episode-2",
+  "revision": 1,
+  "date": "2026-07-09",
+  "pipeline": {
+    "generation": "built-in-imagegen",
+    "extraction": "remove_chroma_key.py auto-key border soft-matte despill",
+    "runtime_builder": "tools/build_enemy_set_b.py",
+    "palette": "red-ledger-master-40-plus-alpha"
+  },
+  "anchors": [
+    {"asset_id":"enemy.denial-officer","revision":1,"size":[2172,724],"mode":"RGBA","corner_alpha":[0,0,0,0],"opaque_coverage":0.4168,"key_like_opaque_pixels":0,"status":"approved-for-production"},
+    {"asset_id":"enemy.subrogator","revision":1,"size":[2172,724],"mode":"RGBA","corner_alpha":[0,0,0,0],"opaque_coverage":0.3535,"key_like_opaque_pixels":0,"status":"approved-for-production"},
+    {"asset_id":"enemy.reserve-eater","revision":1,"size":[2172,724],"mode":"RGBA","corner_alpha":[0,0,0,0],"opaque_coverage":0.2063,"key_like_opaque_pixels":0,"status":"approved-for-production"},
+    {"asset_id":"enemy.fraud-apparition","revision":2,"size":[1983,793],"mode":"RGBA","corner_alpha":[0,0,0,0],"opaque_coverage":0.4144,"key_like_opaque_pixels":0,"status":"approved-for-production"}
+  ],
+  "runtime": [
+    {
+      "asset_id":"enemy.denial-officer","canvas":[128,144],"pivot":[64,137],
+      "inventory":{"idle":16,"walk":32,"attack":40,"pain":8,"death":7,"gib":6,"corpse":1,"lock-on":24},
+      "expected_files":134,"actual_files":134,"dimensions_ok":true,"rgba_ok":true,"transparent_corners_ok":true,"key_like_opaque_pixels":0,"nonpalette_opaque_pixels":0,"passed":true
+    },
+    {
+      "asset_id":"enemy.subrogator","canvas":[96,112],"pivot":[48,106],
+      "inventory":{"idle":16,"walk":32,"attack":40,"pain":8,"death":7,"gib":6,"corpse":1,"split-flinch":16},
+      "expected_files":126,"actual_files":126,"dimensions_ok":true,"rgba_ok":true,"transparent_corners_ok":true,"key_like_opaque_pixels":0,"nonpalette_opaque_pixels":0,"passed":true
+    },
+    {
+      "asset_id":"enemy.reserve-eater","canvas":[128,144],"pivot":[64,137],
+      "inventory":{"idle":16,"walk":32,"attack":48,"pain":8,"death":8,"gib":6,"corpse":1,"hazard-spit":40},
+      "expected_files":159,"actual_files":159,"dimensions_ok":true,"rgba_ok":true,"transparent_corners_ok":true,"key_like_opaque_pixels":0,"nonpalette_opaque_pixels":0,"passed":true
+    },
+    {
+      "asset_id":"enemy.fraud-apparition","canvas":[96,112],"pivot":[48,106],
+      "inventory":{"idle":16,"walk":32,"attack":32,"pain":8,"death":6,"corpse":1,"reveal":32,"fade":32},
+      "expected_files":159,"actual_files":159,"dimensions_ok":true,"rgba_ok":true,"transparent_corners_ok":true,"key_like_opaque_pixels":0,"nonpalette_opaque_pixels":0,"passed":true
+    }
+  ],
+  "hashes": {
+    "art/source/imagegen/enemy_denial-officer_anchor-v01.png":"3d7e5d1e50a87cd704e52196012cebabc88a77d96b9fc93ff49a82eb36867ecf",
+    "art/source/imagegen/enemy_subrogator_anchor-v01.png":"4e409b5500747a66e91703678c2dcea7959bf966c3baba1ff934a4016461090d",
+    "art/source/imagegen/enemy_reserve-eater_anchor-v01.png":"ad514cc239f59dbd0a068e622a8a961ab2b3a334425ffabc3c4490c44f043b93",
+    "art/source/imagegen/enemy_fraud-apparition_anchor-v01-rejected.png":"90e137e0a64a3ab85ea01ad987fee077247a7611113df208da766b72cbbb1a60",
+    "art/source/imagegen/enemy_fraud-apparition_anchor-v02.png":"5f406dcddba3f5f130944500d99e1e41e17b425f1a5d9101770618825d452ec8",
+    "art/source/alpha/enemy_denial-officer_anchor-v01.png":"105713ff400a2ce9b8b83565c7fb49411e1d8bc96817b677ff93285ba0e7f60f",
+    "art/source/alpha/enemy_subrogator_anchor-v01.png":"4858bc1dbe0b82ebddd4c60347c34792b9f731bc3ebfc76910632f0896cea7bf",
+    "art/source/alpha/enemy_reserve-eater_anchor-v01.png":"a6c18f6d8a5e19bfc4fecc128900bc66d227be5e3d00f313b0884c6d9fc9126b",
+    "art/source/alpha/enemy_fraud-apparition_anchor-v02.png":"0780fb870cf588e395ebb923538d88b0bb204b03ce27d827330b465d1edbc817",
+    "art/approval/enemy_denial-officer_contact-v01.png":"cc5f2b3f7120b0517734c0b855713c1d2688456ec388dae4814c2b645d00d109",
+    "art/approval/enemy_subrogator_contact-v01.png":"4c8455899275efddb65a5a5a6c9e4a83ffa91efd9638acdef59f22a319365463",
+    "art/approval/enemy_reserve-eater_contact-v01.png":"d99cd731294d3a73a12926c0d33471e635535138640c738ffb1bb9f98c0b46ff",
+    "art/approval/enemy_fraud-apparition_contact-v01.png":"476a66cee95ce95c4b47bedab81465a5c1e6c93ee223a26096906ae8abea57e0"
+  },
+  "passed": true
+}

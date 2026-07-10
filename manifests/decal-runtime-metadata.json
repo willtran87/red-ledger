@@ -1,0 +1,1949 @@
+{
+  "source": "art/source/alpha/normalized/decal_environment-grid_v01.png",
+  "frames": [
+    {
+      "id": "shelter",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_shelter_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "shelter",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_shelter_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "shelter",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_shelter_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "shelter",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_shelter_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "shelter",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_shelter_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "shelter",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_shelter_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "shelter",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_shelter_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "shelter",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_shelter_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "shelter",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_shelter_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "chevron",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_chevron_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "chevron",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_chevron_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "chevron",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_chevron_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "chevron",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_chevron_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "chevron",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_chevron_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "chevron",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_chevron_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "chevron",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_chevron_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "chevron",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_chevron_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "chevron",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_chevron_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "exit",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_exit_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "exit",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_exit_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "exit",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_exit_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "exit",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_exit_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "exit",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_exit_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "exit",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_exit_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "exit",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_exit_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "exit",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_exit_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "exit",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_exit_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "suppression",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_suppression_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "suppression",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_suppression_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "suppression",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_suppression_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "suppression",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_suppression_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "suppression",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_suppression_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "suppression",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_suppression_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "suppression",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_suppression_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "suppression",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_suppression_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "suppression",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_suppression_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "medical",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_medical_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "medical",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_medical_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "medical",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_medical_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "medical",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_medical_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "medical",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_medical_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "medical",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_medical_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "medical",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_medical_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "medical",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_medical_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "medical",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_medical_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "credential",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_credential_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "credential",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_credential_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "credential",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_credential_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "credential",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_credential_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "credential",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_credential_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "credential",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_credential_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "credential",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_credential_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "credential",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_credential_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "credential",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_credential_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "waterline",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_waterline_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "waterline",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_waterline_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "waterline",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_waterline_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "waterline",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_waterline_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "waterline",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_waterline_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "waterline",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_waterline_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "waterline",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_waterline_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "waterline",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_waterline_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "waterline",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_waterline_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "pump",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_pump_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "pump",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_pump_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "pump",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_pump_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "pump",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_pump_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "pump",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_pump_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "pump",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_pump_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "pump",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_pump_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "pump",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_pump_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "pump",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_pump_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "electrical",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_electrical_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "electrical",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_electrical_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "electrical",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_electrical_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "electrical",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_electrical_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "electrical",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_electrical_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "electrical",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_electrical_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "electrical",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_electrical_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "electrical",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_electrical_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "electrical",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_electrical_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "valve",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_valve_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "valve",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_valve_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "valve",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_valve_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "valve",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_valve_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "valve",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_valve_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "valve",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_valve_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "valve",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_valve_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "valve",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_valve_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "valve",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_valve_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rail-switch",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_rail-switch_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rail-switch",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_rail-switch_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rail-switch",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_rail-switch_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rail-switch",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_rail-switch_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rail-switch",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_rail-switch_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rail-switch",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_rail-switch_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rail-switch",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_rail-switch_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rail-switch",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_rail-switch_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rail-switch",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_rail-switch_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "salvage-cut",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_salvage-cut_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "salvage-cut",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_salvage-cut_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "salvage-cut",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_salvage-cut_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "salvage-cut",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_salvage-cut_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "salvage-cut",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_salvage-cut_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "salvage-cut",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_salvage-cut_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "salvage-cut",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_salvage-cut_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "salvage-cut",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_salvage-cut_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "salvage-cut",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_salvage-cut_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "archive-box",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_archive-box_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "archive-box",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_archive-box_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "archive-box",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_archive-box_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "archive-box",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_archive-box_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "archive-box",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_archive-box_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "archive-box",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_archive-box_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "archive-box",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_archive-box_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "archive-box",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_archive-box_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "archive-box",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_archive-box_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rolling-shelf",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_rolling-shelf_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rolling-shelf",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_rolling-shelf_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rolling-shelf",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_rolling-shelf_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rolling-shelf",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_rolling-shelf_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rolling-shelf",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_rolling-shelf_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rolling-shelf",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_rolling-shelf_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rolling-shelf",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_rolling-shelf_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rolling-shelf",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_rolling-shelf_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "rolling-shelf",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_rolling-shelf_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "document-stack",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_document-stack_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "document-stack",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_document-stack_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "document-stack",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_document-stack_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "document-stack",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_document-stack_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "document-stack",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_document-stack_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "document-stack",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_document-stack_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "document-stack",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_document-stack_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "document-stack",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_document-stack_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "document-stack",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_document-stack_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_redaction_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_redaction_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_redaction_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_redaction_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_redaction_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_redaction_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_redaction_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_redaction_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "redaction",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_redaction_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "approval-seal",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_approval-seal_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "approval-seal",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_approval-seal_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "approval-seal",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_approval-seal_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "approval-seal",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_approval-seal_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "approval-seal",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_approval-seal_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "approval-seal",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_approval-seal_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "approval-seal",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_approval-seal_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "approval-seal",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_approval-seal_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "approval-seal",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_approval-seal_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "broken-contract",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_broken-contract_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "broken-contract",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_broken-contract_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "broken-contract",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_broken-contract_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "broken-contract",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_broken-contract_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "broken-contract",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_broken-contract_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "broken-contract",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_broken-contract_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "broken-contract",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_broken-contract_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "broken-contract",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_broken-contract_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "broken-contract",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_broken-contract_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "probability-network",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_probability-network_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "probability-network",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_probability-network_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "probability-network",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_probability-network_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "probability-network",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_probability-network_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "probability-network",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_probability-network_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "probability-network",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_probability-network_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "probability-network",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_probability-network_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "probability-network",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_probability-network_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "probability-network",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_probability-network_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "transfer-arrows",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_transfer-arrows_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "transfer-arrows",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_transfer-arrows_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "transfer-arrows",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_transfer-arrows_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "transfer-arrows",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_transfer-arrows_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "transfer-arrows",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_transfer-arrows_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "transfer-arrows",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_transfer-arrows_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "transfer-arrows",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_transfer-arrows_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "transfer-arrows",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_transfer-arrows_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "transfer-arrows",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_transfer-arrows_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "vault-wheel",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_vault-wheel_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "vault-wheel",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_vault-wheel_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "vault-wheel",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_vault-wheel_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "vault-wheel",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_vault-wheel_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "vault-wheel",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_vault-wheel_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "vault-wheel",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_vault-wheel_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "vault-wheel",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_vault-wheel_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "vault-wheel",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_vault-wheel_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "vault-wheel",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_vault-wheel_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "calculation-grid",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_calculation-grid_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "calculation-grid",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_calculation-grid_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "calculation-grid",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_calculation-grid_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "calculation-grid",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_calculation-grid_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "calculation-grid",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_calculation-grid_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "calculation-grid",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_calculation-grid_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "calculation-grid",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_calculation-grid_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "calculation-grid",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_calculation-grid_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "calculation-grid",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_calculation-grid_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "danger-octagon",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_danger-octagon_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "danger-octagon",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_danger-octagon_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "danger-octagon",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_danger-octagon_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "danger-octagon",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_danger-octagon_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "danger-octagon",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_danger-octagon_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "danger-octagon",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_danger-octagon_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "danger-octagon",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_danger-octagon_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "danger-octagon",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_danger-octagon_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "danger-octagon",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_danger-octagon_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "secret-sensor",
+      "variant": "neutral",
+      "file": "assets/public_runtime/textures/decals/decal_secret-sensor_neutral.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "secret-sensor",
+      "variant": "red",
+      "file": "assets/public_runtime/textures/decals/decal_secret-sensor_red.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "secret-sensor",
+      "variant": "cyan",
+      "file": "assets/public_runtime/textures/decals/decal_secret-sensor_cyan.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "secret-sensor",
+      "variant": "brass",
+      "file": "assets/public_runtime/textures/decals/decal_secret-sensor_brass.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "secret-sensor",
+      "variant": "ivory",
+      "file": "assets/public_runtime/textures/decals/decal_secret-sensor_ivory.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "secret-sensor",
+      "variant": "dark",
+      "file": "assets/public_runtime/textures/decals/decal_secret-sensor_dark.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "secret-sensor",
+      "variant": "worn-1",
+      "file": "assets/public_runtime/textures/decals/decal_secret-sensor_worn-1.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "secret-sensor",
+      "variant": "worn-2",
+      "file": "assets/public_runtime/textures/decals/decal_secret-sensor_worn-2.png",
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "secret-sensor",
+      "variant": "worn-3",
+      "file": "assets/public_runtime/textures/decals/decal_secret-sensor_worn-3.png",
+      "size": [
+        64,
+        64
+      ]
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "asset_id": "prop.ledger-integrator",
+  "source_sheet": "prop_court-actuarial-lineup_v01.png",
+  "source_cell": 5,
+  "canvas": [
+    128,
+    112
+  ],
+  "pivot": [
+    64,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_ledger-integrator_base.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        112,
+        106
+      ]
+    },
+    {
+      "file": "prop_ledger-integrator_damaged.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        112,
+        106
+      ]
+    },
+    {
+      "file": "prop_ledger-integrator_wrecked.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        112,
+        106
+      ]
+    },
+    {
+      "file": "prop_ledger-integrator_active_00.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        112,
+        106
+      ]
+    },
+    {
+      "file": "prop_ledger-integrator_active_01.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        112,
+        106
+      ]
+    },
+    {
+      "file": "prop_ledger-integrator_active_02.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        112,
+        106
+      ]
+    },
+    {
+      "file": "prop_ledger-integrator_active_03.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        112,
+        106
+      ]
+    },
+    {
+      "file": "prop_ledger-integrator_failed.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        17,
+        8,
+        112,
+        106
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.train-tool-trolley",
+  "source_sheet": "prop_train-salvage-lineup_v01.png",
+  "source_cell": 2,
+  "canvas": [
+    128,
+    112
+  ],
+  "pivot": [
+    64,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_train-tool-trolley_base.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        8,
+        15,
+        121,
+        106
+      ]
+    },
+    {
+      "file": "prop_train-tool-trolley_damaged.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        8,
+        15,
+        121,
+        106
+      ]
+    },
+    {
+      "file": "prop_train-tool-trolley_wrecked.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        8,
+        15,
+        121,
+        106
+      ]
+    }
+  ]
+}

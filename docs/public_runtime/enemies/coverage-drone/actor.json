@@ -1,0 +1,786 @@
+{
+  "asset_id": "enemy.coverage-drone",
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "angles": [
+    "F",
+    "FL",
+    "L",
+    "BL",
+    "B",
+    "BR",
+    "R",
+    "FR"
+  ],
+  "palette": "red-ledger-40",
+  "frames": [
+    {
+      "file": "enemy_coverage-drone_idle_01_F.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_01_FL.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_01_L.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_01_BL.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_01_B.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_01_BR.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_01_R.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_01_FR.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_02_F.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_02_FL.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_02_L.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_02_BL.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_02_B.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_02_BR.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_02_R.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_idle_02_FR.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_01_F.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_01_FL.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_01_L.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_01_BL.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_01_B.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_01_BR.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_01_R.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_01_FR.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_02_F.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_02_FL.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_02_L.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_02_BL.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_02_B.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_02_BR.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_02_R.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_02_FR.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_03_F.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_03_FL.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_03_L.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_03_BL.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_03_B.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_03_BR.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_03_R.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_03_FR.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_04_F.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_04_FL.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_04_L.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_04_BL.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_04_B.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_04_BR.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_04_R.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_walk_04_FR.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_01_F.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_01_FL.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_01_L.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_01_BL.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_01_B.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_01_BR.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_01_R.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_01_FR.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_02_F.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_02_FL.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_02_L.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_02_BL.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_02_B.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_02_BR.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_02_R.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_02_FR.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_03_F.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_03_FL.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_03_L.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_03_BL.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_03_B.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_03_BR.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_03_R.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_03_FR.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_04_F.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_04_FL.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_04_L.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_04_BL.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_04_B.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_04_BR.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_04_R.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_attack_04_FR.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_pain_01_F.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_pain_01_FL.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_pain_01_L.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_pain_01_BL.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_pain_01_B.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_pain_01_BR.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_pain_01_R.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_pain_01_FR.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_01_F.png",
+      "state": "hover",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_01_FL.png",
+      "state": "hover",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_01_L.png",
+      "state": "hover",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_01_BL.png",
+      "state": "hover",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_01_B.png",
+      "state": "hover",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_01_BR.png",
+      "state": "hover",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_01_R.png",
+      "state": "hover",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_01_FR.png",
+      "state": "hover",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_02_F.png",
+      "state": "hover",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_02_FL.png",
+      "state": "hover",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_02_L.png",
+      "state": "hover",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_02_BL.png",
+      "state": "hover",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_02_B.png",
+      "state": "hover",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_02_BR.png",
+      "state": "hover",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_02_R.png",
+      "state": "hover",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_02_FR.png",
+      "state": "hover",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_03_F.png",
+      "state": "hover",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_03_FL.png",
+      "state": "hover",
+      "frame": 3,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_03_L.png",
+      "state": "hover",
+      "frame": 3,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_03_BL.png",
+      "state": "hover",
+      "frame": 3,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_03_B.png",
+      "state": "hover",
+      "frame": 3,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_03_BR.png",
+      "state": "hover",
+      "frame": 3,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_03_R.png",
+      "state": "hover",
+      "frame": 3,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_03_FR.png",
+      "state": "hover",
+      "frame": 3,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_04_F.png",
+      "state": "hover",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_04_FL.png",
+      "state": "hover",
+      "frame": 4,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_04_L.png",
+      "state": "hover",
+      "frame": 4,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_04_BL.png",
+      "state": "hover",
+      "frame": 4,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_04_B.png",
+      "state": "hover",
+      "frame": 4,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_04_BR.png",
+      "state": "hover",
+      "frame": 4,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_04_R.png",
+      "state": "hover",
+      "frame": 4,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_coverage-drone_hover_04_FR.png",
+      "state": "hover",
+      "frame": 4,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_coverage-drone_death_01_F.png",
+      "state": "death",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_death_02_F.png",
+      "state": "death",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_death_03_F.png",
+      "state": "death",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_death_04_F.png",
+      "state": "death",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_death_05_F.png",
+      "state": "death",
+      "frame": 5,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_death_06_F.png",
+      "state": "death",
+      "frame": 6,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_coverage-drone_corpse_01_F.png",
+      "state": "corpse",
+      "frame": 1,
+      "angle": "F"
+    }
+  ]
+}

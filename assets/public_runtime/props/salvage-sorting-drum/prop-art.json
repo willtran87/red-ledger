@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.salvage-sorting-drum",
+  "source_sheet": "prop_train-salvage-lineup_v01.png",
+  "source_cell": 5,
+  "canvas": [
+    128,
+    128
+  ],
+  "pivot": [
+    64,
+    121
+  ],
+  "frames": [
+    {
+      "file": "prop_salvage-sorting-drum_base.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        9,
+        9,
+        119,
+        121
+      ]
+    },
+    {
+      "file": "prop_salvage-sorting-drum_damaged.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        9,
+        9,
+        119,
+        121
+      ]
+    },
+    {
+      "file": "prop_salvage-sorting-drum_wrecked.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        9,
+        9,
+        119,
+        121
+      ]
+    }
+  ]
+}

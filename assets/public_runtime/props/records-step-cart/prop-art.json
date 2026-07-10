@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.records-step-cart",
+  "source_sheet": "prop_archive-lineup_v01.png",
+  "source_cell": 4,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_records-step-cart_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        15,
+        8,
+        81,
+        106
+      ]
+    },
+    {
+      "file": "prop_records-step-cart_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        15,
+        8,
+        81,
+        106
+      ]
+    },
+    {
+      "file": "prop_records-step-cart_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        15,
+        8,
+        81,
+        106
+      ]
+    }
+  ]
+}

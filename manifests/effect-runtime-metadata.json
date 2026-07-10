@@ -1,0 +1,2474 @@
+[
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_F_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_FL_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_L_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_BL_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_B_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_BR_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_R_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_FR_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_F_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_FL_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_L_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_BL_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_B_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_BR_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_R_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_FR_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_F_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_FL_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_L_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_BL_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_B_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_BR_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_R_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_FR_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_F_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_FL_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_L_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_BL_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_B_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_BR_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_R_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "canister-projectile",
+    "file": "assets/public_runtime/effects/canister-projectile/fx_canister-projectile_FR_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_FL_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_L_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_BL_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_B_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_BR_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_R_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_FR_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_FL_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_L_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_BL_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_B_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_BR_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_R_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_FR_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_FL_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_L_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_BL_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_B_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_BR_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_R_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_FR_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_FL_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_L_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_BL_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_B_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_BR_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_R_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "ember-claim-fire",
+    "file": "assets/public_runtime/effects/ember-claim-fire/fx_ember-claim-fire_FR_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_FL_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_L_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_BL_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_B_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_BR_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_R_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_FR_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_FL_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_L_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_BL_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_B_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_BR_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_R_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_FR_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_FL_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_L_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_BL_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_B_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_BR_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_R_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_FR_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_FL_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_L_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_BL_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_B_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_BR_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_R_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "coverage-bolt",
+    "file": "assets/public_runtime/effects/coverage-bolt/fx_coverage-bolt_FR_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_F_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_FL_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_L_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_BL_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_B_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_BR_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_R_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_FR_01.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_F_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_FL_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_L_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_BL_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_B_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_BR_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_R_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_FR_02.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_F_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_FL_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_L_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_BL_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_B_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_BR_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_R_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_FR_03.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_F_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_FL_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_L_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_BL_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_B_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_BR_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_R_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "liability-orb",
+    "file": "assets/public_runtime/effects/liability-orb/fx_liability-orb_FR_04.png",
+    "size": [
+      48,
+      48
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_FL_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_L_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_BL_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_B_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_BR_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_R_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_FR_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_FL_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_L_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_BL_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_B_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_BR_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_R_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_FR_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_FL_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_L_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_BL_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_B_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_BR_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_R_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_FR_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_FL_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_L_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_BL_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_B_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_BR_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_R_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "plasma-bolt",
+    "file": "assets/public_runtime/effects/plasma-bolt/fx_plasma-bolt_FR_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_FL_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_L_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_BL_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_B_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_BR_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_R_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_FR_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_FL_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_L_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_BL_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_B_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_BR_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_R_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_FR_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_FL_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_L_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_BL_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_B_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_BR_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_R_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_FR_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_FL_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_L_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_BL_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_B_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_BR_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_R_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-packet",
+    "file": "assets/public_runtime/effects/denial-packet/fx_denial-packet_FR_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "reserve-hazard",
+    "file": "assets/public_runtime/effects/reserve-hazard/fx_reserve-hazard_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "reserve-hazard",
+    "file": "assets/public_runtime/effects/reserve-hazard/fx_reserve-hazard_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "reserve-hazard",
+    "file": "assets/public_runtime/effects/reserve-hazard/fx_reserve-hazard_F_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "reserve-hazard",
+    "file": "assets/public_runtime/effects/reserve-hazard/fx_reserve-hazard_F_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "reserve-hazard",
+    "file": "assets/public_runtime/effects/reserve-hazard/fx_reserve-hazard_F_05.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "reserve-hazard",
+    "file": "assets/public_runtime/effects/reserve-hazard/fx_reserve-hazard_F_06.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "prediction-zone",
+    "file": "assets/public_runtime/effects/prediction-zone/fx_prediction-zone_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "prediction-zone",
+    "file": "assets/public_runtime/effects/prediction-zone/fx_prediction-zone_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "prediction-zone",
+    "file": "assets/public_runtime/effects/prediction-zone/fx_prediction-zone_F_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "prediction-zone",
+    "file": "assets/public_runtime/effects/prediction-zone/fx_prediction-zone_F_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "hit-spark",
+    "file": "assets/public_runtime/effects/hit-spark/fx_hit-spark_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-spark",
+    "file": "assets/public_runtime/effects/hit-spark/fx_hit-spark_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-spark",
+    "file": "assets/public_runtime/effects/hit-spark/fx_hit-spark_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-spark",
+    "file": "assets/public_runtime/effects/hit-spark/fx_hit-spark_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-paper",
+    "file": "assets/public_runtime/effects/hit-paper/fx_hit-paper_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-paper",
+    "file": "assets/public_runtime/effects/hit-paper/fx_hit-paper_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-paper",
+    "file": "assets/public_runtime/effects/hit-paper/fx_hit-paper_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-paper",
+    "file": "assets/public_runtime/effects/hit-paper/fx_hit-paper_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "staple-impact",
+    "file": "assets/public_runtime/effects/staple-impact/fx_staple-impact_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "staple-impact",
+    "file": "assets/public_runtime/effects/staple-impact/fx_staple-impact_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "staple-impact",
+    "file": "assets/public_runtime/effects/staple-impact/fx_staple-impact_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "staple-impact",
+    "file": "assets/public_runtime/effects/staple-impact/fx_staple-impact_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "fastener-impact",
+    "file": "assets/public_runtime/effects/fastener-impact/fx_fastener-impact_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "fastener-impact",
+    "file": "assets/public_runtime/effects/fastener-impact/fx_fastener-impact_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "fastener-impact",
+    "file": "assets/public_runtime/effects/fastener-impact/fx_fastener-impact_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "fastener-impact",
+    "file": "assets/public_runtime/effects/fastener-impact/fx_fastener-impact_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "binding-impact",
+    "file": "assets/public_runtime/effects/binding-impact/fx_binding-impact_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-impact",
+    "file": "assets/public_runtime/effects/binding-impact/fx_binding-impact_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-impact",
+    "file": "assets/public_runtime/effects/binding-impact/fx_binding-impact_F_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-impact",
+    "file": "assets/public_runtime/effects/binding-impact/fx_binding-impact_F_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-impact",
+    "file": "assets/public_runtime/effects/binding-impact/fx_binding-impact_F_05.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-impact",
+    "file": "assets/public_runtime/effects/binding-impact/fx_binding-impact_F_06.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-impact",
+    "file": "assets/public_runtime/effects/binding-impact/fx_binding-impact_F_07.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-impact",
+    "file": "assets/public_runtime/effects/binding-impact/fx_binding-impact_F_08.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "ceiling-impact",
+    "file": "assets/public_runtime/effects/ceiling-impact/fx_ceiling-impact_F_01.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "ceiling-impact",
+    "file": "assets/public_runtime/effects/ceiling-impact/fx_ceiling-impact_F_02.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "ceiling-impact",
+    "file": "assets/public_runtime/effects/ceiling-impact/fx_ceiling-impact_F_03.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "ceiling-impact",
+    "file": "assets/public_runtime/effects/ceiling-impact/fx_ceiling-impact_F_04.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "ceiling-impact",
+    "file": "assets/public_runtime/effects/ceiling-impact/fx_ceiling-impact_F_05.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "ceiling-impact",
+    "file": "assets/public_runtime/effects/ceiling-impact/fx_ceiling-impact_F_06.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "ceiling-impact",
+    "file": "assets/public_runtime/effects/ceiling-impact/fx_ceiling-impact_F_07.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "ceiling-impact",
+    "file": "assets/public_runtime/effects/ceiling-impact/fx_ceiling-impact_F_08.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_start_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_start_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_start_F_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_start_F_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_loop_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_loop_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_loop_F_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_loop_F_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_05.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_06.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_07.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "binding-beam",
+    "file": "assets/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_08.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_start_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_start_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_start_F_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_start_F_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_loop_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_loop_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "denial-beam",
+    "file": "assets/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_05.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "canister-explosion",
+    "file": "assets/public_runtime/effects/canister-explosion/fx_canister-explosion_F_01.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "canister-explosion",
+    "file": "assets/public_runtime/effects/canister-explosion/fx_canister-explosion_F_02.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "canister-explosion",
+    "file": "assets/public_runtime/effects/canister-explosion/fx_canister-explosion_F_03.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "canister-explosion",
+    "file": "assets/public_runtime/effects/canister-explosion/fx_canister-explosion_F_04.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "canister-explosion",
+    "file": "assets/public_runtime/effects/canister-explosion/fx_canister-explosion_F_05.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "canister-explosion",
+    "file": "assets/public_runtime/effects/canister-explosion/fx_canister-explosion_F_06.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "canister-explosion",
+    "file": "assets/public_runtime/effects/canister-explosion/fx_canister-explosion_F_07.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "canister-explosion",
+    "file": "assets/public_runtime/effects/canister-explosion/fx_canister-explosion_F_08.png",
+    "size": [
+      96,
+      96
+    ]
+  },
+  {
+    "family": "fraud-reveal",
+    "file": "assets/public_runtime/effects/fraud-reveal/fx_fraud-reveal_F_01.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "fraud-reveal",
+    "file": "assets/public_runtime/effects/fraud-reveal/fx_fraud-reveal_F_02.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "fraud-reveal",
+    "file": "assets/public_runtime/effects/fraud-reveal/fx_fraud-reveal_F_03.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "fraud-reveal",
+    "file": "assets/public_runtime/effects/fraud-reveal/fx_fraud-reveal_F_04.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "fraud-reveal",
+    "file": "assets/public_runtime/effects/fraud-reveal/fx_fraud-reveal_F_05.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "fraud-reveal",
+    "file": "assets/public_runtime/effects/fraud-reveal/fx_fraud-reveal_F_06.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "resurrection-redaction",
+    "file": "assets/public_runtime/effects/resurrection-redaction/fx_resurrection-redaction_F_01.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "resurrection-redaction",
+    "file": "assets/public_runtime/effects/resurrection-redaction/fx_resurrection-redaction_F_02.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "resurrection-redaction",
+    "file": "assets/public_runtime/effects/resurrection-redaction/fx_resurrection-redaction_F_03.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "resurrection-redaction",
+    "file": "assets/public_runtime/effects/resurrection-redaction/fx_resurrection-redaction_F_04.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "resurrection-redaction",
+    "file": "assets/public_runtime/effects/resurrection-redaction/fx_resurrection-redaction_F_05.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "resurrection-redaction",
+    "file": "assets/public_runtime/effects/resurrection-redaction/fx_resurrection-redaction_F_06.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "resurrection-redaction",
+    "file": "assets/public_runtime/effects/resurrection-redaction/fx_resurrection-redaction_F_07.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "resurrection-redaction",
+    "file": "assets/public_runtime/effects/resurrection-redaction/fx_resurrection-redaction_F_08.png",
+    "size": [
+      96,
+      112
+    ]
+  },
+  {
+    "family": "redaction-wipe",
+    "file": "assets/public_runtime/effects/redaction-wipe/fx_redaction-wipe_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "redaction-wipe",
+    "file": "assets/public_runtime/effects/redaction-wipe/fx_redaction-wipe_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "redaction-wipe",
+    "file": "assets/public_runtime/effects/redaction-wipe/fx_redaction-wipe_F_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "redaction-wipe",
+    "file": "assets/public_runtime/effects/redaction-wipe/fx_redaction-wipe_F_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "generic-debris-paper",
+    "file": "assets/public_runtime/effects/generic-debris-paper/fx_generic-debris-paper_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-paper",
+    "file": "assets/public_runtime/effects/generic-debris-paper/fx_generic-debris-paper_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-paper",
+    "file": "assets/public_runtime/effects/generic-debris-paper/fx_generic-debris-paper_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-paper",
+    "file": "assets/public_runtime/effects/generic-debris-paper/fx_generic-debris-paper_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-paper",
+    "file": "assets/public_runtime/effects/generic-debris-paper/fx_generic-debris-paper_F_05.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-paper",
+    "file": "assets/public_runtime/effects/generic-debris-paper/fx_generic-debris-paper_F_06.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-metal",
+    "file": "assets/public_runtime/effects/generic-debris-metal/fx_generic-debris-metal_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-metal",
+    "file": "assets/public_runtime/effects/generic-debris-metal/fx_generic-debris-metal_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-metal",
+    "file": "assets/public_runtime/effects/generic-debris-metal/fx_generic-debris-metal_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-metal",
+    "file": "assets/public_runtime/effects/generic-debris-metal/fx_generic-debris-metal_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-metal",
+    "file": "assets/public_runtime/effects/generic-debris-metal/fx_generic-debris-metal_F_05.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-metal",
+    "file": "assets/public_runtime/effects/generic-debris-metal/fx_generic-debris-metal_F_06.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-wax",
+    "file": "assets/public_runtime/effects/generic-debris-wax/fx_generic-debris-wax_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-wax",
+    "file": "assets/public_runtime/effects/generic-debris-wax/fx_generic-debris-wax_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-wax",
+    "file": "assets/public_runtime/effects/generic-debris-wax/fx_generic-debris-wax_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-wax",
+    "file": "assets/public_runtime/effects/generic-debris-wax/fx_generic-debris-wax_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-wax",
+    "file": "assets/public_runtime/effects/generic-debris-wax/fx_generic-debris-wax_F_05.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "generic-debris-wax",
+    "file": "assets/public_runtime/effects/generic-debris-wax/fx_generic-debris-wax_F_06.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-ink-small",
+    "file": "assets/public_runtime/effects/hit-ink-small/fx_hit-ink-small_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-ink-small",
+    "file": "assets/public_runtime/effects/hit-ink-small/fx_hit-ink-small_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-ink-small",
+    "file": "assets/public_runtime/effects/hit-ink-small/fx_hit-ink-small_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "hit-ink-small",
+    "file": "assets/public_runtime/effects/hit-ink-small/fx_hit-ink-small_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  }
+]

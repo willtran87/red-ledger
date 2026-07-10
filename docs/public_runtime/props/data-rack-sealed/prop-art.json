@@ -1,0 +1,119 @@
+{
+  "asset_id": "prop.data-rack-sealed",
+  "source_sheet": "prop_hotel-data-lineup_v01.png",
+  "source_cell": 3,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_data-rack-sealed_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        71,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-sealed_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        71,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-sealed_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        71,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-sealed_active_00.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        71,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-sealed_active_01.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        71,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-sealed_active_02.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        71,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-sealed_active_03.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        71,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-sealed_failed.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        25,
+        8,
+        71,
+        106
+      ]
+    }
+  ]
+}

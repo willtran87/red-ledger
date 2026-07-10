@@ -1,0 +1,119 @@
+{
+  "asset_id": "prop.probability-engine",
+  "source_sheet": "prop_court-actuarial-lineup_v01.png",
+  "source_cell": 3,
+  "canvas": [
+    128,
+    128
+  ],
+  "pivot": [
+    64,
+    121
+  ],
+  "frames": [
+    {
+      "file": "prop_probability-engine_base.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        15,
+        9,
+        113,
+        121
+      ]
+    },
+    {
+      "file": "prop_probability-engine_damaged.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        15,
+        9,
+        113,
+        121
+      ]
+    },
+    {
+      "file": "prop_probability-engine_wrecked.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        15,
+        9,
+        113,
+        121
+      ]
+    },
+    {
+      "file": "prop_probability-engine_active_00.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        15,
+        9,
+        113,
+        121
+      ]
+    },
+    {
+      "file": "prop_probability-engine_active_01.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        15,
+        9,
+        113,
+        121
+      ]
+    },
+    {
+      "file": "prop_probability-engine_active_02.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        15,
+        9,
+        113,
+        121
+      ]
+    },
+    {
+      "file": "prop_probability-engine_active_03.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        15,
+        9,
+        113,
+        121
+      ]
+    },
+    {
+      "file": "prop_probability-engine_failed.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        15,
+        9,
+        113,
+        121
+      ]
+    }
+  ]
+}

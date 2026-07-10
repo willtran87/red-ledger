@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.office-phone-stamp",
+  "source_sheet": "prop_paper-desk-hvac-lineup_v01.png",
+  "source_cell": 4,
+  "canvas": [
+    64,
+    80
+  ],
+  "pivot": [
+    32,
+    75
+  ],
+  "frames": [
+    {
+      "file": "prop_office-phone-stamp_base.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        4,
+        27,
+        60,
+        75
+      ]
+    },
+    {
+      "file": "prop_office-phone-stamp_damaged.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        4,
+        27,
+        60,
+        75
+      ]
+    },
+    {
+      "file": "prop_office-phone-stamp_wrecked.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        4,
+        27,
+        60,
+        75
+      ]
+    }
+  ]
+}

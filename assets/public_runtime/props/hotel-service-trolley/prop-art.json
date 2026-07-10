@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.hotel-service-trolley",
+  "source_sheet": "prop_hotel-data-lineup_v01.png",
+  "source_cell": 2,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_hotel-service-trolley_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        11,
+        8,
+        85,
+        106
+      ]
+    },
+    {
+      "file": "prop_hotel-service-trolley_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        11,
+        8,
+        85,
+        106
+      ]
+    },
+    {
+      "file": "prop_hotel-service-trolley_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        11,
+        8,
+        85,
+        106
+      ]
+    }
+  ]
+}

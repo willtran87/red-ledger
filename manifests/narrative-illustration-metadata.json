@@ -1,0 +1,65 @@
+{
+  "sources": [
+    "art/source/imagegen/illustration_episode-2-3-strip_v01.png",
+    "art/source/imagegen/intermission_episode-2-3-strip_v01.png"
+  ],
+  "gutter": "#FF00FF",
+  "frames": [
+    {
+      "id": "episode-2-intro",
+      "file": "assets/public_runtime/ui/illustrations/episode-2-intro.png",
+      "size": [
+        320,
+        200
+      ]
+    },
+    {
+      "id": "episode-2-outro",
+      "file": "assets/public_runtime/ui/illustrations/episode-2-outro.png",
+      "size": [
+        320,
+        200
+      ]
+    },
+    {
+      "id": "episode-3-intro",
+      "file": "assets/public_runtime/ui/illustrations/episode-3-intro.png",
+      "size": [
+        320,
+        200
+      ]
+    },
+    {
+      "id": "episode-3-outro",
+      "file": "assets/public_runtime/ui/illustrations/episode-3-outro.png",
+      "size": [
+        320,
+        200
+      ]
+    },
+    {
+      "id": "final-epilogue",
+      "file": "assets/public_runtime/ui/illustrations/final-epilogue.png",
+      "size": [
+        320,
+        200
+      ]
+    },
+    {
+      "id": "intermission-episode-2",
+      "file": "assets/public_runtime/ui/illustrations/intermission-episode-2.png",
+      "size": [
+        320,
+        200
+      ]
+    },
+    {
+      "id": "intermission-episode-3",
+      "file": "assets/public_runtime/ui/illustrations/intermission-episode-3.png",
+      "size": [
+        320,
+        200
+      ]
+    }
+  ]
+}

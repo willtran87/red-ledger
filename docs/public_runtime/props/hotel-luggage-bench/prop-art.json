@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.hotel-luggage-bench",
+  "source_sheet": "prop_hotel-data-lineup_v01.png",
+  "source_cell": 1,
+  "canvas": [
+    128,
+    112
+  ],
+  "pivot": [
+    64,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_hotel-luggage-bench_base.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        8,
+        18,
+        121,
+        106
+      ]
+    },
+    {
+      "file": "prop_hotel-luggage-bench_damaged.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        8,
+        18,
+        121,
+        106
+      ]
+    },
+    {
+      "file": "prop_hotel-luggage-bench_wrecked.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        8,
+        18,
+        121,
+        106
+      ]
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+{
+  "asset_id": "boss.uninsurable",
+  "canvas": [
+    192,
+    176
+  ],
+  "pivot": [
+    96,
+    168
+  ],
+  "authored_angles": [
+    "F"
+  ],
+  "palette": "red-ledger-master-40",
+  "frames": [
+    {
+      "file": "boss_uninsurable_sealed_F_01_v01.png",
+      "state": "sealed",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_uninsurable_gate-open_F_01_v01.png",
+      "state": "gate-open",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_uninsurable_gate-open_F_02_v01.png",
+      "state": "gate-open",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_uninsurable_gate-open_F_03_v01.png",
+      "state": "gate-open",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "boss_uninsurable_core_F_01_v01.png",
+      "state": "core",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_uninsurable_core_F_02_v01.png",
+      "state": "core",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_uninsurable_core_F_03_v01.png",
+      "state": "core",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "boss_uninsurable_core_F_04_v01.png",
+      "state": "core",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "boss_uninsurable_damage_F_01_v01.png",
+      "state": "damage",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_uninsurable_damage_F_02_v01.png",
+      "state": "damage",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_uninsurable_damage_F_03_v01.png",
+      "state": "damage",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_01_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_02_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_03_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_04_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_05_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_06_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 6
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_07_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 7
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_08_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 8
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_09_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 9
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_10_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 10
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_11_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 11
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_12_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 12
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_13_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 13
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_14_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 14
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_15_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 15
+    },
+    {
+      "file": "boss_uninsurable_destroy_F_16_v01.png",
+      "state": "destroy",
+      "angle": "F",
+      "frame": 16
+    },
+    {
+      "file": "boss_uninsurable_debris_F_01_v01.png",
+      "state": "debris",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_uninsurable_debris_F_02_v01.png",
+      "state": "debris",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_uninsurable_debris_F_03_v01.png",
+      "state": "debris",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "boss_uninsurable_debris_F_04_v01.png",
+      "state": "debris",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "boss_uninsurable_debris_F_05_v01.png",
+      "state": "debris",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "boss_uninsurable_debris_F_06_v01.png",
+      "state": "debris",
+      "angle": "F",
+      "frame": 6
+    },
+    {
+      "file": "boss_uninsurable_debris_F_07_v01.png",
+      "state": "debris",
+      "angle": "F",
+      "frame": 7
+    },
+    {
+      "file": "boss_uninsurable_debris_F_08_v01.png",
+      "state": "debris",
+      "angle": "F",
+      "frame": 8
+    }
+  ]
+}

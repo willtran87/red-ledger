@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.mail-sort-cart",
+  "source_sheet": "prop_office-lineup_v01.png",
+  "source_cell": 4,
+  "canvas": [
+    128,
+    112
+  ],
+  "pivot": [
+    64,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_mail-sort-cart_base.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        20,
+        8,
+        109,
+        106
+      ]
+    },
+    {
+      "file": "prop_mail-sort-cart_damaged.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        20,
+        8,
+        109,
+        106
+      ]
+    },
+    {
+      "file": "prop_mail-sort-cart_wrecked.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        20,
+        8,
+        109,
+        106
+      ]
+    }
+  ]
+}

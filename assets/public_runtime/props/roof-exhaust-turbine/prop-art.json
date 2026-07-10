@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.roof-exhaust-turbine",
+  "source_sheet": "prop_paper-desk-hvac-lineup_v01.png",
+  "source_cell": 5,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_roof-exhaust-turbine_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        13,
+        8,
+        84,
+        106
+      ]
+    },
+    {
+      "file": "prop_roof-exhaust-turbine_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        13,
+        8,
+        84,
+        106
+      ]
+    },
+    {
+      "file": "prop_roof-exhaust-turbine_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        13,
+        8,
+        84,
+        106
+      ]
+    }
+  ]
+}

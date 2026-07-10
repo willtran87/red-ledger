@@ -1,0 +1,774 @@
+{
+  "asset_id": "enemy.exposure-hound",
+  "canvas": [
+    64,
+    72
+  ],
+  "pivot": [
+    32,
+    68
+  ],
+  "angles": [
+    "F",
+    "FL",
+    "L",
+    "BL",
+    "B",
+    "BR",
+    "R",
+    "FR"
+  ],
+  "palette": "red-ledger-40",
+  "frames": [
+    {
+      "file": "enemy_exposure-hound_idle_01_F.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_01_FL.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_01_L.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_01_BL.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_01_B.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_01_BR.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_01_R.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_01_FR.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_02_F.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_02_FL.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_02_L.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_02_BL.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_02_B.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_02_BR.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_02_R.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_idle_02_FR.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_01_F.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_01_FL.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_01_L.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_01_BL.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_01_B.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_01_BR.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_01_R.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_01_FR.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_02_F.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_02_FL.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_02_L.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_02_BL.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_02_B.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_02_BR.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_02_R.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_02_FR.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_03_F.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_03_FL.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_03_L.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_03_BL.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_03_B.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_03_BR.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_03_R.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_03_FR.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_04_F.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_04_FL.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_04_L.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_04_BL.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_04_B.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_04_BR.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_04_R.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_walk_04_FR.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_01_F.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_01_FL.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_01_L.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_01_BL.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_01_B.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_01_BR.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_01_R.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_01_FR.png",
+      "state": "attack",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_02_F.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_02_FL.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_02_L.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_02_BL.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_02_B.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_02_BR.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_02_R.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_02_FR.png",
+      "state": "attack",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_03_F.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_03_FL.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_03_L.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_03_BL.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_03_B.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_03_BR.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_03_R.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_03_FR.png",
+      "state": "attack",
+      "frame": 3,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_04_F.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_04_FL.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_04_L.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_04_BL.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_04_B.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_04_BR.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_04_R.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_attack_04_FR.png",
+      "state": "attack",
+      "frame": 4,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_pain_01_F.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_pain_01_FL.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_pain_01_L.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_pain_01_BL.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_pain_01_B.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_pain_01_BR.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_pain_01_R.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_pain_01_FR.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_01_F.png",
+      "state": "lunge",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_01_FL.png",
+      "state": "lunge",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_01_L.png",
+      "state": "lunge",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_01_BL.png",
+      "state": "lunge",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_01_B.png",
+      "state": "lunge",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_01_BR.png",
+      "state": "lunge",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_01_R.png",
+      "state": "lunge",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_01_FR.png",
+      "state": "lunge",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_02_F.png",
+      "state": "lunge",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_02_FL.png",
+      "state": "lunge",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_02_L.png",
+      "state": "lunge",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_02_BL.png",
+      "state": "lunge",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_02_B.png",
+      "state": "lunge",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_02_BR.png",
+      "state": "lunge",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_02_R.png",
+      "state": "lunge",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_02_FR.png",
+      "state": "lunge",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_03_F.png",
+      "state": "lunge",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_03_FL.png",
+      "state": "lunge",
+      "frame": 3,
+      "angle": "FL"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_03_L.png",
+      "state": "lunge",
+      "frame": 3,
+      "angle": "L"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_03_BL.png",
+      "state": "lunge",
+      "frame": 3,
+      "angle": "BL"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_03_B.png",
+      "state": "lunge",
+      "frame": 3,
+      "angle": "B"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_03_BR.png",
+      "state": "lunge",
+      "frame": 3,
+      "angle": "BR"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_03_R.png",
+      "state": "lunge",
+      "frame": 3,
+      "angle": "R"
+    },
+    {
+      "file": "enemy_exposure-hound_lunge_03_FR.png",
+      "state": "lunge",
+      "frame": 3,
+      "angle": "FR"
+    },
+    {
+      "file": "enemy_exposure-hound_death_01_F.png",
+      "state": "death",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_death_02_F.png",
+      "state": "death",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_death_03_F.png",
+      "state": "death",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_death_04_F.png",
+      "state": "death",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_death_05_F.png",
+      "state": "death",
+      "frame": 5,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_death_06_F.png",
+      "state": "death",
+      "frame": 6,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_gib_01_F.png",
+      "state": "gib",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_gib_02_F.png",
+      "state": "gib",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_gib_03_F.png",
+      "state": "gib",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_gib_04_F.png",
+      "state": "gib",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_gib_05_F.png",
+      "state": "gib",
+      "frame": 5,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_gib_06_F.png",
+      "state": "gib",
+      "frame": 6,
+      "angle": "F"
+    },
+    {
+      "file": "enemy_exposure-hound_corpse_01_F.png",
+      "state": "corpse",
+      "frame": 1,
+      "angle": "F"
+    }
+  ]
+}

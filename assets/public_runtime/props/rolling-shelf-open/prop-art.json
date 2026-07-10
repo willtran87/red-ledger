@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.rolling-shelf-open",
+  "source_sheet": "prop_archive-lineup_v01.png",
+  "source_cell": 1,
+  "canvas": [
+    128,
+    128
+  ],
+  "pivot": [
+    64,
+    121
+  ],
+  "frames": [
+    {
+      "file": "prop_rolling-shelf-open_base.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        31,
+        9,
+        98,
+        121
+      ]
+    },
+    {
+      "file": "prop_rolling-shelf-open_damaged.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        31,
+        9,
+        98,
+        121
+      ]
+    },
+    {
+      "file": "prop_rolling-shelf-open_wrecked.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        31,
+        9,
+        98,
+        121
+      ]
+    }
+  ]
+}

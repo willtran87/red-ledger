@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.filing-cabinet",
+  "source_sheet": "prop_office-lineup_v01.png",
+  "source_cell": 3,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_filing-cabinet_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        23,
+        8,
+        73,
+        106
+      ]
+    },
+    {
+      "file": "prop_filing-cabinet_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        23,
+        8,
+        73,
+        106
+      ]
+    },
+    {
+      "file": "prop_filing-cabinet_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        23,
+        8,
+        73,
+        106
+      ]
+    }
+  ]
+}

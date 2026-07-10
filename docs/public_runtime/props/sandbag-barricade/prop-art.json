@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.sandbag-barricade",
+  "source_sheet": "prop_flood-lineup_v01.png",
+  "source_cell": 4,
+  "canvas": [
+    128,
+    112
+  ],
+  "pivot": [
+    64,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_sandbag-barricade_base.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        8,
+        20,
+        121,
+        106
+      ]
+    },
+    {
+      "file": "prop_sandbag-barricade_damaged.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        8,
+        20,
+        121,
+        106
+      ]
+    },
+    {
+      "file": "prop_sandbag-barricade_wrecked.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        8,
+        20,
+        121,
+        106
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.litigation-chair",
+  "source_sheet": "prop_court-actuarial-lineup_v01.png",
+  "source_cell": 0,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_litigation-chair_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        23,
+        8,
+        74,
+        106
+      ]
+    },
+    {
+      "file": "prop_litigation-chair_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        23,
+        8,
+        74,
+        106
+      ]
+    },
+    {
+      "file": "prop_litigation-chair_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        23,
+        8,
+        74,
+        106
+      ]
+    }
+  ]
+}

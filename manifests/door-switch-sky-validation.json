@@ -1,0 +1,2102 @@
+{
+  "chroma_sources": [
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/door_office-standard_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/door_catastrophe-cyan_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/door_executive-yellow_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/door_fire-shutter_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/door_loading-bay_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/door_elevator_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/door_vault_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/door_wax-gate_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/switch_pump_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/switch_archive_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/switch_executive_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/switch_actuarial_v01.png"
+    }
+  ],
+  "alpha_sources": [
+    {
+      "file": "art/source/alpha/normalized/door_office-standard_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.3265,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_catastrophe-cyan_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.3156,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_executive-yellow_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.3646,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_fire-shutter_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.3131,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_loading-bay_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.2694,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_elevator_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.3366,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_vault_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.299,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_wax-gate_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.2077,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/switch_pump_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.2676,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/switch_archive_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.3976,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/switch_executive_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.3052,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/switch_actuarial_v01.png",
+      "size": [
+        1536,
+        1024
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.1769,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    }
+  ],
+  "spaced_alpha_sheets": [
+    {
+      "file": "art/source/alpha/normalized/door_office-standard_v01.png",
+      "count": 4,
+      "cell_width": 384,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            46,
+            491,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            491,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            46,
+            493,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            493,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            46,
+            493,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            493,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            46,
+            491,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            491,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_catastrophe-cyan_v01.png",
+      "count": 4,
+      "cell_width": 384,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            46,
+            504,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            504,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            46,
+            504,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            504,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            46,
+            504,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            504,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            46,
+            504,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            504,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_executive-yellow_v01.png",
+      "count": 4,
+      "cell_width": 384,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            46,
+            451,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            451,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            46,
+            451,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            451,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            46,
+            451,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            451,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            46,
+            451,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            451,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_fire-shutter_v01.png",
+      "count": 4,
+      "cell_width": 384,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            46,
+            513,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            513,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            46,
+            514,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            514,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            46,
+            514,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            514,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            46,
+            514,
+            338,
+            942
+          ],
+          "gaps": [
+            46,
+            514,
+            46,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_loading-bay_v01.png",
+      "count": 3,
+      "cell_width": 512,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            61,
+            576,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            576,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            61,
+            576,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            576,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            61,
+            575,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            575,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_elevator_v01.png",
+      "count": 3,
+      "cell_width": 512,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            61,
+            486,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            486,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            61,
+            487,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            487,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            61,
+            488,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            488,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_vault_v01.png",
+      "count": 3,
+      "cell_width": 512,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            61,
+            533,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            533,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            61,
+            529,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            529,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            61,
+            529,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            529,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/door_wax-gate_v01.png",
+      "count": 6,
+      "cell_width": 256,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            30,
+            581,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            581,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            30,
+            580,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            580,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            30,
+            578,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            578,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            30,
+            578,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            578,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 4,
+          "bbox": [
+            30,
+            625,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            625,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 5,
+          "bbox": [
+            30,
+            570,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            570,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/switch_pump_v01.png",
+      "count": 3,
+      "cell_width": 512,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            61,
+            494,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            494,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            61,
+            493,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            493,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            61,
+            495,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            495,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/switch_archive_v01.png",
+      "count": 2,
+      "cell_width": 768,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            122,
+            346,
+            646,
+            942
+          ],
+          "gaps": [
+            122,
+            346,
+            122,
+            82
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            121,
+            324,
+            646,
+            942
+          ],
+          "gaps": [
+            121,
+            324,
+            122,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/switch_executive_v01.png",
+      "count": 3,
+      "cell_width": 512,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            61,
+            529,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            529,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            61,
+            529,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            529,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            61,
+            530,
+            450,
+            942
+          ],
+          "gaps": [
+            61,
+            530,
+            62,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/switch_actuarial_v01.png",
+      "count": 6,
+      "cell_width": 256,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            30,
+            704,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            704,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            30,
+            704,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            704,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            30,
+            704,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            704,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            30,
+            704,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            704,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 4,
+          "bbox": [
+            30,
+            703,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            703,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 5,
+          "bbox": [
+            30,
+            704,
+            225,
+            942
+          ],
+          "gaps": [
+            30,
+            704,
+            31,
+            82
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "runtime": [
+    {
+      "file": "assets/public_runtime/textures/doors/actuarial/switch_actuarial_calculating-01.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/actuarial/switch_actuarial_calculating-02.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/actuarial/switch_actuarial_calculating-03.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/actuarial/switch_actuarial_calculating-04.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/actuarial/switch_actuarial_complete.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/actuarial/switch_actuarial_idle.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/archive/switch_archive_active.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/archive/switch_archive_off.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/catastrophe-cyan/door_catastrophe-cyan_locked.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        235,
+        234
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/catastrophe-cyan/door_catastrophe-cyan_open-edge.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        236,
+        234
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/catastrophe-cyan/door_catastrophe-cyan_opening.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        233,
+        233
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/catastrophe-cyan/door_catastrophe-cyan_unlocked.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        236,
+        235
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/elevator/door_elevator_closed.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        247,
+        241
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/elevator/door_elevator_failed.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        218,
+        219
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/elevator/door_elevator_split-open.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        228,
+        236
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/executive/switch_executive_active.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/executive/switch_executive_locked.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/executive/switch_executive_ready.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/executive-yellow/door_executive-yellow_locked.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        212,
+        250
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/executive-yellow/door_executive-yellow_open-edge.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        236,
+        236
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/executive-yellow/door_executive-yellow_opening.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        234,
+        221
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/executive-yellow/door_executive-yellow_unlocked.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        235,
+        231
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/fire-shutter/door_fire-shutter_bent.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        201,
+        176
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/fire-shutter/door_fire-shutter_closed.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        235,
+        169
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/fire-shutter/door_fire-shutter_moving.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        213,
+        172
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/fire-shutter/door_fire-shutter_warning.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        194,
+        168
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/loading-bay/door_loading-bay_closed.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        192,
+        198
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/loading-bay/door_loading-bay_damaged.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        235,
+        219
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/loading-bay/door_loading-bay_moving.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        230,
+        179
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/office-standard/door_office-standard_closed.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        127,
+        144
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/office-standard/door_office-standard_damaged.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        143,
+        152
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/office-standard/door_office-standard_open-edge.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        128,
+        143
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/office-standard/door_office-standard_opening.png",
+      "size": [
+        64,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        139,
+        117
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/pump/switch_pump_active.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/pump/switch_pump_off.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/pump/switch_pump_overload.png",
+      "size": [
+        64,
+        64
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/vault/door_vault_open-edge.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/vault/door_vault_sealed.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/vault/door_vault_unlocked.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_melting-01.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_melting-02.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_melting-03.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_melting-04.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_open.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_sealed.png",
+      "size": [
+        128,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/skies/sky_catastrophe-city.png",
+      "size": [
+        1024,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "assets/public_runtime/skies/sky_actuarial-void.png",
+      "size": [
+        1024,
+        128
+      ],
+      "size_ok": true,
+      "mode_ok": true,
+      "transparent_corners": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "key_like_opaque_pixels": 0,
+      "nonpalette_opaque_pixels": 0,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

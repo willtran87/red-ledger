@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#08090a" />
+    <meta name="description" content="A retro first-person action campaign through a surreal claims facility." />
+    <link rel="icon" type="image/png" href="/public_runtime/ui/title-screen.png" />
+    <title>Red Ledger</title>
+  </head>
+  <body>
+    <main id="game-shell">
+      <canvas id="game-canvas" aria-label="Red Ledger game view"></canvas>
+      <section id="menu" class="screen active" aria-label="Main menu">
+        <h1 class="game-title">RED LEDGER</h1>
+        <img class="title-art" src="/public_runtime/ui/title-screen.png" alt="Figure entering a damaged records facility" />
+        <nav class="menu-actions">
+          <button id="new-game">New Game</button>
+          <button id="continue-game">Continue</button>
+          <button id="level-select-button">Level Select</button>
+          <button id="options-button">Options</button>
+          <button id="credits-button">Credits</button>
+          <button id="quit-game">Quit</button>
+        </nav>
+      </section>
+      <section id="level-select" class="screen compact" aria-label="Level select">
+        <h1>Level Select</h1>
+        <div id="level-select-list" class="level-select-list"></div>
+        <button data-back>Back</button>
+      </section>
+      <section id="episode-menu" class="screen" aria-label="Episode selection">
+        <h1>Select Episode</h1>
+        <div id="episode-cards"></div>
+        <button data-back>Back</button>
+      </section>
+      <section id="difficulty-menu" class="screen" aria-label="Difficulty selection">
+        <h1>Response Level</h1>
+        <div id="difficulty-actions"></div>
+        <button data-back>Back</button>
+      </section>
+      <section id="episode-intro" class="screen" aria-label="Episode introduction">
+        <img id="episode-intro-art" class="intro-art" alt="Episode introduction" />
+        <p id="episode-intro-copy"></p>
+        <button id="begin-episode">Begin</button>
+      </section>
+      <section id="options-menu" class="screen compact" aria-label="Options">
+        <h1>Options</h1>
+        <label>Mouse sensitivity <input id="sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /></label>
+        <label>Render scale <select id="render-scale"><option value="1" selected>320 x 200</option><option value="2">640 x 400</option><option value="3">960 x 600</option></select></label>
+        <label>HUD <select id="hud-mode"><option value="classic">Classic status</option><option value="minimal">Minimal overlay</option></select></label>
+        <label><input id="classic-input" type="checkbox" /> 1993 input preset</label>
+        <label><input id="screen-shake" type="checkbox" checked /> Screen shake</label>
+        <label><input id="reduced-motion" type="checkbox" /> Reduced motion</label>
+        <label><input id="high-contrast" type="checkbox" /> High-contrast attacks</label>
+        <label><input id="reduced-effects" type="checkbox" /> Reduced effects</label>
+        <label><input id="flash-effects" type="checkbox" checked /> Screen flashes</label>
+        <label>Master volume <input id="master-volume" type="range" min="0" max="1" value="0.8" step="0.05" /></label>
+        <label>Music volume <input id="music-volume" type="range" min="0" max="1" value="0.65" step="0.05" /></label>
+        <label>Effects volume <input id="sfx-volume" type="range" min="0" max="1" value="0.8" step="0.05" /></label>
+        <label><input id="mute-audio" type="checkbox" /> Mute audio</label>
+        <button id="controls-button">Controls</button>
+        <button data-back>Back</button>
+      </section>
+      <section id="controls-menu" class="screen compact controls-screen" aria-label="Controls">
+        <h1>Controls</h1>
+        <div id="controls-list" class="controls-list"></div>
+        <div class="controls-actions">
+          <button id="reset-controls">Reset</button>
+          <button id="cancel-binding" hidden>Cancel</button>
+          <button id="controls-back">Back</button>
+        </div>
+      </section>
+      <section id="intermission" class="screen" aria-label="Intermission">
+        <img id="intermission-art" alt="Episode intermission" />
+        <div id="tally"></div>
+        <div id="episode-progress" aria-label="Episode progress"></div>
+        <button id="continue-map">Continue</button>
+      </section>
+      <section id="pause-menu" class="screen compact" aria-label="Paused">
+        <img src="/public_runtime/ui/pause-plaque.png" alt="Paused" />
+        <button id="resume-game">Resume</button>
+        <button id="save-game">Save</button>
+        <button id="load-game">Load</button>
+        <button id="pause-options">Options</button>
+        <button id="quit-menu">Main Menu</button>
+      </section>
+      <section id="death-menu" class="screen compact" aria-label="Claim denied">
+        <h1>Claim Denied</h1>
+        <p class="screen-copy">Choose where to reopen the file.</p>
+        <button id="restart-checkpoint">Restart Checkpoint</button>
+        <button id="death-load">Load Game</button>
+        <button id="death-menu-button">Main Menu</button>
+      </section>
+      <section id="save-slots" class="screen compact slot-screen" aria-label="Save game">
+        <h1>Save Game</h1>
+        <div id="save-slot-list" class="slot-list"></div>
+        <button class="slot-back">Back</button>
+      </section>
+      <section id="load-slots" class="screen compact slot-screen" aria-label="Load game">
+        <h1>Load Game</h1>
+        <div id="load-slot-list" class="slot-list"></div>
+        <button class="slot-back">Back</button>
+      </section>
+      <section id="epilogue" class="screen" aria-label="Epilogue">
+        <img class="intro-art" src="/public_runtime/ui/illustrations/final-epilogue.png" alt="Dawn over the restored office" />
+        <p>The model is quiet. The ordinary risks remain ordinary, which is enough for now.</p>
+        <button id="epilogue-menu">Main Menu</button>
+      </section>
+      <section id="credits" class="screen compact" aria-label="Credits">
+        <h1>Credits</h1>
+        <div class="credits-copy">
+          <strong>RED LEDGER</strong>
+          <span>Design, engineering, art direction, and production</span>
+          <span>Original fictional world and characters</span>
+          <span>Built with Three.js and Web Audio</span>
+        </div>
+        <button data-back>Back</button>
+      </section>
+      <div id="hud" aria-live="polite">
+        <div id="message"></div>
+        <div id="boss-bar" hidden><span></span></div>
+        <div id="weapon-view"></div>
+        <div id="status">
+          <span id="health">100</span>
+          <span id="armor">0</span>
+          <span id="ammo">50</span>
+          <img id="portrait" src="/public_runtime/ui/portrait/ui_portrait_damage-0_neutral_F_00.png" alt="Player condition" />
+          <span id="keys"></span>
+          <span id="map-name"></span>
+        </div>
+        <canvas id="automap" width="320" height="200" hidden></canvas>
+        <div id="weapon-radial" hidden aria-label="Weapon selector"></div>
+        <div id="damage-flash" aria-hidden="true"></div>
+      </div>
+      <div id="touch-controls" aria-label="Touch controls">
+        <div id="touch-stick" class="touch-stick" aria-label="Move"><span></span></div>
+        <div id="touch-look" class="touch-stick" aria-label="Look"><span></span></div>
+        <button id="touch-fire" class="touch-round" aria-label="Fire">FIRE</button>
+        <button id="touch-use" class="touch-command" aria-label="Use">USE</button>
+        <button id="touch-weapon" class="touch-command" aria-label="Next weapon">WPN</button>
+        <button id="touch-map" class="touch-command" aria-label="Automap">MAP</button>
+        <button id="touch-pause" class="touch-command" aria-label="Pause">II</button>
+      </div>
+      <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-copy">
+        <h2 id="confirm-title">Confirm</h2>
+        <p id="confirm-copy"></p>
+        <div class="dialog-actions">
+          <button id="confirm-cancel">Cancel</button>
+          <button id="confirm-accept">Confirm</button>
+        </div>
+      </dialog>
+      <section id="fatal-error" class="screen compact" role="alert" aria-label="Game could not start">
+        <h1>Unable to Start</h1>
+        <p id="fatal-error-copy" class="screen-copy">The game could not initialize.</p>
+        <button id="fatal-reload">Reload</button>
+      </section>
+      <section id="session-ended" class="screen compact" aria-label="Session ended">
+        <h1>Session Ended</h1>
+        <p class="screen-copy">The file is closed.</p>
+        <button id="session-return">Return to Title</button>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

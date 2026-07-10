@@ -1,0 +1,1050 @@
+{
+  "asset_id": "boss.regional-director",
+  "canvas": [
+    192,
+    176
+  ],
+  "pivot": [
+    96,
+    168
+  ],
+  "angles": [
+    "F",
+    "FL",
+    "L",
+    "BL",
+    "B",
+    "BR",
+    "R",
+    "FR"
+  ],
+  "palette": "red-ledger-40",
+  "frames": [
+    {
+      "file": "boss_regional-director_idle_01_F.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_idle_01_FL.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_idle_01_L.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_idle_01_BL.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_idle_01_B.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_idle_01_BR.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_idle_01_R.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_idle_01_FR.png",
+      "state": "idle",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_idle_02_F.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_idle_02_FL.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_idle_02_L.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_idle_02_BL.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_idle_02_B.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_idle_02_BR.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_idle_02_R.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_idle_02_FR.png",
+      "state": "idle",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_walk_01_F.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_walk_01_FL.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_walk_01_L.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_walk_01_BL.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_walk_01_B.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_walk_01_BR.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_walk_01_R.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_walk_01_FR.png",
+      "state": "walk",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_walk_02_F.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_walk_02_FL.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_walk_02_L.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_walk_02_BL.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_walk_02_B.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_walk_02_BR.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_walk_02_R.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_walk_02_FR.png",
+      "state": "walk",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_walk_03_F.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_walk_03_FL.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_walk_03_L.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_walk_03_BL.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_walk_03_B.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_walk_03_BR.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_walk_03_R.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_walk_03_FR.png",
+      "state": "walk",
+      "frame": 3,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_walk_04_F.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_walk_04_FL.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_walk_04_L.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_walk_04_BL.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_walk_04_B.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_walk_04_BR.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_walk_04_R.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_walk_04_FR.png",
+      "state": "walk",
+      "frame": 4,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_canister_01_F.png",
+      "state": "canister",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_canister_01_FL.png",
+      "state": "canister",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_canister_01_L.png",
+      "state": "canister",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_canister_01_BL.png",
+      "state": "canister",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_canister_01_B.png",
+      "state": "canister",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_canister_01_BR.png",
+      "state": "canister",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_canister_01_R.png",
+      "state": "canister",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_canister_01_FR.png",
+      "state": "canister",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_canister_02_F.png",
+      "state": "canister",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_canister_02_FL.png",
+      "state": "canister",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_canister_02_L.png",
+      "state": "canister",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_canister_02_BL.png",
+      "state": "canister",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_canister_02_B.png",
+      "state": "canister",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_canister_02_BR.png",
+      "state": "canister",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_canister_02_R.png",
+      "state": "canister",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_canister_02_FR.png",
+      "state": "canister",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_canister_03_F.png",
+      "state": "canister",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_canister_03_FL.png",
+      "state": "canister",
+      "frame": 3,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_canister_03_L.png",
+      "state": "canister",
+      "frame": 3,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_canister_03_BL.png",
+      "state": "canister",
+      "frame": 3,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_canister_03_B.png",
+      "state": "canister",
+      "frame": 3,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_canister_03_BR.png",
+      "state": "canister",
+      "frame": 3,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_canister_03_R.png",
+      "state": "canister",
+      "frame": 3,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_canister_03_FR.png",
+      "state": "canister",
+      "frame": 3,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_canister_04_F.png",
+      "state": "canister",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_canister_04_FL.png",
+      "state": "canister",
+      "frame": 4,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_canister_04_L.png",
+      "state": "canister",
+      "frame": 4,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_canister_04_BL.png",
+      "state": "canister",
+      "frame": 4,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_canister_04_B.png",
+      "state": "canister",
+      "frame": 4,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_canister_04_BR.png",
+      "state": "canister",
+      "frame": 4,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_canister_04_R.png",
+      "state": "canister",
+      "frame": 4,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_canister_04_FR.png",
+      "state": "canister",
+      "frame": 4,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_canister_05_F.png",
+      "state": "canister",
+      "frame": 5,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_canister_05_FL.png",
+      "state": "canister",
+      "frame": 5,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_canister_05_L.png",
+      "state": "canister",
+      "frame": 5,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_canister_05_BL.png",
+      "state": "canister",
+      "frame": 5,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_canister_05_B.png",
+      "state": "canister",
+      "frame": 5,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_canister_05_BR.png",
+      "state": "canister",
+      "frame": 5,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_canister_05_R.png",
+      "state": "canister",
+      "frame": 5,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_canister_05_FR.png",
+      "state": "canister",
+      "frame": 5,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_canister_06_F.png",
+      "state": "canister",
+      "frame": 6,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_canister_06_FL.png",
+      "state": "canister",
+      "frame": 6,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_canister_06_L.png",
+      "state": "canister",
+      "frame": 6,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_canister_06_BL.png",
+      "state": "canister",
+      "frame": 6,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_canister_06_B.png",
+      "state": "canister",
+      "frame": 6,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_canister_06_BR.png",
+      "state": "canister",
+      "frame": 6,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_canister_06_R.png",
+      "state": "canister",
+      "frame": 6,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_canister_06_FR.png",
+      "state": "canister",
+      "frame": 6,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_summon_01_F.png",
+      "state": "summon",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_summon_01_FL.png",
+      "state": "summon",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_summon_01_L.png",
+      "state": "summon",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_summon_01_BL.png",
+      "state": "summon",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_summon_01_B.png",
+      "state": "summon",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_summon_01_BR.png",
+      "state": "summon",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_summon_01_R.png",
+      "state": "summon",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_summon_01_FR.png",
+      "state": "summon",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_summon_02_F.png",
+      "state": "summon",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_summon_02_FL.png",
+      "state": "summon",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_summon_02_L.png",
+      "state": "summon",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_summon_02_BL.png",
+      "state": "summon",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_summon_02_B.png",
+      "state": "summon",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_summon_02_BR.png",
+      "state": "summon",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_summon_02_R.png",
+      "state": "summon",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_summon_02_FR.png",
+      "state": "summon",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_summon_03_F.png",
+      "state": "summon",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_summon_03_FL.png",
+      "state": "summon",
+      "frame": 3,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_summon_03_L.png",
+      "state": "summon",
+      "frame": 3,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_summon_03_BL.png",
+      "state": "summon",
+      "frame": 3,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_summon_03_B.png",
+      "state": "summon",
+      "frame": 3,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_summon_03_BR.png",
+      "state": "summon",
+      "frame": 3,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_summon_03_R.png",
+      "state": "summon",
+      "frame": 3,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_summon_03_FR.png",
+      "state": "summon",
+      "frame": 3,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_summon_04_F.png",
+      "state": "summon",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_summon_04_FL.png",
+      "state": "summon",
+      "frame": 4,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_summon_04_L.png",
+      "state": "summon",
+      "frame": 4,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_summon_04_BL.png",
+      "state": "summon",
+      "frame": 4,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_summon_04_B.png",
+      "state": "summon",
+      "frame": 4,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_summon_04_BR.png",
+      "state": "summon",
+      "frame": 4,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_summon_04_R.png",
+      "state": "summon",
+      "frame": 4,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_summon_04_FR.png",
+      "state": "summon",
+      "frame": 4,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_summon_05_F.png",
+      "state": "summon",
+      "frame": 5,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_summon_05_FL.png",
+      "state": "summon",
+      "frame": 5,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_summon_05_L.png",
+      "state": "summon",
+      "frame": 5,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_summon_05_BL.png",
+      "state": "summon",
+      "frame": 5,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_summon_05_B.png",
+      "state": "summon",
+      "frame": 5,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_summon_05_BR.png",
+      "state": "summon",
+      "frame": 5,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_summon_05_R.png",
+      "state": "summon",
+      "frame": 5,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_summon_05_FR.png",
+      "state": "summon",
+      "frame": 5,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_summon_06_F.png",
+      "state": "summon",
+      "frame": 6,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_summon_06_FL.png",
+      "state": "summon",
+      "frame": 6,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_summon_06_L.png",
+      "state": "summon",
+      "frame": 6,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_summon_06_BL.png",
+      "state": "summon",
+      "frame": 6,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_summon_06_B.png",
+      "state": "summon",
+      "frame": 6,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_summon_06_BR.png",
+      "state": "summon",
+      "frame": 6,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_summon_06_R.png",
+      "state": "summon",
+      "frame": 6,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_summon_06_FR.png",
+      "state": "summon",
+      "frame": 6,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_pain_01_F.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_pain_01_FL.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_pain_01_L.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_pain_01_BL.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_pain_01_B.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_pain_01_BR.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_pain_01_R.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_pain_01_FR.png",
+      "state": "pain",
+      "frame": 1,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_pain_02_F.png",
+      "state": "pain",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_pain_02_FL.png",
+      "state": "pain",
+      "frame": 2,
+      "angle": "FL"
+    },
+    {
+      "file": "boss_regional-director_pain_02_L.png",
+      "state": "pain",
+      "frame": 2,
+      "angle": "L"
+    },
+    {
+      "file": "boss_regional-director_pain_02_BL.png",
+      "state": "pain",
+      "frame": 2,
+      "angle": "BL"
+    },
+    {
+      "file": "boss_regional-director_pain_02_B.png",
+      "state": "pain",
+      "frame": 2,
+      "angle": "B"
+    },
+    {
+      "file": "boss_regional-director_pain_02_BR.png",
+      "state": "pain",
+      "frame": 2,
+      "angle": "BR"
+    },
+    {
+      "file": "boss_regional-director_pain_02_R.png",
+      "state": "pain",
+      "frame": 2,
+      "angle": "R"
+    },
+    {
+      "file": "boss_regional-director_pain_02_FR.png",
+      "state": "pain",
+      "frame": 2,
+      "angle": "FR"
+    },
+    {
+      "file": "boss_regional-director_collapse_01_F.png",
+      "state": "collapse",
+      "frame": 1,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_collapse_02_F.png",
+      "state": "collapse",
+      "frame": 2,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_collapse_03_F.png",
+      "state": "collapse",
+      "frame": 3,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_collapse_04_F.png",
+      "state": "collapse",
+      "frame": 4,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_collapse_05_F.png",
+      "state": "collapse",
+      "frame": 5,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_collapse_06_F.png",
+      "state": "collapse",
+      "frame": 6,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_collapse_07_F.png",
+      "state": "collapse",
+      "frame": 7,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_collapse_08_F.png",
+      "state": "collapse",
+      "frame": 8,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_collapse_09_F.png",
+      "state": "collapse",
+      "frame": 9,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_collapse_10_F.png",
+      "state": "collapse",
+      "frame": 10,
+      "angle": "F"
+    },
+    {
+      "file": "boss_regional-director_corpse_01_F.png",
+      "state": "corpse",
+      "frame": 1,
+      "angle": "F"
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "asset_id": "prop.data-rack-power",
+  "source_sheet": "prop_hotel-data-lineup_v01.png",
+  "source_cell": 5,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_data-rack-power_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        10,
+        8,
+        86,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-power_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        10,
+        8,
+        86,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-power_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        10,
+        8,
+        86,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-power_active_00.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        10,
+        8,
+        86,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-power_active_01.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        10,
+        8,
+        86,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-power_active_02.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        10,
+        8,
+        86,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-power_active_03.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        10,
+        8,
+        86,
+        106
+      ]
+    },
+    {
+      "file": "prop_data-rack-power_failed.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        10,
+        8,
+        86,
+        106
+      ]
+    }
+  ]
+}

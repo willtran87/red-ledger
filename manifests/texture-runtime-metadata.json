@@ -1,0 +1,1640 @@
+[
+  {
+    "family": "acoustic-panel",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/acoustic-panel/texture_acoustic-panel_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "acoustic-panel",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/acoustic-panel/texture_acoustic-panel_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "acoustic-panel",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/acoustic-panel/texture_acoustic-panel_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "acoustic-panel",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/acoustic-panel/texture_acoustic-panel_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "acoustic-panel",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/acoustic-panel/texture_acoustic-panel_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "frosted-glass",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/frosted-glass/texture_frosted-glass_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "frosted-glass",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/frosted-glass/texture_frosted-glass_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "frosted-glass",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/frosted-glass/texture_frosted-glass_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "frosted-glass",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/frosted-glass/texture_frosted-glass_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "frosted-glass",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/frosted-glass/texture_frosted-glass_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wire-glass",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/wire-glass/texture_wire-glass_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wire-glass",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/wire-glass/texture_wire-glass_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wire-glass",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/wire-glass/texture_wire-glass_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wire-glass",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/wire-glass/texture_wire-glass_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wire-glass",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/wire-glass/texture_wire-glass_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "parking-concrete",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/parking-concrete/texture_parking-concrete_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "parking-concrete",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/parking-concrete/texture_parking-concrete_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "parking-concrete",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/parking-concrete/texture_parking-concrete_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "parking-concrete",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/parking-concrete/texture_parking-concrete_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "parking-concrete",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/parking-concrete/texture_parking-concrete_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "loading-plate",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/flats/loading-plate/texture_loading-plate_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "loading-plate",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/flats/loading-plate/texture_loading-plate_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "loading-plate",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/flats/loading-plate/texture_loading-plate_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "loading-plate",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/flats/loading-plate/texture_loading-plate_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "loading-plate",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/flats/loading-plate/texture_loading-plate_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "thermal-label-grid",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/thermal-label-grid/texture_thermal-label-grid_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "thermal-label-grid",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/thermal-label-grid/texture_thermal-label-grid_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "thermal-label-grid",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/thermal-label-grid/texture_thermal-label-grid_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "thermal-label-grid",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/thermal-label-grid/texture_thermal-label-grid_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "thermal-label-grid",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/thermal-label-grid/texture_thermal-label-grid_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "corrugated-metal",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/corrugated-metal/texture_corrugated-metal_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "corrugated-metal",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/corrugated-metal/texture_corrugated-metal_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "corrugated-metal",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/corrugated-metal/texture_corrugated-metal_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "corrugated-metal",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/corrugated-metal/texture_corrugated-metal_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "corrugated-metal",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/corrugated-metal/texture_corrugated-metal_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "oxidized-pipe",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/oxidized-pipe/texture_oxidized-pipe_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "oxidized-pipe",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/oxidized-pipe/texture_oxidized-pipe_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "oxidized-pipe",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/oxidized-pipe/texture_oxidized-pipe_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "oxidized-pipe",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/oxidized-pipe/texture_oxidized-pipe_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "oxidized-pipe",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/oxidized-pipe/texture_oxidized-pipe_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "hotel-wallpaper",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/hotel-wallpaper/texture_hotel-wallpaper_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "hotel-wallpaper",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/hotel-wallpaper/texture_hotel-wallpaper_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "hotel-wallpaper",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/hotel-wallpaper/texture_hotel-wallpaper_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "hotel-wallpaper",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/hotel-wallpaper/texture_hotel-wallpaper_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "hotel-wallpaper",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/hotel-wallpaper/texture_hotel-wallpaper_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "data-center-panel",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/data-center-panel/texture_data-center-panel_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "data-center-panel",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/data-center-panel/texture_data-center-panel_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "data-center-panel",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/data-center-panel/texture_data-center-panel_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "data-center-panel",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/data-center-panel/texture_data-center-panel_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "data-center-panel",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/data-center-panel/texture_data-center-panel_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "train-car-steel",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/train-car-steel/texture_train-car-steel_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "train-car-steel",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/train-car-steel/texture_train-car-steel_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "train-car-steel",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/train-car-steel/texture_train-car-steel_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "train-car-steel",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/train-car-steel/texture_train-car-steel_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "train-car-steel",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/train-car-steel/texture_train-car-steel_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "salvage-sheet",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/salvage-sheet/texture_salvage-sheet_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "salvage-sheet",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/salvage-sheet/texture_salvage-sheet_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "salvage-sheet",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/salvage-sheet/texture_salvage-sheet_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "salvage-sheet",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/salvage-sheet/texture_salvage-sheet_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "salvage-sheet",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/salvage-sheet/texture_salvage-sheet_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "toner-sludge",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/flats/toner-sludge/texture_toner-sludge_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "toner-sludge",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/flats/toner-sludge/texture_toner-sludge_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "toner-sludge",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/flats/toner-sludge/texture_toner-sludge_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "toner-sludge",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/flats/toner-sludge/texture_toner-sludge_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "toner-sludge",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/flats/toner-sludge/texture_toner-sludge_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "toner-sludge",
+    "variant": "animated_01",
+    "file": "assets/public_runtime/textures/flats/toner-sludge/texture_toner-sludge_animated_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "toner-sludge",
+    "variant": "animated_02",
+    "file": "assets/public_runtime/textures/flats/toner-sludge/texture_toner-sludge_animated_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "toner-sludge",
+    "variant": "animated_03",
+    "file": "assets/public_runtime/textures/flats/toner-sludge/texture_toner-sludge_animated_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "toner-sludge",
+    "variant": "animated_04",
+    "file": "assets/public_runtime/textures/flats/toner-sludge/texture_toner-sludge_animated_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "compressed-paper-stone",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/compressed-paper-stone/texture_compressed-paper-stone_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "compressed-paper-stone",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/compressed-paper-stone/texture_compressed-paper-stone_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "compressed-paper-stone",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/compressed-paper-stone/texture_compressed-paper-stone_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "compressed-paper-stone",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/compressed-paper-stone/texture_compressed-paper-stone_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "compressed-paper-stone",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/compressed-paper-stone/texture_compressed-paper-stone_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "bone-paper",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/bone-paper/texture_bone-paper_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "bone-paper",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/bone-paper/texture_bone-paper_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "bone-paper",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/bone-paper/texture_bone-paper_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "bone-paper",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/bone-paper/texture_bone-paper_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "bone-paper",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/bone-paper/texture_bone-paper_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "probability-grid",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/probability-grid/texture_probability-grid_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "probability-grid",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/probability-grid/texture_probability-grid_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "probability-grid",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/probability-grid/texture_probability-grid_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "probability-grid",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/probability-grid/texture_probability-grid_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "probability-grid",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/probability-grid/texture_probability-grid_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "probability-grid",
+    "variant": "animated_01",
+    "file": "assets/public_runtime/textures/walls/probability-grid/texture_probability-grid_animated_01.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "probability-grid",
+    "variant": "animated_02",
+    "file": "assets/public_runtime/textures/walls/probability-grid/texture_probability-grid_animated_02.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "probability-grid",
+    "variant": "animated_03",
+    "file": "assets/public_runtime/textures/walls/probability-grid/texture_probability-grid_animated_03.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "probability-grid",
+    "variant": "animated_04",
+    "file": "assets/public_runtime/textures/walls/probability-grid/texture_probability-grid_animated_04.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "reserve-vault",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/reserve-vault/texture_reserve-vault_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "reserve-vault",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/reserve-vault/texture_reserve-vault_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "reserve-vault",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/reserve-vault/texture_reserve-vault_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "reserve-vault",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/reserve-vault/texture_reserve-vault_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "reserve-vault",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/reserve-vault/texture_reserve-vault_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "white-void-panel",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/white-void-panel/texture_white-void-panel_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "white-void-panel",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/white-void-panel/texture_white-void-panel_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "white-void-panel",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/white-void-panel/texture_white-void-panel_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "white-void-panel",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/white-void-panel/texture_white-void-panel_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "white-void-panel",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/white-void-panel/texture_white-void-panel_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "commercial-carpet-red",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-red/texture_commercial-carpet-red_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "commercial-carpet-red",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-red/texture_commercial-carpet-red_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "commercial-carpet-red",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-red/texture_commercial-carpet-red_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "commercial-carpet-red",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-red/texture_commercial-carpet-red_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "commercial-carpet-red",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-red/texture_commercial-carpet-red_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "office-drywall-gray",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-gray/texture_office-drywall-gray_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "office-drywall-gray",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-gray/texture_office-drywall-gray_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "office-drywall-gray",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-gray/texture_office-drywall-gray_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "office-drywall-gray",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-gray/texture_office-drywall-gray_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "office-drywall-gray",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-gray/texture_office-drywall-gray_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "rubber-baseboard",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/rubber-baseboard/texture_rubber-baseboard_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "rubber-baseboard",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/rubber-baseboard/texture_rubber-baseboard_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "rubber-baseboard",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/rubber-baseboard/texture_rubber-baseboard_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "rubber-baseboard",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/rubber-baseboard/texture_rubber-baseboard_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "rubber-baseboard",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/rubber-baseboard/texture_rubber-baseboard_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "perforated-shutter",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/perforated-shutter/texture_perforated-shutter_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "perforated-shutter",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/perforated-shutter/texture_perforated-shutter_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "perforated-shutter",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/perforated-shutter/texture_perforated-shutter_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "perforated-shutter",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/perforated-shutter/texture_perforated-shutter_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "perforated-shutter",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/perforated-shutter/texture_perforated-shutter_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "paper-stack",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/paper-stack/texture_paper-stack_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "paper-stack",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/paper-stack/texture_paper-stack_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "paper-stack",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/paper-stack/texture_paper-stack_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "paper-stack",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/paper-stack/texture_paper-stack_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "paper-stack",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/paper-stack/texture_paper-stack_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "litigation-stone",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/litigation-stone/texture_litigation-stone_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "litigation-stone",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/litigation-stone/texture_litigation-stone_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "litigation-stone",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/litigation-stone/texture_litigation-stone_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "litigation-stone",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/litigation-stone/texture_litigation-stone_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "litigation-stone",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/litigation-stone/texture_litigation-stone_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "office-drywall-white",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-white/texture_office-drywall-white_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "office-drywall-white",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-white/texture_office-drywall-white_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "office-drywall-white",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-white/texture_office-drywall-white_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "office-drywall-white",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-white/texture_office-drywall-white_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "office-drywall-white",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/office-drywall-white/texture_office-drywall-white_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "commercial-carpet-charcoal",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-charcoal/texture_commercial-carpet-charcoal_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "commercial-carpet-charcoal",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-charcoal/texture_commercial-carpet-charcoal_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "commercial-carpet-charcoal",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-charcoal/texture_commercial-carpet-charcoal_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "commercial-carpet-charcoal",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-charcoal/texture_commercial-carpet-charcoal_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "commercial-carpet-charcoal",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/flats/commercial-carpet-charcoal/texture_commercial-carpet-charcoal_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "elevator-steel",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/elevator-steel/texture_elevator-steel_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "elevator-steel",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/elevator-steel/texture_elevator-steel_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "elevator-steel",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/elevator-steel/texture_elevator-steel_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "elevator-steel",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/elevator-steel/texture_elevator-steel_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "elevator-steel",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/elevator-steel/texture_elevator-steel_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "concrete-interior",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/concrete-interior/texture_concrete-interior_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "concrete-interior",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/concrete-interior/texture_concrete-interior_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "concrete-interior",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/concrete-interior/texture_concrete-interior_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "concrete-interior",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/concrete-interior/texture_concrete-interior_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "concrete-interior",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/concrete-interior/texture_concrete-interior_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "archive-cardboard",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/archive-cardboard/texture_archive-cardboard_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "archive-cardboard",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/archive-cardboard/texture_archive-cardboard_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "archive-cardboard",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/archive-cardboard/texture_archive-cardboard_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "archive-cardboard",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/archive-cardboard/texture_archive-cardboard_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "archive-cardboard",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/archive-cardboard/texture_archive-cardboard_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wet-asphalt",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/flats/wet-asphalt/texture_wet-asphalt_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wet-asphalt",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/flats/wet-asphalt/texture_wet-asphalt_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wet-asphalt",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/flats/wet-asphalt/texture_wet-asphalt_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wet-asphalt",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/flats/wet-asphalt/texture_wet-asphalt_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "wet-asphalt",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/flats/wet-asphalt/texture_wet-asphalt_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "industrial-steel",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/industrial-steel/texture_industrial-steel_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "industrial-steel",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/industrial-steel/texture_industrial-steel_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "industrial-steel",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/industrial-steel/texture_industrial-steel_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "industrial-steel",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/industrial-steel/texture_industrial-steel_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "industrial-steel",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/industrial-steel/texture_industrial-steel_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "flood-wall",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/flood-wall/texture_flood-wall_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "flood-wall",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/flood-wall/texture_flood-wall_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "flood-wall",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/flood-wall/texture_flood-wall_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "flood-wall",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/flood-wall/texture_flood-wall_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "flood-wall",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/flood-wall/texture_flood-wall_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "red-wax",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/flats/red-wax/texture_red-wax_clean_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "red-wax",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/flats/red-wax/texture_red-wax_light-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "red-wax",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/flats/red-wax/texture_red-wax_heavy-damage_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "red-wax",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/flats/red-wax/texture_red-wax_transition_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "red-wax",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/flats/red-wax/texture_red-wax_accent_00.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "red-wax",
+    "variant": "animated_01",
+    "file": "assets/public_runtime/textures/flats/red-wax/texture_red-wax_animated_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "red-wax",
+    "variant": "animated_02",
+    "file": "assets/public_runtime/textures/flats/red-wax/texture_red-wax_animated_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "red-wax",
+    "variant": "animated_03",
+    "file": "assets/public_runtime/textures/flats/red-wax/texture_red-wax_animated_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "red-wax",
+    "variant": "animated_04",
+    "file": "assets/public_runtime/textures/flats/red-wax/texture_red-wax_animated_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "brass-calculator",
+    "variant": "clean_00",
+    "file": "assets/public_runtime/textures/walls/brass-calculator/texture_brass-calculator_clean_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "brass-calculator",
+    "variant": "light-damage_00",
+    "file": "assets/public_runtime/textures/walls/brass-calculator/texture_brass-calculator_light-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "brass-calculator",
+    "variant": "heavy-damage_00",
+    "file": "assets/public_runtime/textures/walls/brass-calculator/texture_brass-calculator_heavy-damage_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "brass-calculator",
+    "variant": "transition_00",
+    "file": "assets/public_runtime/textures/walls/brass-calculator/texture_brass-calculator_transition_00.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "family": "brass-calculator",
+    "variant": "accent_00",
+    "file": "assets/public_runtime/textures/walls/brass-calculator/texture_brass-calculator_accent_00.png",
+    "size": [
+      128,
+      128
+    ]
+  }
+]

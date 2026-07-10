@@ -1,0 +1,1158 @@
+{
+  "asset_id": "boss.chief-actuary",
+  "canvas": [
+    192,
+    176
+  ],
+  "pivot": [
+    96,
+    168
+  ],
+  "authored_angles": [
+    "F",
+    "FL",
+    "L",
+    "BL",
+    "B",
+    "BR",
+    "R",
+    "FR"
+  ],
+  "palette": "red-ledger-master-40",
+  "frames": [
+    {
+      "file": "boss_chief-actuary_idle_F_01_v01.png",
+      "state": "idle",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_idle_F_02_v01.png",
+      "state": "idle",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_idle_FL_01_v01.png",
+      "state": "idle",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_idle_FL_02_v01.png",
+      "state": "idle",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_idle_L_01_v01.png",
+      "state": "idle",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_idle_L_02_v01.png",
+      "state": "idle",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_idle_BL_01_v01.png",
+      "state": "idle",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_idle_BL_02_v01.png",
+      "state": "idle",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_idle_B_01_v01.png",
+      "state": "idle",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_idle_B_02_v01.png",
+      "state": "idle",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_idle_BR_01_v01.png",
+      "state": "idle",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_idle_BR_02_v01.png",
+      "state": "idle",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_idle_R_01_v01.png",
+      "state": "idle",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_idle_R_02_v01.png",
+      "state": "idle",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_idle_FR_01_v01.png",
+      "state": "idle",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_idle_FR_02_v01.png",
+      "state": "idle",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_run_F_01_v01.png",
+      "state": "run",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_run_F_02_v01.png",
+      "state": "run",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_run_F_03_v01.png",
+      "state": "run",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_run_F_04_v01.png",
+      "state": "run",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_run_F_05_v01.png",
+      "state": "run",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_run_F_06_v01.png",
+      "state": "run",
+      "angle": "F",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_run_FL_01_v01.png",
+      "state": "run",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_run_FL_02_v01.png",
+      "state": "run",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_run_FL_03_v01.png",
+      "state": "run",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_run_FL_04_v01.png",
+      "state": "run",
+      "angle": "FL",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_run_FL_05_v01.png",
+      "state": "run",
+      "angle": "FL",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_run_FL_06_v01.png",
+      "state": "run",
+      "angle": "FL",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_run_L_01_v01.png",
+      "state": "run",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_run_L_02_v01.png",
+      "state": "run",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_run_L_03_v01.png",
+      "state": "run",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_run_L_04_v01.png",
+      "state": "run",
+      "angle": "L",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_run_L_05_v01.png",
+      "state": "run",
+      "angle": "L",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_run_L_06_v01.png",
+      "state": "run",
+      "angle": "L",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_run_BL_01_v01.png",
+      "state": "run",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_run_BL_02_v01.png",
+      "state": "run",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_run_BL_03_v01.png",
+      "state": "run",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_run_BL_04_v01.png",
+      "state": "run",
+      "angle": "BL",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_run_BL_05_v01.png",
+      "state": "run",
+      "angle": "BL",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_run_BL_06_v01.png",
+      "state": "run",
+      "angle": "BL",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_run_B_01_v01.png",
+      "state": "run",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_run_B_02_v01.png",
+      "state": "run",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_run_B_03_v01.png",
+      "state": "run",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_run_B_04_v01.png",
+      "state": "run",
+      "angle": "B",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_run_B_05_v01.png",
+      "state": "run",
+      "angle": "B",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_run_B_06_v01.png",
+      "state": "run",
+      "angle": "B",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_run_BR_01_v01.png",
+      "state": "run",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_run_BR_02_v01.png",
+      "state": "run",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_run_BR_03_v01.png",
+      "state": "run",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_run_BR_04_v01.png",
+      "state": "run",
+      "angle": "BR",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_run_BR_05_v01.png",
+      "state": "run",
+      "angle": "BR",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_run_BR_06_v01.png",
+      "state": "run",
+      "angle": "BR",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_run_R_01_v01.png",
+      "state": "run",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_run_R_02_v01.png",
+      "state": "run",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_run_R_03_v01.png",
+      "state": "run",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_run_R_04_v01.png",
+      "state": "run",
+      "angle": "R",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_run_R_05_v01.png",
+      "state": "run",
+      "angle": "R",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_run_R_06_v01.png",
+      "state": "run",
+      "angle": "R",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_run_FR_01_v01.png",
+      "state": "run",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_run_FR_02_v01.png",
+      "state": "run",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_run_FR_03_v01.png",
+      "state": "run",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_run_FR_04_v01.png",
+      "state": "run",
+      "angle": "FR",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_run_FR_05_v01.png",
+      "state": "run",
+      "angle": "FR",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_run_FR_06_v01.png",
+      "state": "run",
+      "angle": "FR",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_predict_F_01_v01.png",
+      "state": "predict",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_predict_F_02_v01.png",
+      "state": "predict",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_predict_F_03_v01.png",
+      "state": "predict",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_predict_F_04_v01.png",
+      "state": "predict",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_predict_F_05_v01.png",
+      "state": "predict",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_predict_F_06_v01.png",
+      "state": "predict",
+      "angle": "F",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_predict_FL_01_v01.png",
+      "state": "predict",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_predict_FL_02_v01.png",
+      "state": "predict",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_predict_FL_03_v01.png",
+      "state": "predict",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_predict_FL_04_v01.png",
+      "state": "predict",
+      "angle": "FL",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_predict_FL_05_v01.png",
+      "state": "predict",
+      "angle": "FL",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_predict_FL_06_v01.png",
+      "state": "predict",
+      "angle": "FL",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_predict_L_01_v01.png",
+      "state": "predict",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_predict_L_02_v01.png",
+      "state": "predict",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_predict_L_03_v01.png",
+      "state": "predict",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_predict_L_04_v01.png",
+      "state": "predict",
+      "angle": "L",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_predict_L_05_v01.png",
+      "state": "predict",
+      "angle": "L",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_predict_L_06_v01.png",
+      "state": "predict",
+      "angle": "L",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_predict_BL_01_v01.png",
+      "state": "predict",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_predict_BL_02_v01.png",
+      "state": "predict",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_predict_BL_03_v01.png",
+      "state": "predict",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_predict_BL_04_v01.png",
+      "state": "predict",
+      "angle": "BL",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_predict_BL_05_v01.png",
+      "state": "predict",
+      "angle": "BL",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_predict_BL_06_v01.png",
+      "state": "predict",
+      "angle": "BL",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_predict_B_01_v01.png",
+      "state": "predict",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_predict_B_02_v01.png",
+      "state": "predict",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_predict_B_03_v01.png",
+      "state": "predict",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_predict_B_04_v01.png",
+      "state": "predict",
+      "angle": "B",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_predict_B_05_v01.png",
+      "state": "predict",
+      "angle": "B",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_predict_B_06_v01.png",
+      "state": "predict",
+      "angle": "B",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_predict_BR_01_v01.png",
+      "state": "predict",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_predict_BR_02_v01.png",
+      "state": "predict",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_predict_BR_03_v01.png",
+      "state": "predict",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_predict_BR_04_v01.png",
+      "state": "predict",
+      "angle": "BR",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_predict_BR_05_v01.png",
+      "state": "predict",
+      "angle": "BR",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_predict_BR_06_v01.png",
+      "state": "predict",
+      "angle": "BR",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_predict_R_01_v01.png",
+      "state": "predict",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_predict_R_02_v01.png",
+      "state": "predict",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_predict_R_03_v01.png",
+      "state": "predict",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_predict_R_04_v01.png",
+      "state": "predict",
+      "angle": "R",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_predict_R_05_v01.png",
+      "state": "predict",
+      "angle": "R",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_predict_R_06_v01.png",
+      "state": "predict",
+      "angle": "R",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_predict_FR_01_v01.png",
+      "state": "predict",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_predict_FR_02_v01.png",
+      "state": "predict",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_predict_FR_03_v01.png",
+      "state": "predict",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_predict_FR_04_v01.png",
+      "state": "predict",
+      "angle": "FR",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_predict_FR_05_v01.png",
+      "state": "predict",
+      "angle": "FR",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_predict_FR_06_v01.png",
+      "state": "predict",
+      "angle": "FR",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_salvo_F_01_v01.png",
+      "state": "salvo",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_salvo_F_02_v01.png",
+      "state": "salvo",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_salvo_F_03_v01.png",
+      "state": "salvo",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_salvo_F_04_v01.png",
+      "state": "salvo",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_salvo_F_05_v01.png",
+      "state": "salvo",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_salvo_F_06_v01.png",
+      "state": "salvo",
+      "angle": "F",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FL_01_v01.png",
+      "state": "salvo",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FL_02_v01.png",
+      "state": "salvo",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FL_03_v01.png",
+      "state": "salvo",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FL_04_v01.png",
+      "state": "salvo",
+      "angle": "FL",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FL_05_v01.png",
+      "state": "salvo",
+      "angle": "FL",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FL_06_v01.png",
+      "state": "salvo",
+      "angle": "FL",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_salvo_L_01_v01.png",
+      "state": "salvo",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_salvo_L_02_v01.png",
+      "state": "salvo",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_salvo_L_03_v01.png",
+      "state": "salvo",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_salvo_L_04_v01.png",
+      "state": "salvo",
+      "angle": "L",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_salvo_L_05_v01.png",
+      "state": "salvo",
+      "angle": "L",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_salvo_L_06_v01.png",
+      "state": "salvo",
+      "angle": "L",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BL_01_v01.png",
+      "state": "salvo",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BL_02_v01.png",
+      "state": "salvo",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BL_03_v01.png",
+      "state": "salvo",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BL_04_v01.png",
+      "state": "salvo",
+      "angle": "BL",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BL_05_v01.png",
+      "state": "salvo",
+      "angle": "BL",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BL_06_v01.png",
+      "state": "salvo",
+      "angle": "BL",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_salvo_B_01_v01.png",
+      "state": "salvo",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_salvo_B_02_v01.png",
+      "state": "salvo",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_salvo_B_03_v01.png",
+      "state": "salvo",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_salvo_B_04_v01.png",
+      "state": "salvo",
+      "angle": "B",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_salvo_B_05_v01.png",
+      "state": "salvo",
+      "angle": "B",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_salvo_B_06_v01.png",
+      "state": "salvo",
+      "angle": "B",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BR_01_v01.png",
+      "state": "salvo",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BR_02_v01.png",
+      "state": "salvo",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BR_03_v01.png",
+      "state": "salvo",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BR_04_v01.png",
+      "state": "salvo",
+      "angle": "BR",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BR_05_v01.png",
+      "state": "salvo",
+      "angle": "BR",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_salvo_BR_06_v01.png",
+      "state": "salvo",
+      "angle": "BR",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_salvo_R_01_v01.png",
+      "state": "salvo",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_salvo_R_02_v01.png",
+      "state": "salvo",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_salvo_R_03_v01.png",
+      "state": "salvo",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_salvo_R_04_v01.png",
+      "state": "salvo",
+      "angle": "R",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_salvo_R_05_v01.png",
+      "state": "salvo",
+      "angle": "R",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_salvo_R_06_v01.png",
+      "state": "salvo",
+      "angle": "R",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FR_01_v01.png",
+      "state": "salvo",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FR_02_v01.png",
+      "state": "salvo",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FR_03_v01.png",
+      "state": "salvo",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FR_04_v01.png",
+      "state": "salvo",
+      "angle": "FR",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FR_05_v01.png",
+      "state": "salvo",
+      "angle": "FR",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_salvo_FR_06_v01.png",
+      "state": "salvo",
+      "angle": "FR",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_pain_F_01_v01.png",
+      "state": "pain",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_pain_F_02_v01.png",
+      "state": "pain",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_pain_FL_01_v01.png",
+      "state": "pain",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_pain_FL_02_v01.png",
+      "state": "pain",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_pain_L_01_v01.png",
+      "state": "pain",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_pain_L_02_v01.png",
+      "state": "pain",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_pain_BL_01_v01.png",
+      "state": "pain",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_pain_BL_02_v01.png",
+      "state": "pain",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_pain_B_01_v01.png",
+      "state": "pain",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_pain_B_02_v01.png",
+      "state": "pain",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_pain_BR_01_v01.png",
+      "state": "pain",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_pain_BR_02_v01.png",
+      "state": "pain",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_pain_R_01_v01.png",
+      "state": "pain",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_pain_R_02_v01.png",
+      "state": "pain",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_pain_FR_01_v01.png",
+      "state": "pain",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_pain_FR_02_v01.png",
+      "state": "pain",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_01_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_02_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_03_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_04_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_05_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_06_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 6
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_07_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 7
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_08_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 8
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_09_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 9
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_10_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 10
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_11_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 11
+    },
+    {
+      "file": "boss_chief-actuary_collapse_F_12_v01.png",
+      "state": "collapse",
+      "angle": "F",
+      "frame": 12
+    },
+    {
+      "file": "boss_chief-actuary_corpse_F_01_v01.png",
+      "state": "corpse",
+      "angle": "F",
+      "frame": 1
+    }
+  ]
+}

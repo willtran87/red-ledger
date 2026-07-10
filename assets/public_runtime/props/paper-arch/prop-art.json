@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.paper-arch",
+  "source_sheet": "prop_paper-desk-hvac-lineup_v01.png",
+  "source_cell": 2,
+  "canvas": [
+    128,
+    128
+  ],
+  "pivot": [
+    64,
+    121
+  ],
+  "frames": [
+    {
+      "file": "prop_paper-arch_base.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        14,
+        9,
+        114,
+        121
+      ]
+    },
+    {
+      "file": "prop_paper-arch_damaged.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        14,
+        9,
+        114,
+        121
+      ]
+    },
+    {
+      "file": "prop_paper-arch_wrecked.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        14,
+        9,
+        114,
+        121
+      ]
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "asset_id": "prop.calculation-tower",
+  "source_sheet": "prop_court-actuarial-lineup_v01.png",
+  "source_cell": 4,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_calculation-tower_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        30,
+        8,
+        67,
+        106
+      ]
+    },
+    {
+      "file": "prop_calculation-tower_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        30,
+        8,
+        67,
+        106
+      ]
+    },
+    {
+      "file": "prop_calculation-tower_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        30,
+        8,
+        67,
+        106
+      ]
+    },
+    {
+      "file": "prop_calculation-tower_active_00.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        30,
+        8,
+        67,
+        106
+      ]
+    },
+    {
+      "file": "prop_calculation-tower_active_01.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        30,
+        8,
+        67,
+        106
+      ]
+    },
+    {
+      "file": "prop_calculation-tower_active_02.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        30,
+        8,
+        67,
+        106
+      ]
+    },
+    {
+      "file": "prop_calculation-tower_active_03.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        30,
+        8,
+        67,
+        106
+      ]
+    },
+    {
+      "file": "prop_calculation-tower_failed.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        30,
+        8,
+        67,
+        106
+      ]
+    }
+  ]
+}

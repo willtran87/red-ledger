@@ -1,0 +1,341 @@
+{
+  "pipeline": "imagegen -> exact chroma source -> alpha -> normalized equal cells -> locked runtime palette",
+  "chroma_key": "#00FF00",
+  "palette": [
+    "08090A",
+    "111214",
+    "1D2023",
+    "2A2D31",
+    "34383D",
+    "4B5055",
+    "646A70",
+    "7D8388",
+    "9A9D9D",
+    "B7B8B4",
+    "D4D2CB",
+    "E6E2D9",
+    "F4F1EA",
+    "FFFDF7",
+    "33070B",
+    "520A10",
+    "7A1018",
+    "A31822",
+    "D9232E",
+    "F14B51",
+    "FF8484",
+    "3A2812",
+    "674A24",
+    "927044",
+    "B9955E",
+    "8A6819",
+    "B68B24",
+    "E2B93B",
+    "FFE17A",
+    "18342F",
+    "285046",
+    "477066",
+    "6D9688",
+    "A5C4B6",
+    "11343E",
+    "176175",
+    "238CA5",
+    "47BCD1",
+    "87E3EC",
+    "D1FBFA"
+  ],
+  "families": [
+    {
+      "source": "art/source/imagegen/door_office-standard_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/door_office-standard_v01.png",
+      "kind": "door",
+      "slug": "office-standard",
+      "size": [
+        64,
+        128
+      ],
+      "states": [
+        "closed",
+        "opening",
+        "open-edge",
+        "damaged"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/office-standard/door_office-standard_closed.png",
+        "assets/public_runtime/textures/doors/office-standard/door_office-standard_opening.png",
+        "assets/public_runtime/textures/doors/office-standard/door_office-standard_open-edge.png",
+        "assets/public_runtime/textures/doors/office-standard/door_office-standard_damaged.png"
+      ],
+      "approval": "art/approval/door_office-standard_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/door_catastrophe-cyan_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/door_catastrophe-cyan_v01.png",
+      "kind": "door",
+      "slug": "catastrophe-cyan",
+      "size": [
+        64,
+        128
+      ],
+      "states": [
+        "locked",
+        "unlocked",
+        "opening",
+        "open-edge"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/catastrophe-cyan/door_catastrophe-cyan_locked.png",
+        "assets/public_runtime/textures/doors/catastrophe-cyan/door_catastrophe-cyan_unlocked.png",
+        "assets/public_runtime/textures/doors/catastrophe-cyan/door_catastrophe-cyan_opening.png",
+        "assets/public_runtime/textures/doors/catastrophe-cyan/door_catastrophe-cyan_open-edge.png"
+      ],
+      "approval": "art/approval/door_catastrophe-cyan_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/door_executive-yellow_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/door_executive-yellow_v01.png",
+      "kind": "door",
+      "slug": "executive-yellow",
+      "size": [
+        64,
+        128
+      ],
+      "states": [
+        "locked",
+        "unlocked",
+        "opening",
+        "open-edge"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/executive-yellow/door_executive-yellow_locked.png",
+        "assets/public_runtime/textures/doors/executive-yellow/door_executive-yellow_unlocked.png",
+        "assets/public_runtime/textures/doors/executive-yellow/door_executive-yellow_opening.png",
+        "assets/public_runtime/textures/doors/executive-yellow/door_executive-yellow_open-edge.png"
+      ],
+      "approval": "art/approval/door_executive-yellow_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/door_fire-shutter_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/door_fire-shutter_v01.png",
+      "kind": "door",
+      "slug": "fire-shutter",
+      "size": [
+        64,
+        128
+      ],
+      "states": [
+        "closed",
+        "warning",
+        "moving",
+        "bent"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/fire-shutter/door_fire-shutter_closed.png",
+        "assets/public_runtime/textures/doors/fire-shutter/door_fire-shutter_warning.png",
+        "assets/public_runtime/textures/doors/fire-shutter/door_fire-shutter_moving.png",
+        "assets/public_runtime/textures/doors/fire-shutter/door_fire-shutter_bent.png"
+      ],
+      "approval": "art/approval/door_fire-shutter_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/door_loading-bay_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/door_loading-bay_v01.png",
+      "kind": "door",
+      "slug": "loading-bay",
+      "size": [
+        128,
+        128
+      ],
+      "states": [
+        "closed",
+        "moving",
+        "damaged"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/loading-bay/door_loading-bay_closed.png",
+        "assets/public_runtime/textures/doors/loading-bay/door_loading-bay_moving.png",
+        "assets/public_runtime/textures/doors/loading-bay/door_loading-bay_damaged.png"
+      ],
+      "approval": "art/approval/door_loading-bay_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/door_elevator_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/door_elevator_v01.png",
+      "kind": "door",
+      "slug": "elevator",
+      "size": [
+        64,
+        128
+      ],
+      "states": [
+        "closed",
+        "split-open",
+        "failed"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/elevator/door_elevator_closed.png",
+        "assets/public_runtime/textures/doors/elevator/door_elevator_split-open.png",
+        "assets/public_runtime/textures/doors/elevator/door_elevator_failed.png"
+      ],
+      "approval": "art/approval/door_elevator_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/door_vault_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/door_vault_v01.png",
+      "kind": "door",
+      "slug": "vault",
+      "size": [
+        128,
+        128
+      ],
+      "states": [
+        "sealed",
+        "unlocked",
+        "open-edge"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/vault/door_vault_sealed.png",
+        "assets/public_runtime/textures/doors/vault/door_vault_unlocked.png",
+        "assets/public_runtime/textures/doors/vault/door_vault_open-edge.png"
+      ],
+      "approval": "art/approval/door_vault_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/door_wax-gate_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/door_wax-gate_v01.png",
+      "kind": "door",
+      "slug": "wax-gate",
+      "size": [
+        128,
+        128
+      ],
+      "states": [
+        "sealed",
+        "melting-01",
+        "melting-02",
+        "melting-03",
+        "melting-04",
+        "open"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_sealed.png",
+        "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_melting-01.png",
+        "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_melting-02.png",
+        "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_melting-03.png",
+        "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_melting-04.png",
+        "assets/public_runtime/textures/doors/wax-gate/door_wax-gate_open.png"
+      ],
+      "approval": "art/approval/door_wax-gate_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/switch_pump_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/switch_pump_v01.png",
+      "kind": "switch",
+      "slug": "pump",
+      "size": [
+        64,
+        64
+      ],
+      "states": [
+        "off",
+        "active",
+        "overload"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/pump/switch_pump_off.png",
+        "assets/public_runtime/textures/doors/pump/switch_pump_active.png",
+        "assets/public_runtime/textures/doors/pump/switch_pump_overload.png"
+      ],
+      "approval": "art/approval/switch_pump_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/switch_archive_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/switch_archive_v01.png",
+      "kind": "switch",
+      "slug": "archive",
+      "size": [
+        64,
+        64
+      ],
+      "states": [
+        "off",
+        "active"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/archive/switch_archive_off.png",
+        "assets/public_runtime/textures/doors/archive/switch_archive_active.png"
+      ],
+      "approval": "art/approval/switch_archive_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/switch_executive_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/switch_executive_v01.png",
+      "kind": "switch",
+      "slug": "executive",
+      "size": [
+        64,
+        64
+      ],
+      "states": [
+        "locked",
+        "ready",
+        "active"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/executive/switch_executive_locked.png",
+        "assets/public_runtime/textures/doors/executive/switch_executive_ready.png",
+        "assets/public_runtime/textures/doors/executive/switch_executive_active.png"
+      ],
+      "approval": "art/approval/switch_executive_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/switch_actuarial_v01.png",
+      "normalized_alpha": "art/source/alpha/normalized/switch_actuarial_v01.png",
+      "kind": "switch",
+      "slug": "actuarial",
+      "size": [
+        64,
+        64
+      ],
+      "states": [
+        "idle",
+        "calculating-01",
+        "calculating-02",
+        "calculating-03",
+        "calculating-04",
+        "complete"
+      ],
+      "outputs": [
+        "assets/public_runtime/textures/doors/actuarial/switch_actuarial_idle.png",
+        "assets/public_runtime/textures/doors/actuarial/switch_actuarial_calculating-01.png",
+        "assets/public_runtime/textures/doors/actuarial/switch_actuarial_calculating-02.png",
+        "assets/public_runtime/textures/doors/actuarial/switch_actuarial_calculating-03.png",
+        "assets/public_runtime/textures/doors/actuarial/switch_actuarial_calculating-04.png",
+        "assets/public_runtime/textures/doors/actuarial/switch_actuarial_complete.png"
+      ],
+      "approval": "art/approval/switch_actuarial_preview.png"
+    }
+  ],
+  "skies": [
+    {
+      "source": "art/source/imagegen/sky_catastrophe-city_v01.png",
+      "size": [
+        1024,
+        128
+      ],
+      "horizontal_wrap": true,
+      "output": "assets/public_runtime/skies/sky_catastrophe-city.png",
+      "approval": "art/approval/sky_catastrophe-city_preview.png"
+    },
+    {
+      "source": "art/source/imagegen/sky_actuarial-void_v01.png",
+      "size": [
+        1024,
+        128
+      ],
+      "horizontal_wrap": true,
+      "output": "assets/public_runtime/skies/sky_actuarial-void.png",
+      "approval": "art/approval/sky_actuarial-void_preview.png"
+    }
+  ],
+  "runtime_image_count": 47
+}

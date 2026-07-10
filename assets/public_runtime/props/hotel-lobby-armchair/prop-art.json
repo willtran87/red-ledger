@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.hotel-lobby-armchair",
+  "source_sheet": "prop_hotel-data-lineup_v01.png",
+  "source_cell": 0,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_hotel-lobby-armchair_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        6,
+        14,
+        90,
+        106
+      ]
+    },
+    {
+      "file": "prop_hotel-lobby-armchair_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        6,
+        14,
+        90,
+        106
+      ]
+    },
+    {
+      "file": "prop_hotel-lobby-armchair_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        6,
+        14,
+        90,
+        106
+      ]
+    }
+  ]
+}

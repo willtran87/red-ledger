@@ -1,0 +1,119 @@
+{
+  "asset_id": "prop.flood-pump",
+  "source_sheet": "prop_flood-lineup_v01.png",
+  "source_cell": 0,
+  "canvas": [
+    128,
+    128
+  ],
+  "pivot": [
+    64,
+    121
+  ],
+  "frames": [
+    {
+      "file": "prop_flood-pump_base.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        8,
+        25,
+        121,
+        121
+      ]
+    },
+    {
+      "file": "prop_flood-pump_damaged.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        8,
+        25,
+        121,
+        121
+      ]
+    },
+    {
+      "file": "prop_flood-pump_wrecked.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        8,
+        25,
+        121,
+        121
+      ]
+    },
+    {
+      "file": "prop_flood-pump_active_00.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        8,
+        25,
+        121,
+        121
+      ]
+    },
+    {
+      "file": "prop_flood-pump_active_01.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        8,
+        25,
+        121,
+        121
+      ]
+    },
+    {
+      "file": "prop_flood-pump_active_02.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        8,
+        25,
+        121,
+        121
+      ]
+    },
+    {
+      "file": "prop_flood-pump_active_03.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        8,
+        25,
+        121,
+        121
+      ]
+    },
+    {
+      "file": "prop_flood-pump_failed.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        8,
+        25,
+        121,
+        121
+      ]
+    }
+  ]
+}

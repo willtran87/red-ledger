@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.evidence-locker",
+  "source_sheet": "prop_archive-lineup_v01.png",
+  "source_cell": 5,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_evidence-locker_base.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        11,
+        8,
+        86,
+        106
+      ]
+    },
+    {
+      "file": "prop_evidence-locker_damaged.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        11,
+        8,
+        86,
+        106
+      ]
+    },
+    {
+      "file": "prop_evidence-locker_wrecked.png",
+      "size": [
+        96,
+        112
+      ],
+      "opaque_bbox": [
+        11,
+        8,
+        86,
+        106
+      ]
+    }
+  ]
+}

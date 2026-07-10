@@ -1,0 +1,24 @@
+# Dependencies and build output
+game/node_modules/
+game/dist/
+game/output/
+game/test-actions/
+game/.vite/
+game/.vite*.log
+game/.devserver.json
+
+# Raw image-generation intermediates and reference material
+art/source/
+art/working/
+art/references/
+art/approval/
+
+# Local tooling and OS files
+.codex/
+.agents/
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
+__pycache__/
+*.py[cod]

@@ -1,0 +1,119 @@
+{
+  "asset_id": "prop.claim-terminal",
+  "source_sheet": "prop_archive-lineup_v01.png",
+  "source_cell": 3,
+  "canvas": [
+    64,
+    80
+  ],
+  "pivot": [
+    32,
+    75
+  ],
+  "frames": [
+    {
+      "file": "prop_claim-terminal_base.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        12,
+        7,
+        53,
+        75
+      ]
+    },
+    {
+      "file": "prop_claim-terminal_damaged.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        12,
+        7,
+        53,
+        75
+      ]
+    },
+    {
+      "file": "prop_claim-terminal_wrecked.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        12,
+        7,
+        53,
+        75
+      ]
+    },
+    {
+      "file": "prop_claim-terminal_active_00.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        12,
+        7,
+        53,
+        75
+      ]
+    },
+    {
+      "file": "prop_claim-terminal_active_01.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        12,
+        7,
+        53,
+        75
+      ]
+    },
+    {
+      "file": "prop_claim-terminal_active_02.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        12,
+        7,
+        53,
+        75
+      ]
+    },
+    {
+      "file": "prop_claim-terminal_active_03.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        12,
+        7,
+        53,
+        75
+      ]
+    },
+    {
+      "file": "prop_claim-terminal_failed.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        12,
+        7,
+        53,
+        75
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.salvage-shear",
+  "source_sheet": "prop_train-salvage-lineup_v01.png",
+  "source_cell": 3,
+  "canvas": [
+    128,
+    128
+  ],
+  "pivot": [
+    64,
+    121
+  ],
+  "frames": [
+    {
+      "file": "prop_salvage-shear_base.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        14,
+        9,
+        115,
+        121
+      ]
+    },
+    {
+      "file": "prop_salvage-shear_damaged.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        14,
+        9,
+        115,
+        121
+      ]
+    },
+    {
+      "file": "prop_salvage-shear_wrecked.png",
+      "size": [
+        128,
+        128
+      ],
+      "opaque_bbox": [
+        14,
+        9,
+        115,
+        121
+      ]
+    }
+  ]
+}

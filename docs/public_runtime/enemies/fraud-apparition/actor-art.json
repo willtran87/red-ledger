@@ -1,0 +1,982 @@
+{
+  "asset_id": "enemy.fraud-apparition",
+  "revision": 1,
+  "canvas": [
+    96,
+    112
+  ],
+  "pivot": [
+    48,
+    106
+  ],
+  "authored_angles": [
+    "F",
+    "FL",
+    "L",
+    "BL",
+    "B",
+    "BR",
+    "R",
+    "FR"
+  ],
+  "runtime_mirrors": {},
+  "palette": "red-ledger-master-40",
+  "source_anchor": "art/references/enemy_fraud-apparition_anchor-v02.png",
+  "death_mode": "dissolve",
+  "frames": [
+    {
+      "file": "enemy_fraud-apparition_idle_F_01_v01.png",
+      "state": "idle",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_F_02_v01.png",
+      "state": "idle",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_FL_01_v01.png",
+      "state": "idle",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_FL_02_v01.png",
+      "state": "idle",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_L_01_v01.png",
+      "state": "idle",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_L_02_v01.png",
+      "state": "idle",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_BL_01_v01.png",
+      "state": "idle",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_BL_02_v01.png",
+      "state": "idle",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_B_01_v01.png",
+      "state": "idle",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_B_02_v01.png",
+      "state": "idle",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_BR_01_v01.png",
+      "state": "idle",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_BR_02_v01.png",
+      "state": "idle",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_R_01_v01.png",
+      "state": "idle",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_R_02_v01.png",
+      "state": "idle",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_FR_01_v01.png",
+      "state": "idle",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_idle_FR_02_v01.png",
+      "state": "idle",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_F_01_v01.png",
+      "state": "walk",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_F_02_v01.png",
+      "state": "walk",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_F_03_v01.png",
+      "state": "walk",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_F_04_v01.png",
+      "state": "walk",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_FL_01_v01.png",
+      "state": "walk",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_FL_02_v01.png",
+      "state": "walk",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_FL_03_v01.png",
+      "state": "walk",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_FL_04_v01.png",
+      "state": "walk",
+      "angle": "FL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_L_01_v01.png",
+      "state": "walk",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_L_02_v01.png",
+      "state": "walk",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_L_03_v01.png",
+      "state": "walk",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_L_04_v01.png",
+      "state": "walk",
+      "angle": "L",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_BL_01_v01.png",
+      "state": "walk",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_BL_02_v01.png",
+      "state": "walk",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_BL_03_v01.png",
+      "state": "walk",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_BL_04_v01.png",
+      "state": "walk",
+      "angle": "BL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_B_01_v01.png",
+      "state": "walk",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_B_02_v01.png",
+      "state": "walk",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_B_03_v01.png",
+      "state": "walk",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_B_04_v01.png",
+      "state": "walk",
+      "angle": "B",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_BR_01_v01.png",
+      "state": "walk",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_BR_02_v01.png",
+      "state": "walk",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_BR_03_v01.png",
+      "state": "walk",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_BR_04_v01.png",
+      "state": "walk",
+      "angle": "BR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_R_01_v01.png",
+      "state": "walk",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_R_02_v01.png",
+      "state": "walk",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_R_03_v01.png",
+      "state": "walk",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_R_04_v01.png",
+      "state": "walk",
+      "angle": "R",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_FR_01_v01.png",
+      "state": "walk",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_FR_02_v01.png",
+      "state": "walk",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_FR_03_v01.png",
+      "state": "walk",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_walk_FR_04_v01.png",
+      "state": "walk",
+      "angle": "FR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_F_01_v01.png",
+      "state": "attack",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_F_02_v01.png",
+      "state": "attack",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_F_03_v01.png",
+      "state": "attack",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_F_04_v01.png",
+      "state": "attack",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_FL_01_v01.png",
+      "state": "attack",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_FL_02_v01.png",
+      "state": "attack",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_FL_03_v01.png",
+      "state": "attack",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_FL_04_v01.png",
+      "state": "attack",
+      "angle": "FL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_L_01_v01.png",
+      "state": "attack",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_L_02_v01.png",
+      "state": "attack",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_L_03_v01.png",
+      "state": "attack",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_L_04_v01.png",
+      "state": "attack",
+      "angle": "L",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_BL_01_v01.png",
+      "state": "attack",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_BL_02_v01.png",
+      "state": "attack",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_BL_03_v01.png",
+      "state": "attack",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_BL_04_v01.png",
+      "state": "attack",
+      "angle": "BL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_B_01_v01.png",
+      "state": "attack",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_B_02_v01.png",
+      "state": "attack",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_B_03_v01.png",
+      "state": "attack",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_B_04_v01.png",
+      "state": "attack",
+      "angle": "B",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_BR_01_v01.png",
+      "state": "attack",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_BR_02_v01.png",
+      "state": "attack",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_BR_03_v01.png",
+      "state": "attack",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_BR_04_v01.png",
+      "state": "attack",
+      "angle": "BR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_R_01_v01.png",
+      "state": "attack",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_R_02_v01.png",
+      "state": "attack",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_R_03_v01.png",
+      "state": "attack",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_R_04_v01.png",
+      "state": "attack",
+      "angle": "R",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_FR_01_v01.png",
+      "state": "attack",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_FR_02_v01.png",
+      "state": "attack",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_FR_03_v01.png",
+      "state": "attack",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_attack_FR_04_v01.png",
+      "state": "attack",
+      "angle": "FR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_pain_F_01_v01.png",
+      "state": "pain",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_pain_FL_01_v01.png",
+      "state": "pain",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_pain_L_01_v01.png",
+      "state": "pain",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_pain_BL_01_v01.png",
+      "state": "pain",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_pain_B_01_v01.png",
+      "state": "pain",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_pain_BR_01_v01.png",
+      "state": "pain",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_pain_R_01_v01.png",
+      "state": "pain",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_pain_FR_01_v01.png",
+      "state": "pain",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_F_01_v01.png",
+      "state": "reveal",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_F_02_v01.png",
+      "state": "reveal",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_F_03_v01.png",
+      "state": "reveal",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_F_04_v01.png",
+      "state": "reveal",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_FL_01_v01.png",
+      "state": "reveal",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_FL_02_v01.png",
+      "state": "reveal",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_FL_03_v01.png",
+      "state": "reveal",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_FL_04_v01.png",
+      "state": "reveal",
+      "angle": "FL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_L_01_v01.png",
+      "state": "reveal",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_L_02_v01.png",
+      "state": "reveal",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_L_03_v01.png",
+      "state": "reveal",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_L_04_v01.png",
+      "state": "reveal",
+      "angle": "L",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_BL_01_v01.png",
+      "state": "reveal",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_BL_02_v01.png",
+      "state": "reveal",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_BL_03_v01.png",
+      "state": "reveal",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_BL_04_v01.png",
+      "state": "reveal",
+      "angle": "BL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_B_01_v01.png",
+      "state": "reveal",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_B_02_v01.png",
+      "state": "reveal",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_B_03_v01.png",
+      "state": "reveal",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_B_04_v01.png",
+      "state": "reveal",
+      "angle": "B",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_BR_01_v01.png",
+      "state": "reveal",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_BR_02_v01.png",
+      "state": "reveal",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_BR_03_v01.png",
+      "state": "reveal",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_BR_04_v01.png",
+      "state": "reveal",
+      "angle": "BR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_R_01_v01.png",
+      "state": "reveal",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_R_02_v01.png",
+      "state": "reveal",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_R_03_v01.png",
+      "state": "reveal",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_R_04_v01.png",
+      "state": "reveal",
+      "angle": "R",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_FR_01_v01.png",
+      "state": "reveal",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_FR_02_v01.png",
+      "state": "reveal",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_FR_03_v01.png",
+      "state": "reveal",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_reveal_FR_04_v01.png",
+      "state": "reveal",
+      "angle": "FR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_F_01_v01.png",
+      "state": "fade",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_F_02_v01.png",
+      "state": "fade",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_F_03_v01.png",
+      "state": "fade",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_F_04_v01.png",
+      "state": "fade",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_FL_01_v01.png",
+      "state": "fade",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_FL_02_v01.png",
+      "state": "fade",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_FL_03_v01.png",
+      "state": "fade",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_FL_04_v01.png",
+      "state": "fade",
+      "angle": "FL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_L_01_v01.png",
+      "state": "fade",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_L_02_v01.png",
+      "state": "fade",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_L_03_v01.png",
+      "state": "fade",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_L_04_v01.png",
+      "state": "fade",
+      "angle": "L",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_BL_01_v01.png",
+      "state": "fade",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_BL_02_v01.png",
+      "state": "fade",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_BL_03_v01.png",
+      "state": "fade",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_BL_04_v01.png",
+      "state": "fade",
+      "angle": "BL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_B_01_v01.png",
+      "state": "fade",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_B_02_v01.png",
+      "state": "fade",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_B_03_v01.png",
+      "state": "fade",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_B_04_v01.png",
+      "state": "fade",
+      "angle": "B",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_BR_01_v01.png",
+      "state": "fade",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_BR_02_v01.png",
+      "state": "fade",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_BR_03_v01.png",
+      "state": "fade",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_BR_04_v01.png",
+      "state": "fade",
+      "angle": "BR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_R_01_v01.png",
+      "state": "fade",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_R_02_v01.png",
+      "state": "fade",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_R_03_v01.png",
+      "state": "fade",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_R_04_v01.png",
+      "state": "fade",
+      "angle": "R",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_FR_01_v01.png",
+      "state": "fade",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_FR_02_v01.png",
+      "state": "fade",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_FR_03_v01.png",
+      "state": "fade",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_fade_FR_04_v01.png",
+      "state": "fade",
+      "angle": "FR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_death_F_01_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_fraud-apparition_death_F_02_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_fraud-apparition_death_F_03_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_fraud-apparition_death_F_04_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "enemy_fraud-apparition_death_F_05_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "enemy_fraud-apparition_death_F_06_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 6
+    },
+    {
+      "file": "enemy_fraud-apparition_corpse_F_01_v01.png",
+      "state": "corpse",
+      "angle": "F",
+      "frame": 1
+    }
+  ]
+}

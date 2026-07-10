@@ -1,0 +1,35 @@
+{
+  "name": "red-ledger",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -p tsconfig.json && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run src tests",
+    "test:e2e": "node tests/gameplay-e2e.mjs",
+    "test:campaign": "node tests/campaign-runtime-e2e.mjs",
+    "test:progression": "node tests/progression-e2e.mjs",
+    "test:visual": "node tests/visual-responsive.mjs",
+    "test:combat-save": "node tests/combat-save-visual-e2e.mjs",
+    "test:demo": "node tests/demo-runtime-e2e.mjs",
+    "test:controls": "node tests/controls-e2e.mjs",
+    "test:mechanisms": "node tests/mechanisms-e2e.mjs"
+    ,"test:cross-browser": "node tests/cross-browser-smoke.mjs"
+    ,"test:mobile-ux": "node tests/mobile-ux-e2e.mjs"
+    ,"test:production": "node tests/production-portability-e2e.mjs"
+    ,"test:lifecycle": "node tests/lifecycle-performance-e2e.mjs"
+    ,"test:release": "npm run build && npm run test:production && npm test -- --run && npm run test:e2e && npm run test:campaign && npm run test:progression && npm run test:visual && npm run test:mobile-ux && npm run test:combat-save && npm run test:demo && npm run test:controls && npm run test:mechanisms && npm run test:lifecycle && npm run test:cross-browser"
+  },
+  "dependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.1",
+    "playwright": "^1.61.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
+  }
+}

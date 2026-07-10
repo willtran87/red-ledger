@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.desk-lamp-paper-stack",
+  "source_sheet": "prop_paper-desk-hvac-lineup_v01.png",
+  "source_cell": 3,
+  "canvas": [
+    96,
+    80
+  ],
+  "pivot": [
+    48,
+    75
+  ],
+  "frames": [
+    {
+      "file": "prop_desk-lamp-paper-stack_base.png",
+      "size": [
+        96,
+        80
+      ],
+      "opaque_bbox": [
+        20,
+        7,
+        76,
+        75
+      ]
+    },
+    {
+      "file": "prop_desk-lamp-paper-stack_damaged.png",
+      "size": [
+        96,
+        80
+      ],
+      "opaque_bbox": [
+        20,
+        7,
+        76,
+        75
+      ]
+    },
+    {
+      "file": "prop_desk-lamp-paper-stack_wrecked.png",
+      "size": [
+        96,
+        80
+      ],
+      "opaque_bbox": [
+        20,
+        7,
+        76,
+        75
+      ]
+    }
+  ]
+}

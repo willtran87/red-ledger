@@ -1,0 +1,832 @@
+{
+  "asset_id": "enemy.denial-officer",
+  "revision": 1,
+  "canvas": [
+    128,
+    144
+  ],
+  "pivot": [
+    64,
+    137
+  ],
+  "authored_angles": [
+    "F",
+    "FL",
+    "L",
+    "BL",
+    "B",
+    "BR",
+    "R",
+    "FR"
+  ],
+  "runtime_mirrors": {},
+  "palette": "red-ledger-master-40",
+  "source_anchor": "art/references/enemy_denial-officer_anchor-v01.png",
+  "death_mode": "collapse",
+  "frames": [
+    {
+      "file": "enemy_denial-officer_idle_F_01_v01.png",
+      "state": "idle",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_idle_F_02_v01.png",
+      "state": "idle",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_idle_FL_01_v01.png",
+      "state": "idle",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_idle_FL_02_v01.png",
+      "state": "idle",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_idle_L_01_v01.png",
+      "state": "idle",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_idle_L_02_v01.png",
+      "state": "idle",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_idle_BL_01_v01.png",
+      "state": "idle",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_idle_BL_02_v01.png",
+      "state": "idle",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_idle_B_01_v01.png",
+      "state": "idle",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_idle_B_02_v01.png",
+      "state": "idle",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_idle_BR_01_v01.png",
+      "state": "idle",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_idle_BR_02_v01.png",
+      "state": "idle",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_idle_R_01_v01.png",
+      "state": "idle",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_idle_R_02_v01.png",
+      "state": "idle",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_idle_FR_01_v01.png",
+      "state": "idle",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_idle_FR_02_v01.png",
+      "state": "idle",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_walk_F_01_v01.png",
+      "state": "walk",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_walk_F_02_v01.png",
+      "state": "walk",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_walk_F_03_v01.png",
+      "state": "walk",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_walk_F_04_v01.png",
+      "state": "walk",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_walk_FL_01_v01.png",
+      "state": "walk",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_walk_FL_02_v01.png",
+      "state": "walk",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_walk_FL_03_v01.png",
+      "state": "walk",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_walk_FL_04_v01.png",
+      "state": "walk",
+      "angle": "FL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_walk_L_01_v01.png",
+      "state": "walk",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_walk_L_02_v01.png",
+      "state": "walk",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_walk_L_03_v01.png",
+      "state": "walk",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_walk_L_04_v01.png",
+      "state": "walk",
+      "angle": "L",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_walk_BL_01_v01.png",
+      "state": "walk",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_walk_BL_02_v01.png",
+      "state": "walk",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_walk_BL_03_v01.png",
+      "state": "walk",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_walk_BL_04_v01.png",
+      "state": "walk",
+      "angle": "BL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_walk_B_01_v01.png",
+      "state": "walk",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_walk_B_02_v01.png",
+      "state": "walk",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_walk_B_03_v01.png",
+      "state": "walk",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_walk_B_04_v01.png",
+      "state": "walk",
+      "angle": "B",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_walk_BR_01_v01.png",
+      "state": "walk",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_walk_BR_02_v01.png",
+      "state": "walk",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_walk_BR_03_v01.png",
+      "state": "walk",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_walk_BR_04_v01.png",
+      "state": "walk",
+      "angle": "BR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_walk_R_01_v01.png",
+      "state": "walk",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_walk_R_02_v01.png",
+      "state": "walk",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_walk_R_03_v01.png",
+      "state": "walk",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_walk_R_04_v01.png",
+      "state": "walk",
+      "angle": "R",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_walk_FR_01_v01.png",
+      "state": "walk",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_walk_FR_02_v01.png",
+      "state": "walk",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_walk_FR_03_v01.png",
+      "state": "walk",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_walk_FR_04_v01.png",
+      "state": "walk",
+      "angle": "FR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_attack_F_01_v01.png",
+      "state": "attack",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_attack_F_02_v01.png",
+      "state": "attack",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_attack_F_03_v01.png",
+      "state": "attack",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_attack_F_04_v01.png",
+      "state": "attack",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_attack_F_05_v01.png",
+      "state": "attack",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_attack_FL_01_v01.png",
+      "state": "attack",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_attack_FL_02_v01.png",
+      "state": "attack",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_attack_FL_03_v01.png",
+      "state": "attack",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_attack_FL_04_v01.png",
+      "state": "attack",
+      "angle": "FL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_attack_FL_05_v01.png",
+      "state": "attack",
+      "angle": "FL",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_attack_L_01_v01.png",
+      "state": "attack",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_attack_L_02_v01.png",
+      "state": "attack",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_attack_L_03_v01.png",
+      "state": "attack",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_attack_L_04_v01.png",
+      "state": "attack",
+      "angle": "L",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_attack_L_05_v01.png",
+      "state": "attack",
+      "angle": "L",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_attack_BL_01_v01.png",
+      "state": "attack",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_attack_BL_02_v01.png",
+      "state": "attack",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_attack_BL_03_v01.png",
+      "state": "attack",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_attack_BL_04_v01.png",
+      "state": "attack",
+      "angle": "BL",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_attack_BL_05_v01.png",
+      "state": "attack",
+      "angle": "BL",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_attack_B_01_v01.png",
+      "state": "attack",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_attack_B_02_v01.png",
+      "state": "attack",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_attack_B_03_v01.png",
+      "state": "attack",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_attack_B_04_v01.png",
+      "state": "attack",
+      "angle": "B",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_attack_B_05_v01.png",
+      "state": "attack",
+      "angle": "B",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_attack_BR_01_v01.png",
+      "state": "attack",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_attack_BR_02_v01.png",
+      "state": "attack",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_attack_BR_03_v01.png",
+      "state": "attack",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_attack_BR_04_v01.png",
+      "state": "attack",
+      "angle": "BR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_attack_BR_05_v01.png",
+      "state": "attack",
+      "angle": "BR",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_attack_R_01_v01.png",
+      "state": "attack",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_attack_R_02_v01.png",
+      "state": "attack",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_attack_R_03_v01.png",
+      "state": "attack",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_attack_R_04_v01.png",
+      "state": "attack",
+      "angle": "R",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_attack_R_05_v01.png",
+      "state": "attack",
+      "angle": "R",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_attack_FR_01_v01.png",
+      "state": "attack",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_attack_FR_02_v01.png",
+      "state": "attack",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_attack_FR_03_v01.png",
+      "state": "attack",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_attack_FR_04_v01.png",
+      "state": "attack",
+      "angle": "FR",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_attack_FR_05_v01.png",
+      "state": "attack",
+      "angle": "FR",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_pain_F_01_v01.png",
+      "state": "pain",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_pain_FL_01_v01.png",
+      "state": "pain",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_pain_L_01_v01.png",
+      "state": "pain",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_pain_BL_01_v01.png",
+      "state": "pain",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_pain_B_01_v01.png",
+      "state": "pain",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_pain_BR_01_v01.png",
+      "state": "pain",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_pain_R_01_v01.png",
+      "state": "pain",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_pain_FR_01_v01.png",
+      "state": "pain",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_F_01_v01.png",
+      "state": "lock-on",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_F_02_v01.png",
+      "state": "lock-on",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_F_03_v01.png",
+      "state": "lock-on",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_FL_01_v01.png",
+      "state": "lock-on",
+      "angle": "FL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_FL_02_v01.png",
+      "state": "lock-on",
+      "angle": "FL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_FL_03_v01.png",
+      "state": "lock-on",
+      "angle": "FL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_L_01_v01.png",
+      "state": "lock-on",
+      "angle": "L",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_L_02_v01.png",
+      "state": "lock-on",
+      "angle": "L",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_L_03_v01.png",
+      "state": "lock-on",
+      "angle": "L",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_BL_01_v01.png",
+      "state": "lock-on",
+      "angle": "BL",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_BL_02_v01.png",
+      "state": "lock-on",
+      "angle": "BL",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_BL_03_v01.png",
+      "state": "lock-on",
+      "angle": "BL",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_B_01_v01.png",
+      "state": "lock-on",
+      "angle": "B",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_B_02_v01.png",
+      "state": "lock-on",
+      "angle": "B",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_B_03_v01.png",
+      "state": "lock-on",
+      "angle": "B",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_BR_01_v01.png",
+      "state": "lock-on",
+      "angle": "BR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_BR_02_v01.png",
+      "state": "lock-on",
+      "angle": "BR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_BR_03_v01.png",
+      "state": "lock-on",
+      "angle": "BR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_R_01_v01.png",
+      "state": "lock-on",
+      "angle": "R",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_R_02_v01.png",
+      "state": "lock-on",
+      "angle": "R",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_R_03_v01.png",
+      "state": "lock-on",
+      "angle": "R",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_FR_01_v01.png",
+      "state": "lock-on",
+      "angle": "FR",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_FR_02_v01.png",
+      "state": "lock-on",
+      "angle": "FR",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_lock-on_FR_03_v01.png",
+      "state": "lock-on",
+      "angle": "FR",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_death_F_01_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_death_F_02_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_death_F_03_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_death_F_04_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_death_F_05_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_death_F_06_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 6
+    },
+    {
+      "file": "enemy_denial-officer_death_F_07_v01.png",
+      "state": "death",
+      "angle": "F",
+      "frame": 7
+    },
+    {
+      "file": "enemy_denial-officer_gib_F_01_v01.png",
+      "state": "gib",
+      "angle": "F",
+      "frame": 1
+    },
+    {
+      "file": "enemy_denial-officer_gib_F_02_v01.png",
+      "state": "gib",
+      "angle": "F",
+      "frame": 2
+    },
+    {
+      "file": "enemy_denial-officer_gib_F_03_v01.png",
+      "state": "gib",
+      "angle": "F",
+      "frame": 3
+    },
+    {
+      "file": "enemy_denial-officer_gib_F_04_v01.png",
+      "state": "gib",
+      "angle": "F",
+      "frame": 4
+    },
+    {
+      "file": "enemy_denial-officer_gib_F_05_v01.png",
+      "state": "gib",
+      "angle": "F",
+      "frame": 5
+    },
+    {
+      "file": "enemy_denial-officer_gib_F_06_v01.png",
+      "state": "gib",
+      "angle": "F",
+      "frame": 6
+    },
+    {
+      "file": "enemy_denial-officer_corpse_F_01_v01.png",
+      "state": "corpse",
+      "angle": "F",
+      "frame": 1
+    }
+  ]
+}

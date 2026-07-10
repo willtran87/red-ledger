@@ -1,0 +1,119 @@
+{
+  "asset_id": "prop.pneumatic-tube",
+  "source_sheet": "prop_archive-lineup_v01.png",
+  "source_cell": 2,
+  "canvas": [
+    64,
+    80
+  ],
+  "pivot": [
+    32,
+    75
+  ],
+  "frames": [
+    {
+      "file": "prop_pneumatic-tube_base.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        18,
+        7,
+        47,
+        75
+      ]
+    },
+    {
+      "file": "prop_pneumatic-tube_damaged.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        18,
+        7,
+        47,
+        75
+      ]
+    },
+    {
+      "file": "prop_pneumatic-tube_wrecked.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        18,
+        7,
+        47,
+        75
+      ]
+    },
+    {
+      "file": "prop_pneumatic-tube_active_00.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        18,
+        7,
+        47,
+        75
+      ]
+    },
+    {
+      "file": "prop_pneumatic-tube_active_01.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        18,
+        7,
+        47,
+        75
+      ]
+    },
+    {
+      "file": "prop_pneumatic-tube_active_02.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        18,
+        7,
+        47,
+        75
+      ]
+    },
+    {
+      "file": "prop_pneumatic-tube_active_03.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        18,
+        7,
+        47,
+        75
+      ]
+    },
+    {
+      "file": "prop_pneumatic-tube_failed.png",
+      "size": [
+        64,
+        80
+      ],
+      "opaque_bbox": [
+        18,
+        7,
+        47,
+        75
+      ]
+    }
+  ]
+}

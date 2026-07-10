@@ -1,0 +1,57 @@
+{
+  "runtime_root": "assets/public_runtime",
+  "categories": {
+    "enemies": {
+      "png": 1548,
+      "json": 12,
+      "top_level_families": 12
+    },
+    "bosses": {
+      "png": 616,
+      "json": 4,
+      "top_level_families": 4
+    },
+    "weapons": {
+      "png": 98,
+      "json": 0,
+      "top_level_families": 2
+    },
+    "pickups": {
+      "png": 115,
+      "json": 0,
+      "top_level_families": 6
+    },
+    "effects": {
+      "png": 341,
+      "json": 0,
+      "top_level_families": 27
+    },
+    "textures": {
+      "png": 453,
+      "json": 0,
+      "top_level_families": 4
+    },
+    "props": {
+      "png": 206,
+      "json": 48,
+      "top_level_families": 50
+    },
+    "skies": {
+      "png": 3,
+      "json": 0,
+      "top_level_families": 0
+    },
+    "ui": {
+      "png": 118,
+      "json": 0,
+      "top_level_families": 5
+    },
+    "fonts": {
+      "png": 3,
+      "json": 3,
+      "top_level_families": 0
+    }
+  },
+  "total_png": 3501,
+  "validation_passed": true
+}

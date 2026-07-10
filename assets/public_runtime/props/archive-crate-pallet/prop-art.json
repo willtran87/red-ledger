@@ -1,0 +1,54 @@
+{
+  "asset_id": "prop.archive-crate-pallet",
+  "source_sheet": "prop_industrial-lineup_v01.png",
+  "source_cell": 1,
+  "canvas": [
+    128,
+    112
+  ],
+  "pivot": [
+    64,
+    106
+  ],
+  "frames": [
+    {
+      "file": "prop_archive-crate-pallet_base.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        14,
+        8,
+        115,
+        106
+      ]
+    },
+    {
+      "file": "prop_archive-crate-pallet_damaged.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        14,
+        8,
+        115,
+        106
+      ]
+    },
+    {
+      "file": "prop_archive-crate-pallet_wrecked.png",
+      "size": [
+        128,
+        112
+      ],
+      "opaque_bbox": [
+        14,
+        8,
+        115,
+        106
+      ]
+    }
+  ]
+}
