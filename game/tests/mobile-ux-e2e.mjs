@@ -11,6 +11,10 @@ page.on('pageerror', (error) => errors.push(String(error)));
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
 await page.goto(url, { waitUntil: 'networkidle' });
+assert(!(await page.locator('#continue-game').evaluate((button) => button.disabled)), 'Continue is undiscoverable when no save exists');
+assert(await page.locator('#continue-game').getAttribute('data-available') === 'false', 'Continue does not expose its unavailable state');
+await page.click('#continue-game');
+assert((await page.locator('#menu-feedback').textContent())?.includes('No valid save'), 'Continue without a save gives no visible failure feedback');
 await page.click('#options-button');
 const optionGeometry = await page.locator('#options-menu').evaluate((element) => {
   const rect = element.getBoundingClientRect();
@@ -69,6 +73,33 @@ await page.reload({ waitUntil: 'networkidle' });
 await page.click('#options-button');
 assert(await page.locator('#sfx-volume').inputValue() === '0.35', 'SFX volume did not persist');
 assert(!(await page.locator('#flash-effects').isChecked()), 'Flash preference did not persist');
+
+await page.locator('#options-menu [data-back]').click();
+await page.click('#new-game');
+await page.locator('.episode-card').first().click();
+await page.locator('#difficulty-actions button').first().click();
+await page.click('#begin-episode');
+await page.waitForTimeout(300);
+const readState = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
+const beforeMove = await readState();
+const drag = async (selector, dx, dy, duration = 300) => {
+  const box = await page.locator(selector).boundingBox();
+  assert(box, `${selector} has no bounds`);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + dx, y + dy, { steps: 4 });
+  await page.waitForTimeout(duration);
+  await page.mouse.up();
+};
+await drag('#touch-stick', 0, -34);
+const afterMove = await readState();
+assert(Math.hypot(afterMove.player.x - beforeMove.player.x, afterMove.player.z - beforeMove.player.z) > .2, 'Dragging the move stick did not move the player');
+await drag('#touch-look', 32, 12, 180);
+const afterLook = await readState();
+assert(Math.abs(afterLook.player.yaw - afterMove.player.yaw) > .02, 'Dragging the look stick did not turn the player');
+await page.screenshot({ path: 'output/mobile-ux/gameplay-sticks-390x844.png' });
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
-console.log('Mobile UX, touch events, focus, and settings persistence passed');
+console.log('Mobile UX, real stick gameplay, touch events, focus, feedback, and settings persistence passed');
 await browser.close();

@@ -85,6 +85,7 @@ export interface PickupPlacement extends GridPoint {
   readonly pickup: PickupId;
   readonly difficulties?: readonly Difficulty[];
   readonly secret?: boolean;
+  readonly route?: string;
 }
 
 export interface WeaponPlacement extends GridPoint {
@@ -92,6 +93,7 @@ export interface WeaponPlacement extends GridPoint {
   readonly weapon: WeaponId;
   readonly difficulties?: readonly Difficulty[];
   readonly secret?: boolean;
+  readonly route?: string;
 }
 
 export interface CredentialPlacement extends GridPoint {
@@ -146,6 +148,11 @@ export interface MapMechanism {
   readonly travel: number;
   readonly persistState: true;
   readonly restoresRoute: true;
+  /** Explicit ordering and encounter coupling used by runtime and validators. */
+  readonly activationOrder: number;
+  readonly independent: boolean;
+  readonly requires: readonly string[];
+  readonly opens: readonly string[];
 }
 
 export interface LandmarkDefinition extends GridPoint {
@@ -189,6 +196,10 @@ export interface SecretDefinition {
   readonly rewardPickup: PickupId;
   readonly clueProp: string;
   readonly at: GridPoint;
+  /** The clue-side switch is distinct from the concealed reward sector. */
+  readonly revealAt: GridPoint;
+  readonly concealedCells: readonly string[];
+  readonly persistState: true;
 }
 
 export interface CampaignMap {

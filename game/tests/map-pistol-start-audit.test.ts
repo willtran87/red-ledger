@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CAMPAIGN } from '../src/data/campaign';
-import { WEAPONS, type AmmoType } from '../src/game/definitions';
+import { ENEMIES, WEAPONS, type AmmoType } from '../src/game/definitions';
 import type { PickupId, WeaponId } from '../src/data/types';
 import { actorIsEnabled, cellKey, credentialAwareReachableCells } from './audit-helpers';
 
@@ -10,8 +10,20 @@ const ammoForPickup = (pickup: PickupId): AmmoType | undefined => {
   if (pickup.startsWith('staples-')) return 'staples';
   if (pickup.startsWith('fasteners-')) return 'fasteners';
   if (pickup === 'canister' || pickup === 'canister-crate') return 'canisters';
-  if (pickup === 'toner-cell' || pickup === 'toner-pack') return 'toner';
+  if (pickup === 'toner-cell' || pickup === 'toner-pack') return 'toner-cells';
   return undefined;
+};
+
+const ammoAmount = (pickup: PickupId): number => {
+  if (pickup === 'staples-small') return 16;
+  if (pickup === 'staples-large') return 40;
+  if (pickup === 'fasteners-small') return 8;
+  if (pickup === 'fasteners-large') return 24;
+  if (pickup === 'canister') return 1;
+  if (pickup === 'canister-crate') return 5;
+  if (pickup === 'toner-cell') return 30;
+  if (pickup === 'toner-pack') return 80;
+  return 0;
 };
 
 describe('Field Adjuster pistol-start static reachability', () => {
@@ -51,14 +63,23 @@ describe('Field Adjuster pistol-start static reachability', () => {
     expect(failures).toEqual([]);
   });
 
-  it('serializes mandatory-combat membership and route-specific ammunition budgets', () => {
-    // Static reachability is necessary, but the design gate requires enough ammunition
-    // through mandatory combat. No current placement identifies whether a kill is
-    // mandatory or which route owns its supply budget, so that claim cannot be proven.
+  it('budgets expected ranged damage for every mandatory encounter route', () => {
+    const failures: string[] = [];
     for (const map of Object.values(CAMPAIGN.maps)) {
-      const fieldEnemies = map.actors.filter((actor) => actor.type === 'enemy' && actorIsEnabled(actor, 'normal'));
-      expect(fieldEnemies.length).toBeGreaterThan(0);
-      expect(fieldEnemies.every((actor) => 'mandatory' in actor && 'route' in actor)).toBe(true);
+      const reachable = credentialAwareReachableCells(map);
+      for (const route of ['entry', 'transformation', 'climax']) {
+        const mandatoryHealth = map.actors
+          .filter((actor) => actor.type === 'enemy' && actorIsEnabled(actor, 'normal') && actor.mandatory && actor.route === route)
+          .reduce((health, actor) => health + ENEMIES[actor.enemy].health, 0);
+        const staples = (route === 'entry' ? 50 : 0) + map.actors
+          .filter((actor) => actor.type === 'pickup' && !actor.secret && actor.route === route && reachable.has(cellKey(actor)))
+          .reduce((amount, actor) => amount + (ammoForPickup(actor.pickup) === 'staples' ? ammoAmount(actor.pickup) : 0), 0);
+        const expectedDamage = staples * WEAPONS['staple-driver'].damage;
+        if (expectedDamage < mandatoryHealth * 1.2) {
+          failures.push(`${map.id}:${route} has ${expectedDamage} expected damage for ${mandatoryHealth} mandatory health`);
+        }
+      }
     }
+    expect(failures).toEqual([]);
   });
 });

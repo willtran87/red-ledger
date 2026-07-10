@@ -23,7 +23,7 @@ cd game
 npm run test:release
 ```
 
-The release gate builds the standalone package and runs unit, campaign, gameplay, progression, responsive/mobile, combat/save, deterministic demo, controls, mechanisms, lifecycle/performance, production portability, and cross-browser tests.
+The release gate is self-contained: it builds the standalone package, starts an isolated local server, runs unit, campaign, gameplay, progression, responsive/mobile, combat/save, deterministic demo, controls, mechanisms, active-combat lifecycle/performance, production portability, and required Chromium/Firefox/WebKit tests, then stops the server.
 
 ## Documentation
 
@@ -35,4 +35,4 @@ The release gate builds the standalone package and runs unit, campaign, gameplay
 - [Release playtest protocol](implementation/RELEASE_PLAYTEST_PROTOCOL.md)
 
 The public repository includes the complete runtime art library and reproducible game source. Raw generation intermediates and third-party reference boards are intentionally excluded.
-The verified production build is published from `docs/` through GitHub Pages.
+GitHub Pages uses the repository's `main:/docs` source so publishing works with ordinary repository credentials and does not require workflow scope. Run `npm run pages:publish` from `game/` to build, replace `docs/` with that exact output, and verify every published file by SHA-256 before committing. `npm run pages:verify` is the explicit staleness gate.

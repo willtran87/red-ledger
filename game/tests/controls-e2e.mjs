@@ -58,8 +58,9 @@ assert((await restoredRow.locator('button').textContent())?.includes('Tab'), 'Re
 
 await page.click('#controls-back');
 await page.locator('#options-menu [data-back]').click();
+await page.waitForFunction(() => document.activeElement?.id === 'new-game');
 await page.keyboard.press('ArrowDown');
-assert((await page.evaluate(() => document.activeElement?.id)) === 'new-game', 'Keyboard menu navigation did not focus the first command');
+assert((await page.evaluate(() => document.activeElement?.id)) === 'continue-game', 'Keyboard menu navigation did not advance to the next command');
 
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 console.log('Controls/remapping E2E passed');

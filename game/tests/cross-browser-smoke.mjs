@@ -3,7 +3,7 @@ import { chromium, firefox, webkit } from 'playwright';
 const url = process.env.GAME_URL ?? 'http://127.0.0.1:5400';
 const engines = { chromium, firefox, webkit };
 const failures = [];
-let executed = 0;
+const executed = [];
 
 for (const [name, type] of Object.entries(engines)) {
   console.log(`Testing ${name}`);
@@ -11,10 +11,10 @@ for (const [name, type] of Object.entries(engines)) {
   try {
     browser = await type.launch({ headless: true });
   } catch (error) {
-    console.warn(`${name}: browser binary unavailable, install with: npx playwright install ${name}`);
+    failures.push(`${name}: required browser could not launch (${error instanceof Error ? error.message : error}). Install with: npx playwright install ${name}`);
     continue;
   }
-  executed += 1;
+  executed.push(name);
   try {
     const page = await browser.newPage({ viewport: { width: 1024, height: 640 } });
     page.setDefaultTimeout(8000);
@@ -37,6 +37,7 @@ for (const [name, type] of Object.entries(engines)) {
   }
 }
 
-if (!executed) failures.push('No Playwright browser engine was available');
+const missing = Object.keys(engines).filter((name) => !executed.includes(name));
+if (missing.length) failures.push(`Required browser coverage missing: ${missing.join(', ')}`);
 if (failures.length) throw new Error(failures.join('\n'));
-console.log(`Cross-browser smoke passed in ${executed} installed engine(s)`);
+console.log(`Cross-browser smoke passed in all required engines: ${executed.join(', ')}`);

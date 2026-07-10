@@ -36,9 +36,12 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').first().click();
 await page.click('#begin-episode');
-await page.evaluate(() => window.__redLedger.loadMap('E3M8'));
-await page.waitForTimeout(2000);
-await page.evaluate(() => window.__redLedger.defeatAll());
+await page.waitForTimeout(800);
+const combatStart = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+assert(combatStart.tally.totalKills - combatStart.tally.kills >= 8, 'Performance soak does not contain at least eight live hostiles');
+await page.locator('#game-canvas').click({ position: { x: 900, y: 420 } });
+await page.keyboard.down('ArrowRight');
+await page.mouse.down();
 const heapBefore = await page.evaluate(() => performance.memory?.usedJSHeapSize ?? 0);
 const frameStats = await page.evaluate(() => new Promise((resolve) => {
   const intervals = [];
@@ -57,11 +60,14 @@ const frameStats = await page.evaluate(() => new Promise((resolve) => {
   };
   requestAnimationFrame(sample);
 }));
+await page.mouse.up();
+await page.keyboard.up('ArrowRight');
 const heapAfter = await page.evaluate(() => performance.memory?.usedJSHeapSize ?? 0);
-// SwiftShader is a CPU fallback, so this gate protects a stable 24 FPS floor;
+assert(JSON.parse(await page.evaluate(() => window.render_game_to_text())).mode === 'playing', 'Player did not survive the active-combat soak on Orientation difficulty');
+// SwiftShader is a CPU fallback, so this gate protects a stable 22 FPS floor;
 // representative GPU hardware remains responsible for the 60 FPS release target.
-assert(frameStats.frames >= 240, `10-second software-renderer soak delivered only ${frameStats.frames} frames`);
-assert(frameStats.mean < 42 && frameStats.p95 < 80, `Software-renderer frame pacing regressed: mean=${frameStats.mean.toFixed(1)}ms p95=${frameStats.p95.toFixed(1)}ms`);
+assert(frameStats.frames >= 220, `10-second software-renderer soak delivered only ${frameStats.frames} frames`);
+assert(frameStats.mean < 46 && frameStats.p95 <= 100, `Software-renderer frame pacing regressed: mean=${frameStats.mean.toFixed(1)}ms p95=${frameStats.p95.toFixed(1)}ms`);
 if (heapBefore && heapAfter) assert(heapAfter - heapBefore < 64 * 1024 * 1024, `Heap grew by ${Math.round((heapAfter - heapBefore) / 1048576)}MB during the soak`);
 
 await page.evaluate(() => window.dispatchEvent(new Event('blur')));
@@ -84,7 +90,7 @@ if (contextLossSupported) {
 }
 
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
-const report = { readyMilliseconds: Math.round(readyMilliseconds), frameStats, heapGrowthBytes: heapAfter && heapBefore ? heapAfter - heapBefore : null, textureCount: runtime.textureCount, contextLossSupported };
+const report = { readyMilliseconds: Math.round(readyMilliseconds), liveHostiles: combatStart.tally.totalKills - combatStart.tally.kills, frameStats, heapGrowthBytes: heapAfter && heapBefore ? heapAfter - heapBefore : null, textureCount: runtime.textureCount, contextLossSupported };
 fs.writeFileSync('output/lifecycle-performance/report.json', JSON.stringify(report, null, 2));
-console.log(`Lifecycle/performance passed: ready=${report.readyMilliseconds}ms frames=${frameStats.frames} mean=${frameStats.mean.toFixed(1)}ms p95=${frameStats.p95.toFixed(1)}ms textures=${runtime.textureCount}`);
+console.log(`Lifecycle/performance passed: ready=${report.readyMilliseconds}ms hostiles=${report.liveHostiles} frames=${frameStats.frames} mean=${frameStats.mean.toFixed(1)}ms p95=${frameStats.p95.toFixed(1)}ms textures=${runtime.textureCount}`);
 await browser.close();

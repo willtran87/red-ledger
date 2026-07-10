@@ -34,11 +34,15 @@ const CANONICAL_KEY: Readonly<Partial<Record<InputAction, string>>> = {
   'weapon-5': 'Digit5', 'weapon-6': 'Digit6', 'weapon-7': 'Digit7', 'weapon-8': 'Digit8',
   'quick-save': 'F6', 'quick-load': 'F9', fullscreen: 'KeyF', pause: 'Escape',
 };
-const RESERVED_CANONICAL_KEYS = new Set([...Object.values(CANONICAL_KEY), 'F5']);
 const ANALOG_ACTIONS = new Set<InputAction>([
   'move-forward', 'move-backward', 'strafe-left', 'strafe-right',
   'turn-left', 'turn-right', 'look-up', 'look-down',
 ]);
+const PULSE_ACTIONS = new Set<InputAction>([
+  'weapon-1', 'weapon-2', 'weapon-3', 'weapon-4', 'weapon-5', 'weapon-6', 'weapon-7', 'weapon-8',
+  'quick-save', 'quick-load', 'fullscreen', 'pause',
+]);
+const MINIMUM_PULSE_MS = 40;
 
 export class InputSystem {
   readonly keys = new Set<string>();
@@ -66,6 +70,10 @@ export class InputSystem {
   private captureGamepadAxes: boolean[] = [];
   private menuPollFrame = 0;
   private touchLookPointer?: number;
+  private readonly keyPressedAt = new Map<string, number>();
+  private readonly keyReleaseTimers = new Map<string, number>();
+  private readonly firePressedAt = new Map<InputActionEvent['source'], number>();
+  private readonly fireReleaseTimers = new Map<InputActionEvent['source'], number>();
 
   get fire(): boolean { return this.pointerFire || this.touchFire || this.gamepadFire || this.keyboardFire; }
 
@@ -86,16 +94,35 @@ export class InputSystem {
       const actions = this.bindings.keyboardActions(event.code);
       if (actions.includes('automap') || actions.includes('automap-overlay')) event.preventDefault();
       this.physicalKeys.set(event.code, actions);
-      this.pressActions(actions, event.repeat, 'keyboard');
-      if (!RESERVED_CANONICAL_KEYS.has(event.code) || actions.some((action) => CANONICAL_KEY[action] === event.code)) {
-        this.keys.add(event.code);
+      if (!event.repeat) {
+        this.keyPressedAt.set(event.code, performance.now());
+        const pendingRelease = this.keyReleaseTimers.get(event.code);
+        if (pendingRelease !== undefined) window.clearTimeout(pendingRelease);
+        this.keyReleaseTimers.delete(event.code);
       }
+      this.pressActions(actions, event.repeat, 'keyboard');
+      // Bound actions add their canonical runtime key in pressActions. F5 is
+      // retained as the unbound legacy quick-save alias.
+      if (!actions.length && event.code === 'F5') this.keys.add(event.code);
     });
     window.addEventListener('keyup', (event) => {
       const actions = this.physicalKeys.get(event.code) ?? this.bindings.keyboardActions(event.code);
       this.physicalKeys.delete(event.code);
-      this.releaseActions(actions, 'keyboard');
-      this.keys.delete(event.code);
+      const elapsed = performance.now() - (this.keyPressedAt.get(event.code) ?? -Infinity);
+      const preservePulse = actions.some((action) => PULSE_ACTIONS.has(action)) && elapsed < MINIMUM_PULSE_MS;
+      this.releaseActions(actions, 'keyboard', preservePulse);
+      if (preservePulse) {
+        const timer = window.setTimeout(() => {
+          this.keys.delete(event.code);
+          actions.forEach((action) => {
+            const canonical = CANONICAL_KEY[action];
+            if (canonical) this.keys.delete(canonical);
+          });
+          this.keyReleaseTimers.delete(event.code);
+        }, MINIMUM_PULSE_MS - elapsed);
+        this.keyReleaseTimers.set(event.code, timer);
+      } else this.keys.delete(event.code);
+      this.keyPressedAt.delete(event.code);
     });
     window.addEventListener('mousemove', (event) => {
       if (document.pointerLockElement !== this.canvas) return;
@@ -214,6 +241,12 @@ export class InputSystem {
     this.walkToggle = false;
     this.gamepadButtons = [];
     this.gamepadAxisActions.clear();
+    this.keyReleaseTimers.forEach((timer) => window.clearTimeout(timer));
+    this.keyReleaseTimers.clear();
+    this.keyPressedAt.clear();
+    this.fireReleaseTimers.forEach((timer) => window.clearTimeout(timer));
+    this.fireReleaseTimers.clear();
+    this.firePressedAt.clear();
     document.querySelectorAll<HTMLElement>('.touch-stick span').forEach((knob) => { knob.style.transform = ''; });
   }
 
@@ -267,6 +300,10 @@ export class InputSystem {
       const canonical = CANONICAL_KEY[action];
       if (canonical) this.keys.add(canonical);
       if (action === 'fire') {
+        const pendingRelease = this.fireReleaseTimers.get(source);
+        if (pendingRelease !== undefined) window.clearTimeout(pendingRelease);
+        this.fireReleaseTimers.delete(source);
+        if (!repeat) this.firePressedAt.set(source, performance.now());
         if (source === 'keyboard') this.keyboardFire = true;
         else if (source === 'mouse') this.pointerFire = true;
         else if (source === 'gamepad') this.gamepadFire = true;
@@ -287,15 +324,29 @@ export class InputSystem {
     }
   }
 
-  private releaseActions(actions: readonly InputAction[], source: 'keyboard' | 'mouse' | 'gamepad' | 'touch'): void {
+  private releaseActions(
+    actions: readonly InputAction[],
+    source: 'keyboard' | 'mouse' | 'gamepad' | 'touch',
+    preserveCanonicalPulse = false,
+  ): void {
     for (const action of actions) {
       const canonical = CANONICAL_KEY[action];
-      if (canonical) this.keys.delete(canonical);
+      if (canonical && !(preserveCanonicalPulse && PULSE_ACTIONS.has(action))) this.keys.delete(canonical);
       if (action === 'fire') {
-        if (source === 'keyboard') this.keyboardFire = false;
-        else if (source === 'mouse') this.pointerFire = false;
-        else if (source === 'gamepad') this.gamepadFire = false;
-        else this.touchFire = false;
+        const clear = () => {
+          if (source === 'keyboard') this.keyboardFire = false;
+          else if (source === 'mouse') this.pointerFire = false;
+          else if (source === 'gamepad') this.gamepadFire = false;
+          else this.touchFire = false;
+          this.firePressedAt.delete(source);
+          this.fireReleaseTimers.delete(source);
+        };
+        const elapsed = performance.now() - (this.firePressedAt.get(source) ?? -Infinity);
+        if (elapsed < MINIMUM_PULSE_MS) {
+          const pending = this.fireReleaseTimers.get(source);
+          if (pending !== undefined) window.clearTimeout(pending);
+          this.fireReleaseTimers.set(source, window.setTimeout(clear, MINIMUM_PULSE_MS - elapsed));
+        } else clear();
       }
       if (action === 'automap-overlay') this.keys.delete('KeyO');
       const detail = { action, source, repeat: false } satisfies InputActionEvent;

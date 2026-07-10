@@ -80,6 +80,18 @@ describe('EnemyBehaviorSystem state machine', () => {
     expect(damageIndex).toBeGreaterThanOrEqual(attackIndex);
   });
 
+  it('rechecks hitscan range and line of sight after windup before applying damage', () => {
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    const warden = actor('desk-warden');
+    let visible = true;
+    runFor(system, { actors: [warden], target: target(7), world: { hasLineOfSight: () => visible } }, .25);
+    expect(system.getActorState(warden.uid)?.action).toBe('windup');
+    visible = false;
+    const covered = runFor(system, { actors: [warden], target: target(7), world: { hasLineOfSight: () => visible } }, .5);
+    expect(eventsOf(covered, 'attack')).toHaveLength(1);
+    expect(eventsOf(covered, 'damage')).toHaveLength(0);
+  });
+
   it('interrupts a pending attack with pain and retains the provoker', () => {
     const system = new EnemyBehaviorSystem({ rng: () => 0 });
     const hound = actor('exposure-hound');
@@ -123,6 +135,14 @@ describe('EnemyBehaviorSystem role mechanics', () => {
     expect(eventsOf(burst, 'spawn-projectile')).toHaveLength(3);
   });
 
+  it('continues lunging for the authored duration instead of one simulation tick', () => {
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    const events = runFor(system, { actors: [actor('exposure-hound')], target: target(1.3) }, 1, .02);
+    const lunges = eventsOf(events, 'move').filter((event) => event.mode === 'lunge');
+    expect(lunges.length).toBeGreaterThan(5);
+    expect(lunges.reduce((total, event) => total + (event.duration ?? 0), 0)).toBeCloseTo(.28, 3);
+  });
+
   it('scales projectile velocity on the hardest difficulty', () => {
     const normal = new EnemyBehaviorSystem({ rng: () => 0 });
     const hard = new EnemyBehaviorSystem({ rng: () => 0 });
@@ -132,6 +152,24 @@ describe('EnemyBehaviorSystem role mechanics', () => {
     const normalSpeed = Math.hypot(...Object.values(eventsOf(normalEvents, 'spawn-projectile')[0].projectile.velocity));
     const hardSpeed = Math.hypot(...Object.values(eventsOf(hardEvents, 'spawn-projectile')[0].projectile.velocity));
     expect(hardSpeed / normalSpeed).toBeCloseTo(1.2, 5);
+  });
+
+  it('uses difficulty aggression to shorten the actual refire envelope', () => {
+    const low = new EnemyBehaviorSystem({ rng: () => 0 });
+    const high = new EnemyBehaviorSystem({ rng: () => 0 });
+    const input = { actors: [actor('desk-warden')], target: target(7) };
+    const lowAttacks = eventsOf(runFor(low, { ...input, difficulty: { reaction: 1, refire: 1, projectileSpeed: 1, aggression: .5 } }, 5), 'attack');
+    const highAttacks = eventsOf(runFor(high, { ...input, difficulty: { reaction: 1, refire: 1, projectileSpeed: 1, aggression: 1.5 } }, 5), 'attack');
+    expect(highAttacks.length).toBeGreaterThan(lowAttacks.length);
+  });
+
+  it('does not create an impact hazard when a projectile merely expires', () => {
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    runFor(system, { actors: [actor('ember-clerk')], target: target(10) }, .8);
+    expect(system.serialize().projectiles.length).toBeGreaterThan(0);
+    const expired = runFor(system, { actors: [], target: target(100, { alive: false }) }, 6);
+    expect(eventsOf(expired, 'remove-projectile')).toContainEqual(expect.objectContaining({ reason: 'expired' }));
+    expect(eventsOf(expired, 'spawn-hazard')).toHaveLength(0);
   });
 
   it('arms prediction hazards and resurrects corpses as redacted variants', () => {
@@ -151,7 +189,7 @@ describe('EnemyBehaviorSystem role mechanics', () => {
 
   it.each([
     ['regional-director', 'open-add-shutters'],
-    ['aggregate', 'sink-cover'],
+    ['aggregate', 'disable-right-emitter'],
     ['chief-actuary', 'arena-switch-window'],
     ['uninsurable', 'spawn-wave'],
   ] as const)('emits an authored final-phase mechanism for %s', (id, mechanism) => {
@@ -181,5 +219,19 @@ describe('EnemyBehaviorSystem persistence', () => {
     const nextInput = { dt: .2, actors, target: player };
     expect(restored.step(nextInput)).toEqual(original.step(nextInput));
     expect(restored.serialize()).toEqual(original.serialize());
+  });
+
+  it('round-trips queued sound, damage, and an in-progress lunge exactly', () => {
+    const source = new EnemyBehaviorSystem({ rng: new SeededRandom(77) });
+    const hound = actor('exposure-hound');
+    runFor(source, { actors: [hound], target: target(1.3) }, .45, .01);
+    source.emitSound({ x: 2, y: 0, z: 3 }, 11, 'alarm');
+    source.registerDamage(hound.uid, 'player', 9);
+    const snapshot = JSON.parse(JSON.stringify(source.serialize()));
+    const restored = new EnemyBehaviorSystem({ rng: new SeededRandom(1) });
+    restored.restore(snapshot);
+    expect(restored.serialize()).toEqual(source.serialize());
+    const next = { dt: .02, actors: [hound], target: target(1.3) };
+    expect(restored.step(next)).toEqual(source.step(next));
   });
 });

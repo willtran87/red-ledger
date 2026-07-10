@@ -93,6 +93,7 @@ interface SaveData {
   secrets: string[];
   visited: string[];
   triggered: string[];
+  mechanisms?: string[];
   hazardsEnabled: boolean;
   tally: MapTally;
   rng: number;
@@ -171,14 +172,74 @@ export interface ManualSlotSummary {
   thumbnail?: SaveThumbnail;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
+const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+const isVector3 = (value: unknown): value is [number, number, number] => Array.isArray(value) && value.length === 3 && value.every(isFiniteNumber);
+const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every((entry) => typeof entry === 'string');
+const isFiniteRecord = (value: unknown, keys: readonly string[]): boolean => isRecord(value) && keys.every((key) => isFiniteNumber(value[key]));
+
+const isEnemyBehaviorSnapshot = (value: unknown): value is EnemyBehaviorSnapshot => {
+  if (!isRecord(value) || value.version !== 1 || !isFiniteNumber(value.elapsed) || !Number.isSafeInteger(value.nextEntityId)) return false;
+  if (!Array.isArray(value.actors) || !Array.isArray(value.projectiles) || !Array.isArray(value.hazards)) return false;
+  const vectors = (entry: unknown): boolean => isRecord(entry) && isVector3([entry.x, entry.y, entry.z]);
+  const actors = value.actors.every((entry) => isRecord(entry) && typeof entry.uid === 'string' && typeof entry.hostileId === 'string'
+    && entry.hostileId in ENEMIES && isFiniteRecord(entry, ['cooldown', 'attackCursor', 'phaseIndex', 'bobClock', 'revealRemaining', 'stateTimer'])
+    && typeof entry.phaseId === 'string' && typeof entry.visible === 'boolean' && typeof entry.targetUid === 'string'
+    && typeof entry.redacted === 'boolean' && [-1, 1].includes(Number(entry.strafeSign))
+    && (entry.lungeRemaining === undefined || isFiniteNumber(entry.lungeRemaining))
+    && (entry.lungeVelocity === undefined || vectors(entry.lungeVelocity)));
+  const projectiles = value.projectiles.every((entry) => isRecord(entry) && typeof entry.id === 'string' && typeof entry.ownerUid === 'string'
+    && typeof entry.ownerId === 'string' && entry.ownerId in ENEMIES && typeof entry.kind === 'string'
+    && vectors(entry.position) && vectors(entry.velocity) && isFiniteRecord(entry, ['radius', 'damage', 'remaining', 'homing'])
+    && typeof entry.targetUid === 'string');
+  const hazards = value.hazards.every((entry) => isRecord(entry) && typeof entry.id === 'string' && typeof entry.ownerUid === 'string'
+    && typeof entry.ownerId === 'string' && entry.ownerId in ENEMIES && typeof entry.kind === 'string' && vectors(entry.position)
+    && isFiniteRecord(entry, ['radius', 'damage', 'remaining', 'armRemaining', 'pulseRemaining', 'pulseInterval']) && typeof entry.armed === 'boolean');
+  const sounds = value.pendingSounds === undefined || (Array.isArray(value.pendingSounds) && value.pendingSounds.every((entry) => isRecord(entry)
+    && vectors(entry.position) && isFiniteNumber(entry.radius) && typeof entry.sourceUid === 'string'));
+  const damage = value.pendingDamage === undefined || (Array.isArray(value.pendingDamage) && value.pendingDamage.every((entry) => isRecord(entry)
+    && typeof entry.targetUid === 'string' && typeof entry.sourceUid === 'string' && isFiniteNumber(entry.amount)));
+  return actors && projectiles && hazards && sounds && damage && (value.rngState === undefined || isFiniteNumber(value.rngState));
+};
+
 const isSaveData = (value: unknown): value is SaveData => {
-  if (!value || typeof value !== 'object') return false;
-  const save = value as Partial<SaveData>;
-  return save.version === 1
-    && typeof save.mapId === 'string'
-    && Boolean(CAMPAIGN.maps[save.mapId as MapId])
-    && typeof save.difficulty === 'string'
-    && Boolean(save.player && Array.isArray(save.actors) && Array.isArray(save.pickups) && Array.isArray(save.doors));
+  if (!isRecord(value) || value.version !== 1 || typeof value.mapId !== 'string' || !CAMPAIGN.maps[value.mapId as MapId]
+    || typeof value.difficulty !== 'string' || !(value.difficulty in DIFFICULTY) || !isRecord(value.player)) return false;
+  const player = value.player;
+  if (!isFiniteRecord(player, ['health', 'armor', 'yaw']) || !isVector3(player.position) || !isRecord(player.ammo)
+    || !isFiniteRecord(player.ammo, ['staples', 'fasteners', 'canisters', 'toner-cells']) || !isStringArray(player.weapons)
+    || !player.weapons.every((weapon) => weapon in WEAPONS) || typeof player.weapon !== 'string' || !(player.weapon in WEAPONS)
+    || !isStringArray(player.credentials) || typeof player.floorPlan !== 'boolean' || !isFiniteRecord(player.powerups, ['binder', 'hazard', 'rapid', 'forensic', 'goggles'])
+    || (player.pitch !== undefined && !isFiniteNumber(player.pitch))) return false;
+  if (!Array.isArray(value.actors) || !value.actors.every((entry) => isRecord(entry) && typeof entry.uid === 'string'
+    && isFiniteRecord(entry, ['health']) && typeof entry.dead === 'boolean' && typeof entry.phaseLocked === 'boolean' && isVector3(entry.position)
+    && (entry.id === undefined || (typeof entry.id === 'string' && entry.id in ENEMIES)))) return false;
+  if (!Array.isArray(value.pickups) || !value.pickups.every((entry) => isRecord(entry) && typeof entry.uid === 'string' && typeof entry.collected === 'boolean')) return false;
+  if (!Array.isArray(value.doors) || !value.doors.every((entry) => typeof entry === 'string' || (isRecord(entry) && typeof entry.key === 'string'
+    && typeof entry.open === 'boolean' && isFiniteNumber(entry.progress)))) return false;
+  if (!isStringArray(value.secrets) || !isStringArray(value.visited) || !isStringArray(value.triggered)
+    || (value.mechanisms !== undefined && !isStringArray(value.mechanisms)) || typeof value.hazardsEnabled !== 'boolean'
+    || !isFiniteRecord(value.tally, ['kills', 'totalKills', 'items', 'totalItems', 'secrets', 'totalSecrets', 'elapsed']) || !isFiniteNumber(value.rng)) return false;
+  if (value.enemyBehavior !== undefined && !isEnemyBehaviorSnapshot(value.enemyBehavior)) return false;
+  if (value.playerProjectiles !== undefined && (!Array.isArray(value.playerProjectiles) || !value.playerProjectiles.every((entry) => isRecord(entry)
+    && typeof entry.id === 'string' && ['catastrophe-launcher', 'plasma-copier'].includes(String(entry.weapon)) && isVector3(entry.position)
+    && isVector3(entry.velocity) && isFiniteRecord(entry, ['damage', 'radius', 'remaining'])))) return false;
+  if (value.ammoDrops !== undefined && (!Array.isArray(value.ammoDrops) || !value.ammoDrops.every((entry) => isRecord(entry) && typeof entry.uid === 'string'
+    && isVector3(entry.position) && typeof entry.ammoId === 'string' && isFiniteNumber(entry.amount) && typeof entry.collected === 'boolean'))) return false;
+  if (value.bindingBeam !== undefined && (!isRecord(value.bindingBeam) || !isFiniteRecord(value.bindingBeam, ['pulses', 'timer']))) return false;
+  if (value.sectors !== undefined && (!Array.isArray(value.sectors) || !value.sectors.every((entry) => isRecord(entry) && typeof entry.key === 'string'
+    && isFiniteRecord(entry, ['height', 'targetHeight'])))) return false;
+  if (value.landmarks !== undefined && (!Array.isArray(value.landmarks) || !value.landmarks.every((entry) => isRecord(entry) && typeof entry.key === 'string'
+    && isVector3(entry.position) && isVector3(entry.targetPosition) && typeof entry.active === 'boolean'))) return false;
+  if (value.breakables !== undefined && (!Array.isArray(value.breakables) || !value.breakables.every((entry) => isRecord(entry) && typeof entry.key === 'string'
+    && isFiniteNumber(entry.health) && typeof entry.destroyed === 'boolean'))) return false;
+  const bossActions = ['open-add-shutters', 'disable-left-emitter', 'disable-right-emitter', 'sink-cover', 'arena-switch-ready', 'open-binding-gate', 'expose-core'];
+  if (value.bossMechanisms !== undefined && (!isRecord(value.bossMechanisms) || !Array.isArray(value.bossMechanisms.actions)
+    || !value.bossMechanisms.actions.every((action) => bossActions.includes(String(action))) || !Number.isSafeInteger(value.bossMechanisms.bindingGates))) return false;
+  if (value.runtime !== undefined && (!isRecord(value.runtime) || !isFiniteRecord(value.runtime, ['weaponCooldown', 'damageCooldown', 'messageTimer', 'projectileSequence'])
+    || (value.runtime.weaponTransition !== undefined && !isFiniteNumber(value.runtime.weaponTransition))
+    || typeof value.runtime.message !== 'string' || typeof value.runtime.walkMode !== 'boolean' || !isVector3(value.runtime.playerVelocity))) return false;
+  return true;
 };
 
 export class GameEngine {
@@ -385,6 +446,7 @@ export class GameEngine {
     for (const key of Object.keys(this.player.powerups) as Array<keyof PlayerState['powerups']>) {
       this.player.powerups[key] = Math.max(0, this.player.powerups[key] - dt);
     }
+    this.updateVisionEffects();
     if (this.messageTimer === 0) this.message = '';
     const command = playbackCommand ?? this.captureGameplayCommand();
     if (recordDemo && this.demoRecorder) this.demoRecorder.record(this.demoTick++, command);
@@ -488,6 +550,10 @@ export class GameEngine {
     this.camera.rotation.set(this.player.pitch, this.player.yaw, 0);
   }
 
+  private updateVisionEffects(): void {
+    if (this.scene.fog instanceof FogExp2) this.scene.fog.density = this.player.powerups.goggles > 0 ? .0025 : .012;
+  }
+
   private canPlayerOccupy(position: Vector3): boolean {
     if (!this.world.canTraverse(this.player.position, position)) return false;
     return !this.world.actors.some((actor) => !actor.dead && !actor.phaseLocked
@@ -522,7 +588,7 @@ export class GameEngine {
     window.dispatchEvent(new CustomEvent('view-recoil', { detail: { amount: weapon.recoil, weapon: weapon.id } }));
     if (weapon.id === 'catastrophe-launcher' || weapon.id === 'plasma-copier') {
       let direction = this.aimDirection();
-      const autoTarget = this.findTarget(direction, weapon.range, 1 - Math.cos(Math.PI / 30));
+      const autoTarget = this.findTarget(direction, weapon.range, Math.PI / 30);
       if (autoTarget) direction = autoTarget.position.clone().add(new Vector3(0, ENEMIES[autoTarget.id].height * .5, 0)).sub(this.player.position).normalize();
       const position = this.player.position.clone().addScaledVector(direction, .7).setY(this.player.position.y - .2);
       const projectile: PlayerProjectile = {
@@ -638,16 +704,18 @@ export class GameEngine {
   private applyPlayerSplash(center: Vector3, maxDamage: number, radius: number, directTarget?: RuntimeActor): void {
     for (const actor of this.world.actors) {
       if (actor.dead || actor.phaseLocked) continue;
-      const distance = this.horizontalDistance(center, actor.position);
-      if (distance < radius) this.damageActor(actor, maxDamage * (1 - distance / radius), 'player');
+      const actorCenter = actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0));
+      const distance = center.distanceTo(actorCenter);
+      if (distance < radius && this.world.hasLineOfSight(center, actorCenter)) this.damageActor(actor, maxDamage * (1 - distance / radius), 'player');
     }
     for (const breakable of this.world.breakables.values()) {
       if (breakable.destroyed) continue;
-      const distance = this.horizontalDistance(center, breakable.position);
-      if (distance < radius) this.damageBreakable(breakable.key, maxDamage * (1 - distance / radius));
+      const target = breakable.position.clone().add(new Vector3(0, .6, 0));
+      const distance = center.distanceTo(target);
+      if (distance < radius && this.world.hasLineOfSight(center, target)) this.damageBreakable(breakable.key, maxDamage * (1 - distance / radius));
     }
-    const playerDistance = this.horizontalDistance(center, this.player.position);
-    if (playerDistance < radius) this.damagePlayer(maxDamage * (1 - playerDistance / radius));
+    const playerDistance = center.distanceTo(this.player.position);
+    if (playerDistance < radius && this.world.hasLineOfSight(center, this.player.position)) this.damagePlayer(maxDamage * (1 - playerDistance / radius));
   }
 
   private syncPlayerProjectileSprite(projectile: PlayerProjectile): void {
@@ -680,8 +748,8 @@ export class GameEngine {
       const delta = actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0)).sub(this.player.position);
       const distance = delta.length();
       if (distance >= bestDistance || !this.world.hasLineOfSight(this.player.position, actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0)))) continue;
-      const angularMiss = 1 - direction.dot(delta.normalize());
-      const sizeAllowance = ENEMIES[actor.id].radius / Math.max(1, distance);
+      const angularMiss = Math.acos(Math.max(-1, Math.min(1, direction.dot(delta.normalize()))));
+      const sizeAllowance = Math.asin(Math.min(1, ENEMIES[actor.id].radius / Math.max(ENEMIES[actor.id].radius, distance)));
       if (angularMiss <= tolerance + sizeAllowance) {
         result = actor;
         bestDistance = distance;
@@ -698,7 +766,9 @@ export class GameEngine {
       const delta = breakable.position.clone().add(new Vector3(0, .6, 0)).sub(this.player.position);
       const distance = delta.length();
       if (distance >= bestDistance || !this.world.hasLineOfSight(this.player.position, breakable.position)) continue;
-      if (1 - direction.dot(delta.normalize()) <= tolerance + .35 / Math.max(1, distance)) {
+      const angularMiss = Math.acos(Math.max(-1, Math.min(1, direction.dot(delta.normalize()))));
+      const sizeAllowance = Math.asin(Math.min(1, .35 / Math.max(.35, distance)));
+      if (angularMiss <= tolerance + sizeAllowance) {
         result = breakable;
         bestDistance = distance;
       }
@@ -747,8 +817,23 @@ export class GameEngine {
         this.world.applyBossMechanism('arena-switch-ready', actor.uid);
         this.showMessage('Three binding gates are now active', 2.2);
       }
+      if (actor.id === 'aggregate') {
+        this.world.applyBossMechanism('disable-right-emitter', actor.uid);
+        this.world.applyBossMechanism('sink-cover', actor.uid);
+      }
       window.dispatchEvent(new CustomEvent('boss-mechanism', { detail: { bossId: actor.id, mechanism } }));
     }
+    this.resolveEncounterCompletion(actor.encounter);
+  }
+
+  private resolveEncounterCompletion(id?: string): void {
+    if (!id || this.world.actors.some((actor) => actor.encounter === id && !actor.dead)) return;
+    const encounter = this.world.map.encounters.find((candidate) => candidate.id === id);
+    if (!encounter || encounter.completion === 'switch') return;
+    const targets = this.world.map.id === 'E3M8' && id === 'boss-1'
+      ? (encounter.opens ?? []).filter((target) => target !== 'boss-2')
+      : encounter.opens ?? [];
+    this.unlockTargets(targets);
   }
 
   private setActorDeadVisual(actor: RuntimeActor): void {
@@ -804,13 +889,15 @@ export class GameEngine {
         canOccupy: (actor, position) => {
           const point = new Vector3(position.x, position.y, position.z);
           if (this.world.isSolid(point, actor.radius * .55)) return false;
+          if (this.player.health > 0 && Math.abs(this.player.position.y - position.y) < Math.max(1.7, actor.height ?? 1)
+            && this.horizontalDistance(this.player.position, point) < actor.radius + .32) return false;
           return !this.world.actors.some((other) => other.uid !== actor.uid && !other.dead && !other.phaseLocked
             && Math.abs(other.position.y - position.y) < Math.max(ENEMIES[other.id].height, actor.height ?? 1)
             && this.horizontalDistance(other.position, point) < ENEMIES[other.id].radius + actor.radius);
         },
         traceProjectile: (projectile, from, to) => this.traceEnemyProjectile(projectile, from, to),
       },
-      difficulty: { reaction: difficulty.reaction, refire: difficulty.refire, projectileSpeed: difficulty.projectileSpeed },
+      difficulty: { reaction: difficulty.reaction, refire: difficulty.refire, projectileSpeed: difficulty.projectileSpeed, aggression: difficulty.aggression },
     });
     result.events.forEach((event) => this.applyEnemyEvent(event, dt, difficulty.enemySpeed, difficulty.enemyDamage));
     this.syncCombatEffects(result.projectiles, result.hazards);
@@ -823,7 +910,13 @@ export class GameEngine {
       case 'move': {
         if (!actor || actor.dead) return;
         const next = actor.position.clone().add(new Vector3(event.velocity.x, 0, event.velocity.z).multiplyScalar(dt * speedScale));
-        if (this.world.canTraverse(actor.position, next, ENEMIES[actor.id].radius * .55)) {
+        const blockedByPlayer = this.player.health > 0
+          && Math.abs(this.player.position.y - next.y) < Math.max(1.7, ENEMIES[actor.id].height)
+          && this.horizontalDistance(this.player.position, next) < ENEMIES[actor.id].radius + .32;
+        const blockedByActor = this.world.actors.some((other) => other.uid !== actor.uid && !other.dead && !other.phaseLocked
+          && Math.abs(other.position.y - next.y) < Math.max(ENEMIES[other.id].height, ENEMIES[actor.id].height)
+          && this.horizontalDistance(other.position, next) < ENEMIES[other.id].radius + ENEMIES[actor.id].radius);
+        if (!blockedByPlayer && !blockedByActor && this.world.canTraverse(actor.position, next, ENEMIES[actor.id].radius * .55)) {
           next.y = this.world.floorHeightAt(next);
           actor.position.copy(next);
           actor.sprite.position.x = next.x;
@@ -910,6 +1003,8 @@ export class GameEngine {
         break;
       case 'boss-mechanism':
         if (event.mechanism === 'open-add-shutters') this.world.applyBossMechanism('open-add-shutters', event.actorUid);
+        else if (event.mechanism === 'disable-left-emitter') this.world.applyBossMechanism('disable-left-emitter', event.actorUid);
+        else if (event.mechanism === 'disable-right-emitter') this.world.applyBossMechanism('disable-right-emitter', event.actorUid);
         else if (event.mechanism === 'sink-cover') this.world.applyBossMechanism('sink-cover', event.actorUid);
         else if (event.mechanism === 'arena-switch-window') this.world.applyBossMechanism('arena-switch-ready', event.actorUid);
         else if (event.mechanism === 'spawn-wave' && actor) {
@@ -1050,6 +1145,8 @@ export class GameEngine {
     actor.sprite.visible = !actor.phaseLocked && inVisualRange;
     if (actor.dead || actor.phaseLocked || !inVisualRange) return;
     const behaviorState = this.enemyBehavior.getActorState(actor.uid);
+    actor.sprite.material.opacity = this.player.powerups.forensic > 0 ? 1 : behaviorState?.visible === false ? .18 : 1;
+    actor.sprite.material.depthWrite = actor.sprite.material.opacity >= 1;
     const state = behaviorState?.action === 'pain' ? 'pain' : actor.attackFlash > 0 || behaviorState?.action === 'windup' ? 'attack' : actor.moving ? 'walk' : 'idle';
     const dx = this.player.position.x - actor.position.x;
     const dz = this.player.position.z - actor.position.z;
@@ -1117,14 +1214,8 @@ export class GameEngine {
   }
 
   private updateSecrets(): void {
-    const x = Math.floor(this.player.position.x / this.world.map.cellSize);
-    const z = Math.floor(this.player.position.z / this.world.map.cellSize);
-    const key = `${x},${z}`;
-    if (this.world.tileAt(this.player.position) !== 's' || this.world.discoveredSecrets.has(key)) return;
-    this.world.discoveredSecrets.add(key);
-    this.tally.secrets += 1;
-    this.showMessage('Optional exposure discovered', 1.5);
-    this.audio.tone(880, .16, 'triangle', .04);
+    // Secrets are revealed explicitly from their clue-side triggers. Entering the
+    // reward alcove alone must never award discovery credit.
   }
 
   private use(): void {
@@ -1132,8 +1223,7 @@ export class GameEngine {
     const door = this.world.closestDoor(this.player.position);
     if (door) {
       if (door.credential && !this.player.credentials.has(door.credential)) {
-        this.showMessage(`${this.pretty(door.credential)} credential required`);
-        this.audio.tone(90, .08, 'square', .03);
+        this.rejectUse(`${this.pretty(door.credential)} credential required`, 'credential', door.credential, new Vector3(door.x, 0, door.z).multiplyScalar(this.world.map.cellSize));
         return;
       }
       this.world.openDoor(door);
@@ -1148,15 +1238,13 @@ export class GameEngine {
     });
     if (trigger) {
       if (trigger.requiresCredential && !this.player.credentials.has(trigger.requiresCredential)) {
-        this.showMessage(`${this.pretty(trigger.requiresCredential)} credential required`);
-        this.audio.tone(90, .08, 'square', .03);
+        this.rejectUse(`${this.pretty(trigger.requiresCredential)} credential required`, 'credential', trigger.requiresCredential);
         return;
       }
       if (trigger.requiresEncounter && this.isEncounterActive(trigger.requiresEncounter)) {
-        this.showMessage(trigger.requiresEncounter.startsWith('boss-')
+        this.rejectUse(trigger.requiresEncounter.startsWith('boss-')
           ? 'Binding authority remains active'
-          : `${this.pretty(trigger.requiresEncounter)} remains active`);
-        this.audio.tone(90, .08, 'square', .03);
+          : `${this.pretty(trigger.requiresEncounter)} remains active`, 'encounter');
         return;
       }
       this.triggered.add(trigger.id);
@@ -1182,15 +1270,19 @@ export class GameEngine {
       } else if (trigger.action === 'spawn-wave') {
         this.world.actors.forEach((actor) => { actor.awake = true; });
       } else if (trigger.action === 'reveal-secret') {
-        const key = `${Math.floor(trigger.x)},${Math.floor(trigger.z)}`;
-        if (!this.world.discoveredSecrets.has(key)) { this.world.discoveredSecrets.add(key); this.tally.secrets += 1; }
+        const secretId = trigger.targets.find((target) => this.world.map.secrets.some((secret) => secret.id === target));
+        if (secretId && this.world.revealSecret(secretId)) {
+          this.tally.secrets += 1;
+          this.showMessage('Optional exposure discovered', 1.5);
+          this.audio.tone(880, .16, 'triangle', .04);
+        }
       } else {
         const mechanismId = trigger.targets.find((target) => this.world.map.mechanisms.some((mechanism) => mechanism.id === target));
         if (this.world.map.id === 'E3M8' && mechanismId) {
           const chief = this.world.actors.find((actor) => actor.id === 'chief-actuary');
           if (chief && !chief.dead) {
             this.triggered.delete(trigger.id);
-            this.showMessage('The gate controls remain sealed by the Chief Actuary');
+            this.rejectUse('The gate controls remain sealed by the Chief Actuary', 'encounter');
             return;
           }
           this.world.applyBossMechanism('open-binding-gate', mechanismId);
@@ -1204,7 +1296,14 @@ export class GameEngine {
               core.sprite.visible = true;
             }
           }
-        } else if (mechanismId) this.world.applyMechanism(mechanismId);
+        } else if (mechanismId) {
+          if (!this.world.applyMechanism(mechanismId)) {
+            this.triggered.delete(trigger.id);
+            this.rejectUse('A prior control must be activated first', 'encounter');
+            return;
+          }
+          this.unlockTargets(this.world.mechanismOpens(mechanismId));
+        }
         else this.world.applyTransformation(trigger.action);
       }
       this.audio.tone(210, .24, 'sawtooth', .04);
@@ -1214,21 +1313,30 @@ export class GameEngine {
     const exit = new Vector3(this.world.map.exit.x * this.world.map.cellSize, 0, this.world.map.exit.z * this.world.map.cellSize);
     if (this.horizontalDistance(this.player.position, exit) <= 2.2) {
       if (this.world.actors.some((actor) => actor.kind === 'boss' && !actor.dead)) {
-        this.showMessage('Binding authority remains active');
+        this.rejectUse('Binding authority remains active', 'encounter', undefined, exit);
         return;
       }
       this.completeMap(this.world.map.nextMap);
       return;
     }
-    if (this.world.map.secretExitTo && this.tally.secrets >= Math.max(1, this.tally.totalSecrets - 1)) {
-      const secret = this.world.map.secrets[0];
-      if (secret) {
-        const point = new Vector3(secret.at.x * this.world.map.cellSize, 0, secret.at.z * this.world.map.cellSize);
-        if (this.horizontalDistance(this.player.position, point) < 2.2) this.completeMap(this.world.map.secretExitTo);
-      }
+    this.rejectUse('No usable control in reach', 'nothing');
+  }
+
+  private unlockTargets(targets: readonly string[]): void {
+    targets.forEach((target) => {
+      if (this.world.map.encounters.some((encounter) => encounter.id === target)) this.world.unlockEncounter(target);
+    });
+  }
+
+  private rejectUse(message: string, reason: 'credential' | 'encounter' | 'nothing', credential?: Credential, point?: Vector3): void {
+    this.audio.tone(reason === 'nothing' ? 78 : 90, reason === 'nothing' ? .055 : .08, 'square', reason === 'nothing' ? .018 : .03);
+    this.showMessage(message, reason === 'nothing' ? .65 : 1.2);
+    let direction: 'left' | 'right' | 'center' = 'center';
+    if (point) {
+      const relative = Math.atan2(point.x - this.player.position.x, point.z - this.player.position.z) - this.player.yaw;
+      direction = Math.sin(relative) > .25 ? 'right' : Math.sin(relative) < -.25 ? 'left' : 'center';
     }
-    this.audio.tone(78, .055, 'square', .018);
-    this.showMessage('No usable control in reach', .65);
+    window.dispatchEvent(new CustomEvent('use-failed', { detail: { reason, direction, icon: credential ?? (reason === 'encounter' ? 'authority' : 'use'), ...(credential ? { credential } : {}) } }));
   }
 
   private isEncounterActive(id: string): boolean {
@@ -1356,6 +1464,7 @@ export class GameEngine {
       secrets: [...this.world.discoveredSecrets],
       visited: [...this.world.visitedTiles],
       triggered: [...this.triggered],
+      mechanisms: [...this.world.activatedMechanisms],
       hazardsEnabled: this.world.hazardsEnabled,
       tally: { ...this.tally },
       rng: this.rngState,
@@ -1467,8 +1576,8 @@ export class GameEngine {
   }
 
   private restoreSave(save: SaveData, resume = true): boolean {
+    if (!isSaveData(save)) return false;
     try {
-      if (save.version !== 1 || !CAMPAIGN.maps[save.mapId]) throw new Error('Unsupported save');
       this.difficulty = save.difficulty;
       this.loadMap(save.mapId, true, false);
       Object.assign(this.player, {
@@ -1526,11 +1635,17 @@ export class GameEngine {
       this.world.restoreSectorMovers(save.sectors ?? []);
       this.world.restoreLandmarks(save.landmarks ?? []);
       this.world.restoreBreakables(save.breakables ?? []);
-      save.secrets.forEach((key) => this.world.discoveredSecrets.add(key));
+      this.world.restoreSecrets(save.secrets);
       save.visited?.forEach((key) => this.world.visitedTiles.add(key));
       save.triggered?.forEach((key) => this.triggered.add(key));
+      this.world.restoreActivatedMechanisms(save.mechanisms ?? []);
       if (save.hazardsEnabled === false && this.world.hazardsEnabled) this.world.applyTransformation('drain-liquid');
       if (save.enemyBehavior) this.enemyBehavior.restore(save.enemyBehavior);
+      for (const actor of this.world.actors) {
+        const state = this.enemyBehavior.getActorState(actor.uid);
+        actor.sprite.material.opacity = state?.visible === false ? .18 : 1;
+        actor.sprite.material.depthWrite = state?.visible !== false;
+      }
       const combatState = this.enemyBehavior.serialize();
       this.syncCombatEffects(combatState.projectiles, combatState.hazards);
       this.playerProjectiles.length = 0;
@@ -1569,6 +1684,7 @@ export class GameEngine {
         this.pendingWeapon = undefined;
       }
       this.mode = resume ? 'playing' : 'paused';
+      this.updateVisionEffects();
       this.updateCamera();
       this.emit();
       return true;
@@ -1804,6 +1920,7 @@ export class GameEngine {
   private render(): void {
     for (const pickup of this.world.pickups) {
       pickup.sprite.visible = !pickup.collected
+        && !this.world.isConcealedAt(pickup.position)
         && this.horizontalDistance(pickup.position, this.player.position) <= 28
         && this.world.hasLineOfSight(this.player.position, pickup.position);
     }

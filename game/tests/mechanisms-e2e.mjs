@@ -31,7 +31,9 @@ assert(moving.world.landmarks.length === 2 && moving.world.landmarks.every((land
 assert(await page.evaluate(() => window.__redLedger.teleportNearLandmark(0, 7)), 'Could not stage transformed landmark view');
 await page.screenshot({ path: 'output/mechanisms/e1m3-vehicle-lift.png' });
 
-await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape' })));
+await page.evaluate(() => window.dispatchEvent(new CustomEvent('input-action', {
+  detail: { action: 'pause', source: 'keyboard', repeat: false },
+})));
 await page.waitForTimeout(80);
 const paused = await state();
 await page.click('#save-game');

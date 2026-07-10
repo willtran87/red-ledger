@@ -61,8 +61,21 @@ await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { co
 await page.waitForTimeout(100);
 assert((await state()).mode === 'paused', 'Escape did not pause');
 assert(await page.locator('#pause-menu').isVisible(), 'Pause menu is not visible');
-await page.locator('#resume-game').click();
-assert((await state()).mode === 'playing', 'Resume did not return to play');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(100);
+assert((await state()).mode === 'playing', 'Escape did not resume paused play');
+assert(!(await page.locator('#pause-menu').isVisible()), 'Escape resume left the pause menu visible');
+
+const quickTapAmmo = (await state()).player.ammo.staples;
+await page.mouse.click(640, 300, { delay: 1 });
+await page.waitForTimeout(90);
+assert((await state()).player.ammo.staples < quickTapAmmo, 'A sub-tick fire tap was lost');
+
+await page.keyboard.press('KeyE');
+await page.waitForTimeout(70);
+assert(await page.locator('#use-feedback').isVisible(), 'Failed use has no immediate visual feedback');
+assert((await page.locator('#use-feedback').getAttribute('role')) === 'status', 'Failed use feedback is not exposed accessibly');
+assert(await page.locator('#use-feedback img').evaluate((image) => image.complete && image.naturalWidth > 0), 'Failed use feedback icon did not load');
 
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 fs.writeFileSync('output/e2e/final-state.json', JSON.stringify(await state(), null, 2));

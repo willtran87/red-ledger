@@ -224,6 +224,8 @@ export interface ActorBehaviorState {
   targetUid: string;
   provokerUid?: string;
   redacted: boolean;
+  lungeRemaining: number;
+  lungeVelocity?: BehaviorVector;
 }
 
 export interface ProjectileState {
@@ -266,6 +268,8 @@ export interface EnemyBehaviorSnapshot {
   actors: ActorBehaviorState[];
   projectiles: ProjectileState[];
   hazards: HazardState[];
+  pendingSounds?: PendingSound[];
+  pendingDamage?: Array<{ targetUid: string; sourceUid: string; amount: number }>;
   rngState?: number;
 }
 
@@ -293,10 +297,10 @@ export interface BehaviorStepInput {
   actors: readonly BehaviorActor[];
   target: BehaviorTarget;
   world?: BehaviorWorldAdapter;
-  difficulty?: { reaction: number; refire: number; projectileSpeed: number };
+  difficulty?: { reaction: number; refire: number; projectileSpeed: number; aggression?: number };
 }
 
-interface PendingSound {
+export interface PendingSound {
   position: BehaviorVector;
   radius: number;
   sourceUid: string;
@@ -515,6 +519,8 @@ const cloneActorState = (value: ActorBehaviorState): ActorBehaviorState => ({
   phaseIndex: value.phaseIndex, phaseId: value.phaseId, bobClock: value.bobClock, visible: value.visible,
   revealRemaining: value.revealRemaining, strafeSign: value.strafeSign, action: value.action,
   stateTimer: value.stateTimer, targetUid: value.targetUid, redacted: value.redacted,
+  lungeRemaining: value.lungeRemaining,
+  ...(value.lungeVelocity ? { lungeVelocity: copyVector(value.lungeVelocity) } : {}),
   ...(value.pendingAttackId ? { pendingAttackId: value.pendingAttackId } : {}),
   ...(value.provokerUid ? { provokerUid: value.provokerUid } : {}),
 });
@@ -561,7 +567,7 @@ export class EnemyBehaviorSystem {
       position: { x: actor.position.x, y: actor.position.y + (actor.height ?? 1) * .5, z: actor.position.z },
       velocity: { x: 0, y: 0, z: 0 }, radius: actor.radius, alive: !actor.dead,
     }));
-    const difficulty = input.difficulty ?? { reaction: 1, refire: 1, projectileSpeed: 1 };
+    const difficulty = input.difficulty ?? { reaction: 1, refire: 1, projectileSpeed: 1, aggression: 1 };
     this.elapsed += input.dt;
 
     this.updateHazards(input.dt, input.target, events);
@@ -589,6 +595,13 @@ export class EnemyBehaviorSystem {
       const distance = horizontalDistance(actor.position, combatTarget.position);
       this.updateStealth(actor, profile, state, distance, events);
 
+      if (state.lungeRemaining > 0 && state.lungeVelocity) {
+        const duration = Math.min(input.dt, state.lungeRemaining);
+        events.push({ type: 'move', actorUid: actor.uid, velocity: copyVector(state.lungeVelocity), mode: 'lunge', duration });
+        state.lungeRemaining = Math.max(0, state.lungeRemaining - input.dt);
+        if (state.lungeRemaining <= 0) state.lungeVelocity = undefined;
+      }
+
       if (state.action === 'pain') {
         state.stateTimer -= input.dt;
         if (state.stateTimer <= 0) this.setAction(actor.uid, state, 'chase', 0, events);
@@ -602,7 +615,7 @@ export class EnemyBehaviorSystem {
       if (state.action === 'windup') {
         state.stateTimer -= input.dt;
         if (state.stateTimer > 0) continue;
-        this.executePendingAttack(actor, actors, profile, state, combatTarget, distance, events, difficulty.projectileSpeed);
+        this.executePendingAttack(actor, actors, profile, state, combatTarget, distance, world, events, difficulty.projectileSpeed);
         const attack = profile.attacks.find((candidate) => candidate.id === state.pendingAttackId);
         const recovery = (attack?.recovery ?? ENEMIES[actor.id].recovery) * difficulty.refire;
         state.pendingAttackId = undefined;
@@ -640,6 +653,9 @@ export class EnemyBehaviorSystem {
       actors: [...this.actorStates.values()].sort((a, b) => a.uid.localeCompare(b.uid)).map(cloneActorState),
       projectiles: this.projectiles.map(cloneProjectile),
       hazards: this.hazards.map(cloneHazard),
+      pendingSounds: this.pendingSounds.map((sound) => ({ ...sound, position: copyVector(sound.position) })),
+      pendingDamage: [...this.pendingDamage.entries()].sort(([a], [b]) => a.localeCompare(b))
+        .map(([targetUid, pending]) => ({ targetUid, ...pending })),
       ...(rngState === undefined ? {} : { rngState }),
     };
   }
@@ -655,9 +671,13 @@ export class EnemyBehaviorSystem {
       stateTimer: state.stateTimer ?? 0,
       targetUid: state.targetUid ?? 'player',
       redacted: state.redacted ?? false,
+      lungeRemaining: state.lungeRemaining ?? 0,
     })));
     this.projectiles = snapshot.projectiles.map(cloneProjectile);
     this.hazards = snapshot.hazards.map(cloneHazard);
+    this.pendingSounds = (snapshot.pendingSounds ?? []).map((sound) => ({ ...sound, position: copyVector(sound.position) }));
+    this.pendingDamage.clear();
+    (snapshot.pendingDamage ?? []).forEach(({ targetUid, sourceUid, amount }) => this.pendingDamage.set(targetUid, { sourceUid, amount }));
     if (snapshot.rngState !== undefined) this.randomSource.setState?.(snapshot.rngState);
   }
 
@@ -727,6 +747,7 @@ export class EnemyBehaviorSystem {
       stateTimer: actor.awake ? (profile.reactionTime ?? .18) : 0,
       targetUid: 'player',
       redacted: actor.redacted ?? false,
+      lungeRemaining: 0,
     };
     this.actorStates.set(actor.uid, state);
     return state;
@@ -746,7 +767,7 @@ export class EnemyBehaviorSystem {
     events.push({ type: 'boss-phase', actorUid: actor.uid, bossId: actor.id as BossId, phaseIndex: nextIndex, phaseId: state.phaseId });
     const mechanisms: Partial<Record<BossId, Array<Extract<BehaviorEvent, { type: 'boss-mechanism' }>['mechanism']>>> = {
       'regional-director': ['open-add-shutters', 'open-add-shutters'],
-      aggregate: ['disable-left-emitter', 'sink-cover'],
+      aggregate: ['disable-left-emitter', 'disable-right-emitter'],
       'chief-actuary': ['arena-switch-window', 'arena-switch-window'],
       uninsurable: ['spawn-wave', 'spawn-wave'],
     };
@@ -881,7 +902,7 @@ export class EnemyBehaviorSystem {
     distance: number,
     world: BehaviorWorldAdapter,
     events: BehaviorEvent[],
-    difficulty: { reaction: number; refire: number; projectileSpeed: number },
+    difficulty: { reaction: number; refire: number; projectileSpeed: number; aggression?: number },
   ): void {
     const phase = profile.phases?.[state.phaseIndex];
     const lineOfSight = world.hasLineOfSight?.(actor.position, target.position) ?? true;
@@ -897,7 +918,8 @@ export class EnemyBehaviorSystem {
     const candidates = eligible.filter((attack) => (attack.priority ?? 0) === maxPriority);
     const attack = candidates[state.attackCursor % candidates.length];
     state.attackCursor += 1;
-    state.cooldown = attack.cooldown * (phase?.cooldownMultiplier ?? 1) * difficulty.refire * (1 + (this.random() * 2 - 1) * profile.cooldownJitter);
+    state.cooldown = attack.cooldown * (phase?.cooldownMultiplier ?? 1) * difficulty.refire
+      / Math.max(.1, difficulty.aggression ?? 1) * (1 + (this.random() * 2 - 1) * profile.cooldownJitter);
     state.pendingAttackId = attack.id;
     const windup = (attack.windup ?? ENEMIES[actor.id].windup) * difficulty.reaction;
     this.setAction(actor.uid, state, 'windup', windup, events, attack.id);
@@ -915,6 +937,7 @@ export class EnemyBehaviorSystem {
     state: ActorBehaviorState,
     target: BehaviorTarget,
     distance: number,
+    world: BehaviorWorldAdapter,
     events: BehaviorEvent[],
     projectileSpeed: number,
   ): void {
@@ -922,8 +945,8 @@ export class EnemyBehaviorSystem {
     if (!attack) return;
     events.push({ type: 'attack', actorUid: actor.uid, attackId: attack.id, attackKind: attack.kind });
     switch (attack.kind) {
-      case 'hitscan': this.executeHitscan(actor, target, distance, attack, events); break;
-      case 'melee': this.executeMelee(actor, target, distance, attack, events); break;
+      case 'hitscan': this.executeHitscan(actor, target, distance, attack, world, events); break;
+      case 'melee': this.executeMelee(actor, target, distance, attack, state, world, events); break;
       case 'projectile': this.executeProjectile(actor, target, state, attack, events, projectileSpeed); break;
       case 'hazard':
       case 'prediction': this.executeHazard(actor, target, attack, events); break;
@@ -932,9 +955,12 @@ export class EnemyBehaviorSystem {
     }
   }
 
-  private executeHitscan(actor: BehaviorActor, target: BehaviorTarget, distance: number, attack: HitscanAttack, events: BehaviorEvent[]): void {
+  private executeHitscan(actor: BehaviorActor, target: BehaviorTarget, distance: number, attack: HitscanAttack, world: BehaviorWorldAdapter, events: BehaviorEvent[]): void {
+    const currentDistance = horizontalDistance(actor.position, target.position);
+    if (currentDistance > attack.range || currentDistance < (attack.minRange ?? 0)) return;
+    if (attack.requiresLineOfSight && !(world.hasLineOfSight?.(actor.position, target.position) ?? true)) return;
     const pellets = attack.pellets ?? 1;
-    const rangeFactor = 1 - .45 * clamp01(distance / Math.max(attack.range, 1));
+    const rangeFactor = 1 - .45 * clamp01(currentDistance / Math.max(attack.range, 1));
     for (let index = 0; index < pellets; index += 1) {
       if (this.random() > attack.accuracy * rangeFactor) continue;
       const amount = attack.damage * (.85 + this.random() * .3);
@@ -942,10 +968,11 @@ export class EnemyBehaviorSystem {
     }
   }
 
-  private executeMelee(actor: BehaviorActor, target: BehaviorTarget, distance: number, attack: MeleeAttack, events: BehaviorEvent[]): void {
+  private executeMelee(actor: BehaviorActor, target: BehaviorTarget, distance: number, attack: MeleeAttack, state: ActorBehaviorState, world: BehaviorWorldAdapter, events: BehaviorEvent[]): void {
     const direction = normalize({ x: target.position.x - actor.position.x, y: 0, z: target.position.z - actor.position.z });
-    events.push({ type: 'move', actorUid: actor.uid, velocity: scale(direction, attack.lungeSpeed), mode: 'lunge', duration: attack.lungeDuration });
-    if (distance <= attack.contactRange) {
+    state.lungeVelocity = scale(direction, attack.lungeSpeed);
+    state.lungeRemaining = attack.lungeDuration;
+    if (distance <= attack.contactRange && (!attack.requiresLineOfSight || (world.hasLineOfSight?.(actor.position, target.position) ?? true))) {
       const amount = attack.damage * (.9 + this.random() * .2);
       events.push({ type: 'damage', sourceUid: actor.uid, targetUid: target.uid, amount, damageKind: attack.damageKind });
     }
@@ -1074,7 +1101,7 @@ export class EnemyBehaviorSystem {
   }
 
   private finishProjectile(item: ProjectileState, reason: 'impact' | 'expired', events: BehaviorEvent[]): void {
-    if (item.impactHazard) this.spawnHazard(item.ownerUid, item.ownerId, item.position, item.impactHazard, events);
+    if (reason === 'impact' && item.impactHazard) this.spawnHazard(item.ownerUid, item.ownerId, item.position, item.impactHazard, events);
     events.push({ type: 'remove-projectile', projectileId: item.id, reason });
   }
 

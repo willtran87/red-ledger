@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLayout, type LayoutId } from './layouts';
+import { getLayout, validateAuthoredFootprint, type LayoutId } from './layouts';
 
 const IDS: readonly LayoutId[] = [
   'loop', 'lanes', 'bays', 'channels', 'hub', 'rings', 'descent', 'arena', 'showroom',
@@ -46,6 +46,12 @@ describe('authored campaign layouts', () => {
         expect(row[20], `${episode}:${id}`).toBe('#');
       });
     });
+  });
+
+  it('rejects malformed source rows instead of clipping authored topology', () => {
+    const malformed = Array.from({ length: 15 }, () => '#'.repeat(21));
+    malformed[7] = `#${'.'.repeat(20)}#`;
+    expect(() => validateAuthoredFootprint(malformed)).toThrow(/width 22; expected 21/);
   });
 
   it('retains combat space, secrets, mechanisms, and doors in every map', () => {

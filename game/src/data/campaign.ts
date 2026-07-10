@@ -424,6 +424,10 @@ const makeMechanisms = (spec: MapSpec, grid: readonly string[], landmarks: reado
       travel: .65 + Number(spec.id[3]) * .11 + index * .18,
       persistState: true,
       restoresRoute: true,
+      activationOrder: index + 1,
+      independent: spec.id === 'E2M6' || spec.id === 'E3M8',
+      requires: spec.id === 'E2M6' || spec.id === 'E3M8' || index === 0 ? [] : [`${spec.id.toLowerCase()}-mechanism-${index}`],
+      opens: index === phaseCount - 1 ? ['climax'] : [`${spec.id.toLowerCase()}-mechanism-${index + 2}`],
     };
   });
 };
@@ -437,10 +441,33 @@ const phaseEnemyBudget = (spec: MapSpec): number => {
   return Math.max(minimum, Math.min(maximum, spec.normalEnemies));
 };
 
-const experiencedPar = (spec: MapSpec): number => 900 + (Number(spec.id[3]) - 1) * 40;
+// Preserve the authored relative pars while scaling the classic-speed estimates
+// to the campaign's deliberate exploration and combat target.
+const experiencedPar = (spec: MapSpec): number => Math.max(900, Math.min(2100, spec.parSeconds * 2));
+
+const baseRoutePoints = (grid: readonly string[], blocked = 's'): readonly GridPoint[] => {
+  const start = pointsFor(grid, '.,a')[0];
+  const pending: GridPoint[] = [{ x: Math.floor(start.x), z: Math.floor(start.z) }];
+  const visited = new Set<string>([`${pending[0].x},${pending[0].z}`]);
+  while (pending.length) {
+    const current = pending.shift()!;
+    [{ x: current.x + 1, z: current.z }, { x: current.x - 1, z: current.z }, { x: current.x, z: current.z + 1 }, { x: current.x, z: current.z - 1 }]
+      .forEach((next) => {
+        const cell = grid[next.z]?.[next.x];
+        const key = `${next.x},${next.z}`;
+        if (visited.has(key) || cell === undefined || cell === '#' || blocked.includes(cell)) return;
+        visited.add(key);
+        pending.push(next);
+      });
+  }
+  return [...visited].map((key) => {
+    const [x, z] = key.split(',').map(Number);
+    return { x: x + .5, z: z + .5 };
+  });
+};
 
 const chooseStartExit = (grid: readonly string[]): { start: GridPoint & { facing: Facing }; exit: GridPoint } => {
-  const points = pointsFor(grid, '.,a');
+  const points = baseRoutePoints(grid);
   const start = points[0];
   const exit = points.reduce((best, point) => distance(start, point) > distance(start, best) ? point : best, points[0]);
   const facing: Facing = start.x < grid[0].length / 2 ? 'east' : 'west';
@@ -461,7 +488,7 @@ const supplyFor = (episode: 1 | 2 | 3): readonly PickupId[] => episode === 1
     : ['staples-large', 'fasteners-large', 'canister-crate', 'toner-cell', 'toner-pack', 'field-medical-case', 'catastrophe-suit', 'rapid-authority', 'emergency-reserve'];
 
 const makeEncounterBlueprint = (spec: MapSpec, grid: readonly string[]): EncounterBlueprint => {
-  const cells = pointsFor(grid);
+  const cells = baseRoutePoints(grid);
   const authored = ENCOUNTER_BLUEPRINTS[spec.id];
   const point = (index: number): GridPoint => cells[index % cells.length];
   return {
@@ -482,7 +509,7 @@ const makeActors = (
   exit: GridPoint,
   blueprint: EncounterBlueprint,
 ): readonly ActorPlacement[] => {
-  const available = pointsFor(grid).filter((point) => distance(point, start) > 4 && distance(point, exit) > 2);
+  const available = baseRoutePoints(grid).filter((point) => distance(point, start) > 4 && distance(point, exit) > 2);
   const authoredZones = {
     entry: [...available].sort((a, b) => distance(a, blueprint.entryAnchor) - distance(b, blueprint.entryAnchor)),
     transformation: [...available].sort((a, b) => distance(a, blueprint.transformationAnchor) - distance(b, blueprint.transformationAnchor)),
@@ -506,6 +533,7 @@ const makeActors = (
 
   for (let i = 0; i < hardCount; i += 1) {
     const encounter = i < hardCount * 0.34 ? 'entry' : i < hardCount * 0.72 ? 'transformation' : 'climax';
+    const encounterStart = encounter === 'entry' ? 0 : encounter === 'transformation' ? Math.ceil(hardCount * .34) : Math.ceil(hardCount * .72);
     const zone = authoredZones[encounter];
     let point = blueprint.infightingPocket && i > 0 && i % 19 === 0
       ? blueprint.infightingPocket
@@ -519,7 +547,7 @@ const makeActors = (
       difficulties: difficultyMask(i, normalCount),
       dormant: i % 5 === 0,
       encounter,
-      mandatory: encounter === 'climax' || i < Math.ceil(normalCount * .18),
+      mandatory: i - encounterStart < 3,
       route: encounter,
       facing: i % 4 === 0 ? blueprint.ambushFacing : (['north', 'east', 'south', 'west'] as const)[i % 4],
     });
@@ -528,18 +556,22 @@ const makeActors = (
   const supply = supplyFor(episode);
   const pickupCount = 10 + episode * 4 + Math.floor(normalCount / 25);
   for (let i = 0; i < pickupCount; i += 1) {
-    const route = i % 3 === 0 ? authoredZones.entry : i % 3 === 1 ? authoredZones.transformation : authoredZones.climax;
+    const routeId = (['entry', 'transformation', 'climax'] as const)[i % 3];
+    const route = authoredZones[routeId];
     const point = i % 5 === 0 ? blueprint.rewardPocket : route[(hardCount + i * 11) % route.length];
-    actors.push({ ...occupy(point), type: 'pickup', pickup: supply[i % supply.length] });
+    // Five guaranteed boxes per route provide a conservative pistol-start
+    // damage budget; authored later supplies add weapon-specific efficiency.
+    actors.push({ ...occupy(point), type: 'pickup', pickup: i < 15 ? 'staples-large' : supply[i % supply.length], route: routeId });
   }
 
   spec.weapons.forEach((weapon, index) => {
     const point = available[(hardCount + pickupCount + index * 11) % available.length];
-    actors.push({ ...occupy(point), type: 'weapon', weapon, secret: index > 0 });
+    actors.push({ ...occupy(point), type: 'weapon', weapon, secret: index > 0, route: index === 0 ? 'entry' : 'transformation' });
   });
 
   spec.credentials.forEach((credential, index) => {
-    const point = available[Math.floor(available.length * (0.28 + index * 0.18)) % available.length];
+    const ungated = baseRoutePoints(grid, 'sRYC').filter((point) => distance(point, start) > 2);
+    const point = ungated[(hash(`${spec.id}:credential:${credential}`) + index * 7) % ungated.length] ?? available[index];
     actors.push({ ...occupy(point), type: 'credential', credential });
   });
 
@@ -555,15 +587,37 @@ const makeActors = (
 };
 
 const makeSecrets = (spec: MapSpec, grid: readonly string[]): readonly SecretDefinition[] => {
-  const secretPoints = pointsFor(grid, 's');
-  return spec.secretClues.map((clue, index) => ({
-    id: `${spec.id.toLowerCase()}-secret-${index + 1}`,
-    clue,
-    reward: index % 4 === 0 ? 'armor or over-heal' : index % 4 === 1 ? 'ammunition efficiency' : index % 4 === 2 ? 'shortcut or map information' : 'early weapon or powerup',
-    rewardPickup: (['goodwill-token', 'staples-large', 'floor-plan', 'hazard-endorsement'] as const)[index % 4],
-    clueProp: (['office-phone-stamp', 'evidence-case-cart', 'desk-lamp-paper-stack'] as const)[index % 3],
-    at: secretPoints[index % secretPoints.length],
-  }));
+  const baseKeys = new Set(baseRoutePoints(grid).map((point) => `${Math.floor(point.x)},${Math.floor(point.z)}`));
+  const secretPoints = pointsFor(grid, 's').filter((secret) => [
+    { x: secret.x + 1, z: secret.z }, { x: secret.x - 1, z: secret.z },
+    { x: secret.x, z: secret.z + 1 }, { x: secret.x, z: secret.z - 1 },
+  ].some((point) => baseKeys.has(`${Math.floor(point.x)},${Math.floor(point.z)}`)));
+  const revealPoint = (secret: GridPoint, index: number): GridPoint => {
+    const neighbors = [
+      { x: secret.x + 1, z: secret.z }, { x: secret.x - 1, z: secret.z },
+      { x: secret.x, z: secret.z + 1 }, { x: secret.x, z: secret.z - 1 },
+    ].filter((point) => {
+      const symbol = grid[Math.floor(point.z)]?.[Math.floor(point.x)];
+      return symbol !== undefined && symbol !== '#' && symbol !== 's'
+        && baseKeys.has(`${Math.floor(point.x)},${Math.floor(point.z)}`);
+    });
+    const fallback = baseRoutePoints(grid).filter((point) => distance(point, secret) >= 2);
+    return neighbors[0] ?? fallback[hash(`${spec.id}:secret-switch:${index}`) % fallback.length];
+  };
+  return secretPoints.slice(0, spec.secretClues.length).map((at, index) => {
+    const clue = spec.secretClues[index];
+    return {
+      id: `${spec.id.toLowerCase()}-secret-${index + 1}`,
+      clue,
+      reward: index % 4 === 0 ? 'armor or over-heal' : index % 4 === 1 ? 'ammunition efficiency' : index % 4 === 2 ? 'shortcut or map information' : 'early weapon or powerup',
+      rewardPickup: (['goodwill-token', 'staples-large', 'floor-plan', 'hazard-endorsement'] as const)[index % 4],
+      clueProp: (['office-phone-stamp', 'evidence-case-cart', 'desk-lamp-paper-stack'] as const)[index % 3],
+      at,
+      revealAt: revealPoint(at, index),
+      concealedCells: [`${Math.floor(at.x)},${Math.floor(at.z)}`],
+      persistState: true as const,
+    };
+  });
 };
 
 const makeTriggers = (
@@ -574,7 +628,8 @@ const makeTriggers = (
   mechanisms: readonly MapMechanism[],
 ): readonly MapTrigger[] => {
   const doors = pointsFor(grid, 'DRYC');
-  const switches = pointsFor(grid, 'a,');
+  const baseKeys = new Set(baseRoutePoints(grid).map((point) => `${Math.floor(point.x)},${Math.floor(point.z)}`));
+  const switches = pointsFor(grid, 'a,').filter((point) => baseKeys.has(`${Math.floor(point.x)},${Math.floor(point.z)}`));
   const bossRequirement = spec.bosses?.length ? `boss-${spec.bosses.length}` : 'climax';
   const triggers: MapTrigger[] = [
     {
@@ -591,7 +646,7 @@ const makeTriggers = (
       targets: spec.nextMap ? [spec.nextMap] : [],
     },
   ];
-  const teleportCandidates = pointsFor(grid, '.,a').filter((point) => distance(point, exit) > 3);
+  const teleportCandidates = pointsFor(grid, '.,a').filter((point) => baseKeys.has(`${Math.floor(point.x)},${Math.floor(point.z)}`) && distance(point, exit) > 3);
   mechanisms.forEach((mechanism, index) => {
     const transformationPoint = switches[Math.floor((index + 1) * switches.length / (mechanisms.length + 1))] ?? exit;
     const transformationId = `${spec.id.toLowerCase()}-transformation-${index + 1}`;
@@ -599,7 +654,7 @@ const makeTriggers = (
       ? [...teleportCandidates].sort((a, b) => distance(b, transformationPoint) - distance(a, transformationPoint))[index % teleportCandidates.length]
       : undefined;
     const teleportDestinationId = `${spec.id.toLowerCase()}-teleport-destination-${index + 1}`;
-    triggers.unshift({
+    triggers.splice(index, 0, {
       ...transformationPoint,
       id: transformationId,
       action: spec.transformation,
@@ -631,7 +686,7 @@ const makeTriggers = (
   });
 
   secrets.forEach((secret) => triggers.push({
-    ...secret.at,
+    ...secret.revealAt,
     id: `${secret.id}-trigger`,
     action: 'reveal-secret',
     targets: [secret.id],
@@ -706,6 +761,7 @@ const buildMap = (spec: MapSpec): CampaignMap => {
       transformation: 'central D/a/v cells and adjacent loops',
       climax: 'far third of walkable cells nearest exit',
       arena: 'central raised and comma-marked sectors',
+      'spawn-shutters': 'tagged arena doors that release authored boss reinforcements',
       'transformation-sectors': mechanisms[0].sectorTags.join(','),
       'transformation-wave': 'dormant actors assigned to the transformation encounter',
       'map-exit': `${exit.x},${exit.z}`,

@@ -36,6 +36,8 @@ export class UIController {
   private confirmAction?: () => void;
   private focusBeforeDialog?: HTMLElement;
   private slotReturn = 'pause-menu';
+  private lastAnnouncedMessage = '';
+  private useFeedbackTimer?: number;
 
   constructor(readonly game: GameEngine) {
     this.buildEpisodeCards();
@@ -52,6 +54,12 @@ export class UIController {
       state: 'lowering' | 'raising' | 'ready'; duration: number;
     }>).detail));
     window.addEventListener('player-hurt', (event) => this.hurtFlash((event as CustomEvent<{ direction?: 'left' | 'right' | 'center' }>).detail));
+    window.addEventListener('use-failed', (event) => this.useFailure((event as CustomEvent<{
+      reason: 'credential' | 'encounter' | 'nothing';
+      direction: 'left' | 'right' | 'center';
+      icon: string;
+      credential?: string;
+    }>).detail));
     this.loadSettings();
   }
 
@@ -98,7 +106,14 @@ export class UIController {
     $('#new-game').addEventListener('click', () => { this.updateEpisodeLocks(); this.showScreen('episode-menu'); });
     $('#continue-game').addEventListener('click', () => {
       this.game.audio.unlock();
-      if (this.game.load()) this.hideScreens();
+      if (this.game.load()) {
+        $('#menu-feedback').textContent = '';
+        this.hideScreens();
+      } else {
+        const message = 'No valid save is available. Start a new game to create one.';
+        $('#menu-feedback').textContent = message;
+        this.announce(message);
+      }
     });
     $('#options-button').addEventListener('click', () => { this.optionsReturn = 'menu'; this.showScreen('options-menu'); });
     $('#pause-options').addEventListener('click', () => { this.optionsReturn = 'pause-menu'; this.showScreen('options-menu'); });
@@ -213,6 +228,10 @@ export class UIController {
     const weapon = WEAPONS[snapshot.player.weapon];
     $('#ammo').textContent = weapon.ammo === 'none' ? '--' : String(Math.floor(snapshot.player.ammo[weapon.ammo]));
     $('#message').textContent = snapshot.message;
+    if (snapshot.message && snapshot.message !== this.lastAnnouncedMessage) {
+      this.lastAnnouncedMessage = snapshot.message;
+      this.announce(snapshot.message);
+    } else if (!snapshot.message) this.lastAnnouncedMessage = '';
     $('#map-name').textContent = `${snapshot.map.id} ${snapshot.map.title}`;
     if (snapshot.mode === 'dead') this.setPortrait('dead');
     else if (performance.now() >= this.portraitUntil) this.setPortrait('neutral');
@@ -337,6 +356,23 @@ export class UIController {
       [{ filter: detail.kind === 'wall' ? 'brightness(1.18)' : 'contrast(1.15)' }, { filter: 'none' }],
       { duration: detail.kind === 'wall' ? 70 : 90 },
     );
+  }
+
+  private useFailure(detail: { reason: 'credential' | 'encounter' | 'nothing'; direction: 'left' | 'right' | 'center'; icon: string; credential?: string }): void {
+    const feedback = $<HTMLElement>('#use-feedback');
+    const copy = detail.reason === 'credential'
+      ? `${detail.credential ?? 'Required'} credential needed`
+      : detail.reason === 'encounter' ? 'Control locked while threats remain' : 'Nothing usable nearby';
+    const icon = detail.reason === 'credential'
+      ? `public_runtime/ui/icons/credential-${detail.icon}.png`
+      : `public_runtime/ui/icons/${detail.reason === 'encounter' ? 'minimal-alert' : 'minimal-terminal'}.png`;
+    feedback.className = `from-${detail.direction}`;
+    feedback.querySelector<HTMLImageElement>('img')!.src = runtimeUrl(icon);
+    feedback.querySelector<HTMLElement>('span')!.textContent = copy;
+    feedback.toggleAttribute('hidden', false);
+    this.announce(copy);
+    if (this.useFeedbackTimer) window.clearTimeout(this.useFeedbackTimer);
+    this.useFeedbackTimer = window.setTimeout(() => feedback.toggleAttribute('hidden', true), detail.reason === 'nothing' ? 650 : 1200);
   }
 
   private specialPortrait(state: PortraitState): void {
@@ -523,11 +559,21 @@ export class UIController {
   }
 
   private handleInputAction(detail: InputActionEvent): void {
-    if (detail.repeat || this.game.mode !== 'playing') return;
+    if (detail.repeat) return;
+    if (detail.action === 'pause') {
+      this.game.input.keys.delete('Escape');
+      const activeScreen = document.querySelector<HTMLElement>('.screen.active');
+      if (this.game.mode === 'playing') this.game.pause();
+      else if (this.game.mode === 'paused' && activeScreen?.id === 'pause-menu') {
+        this.hideScreens();
+        this.game.resume();
+      }
+      return;
+    }
+    if (this.game.mode !== 'playing') return;
     if (detail.action === 'automap') this.toggleAutomap('full');
     else if (detail.action === 'automap-overlay') this.toggleAutomap('overlay');
     else if (detail.action === 'weapon-radial') this.openWeaponRadial();
-    else if (detail.action === 'pause' && detail.source === 'touch') this.game.pause();
   }
 
   private handleInputRelease(detail: InputActionEvent): void {
@@ -666,7 +712,19 @@ export class UIController {
     }));
   }
 
-  private updateContinue(): void { ($('#continue-game') as HTMLButtonElement).disabled = !this.game.hasSave(); }
+  private updateContinue(): void {
+    const button = $<HTMLButtonElement>('#continue-game');
+    const available = this.game.hasSave();
+    button.disabled = false;
+    button.dataset.available = String(available);
+    button.setAttribute('aria-describedby', 'menu-feedback');
+    button.title = available ? 'Continue the newest valid save' : 'No valid save is available';
+  }
+  private announce(message: string): void {
+    const announcer = $('#announcer');
+    announcer.textContent = '';
+    requestAnimationFrame(() => { announcer.textContent = message; });
+  }
   private hideScreens(): void { document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active')); }
   private showScreen(id: string): void {
     this.hideScreens();

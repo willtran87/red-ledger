@@ -26,12 +26,17 @@ for (let index = 0; index < 12; index += 1) {
   if (volley.combatEffects.projectiles.length > 0) break;
 }
 assert(volley.combatEffects.projectiles.length > 0, 'Enemy projectile did not enter runtime state');
-await page.evaluate(() => window.advanceTime(140));
-volley = await state();
-assert(volley.combatEffects.projectiles.length > 0, 'Enemy projectile expired before visual capture');
+// Capture and save on the exact tick where the projectile exists; a nearby target
+// may legitimately be hit on the following fixed step.
 await page.screenshot({ path: 'output/combat-save/enemy-projectile.png' });
 
-await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape' })));
+const modeBeforePause = (await state()).mode;
+assert(['playing', 'paused'].includes(modeBeforePause), `Combat staging left a non-playable mode before save: ${modeBeforePause}`);
+if (modeBeforePause === 'playing') {
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('input-action', {
+    detail: { action: 'pause', source: 'keyboard', repeat: false },
+  })));
+}
 await page.waitForTimeout(100);
 const pausedState = await state();
 assert(pausedState.mode === 'paused', 'Pause input did not reach game state');

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CAMPAIGN } from './campaign';
-import { validateCampaign } from './validation';
+import { statefulReachableCells, validateCampaign } from './validation';
 
 describe('campaign data', () => {
   it('contains three complete nine-map episodes', () => {
@@ -58,11 +58,48 @@ describe('campaign data', () => {
         .toBe(map.mechanisms.flatMap((mechanism) => mechanism.landmarkTags).length);
       expect(map.mechanisms.every((mechanism) => mechanism.persistState && mechanism.restoresRoute)).toBe(true);
       expect(map.mechanisms.every((mechanism) => map.triggers.some((trigger) => trigger.targets.includes(mechanism.id)))).toBe(true);
+      const authoredTriggerOrder = map.triggers
+        .filter((trigger) => map.mechanisms.some((mechanism) => trigger.targets.includes(mechanism.id)))
+        .map((trigger) => trigger.targets.find((target) => map.mechanisms.some((mechanism) => mechanism.id === target)));
+      expect(authoredTriggerOrder, `${map.id} mechanism trigger order`).toEqual(map.mechanisms.map((mechanism) => mechanism.id));
       expect(map.secrets.every((secret) => Boolean(secret.clueProp && secret.rewardPickup))).toBe(true);
+      expect(new Set(map.mechanisms.map((mechanism) => mechanism.activationOrder)).size).toBe(map.mechanisms.length);
+      expect(map.secrets.every((secret) => secret.persistState && secret.concealedCells.length > 0)).toBe(true);
+      map.secrets.forEach((secret) => {
+        expect(Math.floor(secret.revealAt.x) === Math.floor(secret.at.x) && Math.floor(secret.revealAt.z) === Math.floor(secret.at.z)).toBe(false);
+        const rewardKey = `${Math.floor(secret.at.x)},${Math.floor(secret.at.z)}`;
+        expect(statefulReachableCells(map).has(rewardKey), `${map.id}:${secret.id} concealed`).toBe(false);
+        expect(statefulReachableCells(map, new Set([secret.id])).has(rewardKey), `${map.id}:${secret.id} revealed`).toBe(true);
+      });
       map.triggers.filter((trigger) => trigger.action === 'teleport').forEach((trigger) => {
         expect(trigger.destination, trigger.id).toBeDefined();
         expect(map.triggers.some((candidate) => trigger.targets.includes(candidate.id)), trigger.id).toBe(true);
       });
     });
+  });
+
+  it('authors independent pump/gate states and resolvable encounter sequencing', () => {
+    for (const id of ['E2M6', 'E3M8'] as const) {
+      const map = CAMPAIGN.maps[id];
+      expect(map.mechanisms).toHaveLength(3);
+      expect(map.mechanisms.every((mechanism) => mechanism.independent && mechanism.requires.length === 0)).toBe(true);
+      expect(new Set(map.mechanisms.flatMap((mechanism) => mechanism.sectorTags)).size)
+        .toBe(map.mechanisms.flatMap((mechanism) => mechanism.sectorTags).length);
+    }
+    Object.values(CAMPAIGN.maps).forEach((map) => {
+      const encounterIds = new Set(map.encounters.map((encounter) => encounter.id));
+      map.encounters.forEach((encounter) => {
+        encounter.zones.forEach((zone) => expect(map.zones[zone], `${map.id}:${zone}`).toBeDefined());
+        encounter.opens?.forEach((opened) => expect(opened === 'map-exit' || encounterIds.has(opened), `${map.id}:${opened}`).toBe(true));
+      });
+      const anchors = [map.encounterBlueprint.entryAnchor, map.encounterBlueprint.transformationAnchor,
+        map.encounterBlueprint.climaxAnchor, map.encounterBlueprint.rewardPocket]
+        .map((point) => `${Math.floor(point.x)},${Math.floor(point.z)}`);
+      expect(new Set(anchors).size, map.id).toBe(4);
+    });
+  });
+
+  it('preserves authored MapSpec pacing instead of assigning pars only by map index', () => {
+    expect(new Set(['E1M5', 'E2M5', 'E3M5'].map((id) => CAMPAIGN.maps[id as keyof typeof CAMPAIGN.maps].parSeconds)).size).toBeGreaterThan(1);
   });
 });

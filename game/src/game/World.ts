@@ -142,7 +142,7 @@ export interface BreakableState {
   destroyed: boolean;
 }
 
-export type BossMechanismAction = 'open-add-shutters' | 'sink-cover' | 'arena-switch-ready' | 'open-binding-gate' | 'expose-core';
+export type BossMechanismAction = 'open-add-shutters' | 'disable-left-emitter' | 'disable-right-emitter' | 'sink-cover' | 'arena-switch-ready' | 'open-binding-gate' | 'expose-core';
 
 export interface BossMechanismState {
   readonly actions: readonly BossMechanismAction[];
@@ -197,6 +197,7 @@ export class World {
   readonly sectors = new Map<string, RuntimeSector>();
   readonly landmarks = new Map<string, RuntimeLandmark>();
   readonly breakables = new Map<string, RuntimeBreakable>();
+  readonly activatedMechanisms = new Set<string>();
   hazardsEnabled = true;
   map!: CampaignMap;
   episode = 1;
@@ -204,6 +205,7 @@ export class World {
   private summonCounter = 0;
   private dropCounter = 0;
   private readonly bossMechanismActions = new Set<BossMechanismAction>();
+  private readonly secretClues = new Map<string, Sprite>();
   private bindingGates = 0;
 
   constructor(
@@ -406,10 +408,11 @@ export class World {
       const sprite = new Sprite(new SpriteMaterial({ map: this.assets.texture(this.assets.prop(secret.clueProp)), transparent: true, opacity: .7, alphaTest: .1 }));
       sprite.center.set(.5, 0);
       sprite.scale.set(.52, .52, 1);
-      sprite.position.set(secret.at.x * this.map.cellSize, 0, secret.at.z * this.map.cellSize);
+      sprite.position.set(secret.revealAt.x * this.map.cellSize, 0, secret.revealAt.z * this.map.cellSize);
       sprite.position.y = this.floorHeightAt(sprite.position) + .03;
       sprite.userData.secretId = secret.id;
       this.root.add(sprite);
+      this.secretClues.set(secret.id, sprite);
     });
   }
 
@@ -426,7 +429,7 @@ export class World {
         sprite.center.set(.5, 0);
         sprite.scale.set(definition.height, definition.height, 1);
         sprite.position.copy(position);
-        const phaseLocked = this.map.id === 'E3M8' && id === 'uninsurable';
+        const phaseLocked = placement.encounter === 'climax' || (this.map.id === 'E3M8' && id === 'uninsurable');
         sprite.visible = !phaseLocked;
         this.root.add(sprite);
         const facing = ({ north: Math.PI, east: -Math.PI / 2, south: 0, west: Math.PI / 2 })[placement.facing ?? 'south'];
@@ -465,8 +468,11 @@ export class World {
     actorPosition.y = this.floorHeightAt(actorPosition);
     sprite.position.copy(actorPosition);
     this.root.add(sprite);
+    const actorUid = uid ?? `summoned-${id}-${this.summonCounter++}`;
+    const restoredSequence = /^summoned-.+-(\d+)$/.exec(actorUid);
+    if (restoredSequence) this.summonCounter = Math.max(this.summonCounter, Number(restoredSequence[1]) + 1);
     const actor: RuntimeActor = {
-      uid: uid ?? `summoned-${id}-${this.summonCounter++}`,
+      uid: actorUid,
       kind: 'enemy',
       id,
       sprite,
@@ -500,8 +506,11 @@ export class World {
     sprite.scale.set(.72, .72, 1);
     sprite.position.copy(dropPosition);
     this.root.add(sprite);
+    const pickupUid = uid ?? `ammo-drop-${this.dropCounter++}`;
+    const restoredSequence = /^ammo-drop-(\d+)$/.exec(pickupUid);
+    if (restoredSequence) this.dropCounter = Math.max(this.dropCounter, Number(restoredSequence[1]) + 1);
     const pickup: RuntimePickup = {
-      uid: uid ?? `ammo-drop-${this.dropCounter++}`,
+      uid: pickupUid,
       kind: 'pickup', id: pickupId, sprite, position: dropPosition, collected: false, counted: false,
       ammoDrop: { ammoId, amount },
     };
@@ -584,6 +593,7 @@ export class World {
       const z = Math.floor((position.z + dz) / this.map.cellSize);
       if (z < 0 || z >= this.map.grid.length || x < 0 || x >= this.map.grid[0].length) return true;
       if (this.map.grid[z][x] === '#') return true;
+      if (this.isConcealedCell(`${x},${z}`)) return true;
       const door = this.doors.get(`${x},${z}`);
       if (door && door.progress < .72) return true;
       return [...this.breakables.values()].some((breakable) =>
@@ -633,8 +643,65 @@ export class World {
   applyMechanism(id: string): boolean {
     const mechanism = this.map.mechanisms.find((candidate) => candidate.id === id);
     if (!mechanism) return false;
+    if (this.activatedMechanisms.has(id)) return true;
+    if (!mechanism.independent && mechanism.requires.some((required) => !this.activatedMechanisms.has(required))) return false;
     this.applyTransformation(mechanism.action, mechanism.id);
+    this.activatedMechanisms.add(id);
     return true;
+  }
+
+  mechanismOpens(id: string): readonly string[] {
+    const mechanism = this.map.mechanisms.find((candidate) => candidate.id === id);
+    if (!mechanism || !this.activatedMechanisms.has(id)) return [];
+    if (mechanism.independent) {
+      const family = this.map.mechanisms.filter((candidate) => candidate.independent);
+      if (family.some((candidate) => !this.activatedMechanisms.has(candidate.id))) return [];
+      return [...new Set(family.flatMap((candidate) => candidate.opens))];
+    }
+    return mechanism.opens;
+  }
+
+  restoreActivatedMechanisms(ids: readonly string[]): void {
+    this.activatedMechanisms.clear();
+    ids.filter((id) => this.map.mechanisms.some((mechanism) => mechanism.id === id))
+      .forEach((id) => this.activatedMechanisms.add(id));
+  }
+
+  revealSecret(id: string): boolean {
+    const secret = this.map.secrets.find((candidate) => candidate.id === id);
+    if (!secret || this.discoveredSecrets.has(id)) return false;
+    this.discoveredSecrets.add(id);
+    const clue = this.secretClues.get(id);
+    if (clue) clue.visible = false;
+    return true;
+  }
+
+  restoreSecrets(ids: readonly string[]): void {
+    this.discoveredSecrets.clear();
+    ids.forEach((id) => {
+      if (this.map.secrets.some((secret) => secret.id === id)) this.revealSecret(id);
+    });
+  }
+
+  isConcealedAt(position: Vector3): boolean {
+    const x = Math.floor(position.x / this.map.cellSize);
+    const z = Math.floor(position.z / this.map.cellSize);
+    return this.isConcealedCell(`${x},${z}`);
+  }
+
+  private isConcealedCell(key: string): boolean {
+    return this.map.secrets.some((secret) => !this.discoveredSecrets.has(secret.id) && secret.concealedCells.includes(key));
+  }
+
+  unlockEncounter(id: string): number {
+    let unlocked = 0;
+    this.actors.filter((actor) => actor.encounter === id && actor.phaseLocked).forEach((actor) => {
+      actor.phaseLocked = false;
+      actor.awake = true;
+      actor.sprite.visible = true;
+      unlocked += 1;
+    });
+    return unlocked;
   }
 
   applyTransformation(action: TriggerAction, mechanismId?: string): void {
@@ -746,6 +813,20 @@ export class World {
         landmark.active = true;
         landmark.targetPosition.x = landmark.basePosition.x + (index % 2 === 0 ? -2.2 : 2.2);
       });
+    } else if ((action === 'disable-left-emitter' || action === 'disable-right-emitter') && this.map.id === 'E2M8') {
+      const emitters = [...this.landmarks.values()].slice(0, 2);
+      const emitter = emitters[action === 'disable-left-emitter' ? 0 : 1];
+      if (emitter) {
+        emitter.active = true;
+        emitter.sprite.material.map = this.assets.texture(this.assets.prop(emitter.id, 'wrecked'));
+        emitter.sprite.material.opacity = .42;
+        emitter.sprite.material.needsUpdate = true;
+        emitter.targetPosition.y = emitter.basePosition.y - .7;
+      }
+      const side = action === 'disable-left-emitter' ? 0 : 1;
+      const mapWidth = this.map.grid[0]?.length ?? 0;
+      [...this.sectors.values()].filter((sector) => (sector.x < mapWidth / 2 ? 0 : 1) === side && (sector.char === 'a' || sector.char === ','))
+        .forEach((sector) => { sector.targetHeight = sector.baseHeight - .65; });
     } else if (action === 'sink-cover' && this.map.id === 'E2M8') {
       [...this.sectors.values()].filter((sector) => sector.char === 'a' || sector.char === ',')
         .forEach((sector) => { sector.targetHeight = sector.baseHeight - 1.5; });
@@ -839,6 +920,8 @@ export class World {
     this.sectors.clear();
     this.landmarks.clear();
     this.breakables.clear();
+    this.activatedMechanisms.clear();
+    this.secretClues.clear();
     this.bossMechanismActions.clear();
     this.bindingGates = 0;
     this.hazardsEnabled = true;
