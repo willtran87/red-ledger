@@ -23,7 +23,7 @@ cd game
 npm run test:release
 ```
 
-The release gate is self-contained: it builds the standalone package, starts an isolated local server, runs unit, campaign, gameplay, progression, responsive/mobile, combat/save, deterministic demo, controls, mechanisms, active-combat lifecycle/performance, production portability, and required Chromium/Firefox/WebKit tests, then stops the server.
+The release gate is self-contained: it builds the standalone package, starts an isolated local server, runs unit, campaign, gameplay, progression, responsive/mobile, combat/save, deterministic demo, controls, mechanisms, generated particle feedback, active-combat lifecycle/performance, production portability, and required Chromium/Firefox/WebKit tests, then stops the server.
 
 ## Documentation
 

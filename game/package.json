@@ -19,6 +19,7 @@
     "test:demo": "node tests/demo-runtime-e2e.mjs",
     "test:controls": "node tests/controls-e2e.mjs",
     "test:mechanisms": "node tests/mechanisms-e2e.mjs",
+    "test:particles": "node tests/particles-e2e.mjs",
     "test:cross-browser": "node tests/cross-browser-smoke.mjs",
     "test:mobile-ux": "node tests/mobile-ux-e2e.mjs",
     "test:production": "node tests/production-portability-e2e.mjs",

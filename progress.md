@@ -26,6 +26,9 @@ Original prompt: implement the game
 - 2026-07-10: Post-publication combat/persistence audit remediation corrected angular aim units, attack-time LOS, timed collision-safe lunges, aggression, occluded splash, projectile expiry, Aggregate emitter coupling, functional vision powerups, exact transient combat snapshots, stealth/counter restoration, and pre-mutation deep save validation. Focused TypeScript, 37 unit tests, production build, and combat/save browser E2E pass.
 - 2026-07-10: Campaign-data remediation removed silent layout clipping by correcting 109 source rows and enforcing strict 21x15 footprints; added persistent clue-side concealed secrets, explicit mechanism ordering/dependencies/independence, reachable encounter-route placement, MapSpec-derived pars, stateful credential/secret validation, and real per-route mandatory-health/ammunition budgets. TypeScript and all 72 unit/data/audit tests pass.
 - 2026-07-10: Final integration connected concealed-secret collision/reveal state, ordered and independent mechanisms, encounter phase locks, and exact save restoration to the live runtime. The self-contained release gate passes 75 unit/data checks plus every browser scenario, sustained 28-hostile combat at a 100 ms p95 gate, and Chromium/Firefox/WebKit; `docs/` matches all 3,572 production files by SHA-256.
+- 2026-07-12: Added a deterministic 192-slot Three.js sprite-particle pool with reduced-effects scaling and fixed-tick updates. Combat, deaths, projectiles, breakables, pickups, secrets, teleports, summons, revivals, boss phases, and mechanisms now emit bounded ink, paper, spark, ember, energy, smoke, debris, and approval feedback; live counts are exposed through `render_game_to_text` and particles reset cleanly across maps, saves, and demos.
+- 2026-07-12: Generated three keyed, uniformly spaced eight-cell particle sheets for weapon feedback, world interactions, and destruction/deaths. The sheets were chroma-extracted, normalized, palette-reduced, sliced into 24 transparent `32x32` runtime seeds, wired by effect kind, and cataloged alongside the existing 341 animated effect frames. Added sparse deterministic episode ambience and a dedicated browser gate for impacts, deaths, mechanisms, secrets, and reduced-effects behavior.
+- 2026-07-12: Final particle release gate passes 78 unit/data tests and every browser scenario. Sustained 28-hostile combat measured 27.2 ms mean / 66.7 ms p95 with 70 resident textures, and Chromium, Firefox, and WebKit all pass with the generated feedback enabled.
 
 ## Verified Baseline
 
@@ -33,7 +36,7 @@ Original prompt: implement the game
 - High-resolution viewport: `2560x1600`
 - Desktop viewport: `1280x720`
 - Mobile viewport: `390x844`
-- Runtime asset catalog: 3,501 PNGs / 3,568 files
+- Runtime asset catalog: 3,525 PNGs / 3,592 files
 
 ## External Signoff
 

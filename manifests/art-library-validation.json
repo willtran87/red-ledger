@@ -1,12 +1,12 @@
 {
   "sheet_inventory": {
     "counts": {
-      "source_alpha": 87,
-      "source_keyed": 87,
-      "normalized_alpha": 87,
-      "normalized_keyed": 87
+      "source_alpha": 90,
+      "source_keyed": 90,
+      "normalized_alpha": 90,
+      "normalized_keyed": 90
     },
-    "registered": 87,
+    "registered": 90,
     "missing_pairs": {},
     "unexpected_pairs": {},
     "unregistered": [],
@@ -818,6 +818,18 @@
       "border_mean_distance": 0.0,
       "border_max_distance": 0.0,
       "passed": true,
+      "file": "art/source/keyed/normalized/fx_death-feedback_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
       "file": "art/source/keyed/normalized/fx_hit-ink-large_v01.png"
     },
     {
@@ -867,6 +879,30 @@
       "border_max_distance": 0.0,
       "passed": true,
       "file": "art/source/keyed/normalized/fx_teleport-approval-ring_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/fx_weapon-feedback_v01.png"
+    },
+    {
+      "key": "magenta",
+      "border_average": [
+        255,
+        0,
+        255
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/fx_world-feedback_v01.png"
     },
     {
       "key": "green",
@@ -2107,6 +2143,24 @@
       "passed": true
     },
     {
+      "file": "art/source/alpha/normalized/fx_death-feedback_v01.png",
+      "size": [
+        1976,
+        793
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.0674,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
       "file": "art/source/alpha/normalized/fx_hit-ink-large_v01.png",
       "size": [
         2172,
@@ -2186,6 +2240,42 @@
       ],
       "mode_ok": true,
       "visible_coverage": 0.0329,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/fx_weapon-feedback_v01.png",
+      "size": [
+        2168,
+        724
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.0717,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/fx_world-feedback_v01.png",
+      "size": [
+        2168,
+        724
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.0679,
       "transparent_corners": [
         0,
         0,
@@ -10091,6 +10181,444 @@
       "passed": true
     },
     {
+      "file": "art/source/alpha/normalized/fx_weapon-feedback_v01.png",
+      "count": 8,
+      "cell_width": 271,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            46,
+            486,
+            225,
+            666
+          ],
+          "gaps": [
+            46,
+            486,
+            46,
+            58
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            32,
+            514,
+            238,
+            666
+          ],
+          "gaps": [
+            32,
+            514,
+            33,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            32,
+            523,
+            238,
+            666
+          ],
+          "gaps": [
+            32,
+            523,
+            33,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            32,
+            546,
+            238,
+            666
+          ],
+          "gaps": [
+            32,
+            546,
+            33,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 4,
+          "bbox": [
+            33,
+            454,
+            238,
+            666
+          ],
+          "gaps": [
+            33,
+            454,
+            33,
+            58
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 5,
+          "bbox": [
+            39,
+            473,
+            231,
+            666
+          ],
+          "gaps": [
+            39,
+            473,
+            40,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 6,
+          "bbox": [
+            37,
+            516,
+            233,
+            666
+          ],
+          "gaps": [
+            37,
+            516,
+            38,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 7,
+          "bbox": [
+            32,
+            450,
+            238,
+            666
+          ],
+          "gaps": [
+            32,
+            450,
+            33,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/fx_world-feedback_v01.png",
+      "count": 8,
+      "cell_width": 271,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            44,
+            483,
+            226,
+            666
+          ],
+          "gaps": [
+            44,
+            483,
+            45,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            41,
+            459,
+            229,
+            666
+          ],
+          "gaps": [
+            41,
+            459,
+            42,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            46,
+            477,
+            225,
+            666
+          ],
+          "gaps": [
+            46,
+            477,
+            46,
+            58
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            32,
+            464,
+            238,
+            666
+          ],
+          "gaps": [
+            32,
+            464,
+            33,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 4,
+          "bbox": [
+            32,
+            501,
+            238,
+            666
+          ],
+          "gaps": [
+            32,
+            501,
+            33,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 5,
+          "bbox": [
+            56,
+            499,
+            214,
+            666
+          ],
+          "gaps": [
+            56,
+            499,
+            57,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 6,
+          "bbox": [
+            32,
+            454,
+            238,
+            666
+          ],
+          "gaps": [
+            32,
+            454,
+            33,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 7,
+          "bbox": [
+            47,
+            471,
+            223,
+            666
+          ],
+          "gaps": [
+            47,
+            471,
+            48,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/fx_death-feedback_v01.png",
+      "count": 8,
+      "cell_width": 247,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            29,
+            535,
+            217,
+            730
+          ],
+          "gaps": [
+            29,
+            535,
+            30,
+            63
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            29,
+            522,
+            217,
+            730
+          ],
+          "gaps": [
+            29,
+            522,
+            30,
+            63
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            30,
+            529,
+            216,
+            730
+          ],
+          "gaps": [
+            30,
+            529,
+            31,
+            63
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            29,
+            558,
+            217,
+            730
+          ],
+          "gaps": [
+            29,
+            558,
+            30,
+            63
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 4,
+          "bbox": [
+            29,
+            571,
+            217,
+            730
+          ],
+          "gaps": [
+            29,
+            571,
+            30,
+            63
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 5,
+          "bbox": [
+            29,
+            570,
+            217,
+            730
+          ],
+          "gaps": [
+            29,
+            570,
+            30,
+            63
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 6,
+          "bbox": [
+            29,
+            491,
+            217,
+            730
+          ],
+          "gaps": [
+            29,
+            491,
+            30,
+            63
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 7,
+          "bbox": [
+            29,
+            447,
+            217,
+            730
+          ],
+          "gaps": [
+            29,
+            447,
+            30,
+            63
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
       "file": "art/source/alpha/normalized/ui_portrait_damage-0_states_v01.png",
       "count": 6,
       "cell_width": 362,
@@ -12233,8 +12761,8 @@
     }
   ],
   "other_runtime_pngs": {
-    "count": 1337,
-    "passed": 1337,
+    "count": 1361,
+    "passed": 1361,
     "failed": []
   },
   "passed": true

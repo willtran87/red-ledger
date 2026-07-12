@@ -49,7 +49,7 @@ Status meanings:
 | `npm run test:campaign` | **Pass on rerun: 27 maps** | Every map can be debug-loaded without a recorded browser error. First run reached the page before `window.__redLedger` existed. It does not prove playthroughs. |
 | `npm run test:visual` | **Pass** | Current responsive geometry assertions pass. It is not a full visual/fidelity review. |
 | `manifests/art-library-validation.json` | **Pass** | 16 actor families, 87 keyed/alpha source pairs, 81 spaced sheets, and 1,337 other runtime PNG checks pass the art pipeline. |
-| `assets/data/runtime-assets.json` | **Pass in source package** | 3,568 files / 3,501 PNGs resolve, signatures parse, and catalog URLs map safely to files. |
+| `assets/data/runtime-assets.json` | **Pass in source package** | 3,592 files / 3,525 PNGs resolve, signatures parse, and catalog URLs map safely to files. |
 
 ## Known Expected Failures
 

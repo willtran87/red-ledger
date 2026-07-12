@@ -212,6 +212,9 @@ All pickups follow base plus four-frame shine unless the runtime uses a procedur
 | `fx.generic-debris-paper` | `32x32` | 6 variants | Opaque | Yes | planned |
 | `fx.generic-debris-metal` | `32x32` | 6 variants | Opaque | Yes | planned |
 | `fx.generic-debris-wax` | `32x32` | 6 variants | Opaque | No | planned |
+| `fx.particle-weapon-feedback` | `32x32` | 8 variants | Opaque | Yes | produced |
+| `fx.particle-world-feedback` | `32x32` | 8 variants | Opaque/additive | Yes | produced |
+| `fx.particle-death-feedback` | `32x32` | 8 variants | Opaque | Yes | produced |
 
 ---
 
