@@ -1,5 +1,5 @@
 export type AudioBus = 'music' | 'sfx';
-export type EnemyCueEvent = 'idle' | 'alert' | 'pain' | 'attack' | 'death' | 'phase';
+export type EnemyCueEvent = 'idle' | 'alert' | 'windup' | 'pain' | 'attack' | 'death' | 'phase';
 
 interface AudioSettings {
   master: number;
@@ -21,6 +21,7 @@ export class AudioSystem {
   private musicPattern: Array<number | null> = [];
   private noiseState = 0x51f15e;
   private combatIntensity = 0;
+  private lastSpatialCue?: { kind: string; pan: number; gain: number };
   private settings: AudioSettings = { master: .8, music: .65, sfx: .8, muted: false };
 
   constructor() { this.restoreSettings(); }
@@ -145,17 +146,36 @@ export class AudioSystem {
     this.duckMusic(id === 'catastrophe-launcher' || id === 'binding-engine' ? .18 : .1);
   }
 
-  enemyCue(id: string, event: EnemyCueEvent, pan = 0): void {
+  enemyCue(id: string, event: EnemyCueEvent, pan = 0, gain = 1): void {
+    const spatialGain = clamp(gain);
+    this.lastSpatialCue = { kind: `enemy:${id}:${event}`, pan, gain: spatialGain };
     let hash = 2166136261;
     for (const char of id) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
     const base = 72 + (hash >>> 0) % 210;
-    const offsets: Record<EnemyCueEvent, number> = { idle: -8, alert: 80, pain: 46, attack: 24, death: -34, phase: 140 };
+    const offsets: Record<EnemyCueEvent, number> = { idle: -8, alert: 80, windup: 118, pain: 46, attack: 24, death: -34, phase: 140 };
     const type: OscillatorType = (hash & 3) === 0 ? 'sawtooth' : (hash & 3) === 1 ? 'square' : (hash & 3) === 2 ? 'triangle' : 'sine';
-    const duration = event === 'death' ? .22 : event === 'phase' ? .28 : event === 'pain' ? .12 : event === 'idle' ? .16 : .09;
-    const volume = event === 'phase' ? .04 : event === 'idle' ? .012 : .024;
+    const duration = event === 'death' ? .22 : event === 'phase' ? .28 : event === 'windup' ? .16 : event === 'pain' ? .12 : event === 'idle' ? .16 : .09;
+    const volume = (event === 'phase' ? .04 : event === 'idle' ? .012 : event === 'windup' ? .021 : .024) * spatialGain;
     this.tone(Math.max(42, base + offsets[event]), duration, type, volume, 'sfx', pan);
-    if (event === 'attack' && (hash & 1) === 0) this.tone(base * 1.5, .055, 'square', .012, 'sfx', pan);
-    if (event === 'death' || event === 'pain') this.noise(event === 'death' ? .12 : .05, event === 'death' ? .024 : .014, 'sfx', pan);
+    if (event === 'windup') this.tone(base * 2.05, .045, 'sine', .009 * spatialGain, 'sfx', pan);
+    if (event === 'attack' && (hash & 1) === 0) this.tone(base * 1.5, .055, 'square', .012 * spatialGain, 'sfx', pan);
+    if (event === 'death' || event === 'pain') this.noise(event === 'death' ? .12 : .05, (event === 'death' ? .024 : .014) * spatialGain, 'sfx', pan);
+  }
+
+  hazardCue(event: 'placed' | 'armed', pan = 0, gain = 1): void {
+    const spatialGain = clamp(gain);
+    this.lastSpatialCue = { kind: `hazard:${event}`, pan, gain: spatialGain };
+    if (event === 'placed') {
+      this.tone(176, .13, 'triangle', .018 * spatialGain, 'sfx', pan);
+      this.noise(.055, .01 * spatialGain, 'sfx', pan);
+      return;
+    }
+    this.tone(690, .09, 'square', .022 * spatialGain, 'sfx', pan);
+    this.tone(920, .07, 'sine', .012 * spatialGain, 'sfx', pan);
+  }
+
+  diagnostics(): { lastSpatialCue?: { kind: string; pan: number; gain: number } } {
+    return this.lastSpatialCue ? { lastSpatialCue: { ...this.lastSpatialCue } } : {};
   }
 
   stopMusic(): void {

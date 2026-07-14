@@ -4,8 +4,22 @@ import type { InputActionEvent, MenuNavigationEvent } from './InputSystem';
 import { WEAPONS, type GameDifficulty } from './definitions';
 import { GameEngine, type GameSnapshot } from './GameEngine';
 import { runtimeUrl } from './AssetCatalog';
+import type { CampaignUnlocks, MapPerformance, MapRecord } from './PersistenceSystem';
 
 type PortraitState = 'neutral' | 'pain-center' | 'pain-left' | 'pain-right' | 'glance-left' | 'glance-right' | 'weapon-acquired' | 'overcharge' | 'invulnerable' | 'dead';
+
+interface ReplayLibraryEntry {
+  id: string;
+  name: string;
+  mapId: MapId;
+  createdAt: number;
+  duration: number;
+  demo: unknown;
+}
+
+const REPLAY_LIBRARY_KEY = 'red-ledger-replays-v1';
+const REPLAY_LIBRARY_BYTES = 3_500_000;
+const REPLAY_LIBRARY_LIMIT = 6;
 
 const DIFFICULTY_OPTIONS: ReadonlyArray<{ id: GameDifficulty; label: string; detail: string }> = [
   { id: 'orientation', label: 'Orientation', detail: 'Story-focused. More supplies, slower threats, forgiving damage.' },
@@ -17,6 +31,58 @@ const DIFFICULTY_OPTIONS: ReadonlyArray<{ id: GameDifficulty; label: string; det
 
 const formatTime = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 const formatLabel = (value: string): string => value.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
+
+interface MasteryPresentation {
+  target: string;
+  comparison: string;
+  metrics: readonly string[];
+  complete: boolean;
+}
+
+const recordPercentages = (record: MapRecord | MapPerformance) => 'bestKillsPercent' in record
+  ? { threats: record.bestKillsPercent, items: record.bestItemsPercent, secrets: record.bestSecretsPercent }
+  : { threats: record.killsPercent, items: record.itemsPercent, secrets: record.secretsPercent };
+
+const masteryPresentation = (mapId: MapId, record?: MapRecord, current?: MapPerformance): MasteryPresentation => {
+  const map = CAMPAIGN.maps[mapId];
+  if (!record) return {
+    target: 'Retry goal: First clear',
+    comparison: `Par ${formatTime(map.parSeconds)}`,
+    metrics: ['Threats --', 'Items --', 'Secrets --'],
+    complete: false,
+  };
+  const values = recordPercentages(current ?? record);
+  const gaps = [
+    { label: 'Close every threat', value: values.threats, weight: .35 },
+    { label: 'Find every secret', value: values.secrets, weight: .25 },
+    { label: 'Recover every item', value: values.items, weight: .15 },
+  ].filter(({ value }) => value < 100).sort((left, right) =>
+    (100 - right.value) * right.weight - (100 - left.value) * left.weight);
+  const missedPar = (current?.elapsed ?? record.bestTime) > map.parSeconds && !record.parBeaten;
+  const complete = !gaps.length && record.parBeaten && record.bestGrade === 'S';
+  const target = missedPar
+    ? `Retry goal: Beat par ${formatTime(map.parSeconds)}`
+    : gaps.length
+      ? `Retry goal: ${gaps[0].label} (${gaps[0].value}%)`
+      : record.bestGrade !== 'S'
+        ? `Retry goal: Raise grade ${record.bestGrade}`
+        : 'Full mastery achieved';
+  const comparison = current
+    ? current.elapsed <= record.bestTime
+      ? `Current ${formatTime(current.elapsed)} | PB matched | ${current.score} pts`
+      : `Current ${formatTime(current.elapsed)} | ${formatTime(current.elapsed - record.bestTime)} behind PB | ${current.score}/${record.highScore} pts`
+    : `Grade ${record.bestGrade} | PB ${formatTime(record.bestTime)} | ${record.highScore} pts | Chain x${record.bestChain}`;
+  return {
+    target,
+    comparison,
+    metrics: [
+      `Threats ${values.threats}%${current ? ` / PB ${record.bestKillsPercent}%` : ''}`,
+      `Items ${values.items}%${current ? ` / PB ${record.bestItemsPercent}%` : ''}`,
+      `Secrets ${values.secrets}%${current ? ` / PB ${record.bestSecretsPercent}%` : ''}`,
+    ],
+    complete,
+  };
+};
 
 const $ = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -76,6 +142,11 @@ export class UIController {
       icon: string;
       credential?: string;
     }>).detail));
+    window.addEventListener('demo-recording-complete', (event) => {
+      const detail = (event as CustomEvent<{ demo: unknown; reason: string }>).detail;
+      this.storeReplay(detail.demo);
+      this.showMessageInReplayLibrary(detail.reason === 'limit' ? 'Five-minute recording saved.' : 'Replay saved.');
+    });
     this.loadSettings();
   }
 
@@ -146,12 +217,27 @@ export class UIController {
     ));
     $('#cancel-binding').addEventListener('click', () => this.cancelBindingCapture());
     $('#level-select-button').addEventListener('click', () => this.showLevelSelect());
+    $('#replays-button').addEventListener('click', () => this.showReplayLibrary());
+    $('#replay-back').addEventListener('click', () => this.showScreen('menu'));
+    $('#import-replay').addEventListener('click', () => $<HTMLInputElement>('#replay-file').click());
+    $<HTMLInputElement>('#replay-file').addEventListener('change', (event) => void this.importReplay((event.target as HTMLInputElement).files?.[0]));
     document.querySelectorAll<HTMLElement>('[data-back]').forEach((button) => button.addEventListener('click', () => {
       this.showScreen(button.closest('#options-menu') ? this.optionsReturn : 'menu');
     }));
     $('#resume-game').addEventListener('click', () => { this.hideScreens(); this.game.resume(); });
     $('#save-game').addEventListener('click', () => { this.slotReturn = 'pause-menu'; this.showSlotScreen('save'); });
     $('#load-game').addEventListener('click', () => { this.slotReturn = 'pause-menu'; this.showSlotScreen('load'); });
+    $('#record-replay').addEventListener('click', () => {
+      if (this.game.isDemoRecording()) {
+        const demo = this.game.finishDemoRecording();
+        if (demo) this.storeReplay(demo);
+        this.showReplayLibrary('Replay saved.');
+        return;
+      }
+      this.hideScreens();
+      this.game.resume();
+      if (!this.game.startDemoRecording()) this.showScreen('pause-menu');
+    });
     document.querySelectorAll('.slot-back').forEach((button) => button.addEventListener('click', () => this.showScreen(this.slotReturn)));
     $('#quit-menu').addEventListener('click', () => this.confirmMainMenu());
     $('#restart-checkpoint').addEventListener('click', () => {
@@ -191,6 +277,16 @@ export class UIController {
       this.game.audio.stopMusic();
       this.game.mode = 'menu';
       this.updateEpisodeLocks();
+      this.updateContinue();
+      this.showScreen('menu');
+    });
+    $('#replay-pause').addEventListener('click', () => this.game.toggleDemoPlayback());
+    $('#replay-speed').addEventListener('click', () => this.game.cycleDemoSpeed());
+    $('#replay-restart').addEventListener('click', () => {
+      if (this.game.restartDemoPlayback()) this.hideScreens();
+    });
+    $('#replay-exit').addEventListener('click', () => {
+      this.game.stopDemoPlayback();
       this.updateContinue();
       this.showScreen('menu');
     });
@@ -247,7 +343,8 @@ export class UIController {
     });
     window.addEventListener('input-binding-cancelled', () => this.cancelBindingCapture());
     window.addEventListener('input-lifecycle-pause', () => {
-      if (this.game.mode === 'playing') this.game.pause();
+      if (this.game.isDemoPlayback()) this.game.pauseDemoPlayback();
+      else if (this.game.mode === 'playing') this.game.pause();
     });
   }
 
@@ -296,10 +393,27 @@ export class UIController {
       bossBar.querySelector<HTMLElement>('small')!.textContent = phase ? formatLabel(phase) : 'Active';
       bossBar.querySelector<HTMLElement>('span')!.style.width = `${Math.max(0, snapshot.boss.health / snapshot.boss.maxHealth * 100)}%`;
     }
+    $('#recording-indicator').toggleAttribute('hidden', !this.game.isDemoRecording());
+    $<HTMLButtonElement>('#record-replay').textContent = this.game.isDemoRecording() ? 'Stop & Save Replay' : 'Record Replay';
+    const replayControls = $('#replay-controls');
+    replayControls.toggleAttribute('hidden', !snapshot.replay);
+    if (snapshot.replay) {
+      const replay = snapshot.replay;
+      const current = replay.currentTick / 35;
+      const total = replay.totalTicks / 35;
+      $('#replay-state').textContent = replay.finished ? 'Replay Complete' : replay.paused ? 'Replay Paused' : 'Replay';
+      $('#replay-time').textContent = `${formatTime(current)} / ${formatTime(total)}`;
+      $<HTMLElement>('#replay-progress').style.width = `${replay.totalTicks ? Math.min(100, replay.currentTick / replay.totalTicks * 100) : 100}%`;
+      const pause = $<HTMLButtonElement>('#replay-pause');
+      pause.textContent = replay.paused && !replay.finished ? 'Resume' : 'Pause';
+      pause.disabled = replay.finished;
+      $<HTMLButtonElement>('#replay-speed').textContent = `${replay.speed}x`;
+      this.hideScreens();
+    }
     $('#hud').classList.toggle('active', snapshot.mode === 'playing' || snapshot.mode === 'paused');
-    if (snapshot.mode === 'paused' && this.lastMode !== 'paused') this.showScreen('pause-menu');
-    if (snapshot.mode === 'dead' && this.lastMode !== 'dead') this.showScreen('death-menu');
-    if (snapshot.mode === 'complete') {
+    if (!snapshot.replay && snapshot.mode === 'paused' && this.lastMode !== 'paused') this.showScreen('pause-menu');
+    if (!snapshot.replay && snapshot.mode === 'dead' && this.lastMode !== 'dead') this.showScreen('death-menu');
+    if (!snapshot.replay && snapshot.mode === 'complete') {
       this.showScreen('epilogue');
     }
     if (this.radialActive) this.updateWeaponRadial();
@@ -393,6 +507,40 @@ export class UIController {
     }
   }
 
+  private renderMastery(container: HTMLElement, presentation: MasteryPresentation): void {
+    const target = document.createElement('strong');
+    target.textContent = presentation.target;
+    const comparison = document.createElement('span');
+    comparison.textContent = presentation.comparison;
+    const metrics = document.createElement('div');
+    presentation.metrics.forEach((value) => {
+      const metric = document.createElement('small');
+      metric.textContent = value;
+      metrics.append(metric);
+    });
+    container.classList.toggle('complete', presentation.complete);
+    container.replaceChildren(target, comparison, metrics);
+  }
+
+  private masteryAggregate(progress: CampaignUnlocks, difficulty: GameDifficulty, episodeIndex?: number): string {
+    const episodes = episodeIndex === undefined ? CAMPAIGN.episodes : [CAMPAIGN.episodes[episodeIndex]];
+    const maps = episodes.flatMap((episode) => episode.maps).filter((id) => !CAMPAIGN.maps[id].secretMap);
+    const records = maps.flatMap((id) => {
+      const record = progress.records[`${id}:${difficulty}`];
+      return record ? [record] : [];
+    });
+    const pars = records.filter((record) => record.parBeaten).length;
+    const elite = records.filter((record) => record.bestGrade === 'S' || record.bestGrade === 'A').length;
+    const mastered = records.filter((record) => record.parBeaten
+      && record.bestKillsPercent === 100 && record.bestItemsPercent === 100 && record.bestSecretsPercent === 100).length;
+    if (episodeIndex === undefined) {
+      return `Campaign ${records.length}/${maps.length} clear | ${progress.completedEpisodes.length}/${CAMPAIGN.episodes.length} episodes | ${pars} par | ${elite} A+ | ${mastered} mastered`;
+    }
+    const secretMaps = CAMPAIGN.episodes[episodeIndex].maps.filter((id) => CAMPAIGN.maps[id].secretMap);
+    const knownSecrets = secretMaps.filter((id) => progress.discoveredSecretMaps.includes(id)).length;
+    return `Episode ${records.length}/${maps.length} clear | ${pars} par | ${elite} A+ | ${mastered} mastered | ${knownSecrets}/${secretMaps.length} secret routes`;
+  }
+
   private showIntermission(): void {
     const episode = Number(this.game.world.map.id[1]);
     const art = this.game.world.map.index === 8 ? `episode-${episode}-outro` : `intermission-episode-${episode}`;
@@ -415,6 +563,15 @@ export class UIController {
     $('#result-bests').textContent = result?.newBests.length ? `NEW: ${result.newBests.join(' / ')}` : 'Record held';
     const episodeMaps = CAMPAIGN.episodes[episode - 1].maps;
     const progress = this.game.campaignProgress();
+    const mastery = result
+      ? masteryPresentation(this.game.world.map.id, result.record, result.performance)
+      : masteryPresentation(this.game.world.map.id);
+    this.renderMastery($<HTMLElement>('#intermission-mastery'), mastery);
+    $('#episode-mastery').textContent = this.masteryAggregate(progress, this.game.difficulty, episode - 1);
+    const retry = $<HTMLButtonElement>('#retry-map');
+    retry.classList.toggle('recommended', !mastery.complete);
+    retry.textContent = mastery.complete ? 'Retry Map' : 'Retry Goal';
+    retry.title = mastery.target.replace('Retry goal: ', '');
     const visibleMaps = episodeMaps.filter((id) => !CAMPAIGN.maps[id].secretMap
       || id === this.game.world.map.id || progress.discoveredSecretMaps.includes(id) || progress.completedMaps.includes(id));
     $('#episode-progress').replaceChildren(...visibleMaps.map((id) => {
@@ -557,11 +714,39 @@ export class UIController {
     element.style.setProperty('--weapon-bob-y', `${this.weaponBob.y.toFixed(2)}px`);
   }
 
+  private entryBinding(action: InputAction, device: 'keyboard' | 'mouse-button' = 'keyboard'): string {
+    const bindings = this.game.input.getBinding(action);
+    const preferred = bindings.find((binding) => binding.device === device) ?? bindings[0];
+    return preferred ? bindingLabel(preferred) : '--';
+  }
+
+  private buildEntryBriefing(): void {
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    const container = $('#entry-controls');
+    const movement = ['move-forward', 'strafe-left', 'move-backward', 'strafe-right']
+      .map((action) => this.entryBinding(action as InputAction)).join(' ');
+    const entries = coarse ? [
+      ['MOVE', 'Left pad'], ['LOOK', 'Right pad'], ['FIRE', 'Red control'],
+      ['USE', 'Use control'], ['WEAPON', 'WPN control'], ['MAP', 'Map control'],
+    ] : [
+      ['MOVE', movement], ['LOOK', 'Mouse / Right stick'], ['FIRE', this.entryBinding('fire', 'mouse-button')],
+      ['USE', this.entryBinding('use')], ['WEAPON', this.entryBinding('weapon-next')], ['MAP', this.entryBinding('automap')],
+    ];
+    container.replaceChildren(...entries.map(([label, value]) => {
+      const item = document.createElement('span');
+      const title = document.createElement('b');
+      const binding = document.createElement('small');
+      title.textContent = label;
+      binding.textContent = value;
+      item.append(title, binding);
+      return item;
+    }));
+    $('#ready-overlay').setAttribute('data-input', coarse ? 'touch' : 'desktop');
+    $('#ready-map').textContent = `${this.game.world.map.id} ${this.game.world.map.title}`;
+  }
+
   private prepareGameEntry(): void {
-    if (matchMedia('(pointer: coarse)').matches) {
-      this.hideScreens();
-      return;
-    }
+    this.buildEntryBriefing();
     this.game.pause();
     this.hideScreens();
     $('#ready-overlay').toggleAttribute('hidden', false);
@@ -571,6 +756,7 @@ export class UIController {
   private enterReadyState(): void {
     $('#ready-overlay').toggleAttribute('hidden', true);
     this.game.resume();
+    if (matchMedia('(pointer: coarse)').matches) return;
     const request = $<HTMLCanvasElement>('#game-canvas').requestPointerLock() as Promise<void> | undefined;
     void request?.catch(() => undefined);
   }
@@ -777,12 +963,17 @@ export class UIController {
     const progress = this.game.campaignProgress();
     const difficulty = $<HTMLSelectElement>('#level-select-difficulty');
     difficulty.value = this.pendingDifficulty;
+    $('#campaign-mastery').textContent = this.masteryAggregate(progress, difficulty.value as GameDifficulty);
     CAMPAIGN.episodes.forEach((episode, episodeIndex) => {
       if (!this.game.isEpisodeUnlocked(episodeIndex)) return;
       const section = document.createElement('section');
       section.className = 'level-episode';
       const heading = document.createElement('h2');
-      heading.textContent = `Episode ${episode.number}: ${episode.title}`;
+      const headingTitle = document.createElement('strong');
+      headingTitle.textContent = `Episode ${episode.number}: ${episode.title}`;
+      const headingMastery = document.createElement('small');
+      headingMastery.textContent = this.masteryAggregate(progress, difficulty.value as GameDifficulty, episodeIndex);
+      heading.append(headingTitle, headingMastery);
       const grid = document.createElement('div');
       grid.className = 'level-map-grid';
       episode.maps.forEach((id, mapIndex) => {
@@ -792,16 +983,23 @@ export class UIController {
         const unlocked = map.secretMap ? secretKnown
           : mapIndex === 0 || progress.completedMaps.includes(id) || progress.completedMaps.includes(episode.maps[mapIndex - 1]);
         const record = progress.records[`${id}:${difficulty.value}`];
+        const presentation = masteryPresentation(id, record);
         const button = document.createElement('button');
         const label = document.createElement('strong');
         label.textContent = `${id} ${map.title}`;
         const detail = document.createElement('small');
-        detail.textContent = record
-          ? `Grade ${record.bestGrade}  PB ${formatTime(record.bestTime)}  ${record.highScore} pts`
-          : `Par ${formatTime(map.parSeconds)}`;
-        button.append(label, detail);
+        detail.textContent = presentation.comparison;
+        const target = document.createElement('small');
+        target.className = 'map-mastery-target';
+        target.textContent = unlocked
+          ? presentation.target.replace('Retry goal: ', 'Target: ')
+          : `Unlock: Clear ${episode.maps[Math.max(0, mapIndex - 1)]}`;
+        button.classList.toggle('mastered', presentation.complete);
+        button.append(label, detail, target);
         button.disabled = !unlocked;
-        button.title = unlocked ? `Start ${id}` : `${id} - locked`;
+        button.title = unlocked
+          ? `${presentation.target}. ${presentation.metrics.join('. ')}`
+          : `${id} - clear ${episode.maps[Math.max(0, mapIndex - 1)]} to unlock`;
         button.addEventListener('click', () => {
           this.game.audio.unlock();
           this.pendingDifficulty = difficulty.value as GameDifficulty;
@@ -813,8 +1011,162 @@ export class UIController {
       section.append(heading, grid);
       container.append(section);
     });
-    difficulty.onchange = () => this.showLevelSelect();
+    difficulty.onchange = () => {
+      this.pendingDifficulty = difficulty.value as GameDifficulty;
+      this.showLevelSelect();
+    };
     this.showScreen('level-select');
+  }
+
+  private replayLibrary(): ReplayLibraryEntry[] {
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(REPLAY_LIBRARY_KEY) ?? '[]');
+      if (!Array.isArray(parsed)) return [];
+      return parsed.flatMap((value): ReplayLibraryEntry[] => {
+        if (!value || typeof value !== 'object') return [];
+        const candidate = value as Partial<ReplayLibraryEntry>;
+        const summary = this.game.demoSummary(candidate.demo);
+        if (!summary || typeof candidate.id !== 'string' || typeof candidate.name !== 'string') return [];
+        return [{
+          id: candidate.id,
+          name: candidate.name.slice(0, 48) || `${summary.mapId} Replay`,
+          mapId: summary.mapId,
+          createdAt: summary.createdAt,
+          duration: summary.duration,
+          demo: candidate.demo,
+        }];
+      }).sort((left, right) => right.createdAt - left.createdAt);
+    } catch {
+      return [];
+    }
+  }
+
+  private writeReplayLibrary(entries: ReplayLibraryEntry[]): boolean {
+    const bounded = [...entries].sort((left, right) => right.createdAt - left.createdAt).slice(0, REPLAY_LIBRARY_LIMIT);
+    if (!bounded.length) {
+      localStorage.removeItem(REPLAY_LIBRARY_KEY);
+      return true;
+    }
+    let serialized = JSON.stringify(bounded);
+    while (bounded.length > 1 && serialized.length * 2 > REPLAY_LIBRARY_BYTES) {
+      bounded.pop();
+      serialized = JSON.stringify(bounded);
+    }
+    while (bounded.length) {
+      try {
+        localStorage.setItem(REPLAY_LIBRARY_KEY, serialized);
+        return true;
+      } catch {
+        bounded.pop();
+        serialized = JSON.stringify(bounded);
+      }
+    }
+    return false;
+  }
+
+  private storeReplay(demo: unknown): boolean {
+    const summary = this.game.demoSummary(demo);
+    if (!summary) return false;
+    const entry: ReplayLibraryEntry = {
+      id: crypto.randomUUID(),
+      name: `${summary.mapId} ${CAMPAIGN.maps[summary.mapId].title}`,
+      mapId: summary.mapId,
+      createdAt: summary.createdAt,
+      duration: summary.duration,
+      demo,
+    };
+    return this.writeReplayLibrary([entry, ...this.replayLibrary()]);
+  }
+
+  private showReplayLibrary(message = ''): void {
+    this.buildReplayLibrary();
+    $('#replay-feedback').textContent = message;
+    this.showScreen('replay-library');
+  }
+
+  private showMessageInReplayLibrary(message: string): void {
+    $('#replay-feedback').textContent = message;
+  }
+
+  private buildReplayLibrary(): void {
+    const container = $('#replay-list');
+    container.replaceChildren();
+    const entries = this.replayLibrary();
+    if (!entries.length) {
+      const empty = document.createElement('p');
+      empty.className = 'screen-copy';
+      empty.textContent = 'No saved replays.';
+      container.append(empty);
+      return;
+    }
+    entries.forEach((entry) => {
+      const row = document.createElement('div');
+      row.className = 'replay-row';
+      const copy = document.createElement('span');
+      const name = document.createElement('input');
+      name.value = entry.name;
+      name.maxLength = 48;
+      name.setAttribute('aria-label', `Rename ${entry.mapId} replay`);
+      name.addEventListener('change', () => {
+        const entriesNow = this.replayLibrary();
+        const stored = entriesNow.find((candidate) => candidate.id === entry.id);
+        if (!stored) return;
+        stored.name = name.value.trim().slice(0, 48) || `${entry.mapId} Replay`;
+        name.value = stored.name;
+        this.writeReplayLibrary(entriesNow);
+      });
+      const detail = document.createElement('small');
+      detail.textContent = `${entry.mapId} | ${formatTime(entry.duration)} | ${new Date(entry.createdAt).toLocaleString()}`;
+      copy.append(name, detail);
+      const play = document.createElement('button');
+      play.textContent = 'Play';
+      play.addEventListener('click', () => {
+        if (!this.game.startDemoPlayback(entry.demo)) {
+          $('#replay-feedback').textContent = 'Replay could not be loaded.';
+          return;
+        }
+        this.hideScreens();
+      });
+      const save = document.createElement('button');
+      save.textContent = 'Export';
+      save.addEventListener('click', () => {
+        const url = URL.createObjectURL(new Blob([JSON.stringify(entry.demo)], { type: 'application/json' }));
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${entry.mapId.toLowerCase()}-${entry.id.slice(0, 8)}.json`;
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      });
+      const remove = document.createElement('button');
+      remove.className = 'replay-delete';
+      remove.textContent = '×';
+      remove.title = `Delete ${entry.name}`;
+      remove.setAttribute('aria-label', `Delete ${entry.name}`);
+      remove.addEventListener('click', () => this.confirm(
+        'Delete replay?', `${entry.name} will be permanently removed.`, 'Delete', () => {
+          this.writeReplayLibrary(this.replayLibrary().filter((candidate) => candidate.id !== entry.id));
+          this.showReplayLibrary('Replay deleted.');
+        },
+      ));
+      row.append(copy, play, save, remove);
+      container.append(row);
+    });
+  }
+
+  private async importReplay(file?: File): Promise<void> {
+    $<HTMLInputElement>('#replay-file').value = '';
+    if (!file) return;
+    if (file.size > REPLAY_LIBRARY_BYTES) {
+      $('#replay-feedback').textContent = 'Replay file is too large.';
+      return;
+    }
+    try {
+      const demo: unknown = JSON.parse(await file.text());
+      if (!this.storeReplay(demo)) throw new Error('invalid');
+      this.showReplayLibrary('Replay imported.');
+    } catch {
+      $('#replay-feedback').textContent = 'Replay file is invalid or storage is full.';
+    }
   }
 
   private buildControls(): void {
@@ -1010,7 +1362,27 @@ export class UIController {
     button.dataset.available = String(available);
     button.setAttribute('aria-describedby', 'menu-feedback');
     button.title = available ? 'Continue the newest valid save' : 'No valid save is available';
-    $('#menu-feedback').textContent = this.game.continueSummary() ?? '';
+    $('#menu-feedback').textContent = this.continuePreview();
+  }
+  private continuePreview(): string {
+    const summary = this.game.continueSummary();
+    if (!summary) return '';
+    const [map, difficulty, savedAt] = summary.split(' | ');
+    const slots = [...this.game.manualSlots(), ...this.game.automaticSlots()].filter((slot) => slot.status === 'valid');
+    const matches = slots.filter((slot) => {
+      const [slotMap, slotDifficulty, , slotSavedAt] = slot.detail.split(' | ');
+      return slotMap === map && slotDifficulty === difficulty && slotSavedAt === savedAt;
+    });
+    if (!matches.length) return summary;
+    const kinds = new Set(matches.map((slot) => slot.kind));
+    const kind = kinds.size > 1 ? 'Automatic checkpoint' : ({
+      manual: 'Manual file',
+      quicksave: 'Quicksave',
+      autosave: 'Autosave',
+      recovery: 'Episode recovery',
+    } as const)[matches[0].kind];
+    const playTime = matches[0].detail.split(' | ')[2];
+    return `${kind} | ${map} | ${difficulty} | Play ${playTime} | ${savedAt}`;
   }
   private announce(message: string): void {
     const announcer = $('#announcer');

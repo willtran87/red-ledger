@@ -18,11 +18,22 @@
           <button id="new-game">New Game</button>
           <button id="continue-game">Continue</button>
           <button id="level-select-button">Level Select</button>
+          <button id="replays-button">Replays</button>
           <button id="options-button">Options</button>
           <button id="credits-button">Credits</button>
           <button id="quit-game">Quit</button>
         </nav>
         <p id="menu-feedback" class="menu-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+      </section>
+      <section id="replay-library" class="screen compact replay-screen" aria-label="Replay library">
+        <h1>Replays</h1>
+        <div id="replay-list" class="replay-list"></div>
+        <p id="replay-feedback" class="screen-copy" role="status" aria-live="polite"></p>
+        <div class="replay-library-actions">
+          <button id="import-replay">Import</button>
+          <button id="replay-back">Back</button>
+        </div>
+        <input id="replay-file" type="file" accept="application/json,.json" hidden />
       </section>
       <section id="level-select" class="screen compact" aria-label="Level select">
         <h1>Level Select</h1>
@@ -35,6 +46,7 @@
             <option value="binding-authority">Binding Authority</option>
           </select>
         </label>
+        <div id="campaign-mastery" class="campaign-mastery" aria-live="polite"></div>
         <div id="level-select-list" class="level-select-list"></div>
         <button data-back>Back</button>
       </section>
@@ -86,6 +98,8 @@
         <strong id="intermission-grade" aria-label="Performance grade"></strong>
         <div id="tally"></div>
         <div id="result-bests" aria-live="polite"></div>
+        <div id="intermission-mastery" class="mastery-panel" aria-label="Mastery target"></div>
+        <div id="episode-mastery" class="episode-mastery" aria-label="Episode mastery"></div>
         <div id="episode-progress" aria-label="Episode progress"></div>
         <div class="intermission-actions">
           <button id="continue-map">Continue</button>
@@ -99,6 +113,7 @@
         <button id="resume-game">Resume</button>
         <button id="save-game">Save</button>
         <button id="load-game">Load</button>
+        <button id="record-replay">Record Replay</button>
         <button id="pause-options">Options</button>
         <button id="quit-menu">Main Menu</button>
       </section>
@@ -138,6 +153,17 @@
         <button data-back>Back</button>
       </section>
       <div id="hud">
+        <div id="recording-indicator" hidden>REC</div>
+        <div id="replay-controls" hidden>
+          <div><strong id="replay-state">Replay</strong><span id="replay-time"></span></div>
+          <i><span id="replay-progress"></span></i>
+          <nav>
+            <button id="replay-pause">Pause</button>
+            <button id="replay-speed">1x</button>
+            <button id="replay-restart">Restart</button>
+            <button id="replay-exit">Exit</button>
+          </nav>
+        </div>
         <div id="objective" aria-hidden="true"></div>
         <div id="message"></div>
         <div id="boss-bar" hidden><div><strong></strong><small></small></div><i><span></span></i></div>
@@ -166,7 +192,11 @@
         <div id="damage-flash" aria-hidden="true"></div>
       </div>
       <div id="ready-overlay" hidden>
-        <img src="/public_runtime/ui/icons/minimal-terminal.png" alt="" aria-hidden="true" />
+        <header>
+          <img src="/public_runtime/ui/icons/minimal-terminal.png" alt="" aria-hidden="true" />
+          <div><strong id="ready-map"></strong><span>FIELD BRIEFING</span></div>
+        </header>
+        <div id="entry-controls" class="entry-controls" aria-label="Essential controls"></div>
         <button id="enter-file">Enter File</button>
       </div>
       <div id="announcer" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>

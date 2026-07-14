@@ -53,6 +53,8 @@ const browserTests = [
   ['combat and save', 'tests/combat-save-visual-e2e.mjs'],
   ['save management and recovery', 'tests/save-management-e2e.mjs'],
   ['deterministic demos', 'tests/demo-runtime-e2e.mjs'],
+  ['player replay library', 'tests/replay-library-e2e.mjs'],
+  ['hostile telegraphs', 'tests/hostile-telegraph-e2e.mjs'],
   ['input remapping', 'tests/controls-e2e.mjs'],
   ['map mechanisms', 'tests/mechanisms-e2e.mjs'],
   ['generated particle feedback', 'tests/particles-e2e.mjs'],

@@ -24,6 +24,7 @@ import {
   type ActorBehaviorState,
   type BehaviorEvent,
   type BehaviorVector,
+  type DamageKind,
   type EnemyBehaviorSnapshot,
   type HazardState,
   type ProjectileState,
@@ -110,6 +111,7 @@ export interface GameSnapshot {
   message: string;
   objective: string;
   interaction?: InteractionHint;
+  replay?: { currentTick: number; totalTicks: number; paused: boolean; finished: boolean; speed: number };
 }
 
 interface SaveData {
@@ -178,6 +180,21 @@ interface BeamVisual {
   readonly impact: Sprite;
   elapsed: number;
   length: number;
+}
+
+interface HostileBeamVisual extends BeamVisual {
+  readonly source: Vector3;
+  readonly endpoint: Vector3;
+  readonly duration: number;
+}
+
+interface ActiveDemoPlayback {
+  readonly demo: DemoData<SaveData, GameplayCommand>;
+  readonly playback: DemoPlayback<GameplayCommand>;
+  paused: boolean;
+  finished: boolean;
+  speed: number;
+  tickCredit: number;
 }
 
 export interface GameplayCommand {
@@ -416,8 +433,11 @@ export class GameEngine {
   private projectileSequence = 0;
   private bindingBeam?: { pulses: number; timer: number };
   private bindingBeamVisual?: BeamVisual;
+  private readonly hostileBeamVisuals: HostileBeamVisual[] = [];
   private demoRecorder?: DemoRecorder<SaveData, GameplayCommand>;
   private demoTick = 0;
+  private activeDemo?: ActiveDemoPlayback;
+  private demoReadOnly = false;
   private radialSelecting = false;
   private weaponState: 'ready' | 'lowering' | 'raising' = 'ready';
   private weaponTransition = 0;
@@ -487,6 +507,8 @@ export class GameEngine {
   loadMap(id: MapId, preserveInventory = true, createCheckpoint = true): void {
     const map = CAMPAIGN.maps[id];
     if (!map) throw new Error(`Unknown map ${id}`);
+    this.demoRecorder = undefined;
+    this.demoTick = 0;
     if (!preserveInventory) this.resetInventory();
     this.clearAnimatedEffects();
     this.assets.disposeTextures();
@@ -504,6 +526,8 @@ export class GameEngine {
     this.projectileSequence = 0;
     this.bindingBeam = undefined;
     this.clearBindingBeamVisual();
+    this.clearHostileBeamVisuals();
+    this.activeDemo = undefined;
     this.lastMapResult = undefined;
     this.player.position.set(map.playerStart.x * map.cellSize, 0, map.playerStart.z * map.cellSize);
     this.player.position.y = this.world.floorHeightAt(this.player.position) + 1.35;
@@ -547,7 +571,10 @@ export class GameEngine {
   step(seconds: number): void {
     if (this.mode !== 'playing') return;
     const ticks = Math.round(Math.min(.25, Math.max(0, seconds)) / STEP);
-    for (let tick = 0; tick < ticks; tick += 1) this.simulate(STEP);
+    for (let tick = 0; tick < ticks; tick += 1) {
+      if (this.activeDemo) this.advanceDemoPlayback();
+      else this.simulate(STEP);
+    }
     this.render();
   }
 
@@ -557,7 +584,8 @@ export class GameEngine {
     if (this.mode === 'playing') {
       this.accumulator += elapsed;
       while (this.accumulator >= STEP) {
-        this.simulate(STEP);
+        if (this.activeDemo) this.advanceDemoPlayback();
+        else this.simulate(STEP);
         this.accumulator -= STEP;
       }
     }
@@ -587,7 +615,13 @@ export class GameEngine {
     this.updateVisionEffects();
     if (this.messageTimer === 0) this.message = '';
     const command = playbackCommand ?? this.captureGameplayCommand();
-    if (recordDemo && this.demoRecorder) this.demoRecorder.record(this.demoTick++, command);
+    if (recordDemo && this.demoRecorder) {
+      this.demoRecorder.record(this.demoTick++, command);
+      if (this.demoTick >= 35 * 60 * 5) {
+        const demo = this.finishDemoRecording();
+        if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'limit' } }));
+      }
+    }
     if (command.walkToggle) this.walkMode = !this.walkMode;
     this.movePlayer(dt, command);
     this.updatePickups();
@@ -597,6 +631,7 @@ export class GameEngine {
     this.updatePlayerProjectiles(dt);
     this.updateBindingBeam(dt);
     this.updateEnemies(dt);
+    this.updateHostileBeamVisuals(dt);
     this.weaponSelection(command);
     if (command.fire) this.fireWeapon();
     if (command.use) this.use();
@@ -948,6 +983,111 @@ export class GameEngine {
     this.bindingBeamVisual = undefined;
   }
 
+  private spawnHostileBeamVisual(actor: RuntimeActor): void {
+    const source = actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .62, 0));
+    const endpoint = this.player.position.clone().addScaledVector(this.aimDirection(), .78).add(new Vector3(0, -.08, 0));
+    const geometry = new BufferGeometry();
+    const material = new MeshBasicMaterial({
+      map: this.assets.texture('/public_runtime/effects/denial-beam/fx_denial-beam_start_F_01.png'),
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      alphaTest: .02,
+      side: DoubleSide,
+      blending: AdditiveBlending,
+    });
+    const mesh = new Mesh(geometry, material);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = this.accessibility.highContrast ? 26 : 6;
+    this.world.root.add(mesh);
+    const line = new Line(new BufferGeometry(), new LineBasicMaterial({
+      color: 0xffd45c,
+      transparent: true,
+      opacity: this.accessibility.reducedEffects ? .9 : .72,
+      depthTest: false,
+      depthWrite: false,
+      blending: AdditiveBlending,
+    }));
+    line.frustumCulled = false;
+    line.renderOrder = this.accessibility.highContrast ? 27 : 7;
+    this.world.root.add(line);
+    const impact = this.createEffectSprite('/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_01.png', this.accessibility.reducedEffects ? .44 : .62, true);
+    impact.material.depthTest = false;
+    impact.renderOrder = this.accessibility.highContrast ? 27 : 7;
+    this.hostileBeamVisuals.push({ mesh, line, impact, source, endpoint, elapsed: 0, length: source.distanceTo(endpoint), duration: .24 });
+    this.emitParticles('rejection', endpoint, this.accessibility.reducedEffects ? 3 : 7);
+  }
+
+  private updateHostileBeamVisuals(dt: number): void {
+    for (let index = this.hostileBeamVisuals.length - 1; index >= 0; index -= 1) {
+      const visual = this.hostileBeamVisuals[index];
+      visual.elapsed += dt;
+      if (visual.elapsed >= visual.duration) {
+        this.removeHostileBeamVisual(index);
+        continue;
+      }
+      this.camera.updateMatrixWorld();
+      const cameraUp = new Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1).normalize();
+      const direction = visual.endpoint.clone().sub(visual.source).normalize();
+      const lateral = direction.clone().cross(cameraUp).normalize();
+      const halfWidth = this.accessibility.reducedEffects ? .014 : .028;
+      const positions: number[] = [];
+      const linePositions: number[] = [];
+      const uvs: number[] = [];
+      const indices: number[] = [];
+      const segments = 6;
+      for (let segment = 0; segment <= segments; segment += 1) {
+        const t = segment / segments;
+        const envelope = Math.sin(Math.PI * t);
+        const center = visual.source.clone().lerp(visual.endpoint, t)
+          .addScaledVector(lateral, Math.sin(t * Math.PI * 7 + visual.elapsed * 38) * .035 * envelope);
+        positions.push(...center.clone().addScaledVector(cameraUp, halfWidth).toArray());
+        positions.push(...center.clone().addScaledVector(cameraUp, -halfWidth).toArray());
+        linePositions.push(...center.toArray());
+        uvs.push(t, 1, t, 0);
+        if (segment < segments) {
+          const offset = segment * 2;
+          indices.push(offset, offset + 1, offset + 2, offset + 2, offset + 1, offset + 3);
+        }
+      }
+      visual.mesh.geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+      visual.mesh.geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+      visual.mesh.geometry.setIndex(indices);
+      visual.line.geometry.setAttribute('position', new Float32BufferAttribute(linePositions, 3));
+      const startPhase = visual.elapsed < .11;
+      const frameCount = startPhase ? 4 : 2;
+      const frame = Math.floor(visual.elapsed * (startPhase ? 36 : 24)) % frameCount + 1;
+      const beamPath = `/public_runtime/effects/denial-beam/fx_denial-beam_${startPhase ? 'start' : 'loop'}_F_${String(frame).padStart(2, '0')}.png`;
+      if (visual.mesh.userData.frame !== beamPath) {
+        visual.mesh.userData.frame = beamPath;
+        visual.mesh.material.map = this.assets.texture(beamPath);
+        visual.mesh.material.needsUpdate = true;
+      }
+      const fade = Math.min(1, (visual.duration - visual.elapsed) / .07);
+      visual.mesh.material.opacity = (this.accessibility.reducedEffects ? .55 : 1) * fade;
+      visual.line.material.opacity = (this.accessibility.reducedEffects ? .9 : .72) * fade;
+      visual.impact.material.opacity = fade;
+      visual.impact.position.copy(visual.endpoint);
+      const impactFrame = Math.floor(visual.elapsed * 30) % 5 + 1;
+      visual.impact.material.map = this.assets.texture(`/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_${String(impactFrame).padStart(2, '0')}.png`);
+    }
+  }
+
+  private removeHostileBeamVisual(index: number): void {
+    const [visual] = this.hostileBeamVisuals.splice(index, 1);
+    if (!visual) return;
+    this.world.root.remove(visual.mesh, visual.line, visual.impact);
+    visual.mesh.geometry.dispose();
+    visual.mesh.material.dispose();
+    visual.line.geometry.dispose();
+    visual.line.material.dispose();
+    visual.impact.material.dispose();
+  }
+
+  private clearHostileBeamVisuals(): void {
+    while (this.hostileBeamVisuals.length) this.removeHostileBeamVisual(this.hostileBeamVisuals.length - 1);
+  }
+
   private updatePlayerProjectiles(dt: number): void {
     for (let index = this.playerProjectiles.length - 1; index >= 0; index -= 1) {
       const projectile = this.playerProjectiles[index];
@@ -1143,8 +1283,7 @@ export class GameEngine {
       if ([3, 5, 8].includes(this.momentum.chain)) this.emitParticles('momentum', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .7, 0)), 8 + this.momentum.chain);
     }
     this.setActorDeadVisual(actor, true);
-    this.audio.noise(.16, .06);
-    this.audio.enemyCue(actor.id, 'death', this.actorPan(actor));
+    this.audio.enemyCue(actor.id, 'death', this.actorPan(actor), this.actorAudibility(actor));
     const deathPoint = actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .48, 0));
     this.emitParticles('ink', deathPoint, actor.kind === 'boss' ? 14 : 5);
     this.emitParticles(this.actorDeathParticleKind(actor), deathPoint, actor.kind === 'boss' ? 24 : 10);
@@ -1197,12 +1336,7 @@ export class GameEngine {
       if (actor.dead) continue;
       actor.attackFlash = Math.max(0, actor.attackFlash - dt);
       if (actor.awake && Math.floor((actor.animationTime - dt) / 7) !== Math.floor(actor.animationTime / 7)) {
-        this.audio.enemyCue(actor.id, 'idle', this.actorPan(actor));
-      }
-      const distance = this.horizontalDistance(actor.position, this.player.position);
-      if (!actor.awake && distance < 25 && this.world.hasLineOfSight(actor.position, this.player.position)) {
-        actor.awake = true;
-        this.audio.enemyCue(actor.id, 'alert', this.actorPan(actor));
+        this.audio.enemyCue(actor.id, 'idle', this.actorPan(actor), this.actorAudibility(actor));
       }
     }
 
@@ -1294,29 +1428,35 @@ export class GameEngine {
         break;
       case 'attack':
         if (actor) actor.attackFlash = .2;
-        if (actor) this.audio.enemyCue(actor.id, 'attack', this.actorPan(actor));
+        if (actor) {
+          this.audio.enemyCue(actor.id, 'attack', this.actorPan(actor), this.actorAudibility(actor));
+          if (event.attackId === 'denial-beam' || event.attackId === 'uninsurable-denial') this.spawnHostileBeamVisual(actor);
+        }
         break;
       case 'state':
-        if (actor && event.state === 'windup') actor.attackFlash = Math.max(actor.attackFlash, event.duration);
+        if (actor && event.state === 'windup') {
+          actor.attackFlash = Math.max(actor.attackFlash, event.duration);
+          this.audio.enemyCue(actor.id, 'windup', this.actorPan(actor), this.actorAudibility(actor));
+        }
         break;
       case 'wake':
         if (actor) {
           actor.awake = true;
-          this.audio.enemyCue(actor.id, 'alert');
+          this.audio.enemyCue(actor.id, 'alert', this.actorPan(actor), this.actorAudibility(actor));
         }
         break;
       case 'pain':
         if (actor) {
           actor.attackFlash = 0;
           actor.visualKey = '';
-          this.audio.enemyCue(actor.id, 'pain', this.actorPan(actor));
+          this.audio.enemyCue(actor.id, 'pain', this.actorPan(actor), this.actorAudibility(actor));
           this.emitParticles('ink', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .55, 0)), 3);
           window.dispatchEvent(new CustomEvent('enemy-pain', { detail: { actorUid: actor.uid, id: actor.id, sourceUid: event.sourceUid } }));
         }
         break;
       case 'damage': {
         const adjusted = event.amount * damageScale * (this.player.powerups.forensic > 0 ? .62 : 1);
-        if (event.targetUid === 'player') this.damagePlayer(adjusted, event.sourceUid);
+        if (event.targetUid === 'player') this.damagePlayer(adjusted, event.sourceUid, event.damageKind);
         else {
           const target = this.world.actors.find((candidate) => candidate.uid === event.targetUid);
           if (target) this.damageActor(target, event.amount, event.sourceUid);
@@ -1356,7 +1496,7 @@ export class GameEngine {
         });
         break;
       case 'boss-phase':
-        if (actor) this.audio.enemyCue(actor.id, 'phase', this.actorPan(actor));
+        if (actor) this.audio.enemyCue(actor.id, 'phase', this.actorPan(actor), Math.max(.35, this.actorAudibility(actor)));
         if (actor) this.emitParticles('authority', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0)), 20);
         this.showMessage(`${this.pretty(event.phaseId)} phase`, 1.5);
         break;
@@ -1375,7 +1515,18 @@ export class GameEngine {
           const family = String(sprite.userData.effectFamily ?? 'reserve-hazard');
           this.playStandardEffect(family, family === 'prediction-zone' ? 4 : 6, sprite.position, sprite.scale.x * 1.08, .06);
           this.emitParticles(family === 'prediction-zone' ? 'scan' : 'authority', sprite.position.clone().add(new Vector3(0, .15, 0)), 8);
+          const spatial = this.pointSpatialAudio(sprite.position);
+          this.audio.hazardCue('armed', spatial.pan, spatial.gain);
         }
+        break;
+      }
+      case 'spawn-hazard': {
+        const owner = this.world.actors.find((candidate) => candidate.uid === event.hazard.ownerUid);
+        const position = new Vector3(event.hazard.position.x, event.hazard.position.y, event.hazard.position.z);
+        const spatial = owner
+          ? { pan: this.actorPan(owner), gain: this.actorAudibility(owner) }
+          : this.pointSpatialAudio(position);
+        this.audio.hazardCue('placed', spatial.pan, spatial.gain);
         break;
       }
       case 'boss-mechanism':
@@ -1489,7 +1640,7 @@ export class GameEngine {
       let sprite = this.hazardSprites.get(item.id);
       if (!sprite) {
         const effect = item.kind.includes('prediction') || item.kind.includes('actuarial') ? 'prediction-zone' : 'reserve-hazard';
-        sprite = this.createEffectSprite(this.standardEffectFrame(effect, 1), item.radius * 2);
+        sprite = this.createEffectSprite(this.standardEffectFrame(effect, 1), item.radius * 2, true);
         sprite.userData.effectFamily = effect;
         sprite.center.set(.5, .18);
         this.hazardSprites.set(item.id, sprite);
@@ -1509,10 +1660,10 @@ export class GameEngine {
     }
   }
 
-  private createEffectSprite(url: string, size: number): Sprite {
+  private createEffectSprite(url: string, size: number, preserveGameplayScale = false): Sprite {
     const material = new SpriteMaterial({ map: this.assets.texture(url), transparent: true, depthWrite: false, alphaTest: .04 });
     const sprite = new Sprite(material);
-    const effectScale = this.accessibility.reducedEffects ? .72 : 1;
+    const effectScale = this.accessibility.reducedEffects && !preserveGameplayScale ? .72 : 1;
     sprite.scale.set(size * effectScale, size * effectScale, 1);
     this.world.root.add(sprite);
     return sprite;
@@ -1571,7 +1722,7 @@ export class GameEngine {
     while (this.animatedEffects.length) this.removeAnimatedEffect(this.animatedEffects.length - 1);
   }
 
-  private damagePlayer(amount: number, sourceUid?: string): void {
+  private damagePlayer(amount: number, sourceUid?: string, damageKind?: DamageKind): void {
     if (this.player.powerups.binder > 0) {
       const point = this.player.position.clone().addScaledVector(this.aimDirection(), .65).add(new Vector3(0, -.05, 0));
       this.emitParticles('deflection', point, 7, this.aimDirection());
@@ -1591,7 +1742,7 @@ export class GameEngine {
       const side = Math.sin(angle);
       direction = side > .25 ? 'right' : side < -.25 ? 'left' : 'center';
     }
-    window.dispatchEvent(new CustomEvent('player-hurt', { detail: { amount, direction } }));
+    window.dispatchEvent(new CustomEvent('player-hurt', { detail: { amount, direction, ...(damageKind ? { damageKind } : {}) } }));
   }
 
   private actorVisualState(actor: RuntimeActor, behaviorState?: ActorBehaviorState): string {
@@ -1919,6 +2070,20 @@ export class GameEngine {
   }
 
   private completeMap(nextMap?: MapId): void {
+    if (this.activeDemo || this.demoReadOnly) {
+      if (this.activeDemo) {
+        this.activeDemo.finished = true;
+        this.activeDemo.paused = true;
+      }
+      this.mode = 'playing';
+      this.showMessage('Replay complete', 2);
+      this.emit();
+      return;
+    }
+    if (this.demoRecorder) {
+      const demo = this.finishDemoRecording();
+      if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'completion' } }));
+    }
     const killsPercent = tallyPercent(this.tally.kills, this.tally.totalKills);
     const itemsPercent = tallyPercent(this.tally.items, this.tally.totalItems);
     const secretsPercent = tallyPercent(this.tally.secrets, this.tally.totalSecrets);
@@ -1985,7 +2150,21 @@ export class GameEngine {
   }
 
   private die(): void {
+    if (this.activeDemo || this.demoReadOnly) {
+      if (this.activeDemo) {
+        this.activeDemo.finished = true;
+        this.activeDemo.paused = true;
+      }
+      this.mode = 'playing';
+      this.showMessage('Replay ended', 2);
+      this.emit();
+      return;
+    }
     if (this.mode === 'dead') return;
+    if (this.demoRecorder) {
+      const demo = this.finishDemoRecording();
+      if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'death' } }));
+    }
     this.mode = 'dead';
     this.audio.stopMusic();
     document.exitPointerLock();
@@ -2135,6 +2314,7 @@ export class GameEngine {
   }
 
   private checkpoint(): void {
+    if (this.activeDemo || this.demoReadOnly) return;
     const state = this.createSaveData();
     const metadata = this.saveMetadata();
     this.persistence.autosave(state, metadata);
@@ -2143,12 +2323,12 @@ export class GameEngine {
   }
 
   save(): void {
-    if (!this.world.map) return;
+    if (!this.world.map || this.activeDemo || this.demoReadOnly) return;
     this.persistence.quicksave(this.createSaveData(), this.saveMetadata(undefined, true));
   }
 
   saveManual(slot: number, name?: string): void {
-    if (!this.world.map) return;
+    if (!this.world.map || this.activeDemo || this.demoReadOnly) return;
     this.persistence.saveManual(slot, this.createSaveData(), this.saveMetadata(name, true));
   }
 
@@ -2358,6 +2538,7 @@ export class GameEngine {
       initialState,
     });
     this.demoTick = 0;
+    this.emit();
     return true;
   }
 
@@ -2366,7 +2547,103 @@ export class GameEngine {
     const demo = this.demoRecorder.finish(this.demoTick);
     this.demoRecorder = undefined;
     this.demoTick = 0;
+    this.emit();
     return demo;
+  }
+
+  isDemoRecording(): boolean { return Boolean(this.demoRecorder); }
+  isDemoPlayback(): boolean { return Boolean(this.activeDemo); }
+
+  pauseDemoPlayback(): void {
+    if (!this.activeDemo || this.activeDemo.paused || this.activeDemo.finished) return;
+    this.activeDemo.paused = true;
+    this.emit();
+  }
+
+  demoSummary(value: unknown): { mapId: MapId; createdAt: number; totalTicks: number; duration: number } | undefined {
+    const validation = validateDemo<SaveData, GameplayCommand>(value, {
+      validateInitialState: isSaveData,
+      validateCommand: isGameplayCommand,
+    });
+    if (!validation.valid) return undefined;
+    const demo = validation.demo;
+    if (demo.tickRate !== 35 || demo.totalTicks > 35 * 60 * 5 || demo.frames.length > demo.totalTicks
+      || demo.mapId !== demo.initialState.mapId || demo.seed !== demo.initialState.rng || !(demo.mapId in CAMPAIGN.maps)) return undefined;
+    return { mapId: demo.mapId as MapId, createdAt: demo.createdAt, totalTicks: demo.totalTicks, duration: demo.totalTicks / demo.tickRate };
+  }
+
+  startDemoPlayback(value: unknown): boolean {
+    const validation = validateDemo<SaveData, GameplayCommand>(value, {
+      validateInitialState: isSaveData,
+      validateCommand: isGameplayCommand,
+    });
+    if (!validation.valid) return false;
+    const demo = structuredClone(validation.demo);
+    if (!this.demoSummary(demo)) return false;
+    this.demoRecorder = undefined;
+    this.demoTick = 0;
+    this.activeDemo = undefined;
+    if (!this.restoreSave(structuredClone(demo.initialState), true)) return false;
+    this.activeDemo = {
+      demo,
+      playback: new DemoPlayback<GameplayCommand>(demo),
+      paused: true,
+      finished: demo.totalTicks === 0,
+      speed: 1,
+      tickCredit: 0,
+    };
+    document.exitPointerLock();
+    this.emit();
+    this.render();
+    return true;
+  }
+
+  toggleDemoPlayback(): boolean {
+    if (!this.activeDemo || this.activeDemo.finished) return false;
+    this.activeDemo.paused = !this.activeDemo.paused;
+    this.emit();
+    return this.activeDemo.paused;
+  }
+
+  cycleDemoSpeed(): number {
+    if (!this.activeDemo) return 1;
+    this.activeDemo.speed = this.activeDemo.speed === .5 ? 1 : this.activeDemo.speed === 1 ? 2 : .5;
+    this.emit();
+    return this.activeDemo.speed;
+  }
+
+  restartDemoPlayback(): boolean {
+    const demo = this.activeDemo?.demo;
+    return demo ? this.startDemoPlayback(demo) : false;
+  }
+
+  stopDemoPlayback(): void {
+    if (!this.activeDemo) return;
+    this.activeDemo = undefined;
+    this.mode = 'menu';
+    this.audio.stopMusic();
+    this.emit();
+  }
+
+  private advanceDemoPlayback(): void {
+    const active = this.activeDemo;
+    if (!active || active.paused || active.finished) return;
+    active.tickCredit += active.speed;
+    while (active.tickCredit >= 1 && !active.playback.finished && !active.finished) {
+      active.tickCredit -= 1;
+      const commands = active.playback.next();
+      this.simulate(STEP, commands.at(-1) ?? NEUTRAL_COMMAND, false);
+      if (this.mode !== 'playing') {
+        active.finished = true;
+        this.mode = 'playing';
+      }
+    }
+    if (active.playback.finished) active.finished = true;
+    if (active.finished) {
+      active.paused = true;
+      document.exitPointerLock();
+      this.emit();
+    }
   }
 
   playDemo(value: unknown): boolean {
@@ -2375,15 +2652,21 @@ export class GameEngine {
       validateCommand: isGameplayCommand,
     });
     if (!validation.valid) return false;
-    const demo = validation.demo;
+    const demo = structuredClone(validation.demo);
     if (demo.tickRate !== 35 || demo.mapId !== demo.initialState.mapId || demo.seed !== demo.initialState.rng) return false;
     this.demoRecorder = undefined;
     this.demoTick = 0;
-    if (!this.restoreSave(demo.initialState, true)) return false;
+    this.activeDemo = undefined;
+    if (!this.restoreSave(structuredClone(demo.initialState), true)) return false;
     const playback = new DemoPlayback<GameplayCommand>(demo);
-    while (!playback.finished && this.mode === 'playing') {
-      const commands = playback.next();
-      this.simulate(STEP, commands.at(-1) ?? NEUTRAL_COMMAND, false);
+    this.demoReadOnly = true;
+    try {
+      while (!playback.finished && this.mode === 'playing') {
+        const commands = playback.next();
+        this.simulate(STEP, commands.at(-1) ?? NEUTRAL_COMMAND, false);
+      }
+    } finally {
+      this.demoReadOnly = false;
     }
     this.mode = 'paused';
     document.exitPointerLock();
@@ -2644,16 +2927,28 @@ export class GameEngine {
         playerProjectiles: this.playerProjectiles.map((item) => ({ id: item.id, weapon: item.weapon, x: +item.position.x.toFixed(2), z: +item.position.z.toFixed(2), remaining: +item.remaining.toFixed(2) })),
         bindingPulses: this.bindingBeam?.pulses ?? 0,
         bindingBeam: this.bindingBeamVisual ? { active: true, length: +this.bindingBeamVisual.length.toFixed(2) } : { active: false, length: 0 },
+        hostileBeams: this.hostileBeamVisuals.map((beam) => ({ length: +beam.length.toFixed(2), remaining: +(beam.duration - beam.elapsed).toFixed(3) })),
         animated: this.animatedEffects.map((effect) => ({ family: effect.family, frame: effect.frame + 1 })),
         particles: { active: this.particles.activeCount, capacity: this.particles.capacity, byKind: this.particles.counts() },
       },
+      audio: this.audio.diagnostics(),
       bosses: this.world.actors.filter((actor) => actor.kind === 'boss').map((actor) => ({ id: actor.id, health: actor.health, dead: actor.dead, phaseLocked: actor.phaseLocked })),
       tally: this.tally,
       momentum: this.momentum,
       objective: this.currentObjective(),
       interaction: this.interactionHint() ?? null,
       message: this.message,
-      demo: { recording: Boolean(this.demoRecorder), tick: this.demoTick },
+      demo: {
+        recording: Boolean(this.demoRecorder),
+        tick: this.demoTick,
+        playback: this.activeDemo ? {
+          currentTick: this.activeDemo.playback.currentTick,
+          totalTicks: this.activeDemo.demo.totalTicks,
+          paused: this.activeDemo.paused,
+          finished: this.activeDemo.finished,
+          speed: this.activeDemo.speed,
+        } : null,
+      },
       runtime: {
         textureCount: this.assets.textures.size,
         drawCalls: this.renderer.info.render.calls,
@@ -2706,6 +3001,13 @@ export class GameEngine {
       message: this.message,
       objective: this.currentObjective(),
       ...(interaction ? { interaction } : {}),
+      ...(this.activeDemo ? { replay: {
+        currentTick: this.activeDemo.playback.currentTick,
+        totalTicks: this.activeDemo.demo.totalTicks,
+        paused: this.activeDemo.paused,
+        finished: this.activeDemo.finished,
+        speed: this.activeDemo.speed,
+      } } : {}),
     });
   }
   private showMessage(message: string, duration = 1.2): void { this.message = message; this.messageTimer = duration; }
@@ -2776,6 +3078,19 @@ export class GameEngine {
   private actorPan(actor: RuntimeActor): number {
     const angle = Math.atan2(actor.position.x - this.player.position.x, actor.position.z - this.player.position.z);
     return Math.max(-1, Math.min(1, Math.sin(angle - this.player.yaw)));
+  }
+
+  private actorAudibility(actor: RuntimeActor): number {
+    return this.pointSpatialAudio(actor.position).gain;
+  }
+
+  private pointSpatialAudio(position: Vector3): { pan: number; gain: number } {
+    const distance = this.horizontalDistance(position, this.player.position);
+    const angle = Math.atan2(position.x - this.player.position.x, position.z - this.player.position.z);
+    const pan = Math.max(-1, Math.min(1, Math.sin(angle - this.player.yaw)));
+    const distanceGain = Math.max(.06, Math.min(1, 1 - Math.max(0, distance - 4) / 44));
+    const occlusion = this.world.hasLineOfSight(this.player.position, position) ? 1 : .58;
+    return { pan, gain: distanceGain * occlusion };
   }
 
   private resetInventory(): void {

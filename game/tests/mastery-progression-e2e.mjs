@@ -30,12 +30,24 @@ assert(await page.locator('#intermission').isVisible(), 'Map clear did not open 
 assert(/^[SABCD]$/.test(await page.locator('#intermission-grade').innerText()), 'Intermission grade is missing');
 assert((await page.locator('#tally').innerText()).includes('Par '), 'Intermission has no par comparison');
 assert((await page.locator('#result-bests').innerText()).includes('First clear'), 'First clear was not identified');
+const intermissionMastery = await page.locator('#intermission-mastery').innerText();
+assert(intermissionMastery.includes('Retry goal:') && intermissionMastery.includes('PB matched'), `Intermission lacks a concrete current-vs-PB retry target: ${intermissionMastery}`);
+assert((await page.locator('#episode-mastery').innerText()).includes('Episode 1/8 clear'), 'Intermission episode aggregate is missing or incorrect');
+assert((await page.locator('#retry-map').innerText()) === 'Retry Goal', 'Retry action is not tied to the visible mastery target');
 await page.screenshot({ path: shot('intermission.png') });
 
 await page.evaluate(() => document.querySelector('#level-select-button').click());
 assert(await page.locator('#level-select').isVisible(), 'Level select did not open');
 assert(await page.locator('.level-map-grid button', { hasText: 'E1M8' }).count() === 1, 'Completed map is missing from level select');
 assert(await page.locator('.level-map-grid button', { hasText: 'E1M9' }).count() === 0, 'Ordinary E1M8 completion leaked the secret map');
+assert((await page.locator('#campaign-mastery').innerText()).includes('Campaign 1/24 clear'), 'Campaign mastery aggregate is missing');
+const completedMap = page.locator('.level-map-grid button', { hasText: 'E1M8' });
+assert((await completedMap.innerText()).includes('Target:'), 'Completed map has no next mastery target');
+assert((await page.locator('.level-episode h2').first().innerText()).includes('1/8 clear'), 'Episode mastery aggregate is missing from Level Select');
+
+await page.locator('#level-select-difficulty').selectOption('field-adjuster');
+assert((await page.locator('.level-map-grid button', { hasText: 'E1M8' }).innerText()).includes('First clear'), 'Per-difficulty mastery target leaked another response level record');
+await page.locator('#level-select-difficulty').selectOption('desk-adjuster');
 
 await page.evaluate(() => {
   window.__redLedger.loadMap('E1M3');
@@ -64,6 +76,7 @@ const mobile = await mobileContext.newPage();
 await mobile.goto(url, { waitUntil: 'networkidle' });
 await mobile.click('#level-select-button');
 assert(await mobile.locator('.level-map-grid button', { hasText: 'E1M9' }).count() === 1, 'Mobile level select lost secret discovery');
+assert(await mobile.locator('#campaign-mastery').isVisible(), 'Mobile level select hides campaign mastery');
 assert(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile level select overflows horizontally');
 await mobile.screenshot({ path: shot('level-select-mobile.png'), fullPage: true });
 await mobileContext.close();

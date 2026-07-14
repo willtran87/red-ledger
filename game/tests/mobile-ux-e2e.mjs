@@ -79,6 +79,15 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').first().click();
 await page.click('#begin-episode');
+assert(await page.locator('#ready-overlay').isVisible(), 'Touch entry briefing is not visible');
+assert(await page.locator('#ready-overlay').getAttribute('data-input') === 'touch', 'Entry briefing did not select touch guidance');
+const touchBriefing = await page.locator('#entry-controls').innerText();
+for (const action of ['MOVE', 'LOOK', 'FIRE', 'USE', 'WEAPON', 'MAP']) {
+assert(touchBriefing.includes(action), `Touch briefing omits ${action}`);
+}
+assert((await page.evaluate(() => JSON.parse(window.render_game_to_text()).mode)) === 'paused', 'Touch briefing did not freeze simulation');
+await page.screenshot({ path: 'output/mobile-ux/entry-briefing-390x844.png' });
+await page.click('#enter-file');
 await page.waitForTimeout(300);
 const readState = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 const beforeMove = await readState();

@@ -30,6 +30,8 @@ await page.evaluate(() => window.dispatchEvent(new CustomEvent('input-action', {
 })));
 await page.click('#save-game');
 await page.locator('#save-slot-list .slot-action').first().click();
+const continuePreview = await page.locator('#menu-feedback').textContent();
+assert(continuePreview.includes('Manual file') && continuePreview.includes('Play ') && continuePreview.includes('E1M1'), `Continue preview omits save kind or play time: ${continuePreview}`);
 await page.click('#load-game');
 
 const manualDetail = await page.locator('#load-slot-list .slot-row').first().locator('small').textContent();
