@@ -79,6 +79,8 @@ SHEET_COUNTS = {
     "fx_weapon-feedback_v01.png": 8,
     "fx_world-feedback_v01.png": 8,
     "fx_death-feedback_v01.png": 8,
+    "fx_environment-material-feedback_v01.png": 8,
+    "fx_status-feedback_v01.png": 8,
     "ui_portrait_damage-0_states_v01.png": 6,
     "ui_portrait_damage-1_states_v01.png": 6,
     "ui_portrait_damage-2_states_v01.png": 6,

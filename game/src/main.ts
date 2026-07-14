@@ -45,7 +45,11 @@ if (import.meta.env.DEV) {
     resume: () => game.resume(),
     teleportToTrigger: (action, target) => game.debugTeleportToTrigger(action, target),
     defeatActor: (id) => game.debugDefeatActor(id),
-    teleportNearActor: (id, distance) => game.debugTeleportNearActor(id, distance),
+    activateActor: (id) => game.debugActivateActor(id),
+    particleBurst: (kind) => game.debugParticleBurst(kind),
+    particleGallery: (kinds) => game.debugParticleGallery(kinds),
+    selectWeapon: (id) => game.selectWeapon(id),
+    teleportNearActor: (id, distance, includeDead) => game.debugTeleportNearActor(id, distance, includeDead),
     startDemo: () => game.startDemoRecording(),
     finishDemo: () => game.finishDemoRecording(),
     playDemo: (demo) => game.playDemo(demo),
@@ -77,7 +81,11 @@ declare global {
       resume: () => void;
       teleportToTrigger: (action: string, target?: string) => boolean;
       defeatActor: (id: string) => boolean;
-      teleportNearActor: (id: string, distance?: number) => boolean;
+      activateActor: (id: string) => boolean;
+      particleBurst: (kind: import('./game/ParticleSystem').ParticleKind) => void;
+      particleGallery: (kinds: readonly import('./game/ParticleSystem').ParticleKind[]) => void;
+      selectWeapon: (id: import('./data').WeaponId) => boolean;
+      teleportNearActor: (id: string, distance?: number, includeDead?: boolean) => boolean;
       startDemo: () => boolean;
       finishDemo: () => unknown;
       playDemo: (demo: unknown) => boolean;

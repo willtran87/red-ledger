@@ -2662,5 +2662,133 @@
       32,
       32
     ]
+  },
+  {
+    "family": "particle-environment-material-feedback",
+    "file": "assets/public_runtime/effects/particle-environment-material-feedback/fx_particle-environment-material-feedback_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-environment-material-feedback",
+    "file": "assets/public_runtime/effects/particle-environment-material-feedback/fx_particle-environment-material-feedback_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-environment-material-feedback",
+    "file": "assets/public_runtime/effects/particle-environment-material-feedback/fx_particle-environment-material-feedback_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-environment-material-feedback",
+    "file": "assets/public_runtime/effects/particle-environment-material-feedback/fx_particle-environment-material-feedback_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-environment-material-feedback",
+    "file": "assets/public_runtime/effects/particle-environment-material-feedback/fx_particle-environment-material-feedback_F_05.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-environment-material-feedback",
+    "file": "assets/public_runtime/effects/particle-environment-material-feedback/fx_particle-environment-material-feedback_F_06.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-environment-material-feedback",
+    "file": "assets/public_runtime/effects/particle-environment-material-feedback/fx_particle-environment-material-feedback_F_07.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-environment-material-feedback",
+    "file": "assets/public_runtime/effects/particle-environment-material-feedback/fx_particle-environment-material-feedback_F_08.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-status-feedback",
+    "file": "assets/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_01.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-status-feedback",
+    "file": "assets/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_02.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-status-feedback",
+    "file": "assets/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_03.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-status-feedback",
+    "file": "assets/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_04.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-status-feedback",
+    "file": "assets/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_05.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-status-feedback",
+    "file": "assets/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_06.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-status-feedback",
+    "file": "assets/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_07.png",
+    "size": [
+      32,
+      32
+    ]
+  },
+  {
+    "family": "particle-status-feedback",
+    "file": "assets/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_08.png",
+    "size": [
+      32,
+      32
+    ]
   }
 ]

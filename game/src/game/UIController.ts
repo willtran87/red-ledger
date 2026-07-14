@@ -407,6 +407,31 @@ export class UIController {
       return marker;
     }));
     this.showScreen('intermission');
+    this.playCompletionBurst();
+  }
+
+  private playCompletionBurst(): void {
+    if ($<HTMLInputElement>('#reduced-effects').checked) return;
+    const screen = $('#intermission');
+    screen.querySelectorAll('.completion-particle').forEach((element) => element.remove());
+    const texture = runtimeUrl('public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_08.png');
+    for (let index = 0; index < 20; index += 1) {
+      const particle = document.createElement('i');
+      particle.className = 'completion-particle';
+      particle.setAttribute('aria-hidden', 'true');
+      particle.style.backgroundImage = `url('${texture}')`;
+      screen.append(particle);
+      const side = index % 2 ? 1 : -1;
+      const spread = side * (70 + (index * 43) % 360);
+      const rise = -90 - (index * 29) % 180;
+      const fall = 130 + (index * 31) % 210;
+      const animation = particle.animate([
+        { opacity: 0, transform: 'translate(-50%, -50%) scale(.45) rotate(0deg)' },
+        { opacity: 1, transform: `translate(calc(-50% + ${spread * .55}px), calc(-50% + ${rise}px)) scale(1) rotate(${side * 120}deg)`, offset: .28 },
+        { opacity: 0, transform: `translate(calc(-50% + ${spread}px), calc(-50% + ${fall}px)) scale(.68) rotate(${side * 520}deg)` },
+      ], { duration: 900 + (index % 4) * 110, easing: 'cubic-bezier(.18,.7,.32,1)', fill: 'forwards' });
+      void animation.finished.then(() => particle.remove(), () => particle.remove());
+    }
   }
 
   private flashWeapon(detail: { weapon: keyof typeof WEAPONS; duration: number }): void {

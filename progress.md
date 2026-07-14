@@ -40,6 +40,10 @@ Original prompt: implement the game
 - 2026-07-14: Upgraded the full automap with explored doors, exit, resource, control, discovered-secret, and forensic-hostile markers plus a compact legend; full-map mode now hides view-weapon combat clutter. Boss UI now names the authority and current behavior phase above its health track.
 - 2026-07-14: Replaced nondeterministic synthesized noise with a seeded stream, added eight distinct layered weapon sound profiles with short music ducking, and made the procedural score add pressure rhythm in response to nearby live threats and bosses.
 - 2026-07-14: Final full-feature release gate passes 81 unit/data checks, production portability, gameplay, all 27 maps, progression, responsive/mobile UX, combat/save, demos, controls, mechanisms, particles, combat feel, mastery records, authored transient animation, Chromium/Firefox/WebKit, and lifecycle performance. The integrated software-renderer soak delivered 287 frames over 10 seconds at 35.1 ms mean / 66.8 ms p95 with 68 resident textures; Pages source matches all 3,596 build files exactly.
+- 2026-07-14: Wired semantic enemy and boss states to their authored charge, aim, lunge, predict, summon, salvo, core, collapse, death, and corpse frames. Deaths now play bounded timelines before settling, and behavioral browser coverage proves live attack states plus boss collapse progression.
+- 2026-07-14: Generated two additional uniformly spaced `#FF00FF` particle sheets for environment materials and status/reward feedback. Both sources passed chroma extraction, normalization, spacing, palette, alpha, metadata, and catalog validation, expanding the library to five sheets and 40 fixed-pivot `32x32` runtime seeds.
+- 2026-07-14: Added material-aware fiber, concrete, glass, water, metal, toner, wax, and pump-fluid particles plus shield deflection, hazard neutralization, authority, scan, momentum, rejection, and completion feedback. Projectile trails, nonfatal prop hits, actor-material deaths, protected hazard contact, pickups, doors, mechanisms, boss phases, summons, resurrection, and map-aware ambience now select intentional bounded feedback; reduced effects retains primary cues and suppresses trails/ambience.
+- 2026-07-14: Final semantic-animation and particle release gate passes 83 unit/data checks, every 27-map and focused browser scenario, nested production packaging, and Chromium/Firefox/WebKit. The software-renderer active-combat soak sampled 231 frames at 43.4 ms mean / 83.3 ms p95 with 89 resident textures; Pages source matches all 3,612 production files exactly.
 
 ## Verified Baseline
 
@@ -47,7 +51,7 @@ Original prompt: implement the game
 - High-resolution viewport: `2560x1600`
 - Desktop viewport: `1280x720`
 - Mobile viewport: `390x844`
-- Runtime asset catalog: 3,525 PNGs / 3,592 files
+- Runtime asset catalog: 3,541 PNGs / 3,608 files
 
 ## External Signoff
 

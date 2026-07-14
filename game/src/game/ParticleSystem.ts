@@ -12,7 +12,10 @@ import {
   Vector3,
 } from 'three';
 
-export type ParticleKind = 'ink' | 'paper' | 'spark' | 'ember' | 'energy' | 'smoke' | 'debris' | 'approval';
+export type ParticleKind =
+  | 'ink' | 'paper' | 'spark' | 'ember' | 'energy' | 'smoke' | 'debris' | 'approval'
+  | 'fiber' | 'concrete' | 'glass' | 'water' | 'metal' | 'toner' | 'wax' | 'spittle'
+  | 'deflection' | 'neutralize' | 'authority' | 'scan' | 'momentum' | 'rejection' | 'confetti';
 
 interface ParticlePreset {
   color: number;
@@ -22,6 +25,7 @@ interface ParticlePreset {
   gravity: number;
   drag: number;
   additive?: boolean;
+  endScale?: number;
 }
 
 interface ParticleSlot {
@@ -47,6 +51,21 @@ const PRESETS: Record<ParticleKind, ParticlePreset> = {
   smoke: { color: 0x6a6965, life: [.5, 1.05], speed: [.35, 1.5], size: [.22, .48], gravity: -1, drag: 2.4 },
   debris: { color: 0x4b4a45, life: [.4, .85], speed: [1.5, 4.7], size: [.12, .28], gravity: 9, drag: .9 },
   approval: { color: 0xd51c2f, life: [.38, .78], speed: [.8, 2.7], size: [.14, .3], gravity: -.4, drag: 1.4, additive: true },
+  fiber: { color: 0x696966, life: [.42, .9], speed: [.35, 1.5], size: [.18, .38], gravity: -0.2, drag: 2.6, endScale: 1.55 },
+  concrete: { color: 0x7f807c, life: [.32, .72], speed: [1.1, 3.8], size: [.12, .27], gravity: 8.5, drag: 1.2 },
+  glass: { color: 0xa9f3f2, life: [.3, .7], speed: [2.2, 5.6], size: [.12, .25], gravity: 7.2, drag: .8 },
+  water: { color: 0x42cdd7, life: [.22, .55], speed: [1.7, 4.8], size: [.15, .34], gravity: 8, drag: 1.1 },
+  metal: { color: 0xd9ad3d, life: [.28, .68], speed: [2, 5.8], size: [.1, .24], gravity: 9.5, drag: .65, additive: true },
+  toner: { color: 0x151719, life: [.28, .62], speed: [1.1, 3.8], size: [.14, .32], gravity: 6.5, drag: 1.6 },
+  wax: { color: 0xbd1524, life: [.34, .76], speed: [1.2, 4.2], size: [.14, .3], gravity: 7.8, drag: 1.15 },
+  spittle: { color: 0x8aa652, life: [.25, .58], speed: [1.4, 4.1], size: [.14, .3], gravity: 7, drag: 1.3 },
+  deflection: { color: 0xf2eee2, life: [.2, .5], speed: [2.4, 6.4], size: [.14, .3], gravity: 3.5, drag: 1, additive: true },
+  neutralize: { color: 0x53d7df, life: [.3, .68], speed: [1.2, 4.3], size: [.16, .36], gravity: 5.8, drag: 1.4, additive: true },
+  authority: { color: 0xffc928, life: [.16, .36], speed: [3.4, 7.4], size: [.1, .24], gravity: 8.5, drag: .65, additive: true },
+  scan: { color: 0x53d7df, life: [.28, .66], speed: [.5, 2.2], size: [.15, .32], gravity: -.35, drag: 2.2, additive: true },
+  momentum: { color: 0xd51c2f, life: [.38, .82], speed: [1.2, 3.8], size: [.16, .34], gravity: 1.4, drag: 1.15, additive: true },
+  rejection: { color: 0xffd12e, life: [.14, .32], speed: [3.6, 7.7], size: [.1, .23], gravity: 9, drag: .6, additive: true },
+  confetti: { color: 0xd51c2f, life: [.7, 1.35], speed: [.6, 2.6], size: [.16, .34], gravity: 1.8, drag: 1.6 },
 };
 
 const makeMask = (): DataTexture => {
@@ -128,7 +147,7 @@ export class ParticleSystem {
       slot.life = life;
       slot.maxLife = life;
       slot.startSize = this.range(preset.size);
-      slot.endSize = kind === 'smoke' ? slot.startSize * 2.2 : slot.startSize * .35;
+      slot.endSize = slot.startSize * (preset.endScale ?? (kind === 'smoke' ? 2.2 : .35));
       slot.gravity = preset.gravity;
       slot.drag = preset.drag;
       slot.spin = this.signed() * 7;
@@ -185,7 +204,11 @@ export class ParticleSystem {
   get activeCount(): number { return this.slots.reduce((count, slot) => count + Number(slot.active), 0); }
 
   counts(): Record<ParticleKind, number> {
-    const result: Record<ParticleKind, number> = { ink: 0, paper: 0, spark: 0, ember: 0, energy: 0, smoke: 0, debris: 0, approval: 0 };
+    const result: Record<ParticleKind, number> = {
+      ink: 0, paper: 0, spark: 0, ember: 0, energy: 0, smoke: 0, debris: 0, approval: 0,
+      fiber: 0, concrete: 0, glass: 0, water: 0, metal: 0, toner: 0, wax: 0, spittle: 0,
+      deflection: 0, neutralize: 0, authority: 0, scan: 0, momentum: 0, rejection: 0, confetti: 0,
+    };
     this.slots.forEach((slot) => { if (slot.active) result[slot.kind] += 1; });
     return result;
   }

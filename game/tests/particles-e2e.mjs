@@ -37,7 +37,7 @@ await page.evaluate(() => {
   window.__redLedger.use();
 });
 particles = (await state()).combatEffects.particles;
-assert(particles.byKind.spark > 0, 'Mechanism activation emitted no sparks');
+assert(particles.byKind.concrete > 0, 'Lift mechanism activation emitted no concrete feedback');
 await page.screenshot({ path: 'output/particles/mechanism-sparks.png' });
 
 await page.evaluate(() => {

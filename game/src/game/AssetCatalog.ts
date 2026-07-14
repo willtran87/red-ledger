@@ -59,15 +59,27 @@ export class AssetCatalog {
   }
 
   actorFrame(kind: 'enemy' | 'boss', id: string, desired: string, angle = 'F', frameIndex = 0): string {
+    const frames = this.actorFrames(kind, id, desired, angle);
+    return frames[Math.abs(frameIndex) % frames.length].url;
+  }
+
+  actorFrameCount(kind: 'enemy' | 'boss', id: string, desired: string, angle = 'F'): number {
+    return this.actorFrames(kind, id, desired, angle).length;
+  }
+
+  private actorFrames(kind: 'enemy' | 'boss', id: string, desired: string, angle: string): CatalogFile[] {
     const actor = (kind === 'enemy' ? this.data.enemies : this.data.bosses)[id];
     if (!actor) throw new Error(`Unknown actor art: ${kind}.${id}`);
-    const fallbacks = desired === 'death'
-      ? ['corpse', 'death', 'collapse', 'destroy', 'debris', 'sealed']
+    const genericFallbacks = desired === 'death'
+      ? ['death', 'collapse', 'destroy', 'debris', 'corpse', 'sealed']
       : desired === 'pain'
         ? ['pain', 'split-flinch', 'idle', 'walk', 'sealed']
       : desired === 'attack'
         ? ['attack', 'aim', 'cast', 'fire', 'idle', 'sealed']
-        : ['idle', 'walk', 'sealed', 'ready', 'calculating'];
+        : desired === 'corpse'
+          ? ['corpse', 'debris', 'sealed']
+          : ['idle', 'walk', 'sealed', 'ready', 'calculating'];
+    const fallbacks = [...new Set([desired, ...genericFallbacks])];
     for (const state of fallbacks) {
       const angles = actor.states[state]?.angles;
       if (!angles) continue;
@@ -77,12 +89,12 @@ export class AssetCatalog {
       };
       const selected = mirrorFallback[angle]?.find((candidate) => angles[candidate]?.length);
       const frames = (selected ? angles[selected] : undefined) ?? angles.F ?? Object.values(angles)[0];
-      if (frames?.length) return frames[Math.abs(frameIndex) % frames.length].url;
+      if (frames?.length) return frames;
     }
     const firstState = Object.values(actor.states)[0];
     const firstFrames = firstState?.angles ? Object.values(firstState.angles)[0] : undefined;
     if (!firstFrames?.[0]) throw new Error(`Actor has no frames: ${kind}.${id}`);
-    return firstFrames[0].url;
+    return firstFrames;
   }
 
   pickup(id: string): string {

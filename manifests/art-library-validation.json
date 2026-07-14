@@ -1,12 +1,12 @@
 {
   "sheet_inventory": {
     "counts": {
-      "source_alpha": 90,
-      "source_keyed": 90,
-      "normalized_alpha": 90,
-      "normalized_keyed": 90
+      "source_alpha": 92,
+      "source_keyed": 92,
+      "normalized_alpha": 92,
+      "normalized_keyed": 92
     },
-    "registered": 90,
+    "registered": 92,
     "missing_pairs": {},
     "unexpected_pairs": {},
     "unregistered": [],
@@ -821,6 +821,18 @@
       "file": "art/source/keyed/normalized/fx_death-feedback_v01.png"
     },
     {
+      "key": "magenta",
+      "border_average": [
+        255,
+        0,
+        255
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/fx_environment-material-feedback_v01.png"
+    },
+    {
       "key": "green",
       "border_average": [
         0,
@@ -855,6 +867,18 @@
       "border_max_distance": 0.0,
       "passed": true,
       "file": "art/source/keyed/normalized/fx_projectile-lineup_v01.png"
+    },
+    {
+      "key": "magenta",
+      "border_average": [
+        255,
+        0,
+        255
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/fx_status-feedback_v01.png"
     },
     {
       "key": "magenta",
@@ -2161,6 +2185,24 @@
       "passed": true
     },
     {
+      "file": "art/source/alpha/normalized/fx_environment-material-feedback_v01.png",
+      "size": [
+        1912,
+        820
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.0686,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
       "file": "art/source/alpha/normalized/fx_hit-ink-large_v01.png",
       "size": [
         2172,
@@ -2204,6 +2246,24 @@
       ],
       "mode_ok": true,
       "visible_coverage": 0.0749,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/fx_status-feedback_v01.png",
+      "size": [
+        1768,
+        887
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.0347,
       "transparent_corners": [
         0,
         0,
@@ -10613,6 +10673,298 @@
             63
           ],
           "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/fx_environment-material-feedback_v01.png",
+      "count": 8,
+      "cell_width": 239,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            42,
+            600,
+            196,
+            754
+          ],
+          "gaps": [
+            42,
+            600,
+            43,
+            66
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            37,
+            584,
+            202,
+            754
+          ],
+          "gaps": [
+            37,
+            584,
+            37,
+            66
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            35,
+            578,
+            203,
+            754
+          ],
+          "gaps": [
+            35,
+            578,
+            36,
+            66
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            28,
+            587,
+            210,
+            754
+          ],
+          "gaps": [
+            28,
+            587,
+            29,
+            66
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 4,
+          "bbox": [
+            47,
+            590,
+            192,
+            754
+          ],
+          "gaps": [
+            47,
+            590,
+            47,
+            66
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 5,
+          "bbox": [
+            39,
+            589,
+            200,
+            754
+          ],
+          "gaps": [
+            39,
+            589,
+            39,
+            66
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 6,
+          "bbox": [
+            36,
+            584,
+            202,
+            754
+          ],
+          "gaps": [
+            36,
+            584,
+            37,
+            66
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 7,
+          "bbox": [
+            42,
+            605,
+            197,
+            754
+          ],
+          "gaps": [
+            42,
+            605,
+            42,
+            66
+          ],
+          "center_offset": 0,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/fx_status-feedback_v01.png",
+      "count": 8,
+      "cell_width": 221,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            29,
+            678,
+            191,
+            816
+          ],
+          "gaps": [
+            29,
+            678,
+            30,
+            71
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            32,
+            663,
+            188,
+            816
+          ],
+          "gaps": [
+            32,
+            663,
+            33,
+            71
+          ],
+          "center_offset": -1,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            49,
+            660,
+            172,
+            816
+          ],
+          "gaps": [
+            49,
+            660,
+            49,
+            71
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            37,
+            663,
+            184,
+            816
+          ],
+          "gaps": [
+            37,
+            663,
+            37,
+            71
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 4,
+          "bbox": [
+            58,
+            684,
+            163,
+            816
+          ],
+          "gaps": [
+            58,
+            684,
+            58,
+            71
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 5,
+          "bbox": [
+            43,
+            675,
+            178,
+            816
+          ],
+          "gaps": [
+            43,
+            675,
+            43,
+            71
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 6,
+          "bbox": [
+            45,
+            666,
+            176,
+            816
+          ],
+          "gaps": [
+            45,
+            666,
+            45,
+            71
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 7,
+          "bbox": [
+            34,
+            701,
+            187,
+            816
+          ],
+          "gaps": [
+            34,
+            701,
+            34,
+            71
+          ],
+          "center_offset": 0,
           "passed": true
         }
       ],

@@ -563,7 +563,7 @@ function buildCatalog() {
 
 function validateCatalog(catalog) {
   const errors = [];
-  if (catalog.counts.png !== 3525) errors.push(`Expected 3525 PNGs, found ${catalog.counts.png}`);
+  if (catalog.counts.png !== 3541) errors.push(`Expected 3541 PNGs, found ${catalog.counts.png}`);
   for (const [category, diskCount] of Object.entries(catalog.counts.pngByCategory)) {
     const structuredCount = catalog.counts.structuredPngByCategory[category];
     if (structuredCount !== diskCount) {

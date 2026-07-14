@@ -55,6 +55,7 @@ export interface RuntimeActor {
   animationTime: number;
   moving: boolean;
   visualKey: string;
+  visualState: string;
   phaseLocked: boolean;
   encounter?: string;
   mandatory: boolean;
@@ -438,7 +439,7 @@ export class World {
         this.actors.push({
           uid: `${kind}-${index}`, kind, id, sprite, position, health: definition.health, maxHealth: definition.health,
           cooldown: 0, awake: phaseLocked ? false : Boolean('dormant' in placement && !placement.dormant), dead: false,
-          scoreEligible: true, attackFlash: 0, facing, animationTime: 0, moving: false, visualKey: '', phaseLocked,
+          scoreEligible: true, attackFlash: 0, facing, animationTime: 0, moving: false, visualKey: '', visualState: 'idle', phaseLocked,
           encounter: placement.encounter,
           mandatory: placement.type === 'enemy' ? Boolean(placement.mandatory) : true,
           route: placement.type === 'enemy' ? placement.route : placement.encounter,
@@ -490,6 +491,7 @@ export class World {
       animationTime: 0,
       moving: false,
       visualKey: '',
+      visualState: 'idle',
       phaseLocked: false,
       mandatory: false,
     };
