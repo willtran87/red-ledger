@@ -436,9 +436,9 @@ const distance = (a: GridPoint, b: GridPoint): number => Math.abs(a.x - b.x) + M
 
 const phaseEnemyBudget = (spec: MapSpec): number => {
   const index = Number(spec.id[3]);
-  const minimum = index <= 3 ? 35 : index <= 6 || index === 9 ? 60 : 90;
-  const maximum = index <= 3 ? 65 : index <= 6 || index === 9 ? 110 : 160;
-  return Math.max(minimum, Math.min(maximum, spec.normalEnemies));
+  const minimum = index <= 3 ? 18 : index <= 6 || index === 9 ? 28 : 40;
+  const maximum = index <= 3 ? 28 : index <= 6 || index === 9 ? 42 : 64;
+  return Math.max(minimum, Math.min(maximum, Math.round(spec.normalEnemies * .55)));
 };
 
 // Preserve the authored relative pars while scaling the classic-speed estimates
@@ -554,14 +554,21 @@ const makeActors = (
   }
 
   const supply = supplyFor(episode);
-  const pickupCount = 10 + episode * 4 + Math.floor(normalCount / 25);
+  const routeBundles: Readonly<Record<1 | 2 | 3, readonly PickupId[]>> = {
+    1: ['staples-large', 'adhesive-bandage', 'staples-large', 'staples-large', 'staples-large'],
+    2: ['staples-large', 'field-medical-case', 'staples-large', 'staples-large', 'staples-large'],
+    3: ['staples-large', 'field-medical-case', 'staples-large', 'staples-large', 'staples-large'],
+  };
+  const pickupCount = 18 + episode * 2 + Math.floor(normalCount / 25);
   for (let i = 0; i < pickupCount; i += 1) {
     const routeId = (['entry', 'transformation', 'climax'] as const)[i % 3];
     const route = authoredZones[routeId];
     const point = i % 5 === 0 ? blueprint.rewardPocket : route[(hardCount + i * 11) % route.length];
-    // Five guaranteed boxes per route provide a conservative pistol-start
-    // damage budget; authored later supplies add weapon-specific efficiency.
-    actors.push({ ...occupy(point), type: 'pickup', pickup: i < 15 ? 'staples-large' : supply[i % supply.length], route: routeId });
+    const routeSlot = Math.floor(i / 3);
+    const pickup = routeSlot < routeBundles[episode].length
+      ? routeBundles[episode][routeSlot]
+      : supply[i % supply.length];
+    actors.push({ ...occupy(point), type: 'pickup', pickup, route: routeId });
   }
 
   spec.weapons.forEach((weapon, index) => {
@@ -659,6 +666,7 @@ const makeTriggers = (
       id: transformationId,
       action: spec.transformation,
       targets: teleportDestination ? [teleportDestinationId, mechanism.id] : [mechanism.id, 'transformation-wave'],
+      requiresEncounter: 'transformation',
       destination: teleportDestination,
       message: index === 0 ? spec.signatureBeat : mechanism.label,
     });
@@ -772,7 +780,7 @@ const buildMap = (spec: MapSpec): CampaignMap => {
     mechanisms,
     triggers: makeTriggers(spec, grid, exit, secrets, mechanisms),
     encounters: [
-      { id: 'entry', label: 'Approach pressure', zones: ['entry'], roles: ['pressure', 'shape'], completion: 'clear' },
+      { id: 'entry', label: 'Approach pressure', zones: ['entry'], roles: ['pressure', 'shape'], completion: 'clear', opens: ['transformation'] },
       { id: 'transformation', label: 'Signature mechanism contest', zones: ['transformation'], roles: ['anchor', 'pressure', 'reward'], completion: 'switch', opens: ['climax'] },
       { id: 'climax', label: 'Exit-route crossfire', zones: ['climax'], roles: ['anchor', 'pressure', 'shape', 'punish'], completion: 'clear', opens: spec.bosses?.length ? ['boss-1'] : ['map-exit'] },
       ...bossEncounters,

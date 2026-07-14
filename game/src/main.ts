@@ -35,6 +35,7 @@ if (import.meta.env.DEV) {
     loadMap: (id) => game.loadMap(id),
     teleport: (x, z) => game.debugTeleport(x, z),
     defeatAll: () => game.debugDefeatAll(),
+    defeatEncounter: (id) => game.debugDefeatEncounter(id),
     teleportToPickup: (kind, id) => game.debugTeleportToPickup(kind, id),
     teleportToDoor: (credential) => game.debugTeleportToDoor(credential),
     teleportToExit: () => game.debugTeleportToExit(),
@@ -64,6 +65,7 @@ declare global {
       loadMap: (id: import('./data').MapId) => void;
       teleport: (x: number, z: number) => void;
       defeatAll: () => void;
+      defeatEncounter: (id: string) => number;
       teleportToPickup: (kind: 'pickup' | 'weapon' | 'credential', id?: string) => boolean;
       teleportToDoor: (credential?: import('./data').Credential) => boolean;
       teleportToExit: () => void;

@@ -26,6 +26,7 @@ for (const [name, type] of Object.entries(engines)) {
     await page.locator('#difficulty-actions button').nth(1).click();
     await page.locator('#episode-intro.active').waitFor();
     await page.click('#begin-episode');
+    if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
     await page.waitForTimeout(250);
     const state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
     if (state.mode !== 'playing') failures.push(`${name}: campaign did not enter gameplay`);

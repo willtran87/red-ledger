@@ -7,8 +7,8 @@
     <meta name="description" content="A retro first-person action campaign through a surreal claims facility." />
     <link rel="icon" type="image/png" href="./public_runtime/ui/title-screen.png" />
     <title>Red Ledger</title>
-    <script type="module" crossorigin src="./assets/index-v0pxHJHH.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BcxKalF6.css">
+    <script type="module" crossorigin src="./assets/index-COeG93iR.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BaIk17WU.css">
   </head>
   <body>
     <main id="game-shell">
@@ -120,8 +120,16 @@
         <button data-back>Back</button>
       </section>
       <div id="hud">
+        <div id="objective" aria-hidden="true"></div>
         <div id="message"></div>
         <div id="boss-bar" hidden><span></span></div>
+        <div id="combat-streak" aria-hidden="true" hidden>
+          <strong></strong><span></span><i></i>
+        </div>
+        <div id="reticle" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
+        <div id="hit-marker" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div id="context-prompt" aria-hidden="true" hidden><img alt="" /><span></span></div>
+        <div id="muzzle-flash" aria-hidden="true"></div>
         <div id="weapon-view"></div>
         <div id="use-feedback" role="status" aria-live="polite" aria-atomic="true" hidden>
           <img alt="" aria-hidden="true" />
@@ -138,6 +146,10 @@
         <canvas id="automap" width="320" height="200" hidden></canvas>
         <div id="weapon-radial" hidden aria-label="Weapon selector"></div>
         <div id="damage-flash" aria-hidden="true"></div>
+      </div>
+      <div id="ready-overlay" hidden>
+        <img src="./public_runtime/ui/icons/minimal-terminal.png" alt="" aria-hidden="true" />
+        <button id="enter-file">Enter File</button>
       </div>
       <div id="announcer" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
       <div id="touch-controls" aria-label="Touch controls">

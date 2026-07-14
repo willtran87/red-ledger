@@ -429,7 +429,8 @@ export class World {
         sprite.center.set(.5, 0);
         sprite.scale.set(definition.height, definition.height, 1);
         sprite.position.copy(position);
-        const phaseLocked = placement.encounter === 'climax' || (this.map.id === 'E3M8' && id === 'uninsurable');
+        const phaseLocked = Boolean(placement.encounter && placement.encounter !== 'entry')
+          || (this.map.id === 'E3M8' && id === 'uninsurable');
         sprite.visible = !phaseLocked;
         this.root.add(sprite);
         const facing = ({ north: Math.PI, east: -Math.PI / 2, south: 0, west: Math.PI / 2 })[placement.facing ?? 'south'];

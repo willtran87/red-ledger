@@ -67,13 +67,29 @@ export interface MapTally {
   elapsed: number;
 }
 
+export interface CombatMomentum {
+  chain: number;
+  best: number;
+  score: number;
+  timer: number;
+}
+
+export interface InteractionHint {
+  label: string;
+  icon: string;
+  state: 'ready' | 'locked';
+}
+
 export interface GameSnapshot {
   mode: GameMode;
   map: CampaignMap;
   player: PlayerState;
   tally: MapTally;
+  momentum: CombatMomentum;
   boss?: RuntimeActor;
   message: string;
+  objective: string;
+  interaction?: InteractionHint;
 }
 
 interface SaveData {
@@ -97,6 +113,7 @@ interface SaveData {
   mechanisms?: string[];
   hazardsEnabled: boolean;
   tally: MapTally;
+  momentum?: CombatMomentum;
   rng: number;
   enemyBehavior?: EnemyBehaviorSnapshot;
   playerProjectiles?: Array<{
@@ -221,6 +238,7 @@ const isSaveData = (value: unknown): value is SaveData => {
   if (!isStringArray(value.secrets) || !isStringArray(value.visited) || !isStringArray(value.triggered)
     || (value.mechanisms !== undefined && !isStringArray(value.mechanisms)) || typeof value.hazardsEnabled !== 'boolean'
     || !isFiniteRecord(value.tally, ['kills', 'totalKills', 'items', 'totalItems', 'secrets', 'totalSecrets', 'elapsed']) || !isFiniteNumber(value.rng)) return false;
+  if (value.momentum !== undefined && !isFiniteRecord(value.momentum, ['chain', 'best', 'score', 'timer'])) return false;
   if (value.enemyBehavior !== undefined && !isEnemyBehaviorSnapshot(value.enemyBehavior)) return false;
   if (value.playerProjectiles !== undefined && (!Array.isArray(value.playerProjectiles) || !value.playerProjectiles.every((entry) => isRecord(entry)
     && typeof entry.id === 'string' && ['catastrophe-launcher', 'plasma-copier'].includes(String(entry.weapon)) && isVector3(entry.position)
@@ -276,6 +294,7 @@ export class GameEngine {
   mode: GameMode = 'menu';
   difficulty: GameDifficulty = 'field-adjuster';
   tally: MapTally = { kills: 0, totalKills: 0, items: 0, totalItems: 0, secrets: 0, totalSecrets: 0, elapsed: 0 };
+  readonly momentum: CombatMomentum = { chain: 0, best: 0, score: 0, timer: 0 };
   message = '';
   sensitivity = 1.2;
   classicInput = false;
@@ -395,6 +414,7 @@ export class GameEngine {
       totalSecrets: map.secrets.length,
       elapsed: 0,
     };
+    Object.assign(this.momentum, { chain: 0, best: 0, score: 0, timer: 0 });
     this.mode = 'playing';
     this.nextMap = undefined;
     this.triggered.clear();
@@ -447,6 +467,8 @@ export class GameEngine {
       if (this.mode !== 'playing') return;
     }
     this.tally.elapsed += dt;
+    this.momentum.timer = Math.max(0, this.momentum.timer - dt);
+    if (this.momentum.timer === 0) this.momentum.chain = 0;
     this.weaponCooldown = Math.max(0, this.weaponCooldown - dt);
     this.updateWeaponTransition(dt);
     this.damageCooldown = Math.max(0, this.damageCooldown - dt);
@@ -586,7 +608,8 @@ export class GameEngine {
     if (weapon.ammo !== 'none' && this.player.ammo[weapon.ammo] < weapon.ammoCost) {
       this.weaponCooldown = .25;
       this.audio.tone(80, .06, 'square', .025);
-      this.showMessage('Insufficient supply', .7);
+      this.showMessage(`${this.pretty(weapon.ammo)} needed`, .7);
+      window.dispatchEvent(new CustomEvent('weapon-dry', { detail: { weapon: weapon.id } }));
       return;
     }
     if (weapon.ammo !== 'none') this.player.ammo[weapon.ammo] -= weapon.ammoCost;
@@ -640,7 +663,7 @@ export class GameEngine {
       }
       this.damageActor(target, this.rollWeaponDamage(weapon.id), 'player');
       this.emitParticles('ink', target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .55, 0)), weapon.pellets > 1 ? 1 : 4, direction);
-      window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: weapon.id, kind: 'actor', targetUid: target.uid } }));
+      window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: weapon.id, kind: 'actor', targetUid: target.uid, killed: target.dead } }));
     }
   }
 
@@ -658,6 +681,7 @@ export class GameEngine {
       if (target) {
         this.damageActor(target, this.rollWeaponDamage('binding-engine'), 'player');
         this.emitParticles('energy', target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0)), 2, direction);
+        window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: 'binding-engine', kind: 'actor', targetUid: target.uid, killed: target.dead } }));
       }
       else {
         const breakable = this.findBreakableTarget(direction, WEAPONS['binding-engine'].range, .055);
@@ -714,7 +738,7 @@ export class GameEngine {
         }
         this.emitParticles(projectile.weapon === 'catastrophe-launcher' ? 'ember' : 'energy', projectile.position, projectile.weapon === 'catastrophe-launcher' ? 18 : 9, projectile.velocity.clone().normalize());
         if (projectile.weapon === 'catastrophe-launcher') this.emitParticles('smoke', projectile.position, 7);
-        window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: projectile.weapon, kind: target ? 'actor' : 'wall', targetUid: target?.uid } }));
+        window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: projectile.weapon, kind: target ? 'actor' : 'wall', targetUid: target?.uid, killed: target?.dead ?? false } }));
         this.removePlayerProjectile(index);
         continue;
       }
@@ -831,6 +855,14 @@ export class GameEngine {
     actor.dead = true;
     actor.health = 0;
     this.tally.kills += 1;
+    if (sourceUid === 'player') {
+      this.momentum.chain = this.momentum.timer > 0 ? this.momentum.chain + 1 : 1;
+      this.momentum.best = Math.max(this.momentum.best, this.momentum.chain);
+      this.momentum.timer = 4;
+      this.momentum.score += Math.round((100 + Math.min(400, actor.maxHealth * .35)) * this.momentum.chain);
+      if (this.momentum.chain > 1) this.audio.tone(430 + Math.min(6, this.momentum.chain) * 55, .075, 'square', .026);
+      window.dispatchEvent(new CustomEvent('combat-momentum', { detail: { ...this.momentum } }));
+    }
     this.setActorDeadVisual(actor);
     this.audio.noise(.16, .06);
     this.audio.enemyCue(actor.id, 'death', this.actorPan(actor));
@@ -1208,6 +1240,7 @@ export class GameEngine {
   private updatePickups(): void {
     for (const pickup of this.world.pickups) {
       if (pickup.collected || this.horizontalDistance(pickup.position, this.player.position) > 1.05) continue;
+      if (!this.canCollectPickup(pickup)) continue;
       pickup.collected = true;
       pickup.sprite.visible = false;
       if (pickup.counted) this.tally.items += 1;
@@ -1232,6 +1265,29 @@ export class GameEngine {
       this.emitParticles(pickup.kind === 'credential' ? 'approval' : 'paper', this.player.position.clone().addScaledVector(this.aimDirection(), .9).add(new Vector3(0, .15, 0)), 6);
       this.audio.tone(660, .1, 'square', .035);
     }
+  }
+
+  private canCollectPickup(pickup: World['pickups'][number]): boolean {
+    const ammoCap = (ammo: Exclude<AmmoType, 'none'>) => ammo === 'staples' ? 200 : ammo === 'toner-cells' ? 300 : 50;
+    if (pickup.ammoDrop) return pickup.ammoDrop.ammoId !== 'none'
+      && this.player.ammo[pickup.ammoDrop.ammoId] < ammoCap(pickup.ammoDrop.ammoId);
+    if (pickup.kind === 'credential') return !this.player.credentials.has(pickup.id as Credential);
+    if (pickup.kind === 'weapon') {
+      const weapon = WEAPONS[pickup.id as WeaponId];
+      return !this.player.weapons.has(weapon.id) || (weapon.ammo !== 'none' && this.player.ammo[weapon.ammo] < ammoCap(weapon.ammo));
+    }
+    const id = pickup.id as PickupId;
+    if (id.includes('staples')) return this.player.ammo.staples < 200;
+    if (id.includes('fasteners')) return this.player.ammo.fasteners < 50;
+    if (id === 'canister' || id === 'canister-crate') return this.player.ammo.canisters < 50;
+    if (id.includes('toner')) return this.player.ammo['toner-cells'] < 300;
+    if (id === 'loss-control-vest') return this.player.armor < 100 || this.player.armorClass === 'none';
+    if (id === 'catastrophe-suit') return this.player.armor < 200 || this.player.armorClass !== 'heavy';
+    if (id === 'emergency-reserve') return this.player.health < 200 || this.player.armor < 200;
+    if (id === 'floor-plan') return !this.player.floorPlan;
+    if (id === 'goodwill-token') return this.player.health < 200;
+    if (id === 'adhesive-bandage' || id === 'field-medical-case') return this.player.health < 100;
+    return true;
   }
 
   private applyPickup(id: PickupId): void {
@@ -1262,7 +1318,8 @@ export class GameEngine {
 
   private use(): void {
     this.enemyBehavior.emitSound(this.player.position, 10, 'player');
-    const door = this.world.closestDoor(this.player.position);
+    const interaction = this.findInteraction();
+    const door = interaction.door;
     if (door) {
       if (door.credential && !this.player.credentials.has(door.credential)) {
         this.rejectUse(`${this.pretty(door.credential)} credential required`, 'credential', door.credential, new Vector3(door.x, 0, door.z).multiplyScalar(this.world.map.cellSize));
@@ -1276,11 +1333,7 @@ export class GameEngine {
       this.showMessage('Access granted', .8);
       return;
     }
-    const trigger = this.world.map.triggers.find((candidate) => {
-      if (!candidate.repeatable && this.triggered.has(candidate.id)) return false;
-      const point = new Vector3(candidate.x * this.world.map.cellSize, 0, candidate.z * this.world.map.cellSize);
-      return this.horizontalDistance(this.player.position, point) <= 2.2;
-    });
+    const trigger = interaction.trigger;
     if (trigger) {
       if (trigger.requiresCredential && !this.player.credentials.has(trigger.requiresCredential)) {
         this.rejectUse(`${this.pretty(trigger.requiresCredential)} credential required`, 'credential', trigger.requiresCredential);
@@ -1361,7 +1414,7 @@ export class GameEngine {
       if (trigger.action !== 'open-exit') return;
     }
     const exit = new Vector3(this.world.map.exit.x * this.world.map.cellSize, 0, this.world.map.exit.z * this.world.map.cellSize);
-    if (this.horizontalDistance(this.player.position, exit) <= 2.2) {
+    if (interaction.exit || this.horizontalDistance(this.player.position, exit) <= 2.2) {
       if (this.world.actors.some((actor) => actor.kind === 'boss' && !actor.dead)) {
         this.rejectUse('Binding authority remains active', 'encounter', undefined, exit);
         return;
@@ -1370,6 +1423,53 @@ export class GameEngine {
       return;
     }
     this.rejectUse('No usable control in reach', 'nothing');
+  }
+
+  private findInteraction(): {
+    door?: ReturnType<World['closestDoor']>;
+    trigger?: CampaignMap['triggers'][number];
+    exit?: true;
+  } {
+    const door = this.world.closestDoor(this.player.position);
+    if (door) return { door };
+    const trigger = this.world.map.triggers.find((candidate) => {
+      if (!candidate.repeatable && this.triggered.has(candidate.id)) return false;
+      const point = new Vector3(candidate.x * this.world.map.cellSize, 0, candidate.z * this.world.map.cellSize);
+      return this.horizontalDistance(this.player.position, point) <= 2.2;
+    });
+    if (trigger) return { trigger };
+    const exit = new Vector3(this.world.map.exit.x * this.world.map.cellSize, 0, this.world.map.exit.z * this.world.map.cellSize);
+    return this.horizontalDistance(this.player.position, exit) <= 2.2 ? { exit: true } : {};
+  }
+
+  private interactionHint(): InteractionHint | undefined {
+    if (!this.world.map) return undefined;
+    const interaction = this.findInteraction();
+    if (interaction.door) {
+      const missing = interaction.door.credential && !this.player.credentials.has(interaction.door.credential);
+      return missing
+        ? { label: `${this.pretty(interaction.door.credential!)} credential`, icon: `credential-${interaction.door.credential}`, state: 'locked' }
+        : { label: 'Access', icon: 'minimal-terminal', state: 'ready' };
+    }
+    if (interaction.trigger) {
+      const trigger = interaction.trigger;
+      if (trigger.requiresCredential && !this.player.credentials.has(trigger.requiresCredential)) {
+        return { label: `${this.pretty(trigger.requiresCredential)} credential`, icon: `credential-${trigger.requiresCredential}`, state: 'locked' };
+      }
+      if (trigger.requiresEncounter && this.isEncounterActive(trigger.requiresEncounter)) {
+        return { label: 'Threat lock', icon: 'minimal-alert', state: 'locked' };
+      }
+      const label = trigger.action === 'complete-map' || trigger.action === 'open-exit' ? 'Exit'
+        : trigger.action === 'reveal-secret' ? 'Inspect' : trigger.action === 'teleport' ? 'Transfer' : 'Activate';
+      return { label, icon: 'minimal-terminal', state: 'ready' };
+    }
+    if (interaction.exit) {
+      const locked = this.world.actors.some((actor) => actor.kind === 'boss' && !actor.dead);
+      return locked
+        ? { label: 'Threat lock', icon: 'minimal-alert', state: 'locked' }
+        : { label: 'Exit', icon: 'minimal-terminal', state: 'ready' };
+    }
+    return undefined;
   }
 
   private unlockTargets(targets: readonly string[]): void {
@@ -1519,6 +1619,7 @@ export class GameEngine {
       mechanisms: [...this.world.activatedMechanisms],
       hazardsEnabled: this.world.hazardsEnabled,
       tally: { ...this.tally },
+      momentum: { ...this.momentum },
       rng: this.rngState,
       enemyBehavior: this.enemyBehavior.serialize(),
       playerProjectiles: this.playerProjectiles.map((projectile) => ({
@@ -1652,6 +1753,7 @@ export class GameEngine {
       this.player.weapons = new Set(save.player.weapons);
       this.player.credentials = new Set(save.player.credentials);
       this.tally = save.tally;
+      Object.assign(this.momentum, save.momentum ?? { chain: 0, best: 0, score: 0, timer: 0 });
       this.rngState = save.rng;
       this.world.restoreAmmoDrops(save.ammoDrops ?? []);
       for (const saved of save.actors) {
@@ -1857,7 +1959,23 @@ export class GameEngine {
   }
 
   debugDefeatAll(): void {
-    this.world.actors.forEach((actor) => { if (!actor.dead) this.damageActor(actor, actor.health + 1); });
+    this.world.actors.forEach((actor) => {
+      if (actor.dead) return;
+      actor.phaseLocked = false;
+      actor.sprite.visible = true;
+      this.damageActor(actor, actor.health + 1);
+    });
+  }
+
+  debugDefeatEncounter(id: string): number {
+    let defeated = 0;
+    this.world.actors.filter((actor) => actor.encounter === id && !actor.dead).forEach((actor) => {
+      actor.phaseLocked = false;
+      actor.sprite.visible = true;
+      this.damageActor(actor, actor.health + 1);
+      defeated += Number(actor.dead);
+    });
+    return defeated;
   }
 
   debugTeleportToPickup(kind: 'pickup' | 'weapon' | 'credential', id?: string): boolean {
@@ -1870,7 +1988,21 @@ export class GameEngine {
   debugTeleportToDoor(credential?: Credential): boolean {
     const door = [...this.world.doors.values()].find((candidate) => !candidate.open && candidate.credential === credential);
     if (!door) return false;
-    this.debugTeleport(door.mesh.position.x, door.mesh.position.z + 1.7);
+    const candidates: Vector3[] = [];
+    for (const radius of [1, 1.4, 1.8, 2.2]) {
+      for (let index = 0; index < 16; index += 1) {
+        const angle = index / 16 * Math.PI * 2;
+        candidates.push(new Vector3(door.mesh.position.x + Math.cos(angle) * radius, 0, door.mesh.position.z + Math.sin(angle) * radius));
+      }
+    }
+    const point = candidates.find((candidate) => {
+      if (this.world.isSolid(candidate)) return false;
+      const targetDistance = Math.hypot(candidate.x - door.mesh.position.x, candidate.z - door.mesh.position.z);
+      return [...this.world.doors.values()].filter((other) => !other.open && other.key !== door.key)
+        .every((other) => Math.hypot(candidate.x - other.mesh.position.x, candidate.z - other.mesh.position.z) > targetDistance);
+    });
+    if (!point) return false;
+    this.debugTeleport(point.x, point.z);
     return true;
   }
 
@@ -1892,6 +2024,8 @@ export class GameEngine {
   debugDefeatActor(id: string): boolean {
     const actor = this.world.actors.find((candidate) => candidate.id === id && !candidate.dead);
     if (!actor) return false;
+    actor.phaseLocked = false;
+    actor.sprite.visible = true;
     this.damageActor(actor, actor.health + 1);
     return actor.dead;
   }
@@ -1916,7 +2050,10 @@ export class GameEngine {
     const point = candidates.find((candidate) => !this.world.isSolid(candidate) && this.world.hasLineOfSight(candidate, actor.position));
     if (!point) return false;
     this.player.position.copy(point);
-    this.player.yaw = Math.atan2(actor.position.x - point.x, actor.position.z - point.z) + Math.PI + .18;
+    this.player.yaw = Math.atan2(actor.position.x - point.x, actor.position.z - point.z) + Math.PI + .04;
+    const horizontal = Math.hypot(actor.position.x - point.x, actor.position.z - point.z);
+    const targetY = actor.position.y + ENEMIES[actor.id].height * .5;
+    this.player.pitch = Math.atan2(point.y - targetY, horizontal);
     actor.awake = true;
     this.updateCamera();
     return true;
@@ -1964,6 +2101,9 @@ export class GameEngine {
       },
       bosses: this.world.actors.filter((actor) => actor.kind === 'boss').map((actor) => ({ id: actor.id, health: actor.health, dead: actor.dead, phaseLocked: actor.phaseLocked })),
       tally: this.tally,
+      momentum: this.momentum,
+      objective: this.currentObjective(),
+      interaction: this.interactionHint() ?? null,
       message: this.message,
       demo: { recording: Boolean(this.demoRecorder), tick: this.demoTick },
       runtime: {
@@ -1983,7 +2123,36 @@ export class GameEngine {
     }
     this.renderer.render(this.scene, this.camera);
   }
-  private emit(): void { if (this.world.map) this.onChange?.({ mode: this.mode, map: this.world.map, player: this.player, tally: this.tally, boss: this.world.actors.find((actor) => actor.kind === 'boss' && !actor.dead && !actor.phaseLocked), message: this.message }); }
+  private currentObjective(): string {
+    if (!this.world.map) return '';
+    const boss = this.world.actors.find((actor) => actor.kind === 'boss' && !actor.dead && !actor.phaseLocked);
+    if (boss) return 'Close binding authority';
+    const missingCredential = [...this.world.doors.values()].find((door) => door.credential && !this.player.credentials.has(door.credential))?.credential;
+    if (missingCredential) return `Recover ${this.pretty(missingCredential)} credential`;
+    const nextMechanism = [...this.world.map.mechanisms]
+      .sort((left, right) => left.activationOrder - right.activationOrder)
+      .find((mechanism) => !this.world.activatedMechanisms.has(mechanism.id)
+        && mechanism.requires.every((requirement) => this.world.activatedMechanisms.has(requirement)));
+    if (nextMechanism) return `Activate ${nextMechanism.label}`;
+    const climax = this.world.actors.filter((actor) => actor.encounter === 'climax' && !actor.dead && !actor.phaseLocked).length;
+    if (climax > 0) return `Close final exposures · ${climax} left`;
+    return 'Proceed to the exit';
+  }
+  private emit(): void {
+    if (!this.world.map) return;
+    const interaction = this.interactionHint();
+    this.onChange?.({
+      mode: this.mode,
+      map: this.world.map,
+      player: this.player,
+      tally: this.tally,
+      momentum: this.momentum,
+      boss: this.world.actors.find((actor) => actor.kind === 'boss' && !actor.dead && !actor.phaseLocked),
+      message: this.message,
+      objective: this.currentObjective(),
+      ...(interaction ? { interaction } : {}),
+    });
+  }
   private showMessage(message: string, duration = 1.2): void { this.message = message; this.messageTimer = duration; }
   private pretty(value: string): string { return value.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' '); }
   private emitParticles(kind: ParticleKind, position: Vector3, count: number, direction?: Vector3): void {

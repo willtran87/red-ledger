@@ -53,6 +53,7 @@ const browserTests = [
   ['input remapping', 'tests/controls-e2e.mjs'],
   ['map mechanisms', 'tests/mechanisms-e2e.mjs'],
   ['generated particle feedback', 'tests/particles-e2e.mjs'],
+  ['combat feel and guidance', 'tests/combat-feel-e2e.mjs'],
   ['lifecycle and active-combat performance', 'tests/lifecycle-performance-e2e.mjs'],
   ['Chromium, Firefox, and WebKit', 'tests/cross-browser-smoke.mjs'],
 ];

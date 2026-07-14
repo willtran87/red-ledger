@@ -20,6 +20,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').first().click();
 await page.click('#begin-episode');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 await page.waitForTimeout(250);
 
 const mapIds = await page.evaluate(() => Object.keys(JSON.parse(window.render_game_to_text()).map ? {
@@ -36,6 +37,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').first().click();
 await page.click('#begin-episode');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 await page.waitForTimeout(800);
 const combatStart = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(combatStart.tally.totalKills - combatStart.tally.kills >= 8, 'Performance soak does not contain at least eight live hostiles');

@@ -14,6 +14,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(1).click();
 await page.click('#begin-episode');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 await page.waitForTimeout(300);
 
 assert(await page.evaluate(() => window.__redLedger.teleportToPickup('credential', 'red')), 'No red credential pickup found');
@@ -32,6 +33,8 @@ assert((await state()).map.id === 'E1M2', 'Intermission did not advance to E1M2'
 
 await page.evaluate(() => {
   window.__redLedger.loadMap('E1M4');
+  window.__redLedger.defeatEncounter('entry');
+  window.__redLedger.defeatEncounter('transformation');
   window.__redLedger.teleportToTrigger('toggle-sectors');
   window.__redLedger.use();
 });
@@ -47,6 +50,10 @@ assert(bossGate.mode === 'intermission', 'Boss defeat did not unlock exit');
 await page.evaluate(() => window.__redLedger.loadMap('E3M8'));
 let finale = await state();
 assert(finale.bosses.find((boss) => boss.id === 'uninsurable')?.phaseLocked === true, 'Final core should begin phase-locked');
+await page.evaluate(() => {
+  window.__redLedger.defeatEncounter('entry');
+  window.__redLedger.defeatEncounter('transformation');
+});
 assert(await page.evaluate(() => window.__redLedger.defeatActor('chief-actuary')), 'Chief Actuary could not be defeated');
 finale = await state();
 assert(finale.bosses.find((boss) => boss.id === 'uninsurable')?.phaseLocked === true, 'Final core unlocked before all three binding gates');

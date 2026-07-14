@@ -38,6 +38,10 @@ export class UIController {
   private slotReturn = 'pause-menu';
   private lastAnnouncedMessage = '';
   private useFeedbackTimer?: number;
+  private weaponVisualToken = 0;
+  private weaponBobPhase = 0;
+  private weaponBob = { x: 0, y: 0 };
+  private lastView?: { x: number; z: number; yaw: number };
 
   constructor(readonly game: GameEngine) {
     this.buildEpisodeCards();
@@ -48,7 +52,8 @@ export class UIController {
     this.updateContinue();
     window.addEventListener('weapon-fire', (event) => this.flashWeapon((event as CustomEvent).detail));
     window.addEventListener('view-recoil', (event) => this.viewRecoil((event as CustomEvent<{ amount: number }>).detail));
-    window.addEventListener('weapon-impact', (event) => this.impactFeedback((event as CustomEvent<{ kind: 'wall' | 'actor' }>).detail));
+    window.addEventListener('weapon-impact', (event) => this.impactFeedback((event as CustomEvent<{ kind: 'wall' | 'actor'; killed?: boolean }>).detail));
+    window.addEventListener('weapon-dry', (event) => this.dryWeapon((event as CustomEvent<{ weapon: keyof typeof WEAPONS }>).detail));
     window.addEventListener('player-portrait', (event) => this.specialPortrait((event as CustomEvent<{ state: PortraitState }>).detail.state));
     window.addEventListener('weapon-switch', (event) => this.animateWeaponSwitch((event as CustomEvent<{
       state: 'lowering' | 'raising' | 'ready'; duration: number;
@@ -108,7 +113,7 @@ export class UIController {
       this.game.audio.unlock();
       if (this.game.load()) {
         $('#menu-feedback').textContent = '';
-        this.hideScreens();
+        this.prepareGameEntry();
       } else {
         const message = 'No valid save is available. Start a new game to create one.';
         $('#menu-feedback').textContent = message;
@@ -165,7 +170,8 @@ export class UIController {
       this.hideScreens();
       this.game.continueFromIntermission();
     });
-    $('#begin-episode').addEventListener('click', () => { this.hideScreens(); this.game.startEpisode(this.pendingEpisode, this.pendingDifficulty); });
+    $('#begin-episode').addEventListener('click', () => { this.game.startEpisode(this.pendingEpisode, this.pendingDifficulty); this.prepareGameEntry(); });
+    $('#enter-file').addEventListener('click', () => this.enterReadyState());
     $('#epilogue-menu').addEventListener('click', () => this.showScreen('menu'));
     $('#sensitivity').addEventListener('input', (event) => { this.game.sensitivity = Number((event.target as HTMLInputElement).value); });
     $('#render-scale').addEventListener('change', (event) => this.game.setRenderScale(Number((event.target as HTMLSelectElement).value)));
@@ -233,12 +239,28 @@ export class UIController {
       this.announce(snapshot.message);
     } else if (!snapshot.message) this.lastAnnouncedMessage = '';
     $('#map-name').textContent = `${snapshot.map.id} ${snapshot.map.title}`;
+    $('#objective').textContent = snapshot.objective;
+    const interaction = snapshot.interaction;
+    const prompt = $('#context-prompt');
+    prompt.toggleAttribute('hidden', !interaction);
+    prompt.classList.toggle('locked', interaction?.state === 'locked');
+    if (interaction) {
+      prompt.querySelector<HTMLImageElement>('img')!.src = runtimeUrl(`public_runtime/ui/icons/${interaction.icon}.png`);
+      prompt.querySelector<HTMLElement>('span')!.textContent = interaction.label;
+    }
+    const streak = $<HTMLElement>('#combat-streak');
+    streak.toggleAttribute('hidden', snapshot.momentum.chain < 2);
+    streak.querySelector<HTMLElement>('strong')!.textContent = `x${snapshot.momentum.chain}`;
+    streak.querySelector<HTMLElement>('span')!.textContent = `${snapshot.momentum.score} pts`;
+    streak.style.setProperty('--momentum', `${Math.max(0, Math.min(100, snapshot.momentum.timer / 4 * 100))}%`);
     if (snapshot.mode === 'dead') this.setPortrait('dead');
     else if (performance.now() >= this.portraitUntil) this.setPortrait('neutral');
     if (this.currentWeapon !== weapon.id) {
+      this.cancelWeaponFrames();
       $<HTMLElement>('#weapon-view').style.backgroundImage = `url('${runtimeUrl(weapon.idle)}')`;
       this.currentWeapon = weapon.id;
     }
+    this.updateWeaponBob(snapshot);
     $('#keys').innerHTML = [...snapshot.player.credentials].map((key) => `<img alt="${key}" src="${runtimeUrl(`public_runtime/ui/icons/credential-${key}.png`)}">`).join('');
     const bossBar = $('#boss-bar');
     bossBar.toggleAttribute('hidden', !snapshot.boss);
@@ -312,6 +334,8 @@ export class UIController {
       `Threats ${tally.kills}/${tally.totalKills}  ${percent(tally.kills, tally.totalKills)}%`,
       `Items   ${tally.items}/${tally.totalItems}  ${percent(tally.items, tally.totalItems)}%`,
       `Secrets ${tally.secrets}/${tally.totalSecrets}  ${percent(tally.secrets, tally.totalSecrets)}%`,
+      `Score   ${this.game.momentum.score}`,
+      `Best chain x${this.game.momentum.best}`,
       `Time    ${Math.floor(tally.elapsed / 60)}:${String(Math.floor(tally.elapsed % 60)).padStart(2, '0')}`,
     ].join('\n');
     const episodeMaps = CAMPAIGN.episodes[episode - 1].maps;
@@ -328,14 +352,19 @@ export class UIController {
   private flashWeapon(detail: { weapon: keyof typeof WEAPONS; duration: number }): void {
     const element = $<HTMLElement>('#weapon-view');
     const weapon = WEAPONS[detail.weapon];
-    this.weaponFrameTimers.forEach((timer) => window.clearTimeout(timer));
-    this.weaponFrameTimers = [];
+    this.cancelWeaponFrames();
+    const token = this.weaponVisualToken;
     const frames = (this.game.assets.data.weapons[detail.weapon]?.view.fire?.map((frame) => frame.url) ?? [weapon.fire]).map(runtimeUrl);
+    const visualDuration = Math.max(detail.duration * 1000, frames.length * 38);
     frames.forEach((url, index) => {
-      this.weaponFrameTimers.push(window.setTimeout(() => { element.style.backgroundImage = `url('${url}')`; }, detail.duration * 1000 * index / Math.max(1, frames.length)));
+      this.weaponFrameTimers.push(window.setTimeout(() => {
+        if (token === this.weaponVisualToken) element.style.backgroundImage = `url('${url}')`;
+      }, visualDuration * index / Math.max(1, frames.length)));
     });
-    if (this.weaponTimer) window.clearTimeout(this.weaponTimer);
-    this.weaponTimer = window.setTimeout(() => { element.style.backgroundImage = `url('${runtimeUrl(weapon.idle)}')`; }, detail.duration * 1000);
+    this.weaponTimer = window.setTimeout(() => {
+      if (token === this.weaponVisualToken && this.currentWeapon === detail.weapon) element.style.backgroundImage = `url('${runtimeUrl(weapon.idle)}')`;
+    }, visualDuration);
+    this.flashMuzzle(detail.weapon);
     this.setPortrait(Math.floor(performance.now() / 180) % 2 ? 'glance-left' : 'glance-right');
     this.portraitUntil = performance.now() + Math.min(220, detail.duration * 1000);
   }
@@ -343,19 +372,104 @@ export class UIController {
   private viewRecoil(detail: { amount: number }): void {
     if ($<HTMLInputElement>('#reduced-motion').checked) return;
     const weapon = $<HTMLElement>('#weapon-view');
+    const kick = Math.min(14, Math.max(3, detail.amount * 180));
     weapon.animate([
-      { transform: 'translate(-50%, 0)' },
-      { transform: `translate(-50%, ${Math.min(12, detail.amount * 3)}px)` },
-      { transform: 'translate(-50%, 0)' },
-    ], { duration: 100, easing: 'ease-out' });
+      { translate: '0 0' },
+      { translate: `0 ${kick}px` },
+      { translate: '0 0' },
+    ], { duration: 125, easing: 'cubic-bezier(.2,.8,.2,1)' });
   }
 
-  private impactFeedback(detail: { kind: 'wall' | 'actor' }): void {
+  private impactFeedback(detail: { kind: 'wall' | 'actor'; killed?: boolean }): void {
     if ($<HTMLInputElement>('#reduced-effects').checked) return;
-    $<HTMLCanvasElement>('#game-canvas').animate(
-      [{ filter: detail.kind === 'wall' ? 'brightness(1.18)' : 'contrast(1.15)' }, { filter: 'none' }],
-      { duration: detail.kind === 'wall' ? 70 : 90 },
-    );
+    if (detail.kind === 'actor') {
+      const marker = $('#hit-marker');
+      marker.classList.remove('active', 'kill');
+      if (detail.killed) marker.classList.add('kill');
+      void (marker as HTMLElement).offsetWidth;
+      marker.classList.add('active');
+      return;
+    }
+    $<HTMLCanvasElement>('#game-canvas').animate([{ filter: 'brightness(1.12)' }, { filter: 'none' }], { duration: 65 });
+  }
+
+  private cancelWeaponFrames(): void {
+    this.weaponVisualToken += 1;
+    this.weaponFrameTimers.forEach((timer) => window.clearTimeout(timer));
+    this.weaponFrameTimers = [];
+    if (this.weaponTimer) window.clearTimeout(this.weaponTimer);
+    this.weaponTimer = undefined;
+  }
+
+  private flashMuzzle(weapon: keyof typeof WEAPONS): void {
+    if ($<HTMLInputElement>('#reduced-effects').checked || weapon === 'claim-stamp') return;
+    const flash = $<HTMLElement>('#muzzle-flash');
+    const frame = weapon === 'binding-engine' || weapon === 'plasma-copier' ? 6
+      : weapon === 'catastrophe-launcher' ? 5 : weapon === 'umbra-saw' ? 4 : weapon === 'audit-repeater' ? 3 : 2;
+    const anchors: Partial<Record<keyof typeof WEAPONS, [number, number]>> = {
+      'staple-driver': [50, 35], 'audit-repeater': [49, 34], 'twin-bore-riveter': [51, 36],
+      'catastrophe-launcher': [52, 35], 'plasma-copier': [50, 34], 'binding-engine': [50, 33], 'umbra-saw': [53, 32],
+    };
+    const [left, bottom] = anchors[weapon] ?? [50, 35];
+    flash.style.left = `${left}%`;
+    flash.style.bottom = `${bottom}%`;
+    flash.style.backgroundImage = `url('${runtimeUrl(`public_runtime/effects/particle-weapon-feedback/fx_particle-weapon-feedback_F_${String(frame).padStart(2, '0')}.png`)}')`;
+    flash.getAnimations().forEach((animation) => animation.cancel());
+    flash.animate([
+      { opacity: 0, transform: 'translate(-50%, 30%) scale(.45) rotate(-8deg)' },
+      { opacity: 1, transform: 'translate(-50%, 0) scale(1.25) rotate(4deg)' },
+      { opacity: 0, transform: 'translate(-50%, -12%) scale(.72) rotate(10deg)' },
+    ], { duration: 105, easing: 'steps(3, end)' });
+  }
+
+  private dryWeapon(detail: { weapon: keyof typeof WEAPONS }): void {
+    const element = $<HTMLElement>('#weapon-view');
+    const dry = this.game.assets.data.weapons[detail.weapon]?.view.dry?.[0]?.url;
+    if (!dry) return;
+    this.cancelWeaponFrames();
+    const token = this.weaponVisualToken;
+    element.style.backgroundImage = `url('${runtimeUrl(dry)}')`;
+    if (!($<HTMLInputElement>('#reduced-motion').checked)) {
+      element.animate([{ translate: '0 0' }, { translate: '2px 2px' }, { translate: '0 0' }], { duration: 90 });
+    }
+    this.weaponTimer = window.setTimeout(() => {
+      if (token === this.weaponVisualToken && this.currentWeapon === detail.weapon) element.style.backgroundImage = `url('${runtimeUrl(WEAPONS[detail.weapon].idle)}')`;
+    }, 120);
+  }
+
+  private updateWeaponBob(snapshot: GameSnapshot): void {
+    const reduced = $<HTMLInputElement>('#reduced-motion').checked;
+    const current = { x: snapshot.player.position.x, z: snapshot.player.position.z, yaw: snapshot.player.yaw };
+    const previous = this.lastView;
+    this.lastView = current;
+    const distance = previous ? Math.hypot(current.x - previous.x, current.z - previous.z) : 0;
+    this.weaponBobPhase += Math.min(.45, distance * 2.6);
+    const moving = distance > .002 && !reduced;
+    const targetX = moving ? Math.sin(this.weaponBobPhase) * 5 : 0;
+    const targetY = moving ? Math.abs(Math.cos(this.weaponBobPhase)) * 4 : 0;
+    this.weaponBob.x += (targetX - this.weaponBob.x) * .34;
+    this.weaponBob.y += (targetY - this.weaponBob.y) * .34;
+    const element = $<HTMLElement>('#weapon-view');
+    element.style.setProperty('--weapon-bob-x', `${this.weaponBob.x.toFixed(2)}px`);
+    element.style.setProperty('--weapon-bob-y', `${this.weaponBob.y.toFixed(2)}px`);
+  }
+
+  private prepareGameEntry(): void {
+    if (matchMedia('(pointer: coarse)').matches) {
+      this.hideScreens();
+      return;
+    }
+    this.game.pause();
+    this.hideScreens();
+    $('#ready-overlay').toggleAttribute('hidden', false);
+    $<HTMLButtonElement>('#enter-file').focus();
+  }
+
+  private enterReadyState(): void {
+    $('#ready-overlay').toggleAttribute('hidden', true);
+    this.game.resume();
+    const request = $<HTMLCanvasElement>('#game-canvas').requestPointerLock() as Promise<void> | undefined;
+    void request?.catch(() => undefined);
   }
 
   private useFailure(detail: { reason: 'credential' | 'encounter' | 'nothing'; direction: 'left' | 'right' | 'center'; icon: string; credential?: string }): void {
@@ -382,6 +496,7 @@ export class UIController {
 
   private animateWeaponSwitch(detail: { state: 'lowering' | 'raising' | 'ready'; duration: number }): void {
     const weapon = $<HTMLElement>('#weapon-view');
+    if (detail.state === 'lowering') this.cancelWeaponFrames();
     this.weaponSwitchAnimation?.cancel();
     if ($<HTMLInputElement>('#reduced-motion').checked || detail.state === 'ready') {
       weapon.style.transform = 'translateX(-50%)';
@@ -519,7 +634,7 @@ export class UIController {
       button.addEventListener('click', () => {
         this.game.audio.unlock();
         this.game.startMapFromSelect(id, 'field-adjuster');
-        this.hideScreens();
+        this.prepareGameEntry();
       });
       container.append(button);
     });

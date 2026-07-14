@@ -33,6 +33,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(1).click();
 await page.click('#begin-episode');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 await page.waitForTimeout(300);
 const state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 if (state.mode !== 'playing') failures.push('Production campaign did not start');

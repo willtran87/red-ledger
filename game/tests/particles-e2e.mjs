@@ -16,6 +16,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
 await page.click('#begin-episode');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 
 assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 4)), 'Could not stage particle impact');
 await page.evaluate(() => window.__redLedger.fire());
@@ -30,6 +31,8 @@ await page.screenshot({ path: 'output/particles/enemy-death.png' });
 
 await page.evaluate(() => {
   window.__redLedger.loadMap('E1M3');
+  window.__redLedger.defeatEncounter('entry');
+  window.__redLedger.defeatEncounter('transformation');
   window.__redLedger.teleportToTrigger('raise-floor');
   window.__redLedger.use();
 });

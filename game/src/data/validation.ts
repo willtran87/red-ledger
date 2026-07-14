@@ -250,8 +250,8 @@ const validateMap = (map: CampaignMap): CampaignValidationIssue[] => {
 
   if (!map.triggers.some((trigger) => trigger.action === 'complete-map')) report('map has no completion trigger');
   const normalEnemies = map.actors.filter((actor) => actor.type === 'enemy' && (!actor.difficulties || actor.difficulties.includes('normal'))).length;
-  const minEnemies = map.index <= 3 ? 35 : map.index <= 6 || map.index === 9 ? 60 : 90;
-  const maxEnemies = map.index <= 3 ? 65 : map.index <= 6 || map.index === 9 ? 110 : 160;
+  const minEnemies = map.index <= 3 ? 18 : map.index <= 6 || map.index === 9 ? 28 : 40;
+  const maxEnemies = map.index <= 3 ? 28 : map.index <= 6 || map.index === 9 ? 42 : 64;
   if (normalEnemies < minEnemies || normalEnemies > maxEnemies) report(`normal enemy budget ${normalEnemies} is outside ${minEnemies}-${maxEnemies}`);
   if (map.parSeconds < 900 || map.parSeconds > 2100) report(`experienced par ${map.parSeconds}s is outside 15-35 minutes`);
   return issues;

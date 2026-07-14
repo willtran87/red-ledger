@@ -36,7 +36,7 @@ describe('campaign data', () => {
     maps.forEach((map) => {
       const normalEnemies = map.actors.filter((actor) => actor.type === 'enemy'
         && (!actor.difficulties || actor.difficulties.includes('normal'))).length;
-      const [minimum, maximum] = map.index <= 3 ? [35, 65] : map.index <= 6 || map.index === 9 ? [60, 110] : [90, 160];
+      const [minimum, maximum] = map.index <= 3 ? [18, 28] : map.index <= 6 || map.index === 9 ? [28, 42] : [40, 64];
       expect(normalEnemies, map.id).toBeGreaterThanOrEqual(minimum);
       expect(normalEnemies, map.id).toBeLessThanOrEqual(maximum);
       expect(map.parSeconds, map.id).toBeGreaterThanOrEqual(15 * 60);

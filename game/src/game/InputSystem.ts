@@ -135,7 +135,11 @@ export class InputSystem {
         this.finishCapture({ device: 'mouse-button', button: event.button });
         return;
       }
-      if (document.pointerLockElement !== this.canvas && event.button === 0) void this.canvas.requestPointerLock();
+      if (document.pointerLockElement !== this.canvas && event.button === 0) {
+        const request = this.canvas.requestPointerLock() as Promise<void> | undefined;
+        void request?.catch(() => undefined);
+        return;
+      }
       this.pressActions(this.bindings.mouseButtonActions(event.button), false, 'mouse');
     });
     window.addEventListener('mouseup', (event) => this.releaseActions(this.bindings.mouseButtonActions(event.button), 'mouse'));

@@ -27,6 +27,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
 await page.click('#begin-episode');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 
 await page.evaluate(() => window.__redLedger.radial(0, -1, true));
 assert(await page.locator('#weapon-radial').isVisible(), 'Controller radial selector did not open');

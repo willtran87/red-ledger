@@ -18,6 +18,7 @@ async function run(viewport, name, mobile = false) {
   await page.locator('.episode-card').first().click();
   await page.locator('#difficulty-actions button').nth(1).click();
   await page.click('#begin-episode');
+  if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
   await page.waitForTimeout(500);
   const metrics = await page.evaluate(() => {
     const shell = document.querySelector('#game-shell').getBoundingClientRect();

@@ -16,6 +16,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
 await page.click('#begin-episode');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 await page.waitForTimeout(250);
 
 assert(await page.evaluate(() => window.__redLedger.teleportNearActor('ember-clerk', 8)), 'Could not stage ember projectile encounter');

@@ -16,6 +16,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(1).click();
 await page.click('#begin-episode');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 await page.waitForTimeout(300);
 for (const id of maps) {
   await page.evaluate((mapId) => window.__redLedger.loadMap(mapId), id);

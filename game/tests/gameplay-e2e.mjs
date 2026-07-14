@@ -17,6 +17,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(1).click();
 await page.click('#begin-episode');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 await page.waitForTimeout(1200);
 
 const initial = await state();
@@ -67,6 +68,9 @@ assert((await state()).mode === 'playing', 'Escape did not resume paused play');
 assert(!(await page.locator('#pause-menu').isVisible()), 'Escape resume left the pause menu visible');
 
 const quickTapAmmo = (await state()).player.ammo.staples;
+await page.mouse.click(640, 300, { delay: 1 });
+await page.waitForFunction(() => document.pointerLockElement === document.querySelector('#game-canvas'));
+assert((await state()).player.ammo.staples === quickTapAmmo, 'Pointer recapture spent ammunition');
 await page.mouse.click(640, 300, { delay: 1 });
 await page.waitForTimeout(90);
 assert((await state()).player.ammo.staples < quickTapAmmo, 'A sub-tick fire tap was lost');
