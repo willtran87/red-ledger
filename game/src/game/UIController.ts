@@ -179,6 +179,21 @@ export class UIController {
       this.hideScreens();
       this.game.continueFromIntermission();
     });
+    $('#retry-map').addEventListener('click', () => {
+      this.game.retryCurrentMap();
+      this.prepareGameEntry();
+    });
+    $('#intermission-level-select').addEventListener('click', () => {
+      this.pendingDifficulty = this.game.difficulty;
+      this.showLevelSelect();
+    });
+    $('#intermission-menu').addEventListener('click', () => {
+      this.game.audio.stopMusic();
+      this.game.mode = 'menu';
+      this.updateEpisodeLocks();
+      this.updateContinue();
+      this.showScreen('menu');
+    });
     $('#begin-episode').addEventListener('click', () => { this.game.startEpisode(this.pendingEpisode, this.pendingDifficulty); this.prepareGameEntry(); });
     $('#enter-file').addEventListener('click', () => this.enterReadyState());
     $('#epilogue-menu').addEventListener('click', () => this.showScreen('menu'));
@@ -266,7 +281,9 @@ export class UIController {
     else if (performance.now() >= this.portraitUntil) this.setPortrait('neutral');
     if (this.currentWeapon !== weapon.id) {
       this.cancelWeaponFrames();
-      $<HTMLElement>('#weapon-view').style.backgroundImage = `url('${runtimeUrl(weapon.idle)}')`;
+      const weaponView = $<HTMLElement>('#weapon-view');
+      weaponView.style.backgroundImage = `url('${runtimeUrl(weapon.idle)}')`;
+      weaponView.dataset.weapon = weapon.id;
       this.currentWeapon = weapon.id;
     }
     this.updateWeaponBob(snapshot);
@@ -466,7 +483,6 @@ export class UIController {
   }
 
   private impactFeedback(detail: { kind: 'wall' | 'actor'; killed?: boolean }): void {
-    if ($<HTMLInputElement>('#reduced-effects').checked) return;
     if (detail.kind === 'actor') {
       const marker = $('#hit-marker');
       marker.classList.remove('active', 'kill');
@@ -475,6 +491,7 @@ export class UIController {
       marker.classList.add('active');
       return;
     }
+    if ($<HTMLInputElement>('#reduced-effects').checked || !$<HTMLInputElement>('#flash-effects').checked) return;
     $<HTMLCanvasElement>('#game-canvas').animate([{ filter: 'brightness(1.12)' }, { filter: 'none' }], { duration: 65 });
   }
 
@@ -487,7 +504,7 @@ export class UIController {
   }
 
   private flashMuzzle(weapon: keyof typeof WEAPONS): void {
-    if ($<HTMLInputElement>('#reduced-effects').checked || weapon === 'claim-stamp') return;
+    if ($<HTMLInputElement>('#reduced-effects').checked || !$<HTMLInputElement>('#flash-effects').checked || weapon === 'claim-stamp') return;
     const flash = $<HTMLElement>('#muzzle-flash');
     const frame = weapon === 'binding-engine' || weapon === 'plasma-copier' ? 6
       : weapon === 'catastrophe-launcher' ? 7 : weapon === 'umbra-saw' ? 5
@@ -680,6 +697,7 @@ export class UIController {
       detail.textContent = slot.detail;
       copy.append(name, detail);
       const action = document.createElement('button');
+      action.className = 'slot-action';
       action.textContent = mode === 'save' ? 'Write' : 'Load';
       action.disabled = mode === 'load' && slot.status !== 'valid';
       action.addEventListener('click', () => {
@@ -698,9 +716,59 @@ export class UIController {
         }
       });
       row.append(preview, copy, action);
+      if (mode === 'load' && slot.status !== 'empty') {
+        row.classList.add('deletable');
+        const remove = document.createElement('button');
+        remove.className = 'slot-delete';
+        remove.textContent = '×';
+        remove.title = `Delete slot ${slot.slot}`;
+        remove.setAttribute('aria-label', `Delete slot ${slot.slot}`);
+        remove.addEventListener('click', () => this.confirm(
+          'Delete save?', `${slot.name} will be permanently removed.`, 'Delete', () => {
+            this.game.deleteManual(slot.slot);
+            this.updateContinue();
+            this.showSlotScreen('load');
+          },
+        ));
+        row.append(remove);
+      }
       container.append(row);
     });
+    if (mode === 'load') this.buildAutomaticSlots();
     this.showScreen(`${mode}-slots`);
+  }
+
+  private buildAutomaticSlots(): void {
+    const container = $('#automatic-slot-list');
+    container.replaceChildren();
+    const slots = this.game.automaticSlots();
+    $('#automatic-save-heading').toggleAttribute('hidden', slots.length === 0);
+    container.toggleAttribute('hidden', slots.length === 0);
+    slots.forEach((slot) => {
+      const row = document.createElement('div');
+      row.className = 'slot-row automatic-slot-row';
+      const badge = document.createElement('strong');
+      badge.className = 'automatic-kind';
+      badge.textContent = slot.kind === 'quicksave' ? 'Quick' : slot.kind === 'autosave' ? 'Auto' : 'Recovery';
+      const copy = document.createElement('span');
+      copy.className = 'slot-copy';
+      const name = document.createElement('strong');
+      name.textContent = slot.name;
+      const detail = document.createElement('small');
+      detail.textContent = slot.detail;
+      copy.append(name, detail);
+      const action = document.createElement('button');
+      action.className = 'slot-action';
+      action.textContent = 'Load';
+      action.disabled = slot.status !== 'valid';
+      action.addEventListener('click', () => {
+        if (!this.game.loadAutomatic(slot.slotId)) return;
+        if (this.game.mode === 'paused') this.showScreen('pause-menu');
+        else this.hideScreens();
+      });
+      row.append(badge, copy, action);
+      container.append(row);
+    });
   }
 
   private showLevelSelect(): void {
@@ -942,6 +1010,7 @@ export class UIController {
     button.dataset.available = String(available);
     button.setAttribute('aria-describedby', 'menu-feedback');
     button.title = available ? 'Continue the newest valid save' : 'No valid save is available';
+    $('#menu-feedback').textContent = this.game.continueSummary() ?? '';
   }
   private announce(message: string): void {
     const announcer = $('#announcer');

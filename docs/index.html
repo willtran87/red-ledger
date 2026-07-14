@@ -7,8 +7,8 @@
     <meta name="description" content="A retro first-person action campaign through a surreal claims facility." />
     <link rel="icon" type="image/png" href="./public_runtime/ui/title-screen.png" />
     <title>Red Ledger</title>
-    <script type="module" crossorigin src="./assets/index-BJnF4saF.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CNTr3oUn.css">
+    <script type="module" crossorigin src="./assets/index-Cw7wLaRe.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CiQ9HYdD.css">
   </head>
   <body>
     <main id="game-shell">
@@ -89,7 +89,12 @@
         <div id="tally"></div>
         <div id="result-bests" aria-live="polite"></div>
         <div id="episode-progress" aria-label="Episode progress"></div>
-        <button id="continue-map">Continue</button>
+        <div class="intermission-actions">
+          <button id="continue-map">Continue</button>
+          <button id="retry-map">Retry Map</button>
+          <button id="intermission-level-select">Level Select</button>
+          <button id="intermission-menu">Main Menu</button>
+        </div>
       </section>
       <section id="pause-menu" class="screen compact" aria-label="Paused">
         <img src="./public_runtime/ui/pause-plaque.png" alt="Paused" />
@@ -113,6 +118,9 @@
       </section>
       <section id="load-slots" class="screen compact slot-screen" aria-label="Load game">
         <h1>Load Game</h1>
+        <h2 id="automatic-save-heading">Recent &amp; Recovery</h2>
+        <div id="automatic-slot-list" class="slot-list automatic-slot-list"></div>
+        <h2>Manual Files</h2>
         <div id="load-slot-list" class="slot-list"></div>
         <button class="slot-back">Back</button>
       </section>

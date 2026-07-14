@@ -1,5 +1,13 @@
 import {
+  AdditiveBlending,
+  BufferGeometry,
+  DoubleSide,
+  Float32BufferAttribute,
   FogExp2,
+  Line,
+  LineBasicMaterial,
+  Mesh,
+  MeshBasicMaterial,
   PerspectiveCamera,
   Scene,
   Sprite,
@@ -164,6 +172,14 @@ interface AnimatedEffect {
   frame: number;
 }
 
+interface BeamVisual {
+  readonly mesh: Mesh<BufferGeometry, MeshBasicMaterial>;
+  readonly line: Line<BufferGeometry, LineBasicMaterial>;
+  readonly impact: Sprite;
+  elapsed: number;
+  length: number;
+}
+
 export interface GameplayCommand {
   forward: number;
   strafe: number;
@@ -261,6 +277,8 @@ const ACTIVE_VISUALS: Readonly<Record<string, string>> = {
 
 export interface ManualSlotSummary {
   slot: number;
+  slotId: string;
+  kind: 'manual' | 'quicksave' | 'autosave' | 'recovery';
   status: 'empty' | 'valid' | 'invalid';
   name: string;
   detail: string;
@@ -397,6 +415,7 @@ export class GameEngine {
   private readonly playerProjectileTrailTimers = new Map<string, number>();
   private projectileSequence = 0;
   private bindingBeam?: { pulses: number; timer: number };
+  private bindingBeamVisual?: BeamVisual;
   private demoRecorder?: DemoRecorder<SaveData, GameplayCommand>;
   private demoTick = 0;
   private radialSelecting = false;
@@ -484,6 +503,7 @@ export class GameEngine {
     this.playerProjectileTrailTimers.clear();
     this.projectileSequence = 0;
     this.bindingBeam = undefined;
+    this.clearBindingBeamVisual();
     this.lastMapResult = undefined;
     this.player.position.set(map.playerStart.x * map.cellSize, 0, map.playerStart.z * map.cellSize);
     this.player.position.y = this.world.floorHeightAt(this.player.position) + 1.35;
@@ -711,7 +731,7 @@ export class GameEngine {
       : weapon.id === 'plasma-copier' || weapon.id === 'binding-engine' ? 'energy'
         : weapon.id === 'claim-stamp' ? 'ink' : 'spark';
     this.emitParticles(muzzleKind, muzzle, weapon.slot >= 5 ? 7 : 4, this.aimDirection());
-    window.dispatchEvent(new CustomEvent('weapon-fire', { detail: { weapon: weapon.id, duration: Math.min(.18, weapon.cooldown * .55), recoil: weapon.recoil } }));
+    window.dispatchEvent(new CustomEvent('weapon-fire', { detail: { weapon: weapon.id, duration: this.weaponCooldown, recoil: weapon.recoil } }));
     window.dispatchEvent(new CustomEvent('view-recoil', { detail: { amount: weapon.recoil, weapon: weapon.id } }));
     if (weapon.id === 'catastrophe-launcher' || weapon.id === 'plasma-copier') {
       let direction = this.aimDirection();
@@ -735,6 +755,10 @@ export class GameEngine {
       this.bindingBeam = { pulses: 20, timer: 0 };
       return;
     }
+    let hitCount = 0;
+    let killedAny = false;
+    let actorImpact: Vector3 | undefined;
+    let wallImpact: Vector3 | undefined;
     for (let pellet = 0; pellet < weapon.pellets; pellet += 1) {
       const spread = (this.random() - .5) * weapon.spread;
       const direction = this.aimDirection(spread);
@@ -744,21 +768,29 @@ export class GameEngine {
         if (breakable) {
           this.damageBreakable(breakable.key, this.rollWeaponDamage(weapon.id));
           this.emitParticles('debris', breakable.position.clone().add(new Vector3(0, .6, 0)), 2, direction);
-          if (pellet === 0) this.playWeaponImpact(weapon.id, breakable.position.clone().add(new Vector3(0, .6, 0)));
-        } else if (pellet === 0) {
+          wallImpact ??= breakable.position.clone().add(new Vector3(0, .6, 0));
+        } else if (!wallImpact) {
           const impact = this.traceWorldImpact(direction, weapon.range);
           this.emitParticles('spark', impact, 3, direction);
-          this.playWeaponImpact(weapon.id, impact);
+          wallImpact = impact;
         }
-        window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: weapon.id, kind: 'wall' } }));
         continue;
       }
       this.damageActor(target, this.rollWeaponDamage(weapon.id), 'player');
       const impact = target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .55, 0));
       this.emitParticles('ink', impact, weapon.pellets > 1 ? 1 : 4, direction);
-      if (pellet === 0) this.playWeaponImpact(weapon.id, impact, true);
-      window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: weapon.id, kind: 'actor', targetUid: target.uid, killed: target.dead } }));
+      actorImpact ??= impact;
+      hitCount += 1;
+      killedAny ||= target.dead;
     }
+    if (actorImpact) this.playWeaponImpact(weapon.id, actorImpact, true);
+    else if (wallImpact) this.playWeaponImpact(weapon.id, wallImpact);
+    window.dispatchEvent(new CustomEvent('weapon-impact', { detail: {
+      weapon: weapon.id,
+      kind: actorImpact ? 'actor' : 'wall',
+      hitCount,
+      killed: killedAny,
+    } }));
   }
 
   private rollWeaponDamage(id: WeaponId): number {
@@ -790,20 +822,130 @@ export class GameEngine {
     while (this.bindingBeam && this.bindingBeam.timer <= 0 && this.bindingBeam.pulses > 0) {
       const direction = this.aimDirection();
       const target = this.findTarget(direction, WEAPONS['binding-engine'].range, .055);
+      let endpoint = this.traceWorldImpact(direction, WEAPONS['binding-engine'].range);
       if (target) {
         this.damageActor(target, this.rollWeaponDamage('binding-engine'), 'player');
-        this.emitParticles('energy', target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0)), 2, direction);
+        endpoint = target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0));
+        this.emitParticles('energy', endpoint, 2, direction);
         window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: 'binding-engine', kind: 'actor', targetUid: target.uid, killed: target.dead } }));
       }
       else {
         const breakable = this.findBreakableTarget(direction, WEAPONS['binding-engine'].range, .055);
-        if (breakable) this.damageBreakable(breakable.key, this.rollWeaponDamage('binding-engine'));
+        if (breakable) {
+          endpoint = breakable.position.clone().add(new Vector3(0, .6, 0));
+          this.damageBreakable(breakable.key, this.rollWeaponDamage('binding-engine'));
+        }
       }
       this.audio.tone(150 + this.bindingBeam.pulses * 7, .035, 'sawtooth', .022);
       this.bindingBeam.pulses -= 1;
       this.bindingBeam.timer += 1 / 22;
-      if (this.bindingBeam.pulses <= 0) this.bindingBeam = undefined;
+      if (this.bindingBeam.pulses <= 0) this.bindingBeam.timer += .12;
     }
+    if (this.bindingBeam) {
+      const direction = this.aimDirection();
+      const target = this.findTarget(direction, WEAPONS['binding-engine'].range, .055);
+      const endpoint = target
+        ? target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0))
+        : this.traceWorldImpact(direction, WEAPONS['binding-engine'].range);
+      this.updateBindingBeamVisual(endpoint, dt);
+      if (this.bindingBeam.pulses <= 0 && this.bindingBeam.timer <= 0) {
+        this.bindingBeam = undefined;
+        this.clearBindingBeamVisual();
+      }
+    }
+  }
+
+  private updateBindingBeamVisual(endpoint: Vector3, dt: number): void {
+    const direction = this.aimDirection();
+    const right = direction.clone().cross(new Vector3(0, 1, 0)).normalize();
+    const source = this.player.position.clone().addScaledVector(direction, 1.45).addScaledVector(right, .14);
+    source.y -= .18;
+    if (!this.bindingBeamVisual) {
+      const geometry = new BufferGeometry();
+      const material = new MeshBasicMaterial({
+        map: this.assets.texture('/public_runtime/effects/binding-beam/fx_binding-beam_start_F_01.png'),
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        alphaTest: .025,
+        side: DoubleSide,
+        blending: AdditiveBlending,
+      });
+      const mesh = new Mesh(geometry, material);
+      mesh.frustumCulled = false;
+      mesh.renderOrder = this.accessibility.highContrast ? 24 : 4;
+      this.world.root.add(mesh);
+      const line = new Line(new BufferGeometry(), new LineBasicMaterial({
+        color: 0x47bcd1,
+        transparent: true,
+        opacity: this.accessibility.reducedEffects ? .82 : 1,
+        depthTest: false,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      }));
+      line.frustumCulled = false;
+      line.renderOrder = this.accessibility.highContrast ? 25 : 5;
+      this.world.root.add(line);
+      const impact = this.createEffectSprite('/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_01.png', this.accessibility.reducedEffects ? .55 : .9);
+      impact.material.depthTest = false;
+      impact.renderOrder = this.accessibility.highContrast ? 25 : 5;
+      this.bindingBeamVisual = { mesh, line, impact, elapsed: 0, length: 0 };
+    }
+    const visual = this.bindingBeamVisual;
+    visual.elapsed += dt;
+    visual.length = source.distanceTo(endpoint);
+    this.camera.updateMatrixWorld();
+    const cameraUp = new Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1).normalize();
+    const halfWidth = this.accessibility.reducedEffects ? .018 : .032;
+    const positions: number[] = [];
+    const linePositions: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
+    const segments = 9;
+    for (let index = 0; index <= segments; index += 1) {
+      const t = index / segments;
+      const envelope = Math.sin(Math.PI * t);
+      const center = source.clone().lerp(endpoint, t)
+        .addScaledVector(right, Math.sin(t * Math.PI * 5 + visual.elapsed * 24) * .065 * envelope)
+        .addScaledVector(cameraUp, Math.cos(t * Math.PI * 4 + visual.elapsed * 19) * .035 * envelope);
+      positions.push(...center.clone().addScaledVector(cameraUp, halfWidth).toArray());
+      positions.push(...center.clone().addScaledVector(cameraUp, -halfWidth).toArray());
+      linePositions.push(...center.toArray());
+      uvs.push(t, .56, t, .44);
+      if (index < segments) {
+        const offset = index * 2;
+        indices.push(offset, offset + 1, offset + 2, offset + 2, offset + 1, offset + 3);
+      }
+    }
+    visual.mesh.geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    visual.mesh.geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+    visual.mesh.geometry.setIndex(indices);
+    visual.mesh.geometry.computeBoundingSphere();
+    visual.line.geometry.setAttribute('position', new Float32BufferAttribute(linePositions, 3));
+    visual.line.geometry.computeBoundingSphere();
+    const startPhase = visual.elapsed < .14;
+    const frameCount = 4;
+    const frame = Math.floor(visual.elapsed * (startPhase ? 28 : 18)) % frameCount + 1;
+    const beamPath = `/public_runtime/effects/binding-beam/fx_binding-beam_${startPhase ? 'start' : 'loop'}_F_${String(frame).padStart(2, '0')}.png`;
+    if (visual.mesh.userData.frame !== beamPath) {
+      visual.mesh.userData.frame = beamPath;
+      visual.mesh.material.map = this.assets.texture(beamPath);
+      visual.mesh.material.needsUpdate = true;
+    }
+    visual.impact.position.copy(endpoint);
+    const impactFrame = Math.floor(visual.elapsed * 22) % 8 + 1;
+    visual.impact.material.map = this.assets.texture(`/public_runtime/effects/binding-beam/fx_binding-beam_impact_F_${String(impactFrame).padStart(2, '0')}.png`);
+  }
+
+  private clearBindingBeamVisual(): void {
+    if (!this.bindingBeamVisual) return;
+    this.world.root.remove(this.bindingBeamVisual.mesh, this.bindingBeamVisual.line, this.bindingBeamVisual.impact);
+    this.bindingBeamVisual.mesh.geometry.dispose();
+    this.bindingBeamVisual.mesh.material.dispose();
+    this.bindingBeamVisual.line.geometry.dispose();
+    this.bindingBeamVisual.line.material.dispose();
+    this.bindingBeamVisual.impact.material.dispose();
+    this.bindingBeamVisual = undefined;
   }
 
   private updatePlayerProjectiles(dt: number): void {
@@ -1029,7 +1171,7 @@ export class GameEngine {
   }
 
   private resolveEncounterCompletion(id?: string): void {
-    if (!id || this.world.actors.some((actor) => actor.encounter === id && !actor.dead)) return;
+    if (!id || this.isEncounterActive(id)) return;
     const encounter = this.world.map.encounters.find((candidate) => candidate.id === id);
     if (!encounter || encounter.completion === 'switch') return;
     const targets = this.world.map.id === 'E3M8' && id === 'boss-1'
@@ -1469,7 +1611,7 @@ export class GameEngine {
   }
 
   private updateActorVisual(actor: RuntimeActor): void {
-    const inVisualRange = this.horizontalDistance(actor.position, this.player.position) <= 34
+    const inVisualRange = this.horizontalDistance(actor.position, this.player.position) <= 56
       && this.world.hasLineOfSight(this.player.position, actor.position);
     actor.sprite.visible = !actor.phaseLocked && inVisualRange;
     if (actor.phaseLocked || !inVisualRange) return;
@@ -1763,7 +1905,7 @@ export class GameEngine {
   }
 
   private isEncounterActive(id: string): boolean {
-    return this.world.actors.some((actor) => !actor.dead && (actor.encounter === id || (id.startsWith('boss-') && actor.kind === 'boss' && actor.encounter === id)));
+    return this.world.actors.some((actor) => !actor.dead && actor.encounter === id && (actor.mandatory || actor.kind === 'boss'));
   }
 
   private teleportTell(position: Vector3): void {
@@ -1835,6 +1977,11 @@ export class GameEngine {
     const nextEpisode = Number(this.nextMap[1]);
     if (currentEpisode !== nextEpisode) this.resetInventory();
     this.loadMap(this.nextMap);
+  }
+
+  retryCurrentMap(): void {
+    if (this.mode !== 'intermission') return;
+    this.loadMap(this.world.map.id, false);
   }
 
   private die(): void {
@@ -2008,13 +2155,40 @@ export class GameEngine {
   manualSlots(): readonly ManualSlotSummary[] {
     return this.persistence.listManualSlots().map((entry, index) => ({
       slot: index + 1,
+      slotId: entry.slotId,
+      kind: entry.kind,
       status: entry.status,
       name: entry.status === 'valid' ? entry.metadata.name : entry.defaultName,
       detail: entry.status === 'valid'
-        ? `${entry.metadata.mapId} ${entry.metadata.mapTitle} | ${new Date(entry.metadata.savedAt).toLocaleString()}`
+        ? `${entry.metadata.mapId} ${entry.metadata.mapTitle} | ${this.pretty(entry.metadata.difficulty)} | ${this.saveTime(entry.metadata.playSeconds)} | ${new Date(entry.metadata.savedAt).toLocaleString()}`
         : entry.status === 'invalid' ? `Unreadable: ${entry.reason}` : 'Empty',
       ...(entry.status === 'valid' ? { thumbnail: entry.metadata.thumbnail } : {}),
     }));
+  }
+
+  automaticSlots(): readonly ManualSlotSummary[] {
+    return this.persistence.inspectAllSlots()
+      .filter((entry) => entry.kind !== 'manual' && entry.status !== 'empty')
+      .sort((left, right) => {
+        const leftTime = left.status === 'valid' ? left.metadata.savedAt : 0;
+        const rightTime = right.status === 'valid' ? right.metadata.savedAt : 0;
+        return rightTime - leftTime;
+      })
+      .map((entry, index) => ({
+        slot: index + 1,
+        slotId: entry.slotId,
+        kind: entry.kind,
+        status: entry.status,
+        name: entry.status === 'valid' ? entry.metadata.name : entry.defaultName,
+        detail: entry.status === 'valid'
+          ? `${entry.metadata.mapId} ${entry.metadata.mapTitle} | ${this.pretty(entry.metadata.difficulty)} | ${this.saveTime(entry.metadata.playSeconds)} | ${new Date(entry.metadata.savedAt).toLocaleString()}`
+          : entry.status === 'invalid' ? `Unreadable: ${entry.reason}` : 'Empty',
+        ...(entry.status === 'valid' ? { thumbnail: entry.metadata.thumbnail } : {}),
+      }));
+  }
+
+  deleteManual(slot: number): void {
+    this.persistence.clearManual(slot);
   }
 
   loadManual(slot: number): boolean {
@@ -2026,8 +2200,14 @@ export class GameEngine {
   loadQuicksave(): boolean {
     const result = this.persistence.loadQuicksave();
     if (result.status === 'valid') return this.restoreSave(result.state);
-    const fallback = this.persistence.newestValidContinue();
-    return fallback ? this.restoreSave(fallback.state) : false;
+    this.showMessage('No quicksave is available', 1.8);
+    this.emit();
+    return false;
+  }
+
+  loadAutomatic(slotId: string): boolean {
+    const result = this.persistence.inspectAllSlots().find((entry) => entry.slotId === slotId && entry.kind !== 'manual');
+    return result?.status === 'valid' ? this.restoreSave(result.state, false) : false;
   }
 
   load(): boolean {
@@ -2159,6 +2339,11 @@ export class GameEngine {
   }
 
   hasSave(): boolean { return Boolean(this.persistence.newestValidContinue()); }
+  continueSummary(): string | undefined {
+    const result = this.persistence.newestValidContinue();
+    if (!result) return undefined;
+    return `${result.metadata.mapId} ${result.metadata.mapTitle} | ${this.pretty(result.metadata.difficulty)} | ${new Date(result.metadata.savedAt).toLocaleString()}`;
+  }
   get pendingMap(): MapId | undefined { return this.nextMap; }
   get mapResult(): MapResult | undefined { return this.lastMapResult; }
 
@@ -2282,6 +2467,19 @@ export class GameEngine {
       this.damageActor(actor, actor.health + 1);
       defeated += Number(actor.dead);
     });
+    return defeated;
+  }
+
+  debugDefeatMandatory(id: string): number {
+    let defeated = 0;
+    this.world.actors
+      .filter((actor) => actor.encounter === id && actor.mandatory && !actor.dead)
+      .forEach((actor) => {
+        actor.phaseLocked = false;
+        actor.sprite.visible = true;
+        this.damageActor(actor, actor.health + 1);
+        defeated += Number(actor.dead);
+      });
     return defeated;
   }
 
@@ -2430,12 +2628,22 @@ export class GameEngine {
         landmarks: this.world.serializeLandmarks().map((landmark) => ({ key: landmark.key, active: landmark.active, x: +landmark.position[0].toFixed(2), z: +landmark.position[2].toFixed(2) })),
         breakables: this.world.serializeBreakables(),
         bindingGates: this.world.bindingGateCount,
+        encounters: (this.world.map?.encounters ?? []).map((encounter) => {
+          const actors = this.world.actors.filter((actor) => actor.encounter === encounter.id);
+          return {
+            id: encounter.id,
+            live: actors.filter((actor) => !actor.dead).length,
+            mandatoryLive: actors.filter((actor) => actor.mandatory && !actor.dead).length,
+            locked: actors.filter((actor) => actor.phaseLocked && !actor.dead).length,
+          };
+        }),
       },
       combatEffects: {
         projectiles: this.enemyBehavior.serialize().projectiles.map((item) => ({ id: item.id, kind: item.kind, x: +item.position.x.toFixed(2), z: +item.position.z.toFixed(2) })),
         hazards: this.enemyBehavior.serialize().hazards.map((item) => ({ id: item.id, kind: item.kind, armed: item.armed, x: +item.position.x.toFixed(2), z: +item.position.z.toFixed(2), remaining: +item.remaining.toFixed(2) })),
         playerProjectiles: this.playerProjectiles.map((item) => ({ id: item.id, weapon: item.weapon, x: +item.position.x.toFixed(2), z: +item.position.z.toFixed(2), remaining: +item.remaining.toFixed(2) })),
         bindingPulses: this.bindingBeam?.pulses ?? 0,
+        bindingBeam: this.bindingBeamVisual ? { active: true, length: +this.bindingBeamVisual.length.toFixed(2) } : { active: false, length: 0 },
         animated: this.animatedEffects.map((effect) => ({ family: effect.family, frame: effect.frame + 1 })),
         particles: { active: this.particles.activeCount, capacity: this.particles.capacity, byKind: this.particles.counts() },
       },
@@ -2467,6 +2675,13 @@ export class GameEngine {
     if (!this.world.map) return '';
     const boss = this.world.actors.find((actor) => actor.kind === 'boss' && !actor.dead && !actor.phaseLocked);
     if (boss) return 'Close binding authority';
+    const activeAnchors = this.world.actors.filter((actor) => actor.mandatory && !actor.dead && !actor.phaseLocked);
+    if (activeAnchors.length) {
+      const encounter = activeAnchors[0].encounter;
+      const remaining = activeAnchors.filter((actor) => actor.encounter === encounter).length;
+      const phase = encounter === 'entry' ? 'initial' : encounter === 'transformation' ? 'control' : encounter === 'climax' ? 'final' : 'required';
+      return `Close ${phase} exposures | ${remaining} left`;
+    }
     const missingCredential = [...this.world.doors.values()].find((door) => door.credential && !this.player.credentials.has(door.credential))?.credential;
     if (missingCredential) return `Recover ${this.pretty(missingCredential)} credential`;
     const nextMechanism = [...this.world.map.mechanisms]
@@ -2474,8 +2689,8 @@ export class GameEngine {
       .find((mechanism) => !this.world.activatedMechanisms.has(mechanism.id)
         && mechanism.requires.every((requirement) => this.world.activatedMechanisms.has(requirement)));
     if (nextMechanism) return `Activate ${nextMechanism.label}`;
-    const climax = this.world.actors.filter((actor) => actor.encounter === 'climax' && !actor.dead && !actor.phaseLocked).length;
-    if (climax > 0) return `Close final exposures · ${climax} left`;
+    const climax = this.world.actors.filter((actor) => actor.encounter === 'climax' && actor.mandatory && !actor.dead && !actor.phaseLocked).length;
+    if (climax > 0) return `Close final exposures | ${climax} left`;
     return 'Proceed to the exit';
   }
   private emit(): void {
@@ -2495,6 +2710,7 @@ export class GameEngine {
   }
   private showMessage(message: string, duration = 1.2): void { this.message = message; this.messageTimer = duration; }
   private pretty(value: string): string { return value.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' '); }
+  private saveTime(seconds: number): string { return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`; }
   private emitParticles(kind: ParticleKind, position: Vector3, count: number, direction?: Vector3): void {
     const scaledCount = this.accessibility.reducedEffects ? Math.max(1, Math.ceil(count * .35)) : count;
     this.particles.emit(kind, position, scaledCount, direction);

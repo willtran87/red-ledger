@@ -36,6 +36,7 @@ if (import.meta.env.DEV) {
     teleport: (x, z) => game.debugTeleport(x, z),
     defeatAll: () => game.debugDefeatAll(),
     defeatEncounter: (id) => game.debugDefeatEncounter(id),
+    defeatMandatory: (id) => game.debugDefeatMandatory(id),
     teleportToPickup: (kind, id) => game.debugTeleportToPickup(kind, id),
     teleportToDoor: (credential) => game.debugTeleportToDoor(credential),
     teleportToExit: () => game.debugTeleportToExit(),
@@ -72,6 +73,7 @@ declare global {
       teleport: (x: number, z: number) => void;
       defeatAll: () => void;
       defeatEncounter: (id: string) => number;
+      defeatMandatory: (id: string) => number;
       teleportToPickup: (kind: 'pickup' | 'weapon' | 'credential', id?: string) => boolean;
       teleportToDoor: (credential?: import('./data').Credential) => boolean;
       teleportToExit: () => void;
