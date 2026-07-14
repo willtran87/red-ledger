@@ -187,7 +187,7 @@ describe('PersistenceSystem campaign unlocks', () => {
   it('tracks map completion, episode completion, and ordered campaign unlocks', () => {
     const system = makeSystem(new MemoryStorage(), [100, 200, 300]);
     expect(system.campaignUnlocks()).toEqual({
-      unlockedEpisodes: ['first-notice'], completedEpisodes: [], completedMaps: [], updatedAt: 0,
+      unlockedEpisodes: ['first-notice'], completedEpisodes: [], completedMaps: [], discoveredSecretMaps: [], records: {}, updatedAt: 0,
     });
     system.completeMap('E1M8');
     system.completeEpisode('first-notice', 'exclusions-apply');
@@ -196,7 +196,51 @@ describe('PersistenceSystem campaign unlocks', () => {
       unlockedEpisodes: ['exclusions-apply', 'first-notice'],
       completedEpisodes: ['first-notice'],
       completedMaps: ['E1M8'],
+      discoveredSecretMaps: [],
+      records: {},
       updatedAt: 200,
+    });
+  });
+
+  it('merges stronger performance records and keeps difficulties independent', () => {
+    const system = makeSystem(new MemoryStorage(), [100, 200, 300]);
+    system.completeMap('E1M1', {
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 180, parSeconds: 200, score: 4200, bestChain: 4,
+      killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B',
+    });
+    system.completeMap('E1M1', {
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 220, parSeconds: 200, score: 5200, bestChain: 3,
+      killsPercent: 100, itemsPercent: 60, secretsPercent: 100, grade: 'A',
+    });
+    system.completeMap('E1M1', {
+      mapId: 'E1M1', difficulty: 'orientation', elapsed: 140, parSeconds: 200, score: 2800, bestChain: 2,
+      killsPercent: 80, itemsPercent: 50, secretsPercent: 0, grade: 'C',
+    });
+
+    expect(system.campaignUnlocks().records['E1M1:field-adjuster']).toMatchObject({
+      completions: 2, bestTime: 180, highScore: 5200, bestChain: 4, bestKillsPercent: 100,
+      bestItemsPercent: 70, bestSecretsPercent: 100, bestGrade: 'A', parBeaten: true, achievedAt: 200,
+    });
+    expect(system.campaignUnlocks().records['E1M1:orientation']).toMatchObject({ completions: 1, bestTime: 140, bestGrade: 'C' });
+  });
+
+  it('records secret-map discovery separately from ordinary map order', () => {
+    const system = makeSystem(new MemoryStorage(), [100, 200]);
+    system.completeMap('E1M8');
+    expect(system.campaignUnlocks().discoveredSecretMaps).toEqual([]);
+    system.completeMap('E1M3', undefined, 'E1M9');
+    expect(system.campaignUnlocks().discoveredSecretMaps).toEqual(['E1M9']);
+  });
+
+  it('loads checksum-valid campaign data from before performance records existed', () => {
+    const storage = new MemoryStorage();
+    const progress = {
+      unlockedEpisodes: ['first-notice'], completedEpisodes: [], completedMaps: ['E1M1'], updatedAt: 77,
+    };
+    const unsigned = { schema: 'red-ledger-campaign', version: 1, progress };
+    storage.setItem('test:campaign', JSON.stringify({ ...unsigned, checksum: checksum(unsigned) }));
+    expect(makeSystem(storage).campaignUnlocks()).toEqual({
+      ...progress, discoveredSecretMaps: [], records: {},
     });
   });
 

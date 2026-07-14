@@ -26,6 +26,15 @@
       </section>
       <section id="level-select" class="screen compact" aria-label="Level select">
         <h1>Level Select</h1>
+        <label class="level-difficulty">Response level
+          <select id="level-select-difficulty">
+            <option value="orientation">Orientation</option>
+            <option value="desk-adjuster">Desk Adjuster</option>
+            <option value="field-adjuster" selected>Field Adjuster</option>
+            <option value="catastrophe-team">Catastrophe Team</option>
+            <option value="binding-authority">Binding Authority</option>
+          </select>
+        </label>
         <div id="level-select-list" class="level-select-list"></div>
         <button data-back>Back</button>
       </section>
@@ -37,6 +46,7 @@
       <section id="difficulty-menu" class="screen" aria-label="Difficulty selection">
         <h1>Response Level</h1>
         <div id="difficulty-actions"></div>
+        <p id="difficulty-detail" class="screen-copy" aria-live="polite"></p>
         <button data-back>Back</button>
       </section>
       <section id="episode-intro" class="screen" aria-label="Episode introduction">
@@ -73,7 +83,9 @@
       </section>
       <section id="intermission" class="screen" aria-label="Intermission">
         <img id="intermission-art" alt="Episode intermission" />
+        <strong id="intermission-grade" aria-label="Performance grade"></strong>
         <div id="tally"></div>
+        <div id="result-bests" aria-live="polite"></div>
         <div id="episode-progress" aria-label="Episode progress"></div>
         <button id="continue-map">Continue</button>
       </section>
@@ -120,7 +132,7 @@
       <div id="hud">
         <div id="objective" aria-hidden="true"></div>
         <div id="message"></div>
-        <div id="boss-bar" hidden><span></span></div>
+        <div id="boss-bar" hidden><div><strong></strong><small></small></div><i><span></span></i></div>
         <div id="combat-streak" aria-hidden="true" hidden>
           <strong></strong><span></span><i></i>
         </div>

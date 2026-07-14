@@ -5,6 +5,35 @@ export const AUTOSAVE_SLOT_COUNT = 3;
 
 export type SaveKind = 'manual' | 'quicksave' | 'autosave' | 'recovery';
 export type SlotStatus = 'empty' | 'valid' | 'invalid';
+export type PerformanceGrade = 'S' | 'A' | 'B' | 'C' | 'D';
+
+export interface MapPerformance {
+  readonly mapId: string;
+  readonly difficulty: string;
+  readonly elapsed: number;
+  readonly parSeconds: number;
+  readonly score: number;
+  readonly bestChain: number;
+  readonly killsPercent: number;
+  readonly itemsPercent: number;
+  readonly secretsPercent: number;
+  readonly grade: PerformanceGrade;
+}
+
+export interface MapRecord {
+  readonly mapId: string;
+  readonly difficulty: string;
+  readonly completions: number;
+  readonly bestTime: number;
+  readonly highScore: number;
+  readonly bestChain: number;
+  readonly bestKillsPercent: number;
+  readonly bestItemsPercent: number;
+  readonly bestSecretsPercent: number;
+  readonly bestGrade: PerformanceGrade;
+  readonly parBeaten: boolean;
+  readonly achievedAt: number;
+}
 
 export interface SaveThumbnailPlaceholder {
   readonly kind: 'placeholder';
@@ -84,6 +113,8 @@ export interface CampaignUnlocks {
   readonly unlockedEpisodes: readonly string[];
   readonly completedEpisodes: readonly string[];
   readonly completedMaps: readonly string[];
+  readonly discoveredSecretMaps: readonly string[];
+  readonly records: Readonly<Record<string, MapRecord>>;
   readonly updatedAt: number;
 }
 
@@ -189,6 +220,34 @@ const verifyChecksum = (value: Record<string, unknown>): boolean => {
 
 const normalizeStringList = (values: readonly string[]): string[] =>
   [...new Set(values.filter((value) => value.length > 0))].sort();
+
+const GRADES: readonly PerformanceGrade[] = ['S', 'A', 'B', 'C', 'D'];
+const isPerformanceGrade = (value: unknown): value is PerformanceGrade => GRADES.includes(value as PerformanceGrade);
+const isMapRecord = (value: unknown): value is MapRecord => isRecord(value)
+  && typeof value.mapId === 'string'
+  && typeof value.difficulty === 'string'
+  && Number.isSafeInteger(value.completions) && Number(value.completions) > 0
+  && ['bestTime', 'highScore', 'bestChain', 'bestKillsPercent', 'bestItemsPercent', 'bestSecretsPercent', 'achievedAt']
+    .every((key) => Number.isFinite(value[key]))
+  && isPerformanceGrade(value.bestGrade)
+  && typeof value.parBeaten === 'boolean';
+
+export const mapRecordKey = (mapId: string, difficulty: string): string => `${mapId}:${difficulty}`;
+
+const mergeMapRecord = (previous: MapRecord | undefined, performance: MapPerformance, achievedAt: number): MapRecord => ({
+  mapId: performance.mapId,
+  difficulty: performance.difficulty,
+  completions: (previous?.completions ?? 0) + 1,
+  bestTime: previous ? Math.min(previous.bestTime, performance.elapsed) : performance.elapsed,
+  highScore: Math.max(previous?.highScore ?? 0, performance.score),
+  bestChain: Math.max(previous?.bestChain ?? 0, performance.bestChain),
+  bestKillsPercent: Math.max(previous?.bestKillsPercent ?? 0, performance.killsPercent),
+  bestItemsPercent: Math.max(previous?.bestItemsPercent ?? 0, performance.itemsPercent),
+  bestSecretsPercent: Math.max(previous?.bestSecretsPercent ?? 0, performance.secretsPercent),
+  bestGrade: !previous || GRADES.indexOf(performance.grade) < GRADES.indexOf(previous.bestGrade) ? performance.grade : previous.bestGrade,
+  parBeaten: Boolean(previous?.parBeaten || performance.elapsed <= performance.parSeconds),
+  achievedAt,
+});
 
 const isSaveThumbnail = (value: unknown): value is SaveThumbnail => {
   if (!isRecord(value)) return false;
@@ -338,13 +397,19 @@ export class PersistenceSystem<TState> {
           && Array.isArray(parsed.progress.unlockedEpisodes)
           && Array.isArray(parsed.progress.completedEpisodes)
           && Array.isArray(parsed.progress.completedMaps)
+          && (parsed.progress.discoveredSecretMaps === undefined || Array.isArray(parsed.progress.discoveredSecretMaps))
+          && (parsed.progress.records === undefined || (isRecord(parsed.progress.records)
+            && Object.values(parsed.progress.records).every(isMapRecord)))
           && Number.isFinite(parsed.progress.updatedAt)
-          && [...parsed.progress.unlockedEpisodes, ...parsed.progress.completedEpisodes, ...parsed.progress.completedMaps]
+          && [...parsed.progress.unlockedEpisodes, ...parsed.progress.completedEpisodes, ...parsed.progress.completedMaps,
+            ...(parsed.progress.discoveredSecretMaps as unknown[] | undefined ?? [])]
             .every((entry) => typeof entry === 'string')) {
           return {
             unlockedEpisodes: normalizeStringList(parsed.progress.unlockedEpisodes as string[]),
             completedEpisodes: normalizeStringList(parsed.progress.completedEpisodes as string[]),
             completedMaps: normalizeStringList(parsed.progress.completedMaps as string[]),
+            discoveredSecretMaps: normalizeStringList(parsed.progress.discoveredSecretMaps as string[] | undefined ?? []),
+            records: { ...(parsed.progress.records as Record<string, MapRecord> | undefined ?? {}) },
             updatedAt: parsed.progress.updatedAt as number,
           };
         }
@@ -356,6 +421,8 @@ export class PersistenceSystem<TState> {
       unlockedEpisodes: this.initialUnlockedEpisodes,
       completedEpisodes: [],
       completedMaps: [],
+      discoveredSecretMaps: [],
+      records: {},
       updatedAt: 0,
     };
   }
@@ -365,9 +432,23 @@ export class PersistenceSystem<TState> {
     return this.writeCampaign({ ...current, unlockedEpisodes: normalizeStringList([...current.unlockedEpisodes, episodeId]) });
   }
 
-  completeMap(mapId: string): CampaignUnlocks {
+  completeMap(mapId: string, performance?: MapPerformance, discoveredSecretMap?: string): CampaignUnlocks {
     const current = this.campaignUnlocks();
-    return this.writeCampaign({ ...current, completedMaps: normalizeStringList([...current.completedMaps, mapId]) });
+    const achievedAt = this.now();
+    const records = { ...current.records };
+    if (performance) {
+      const key = mapRecordKey(performance.mapId, performance.difficulty);
+      records[key] = mergeMapRecord(records[key], performance, achievedAt);
+    }
+    return this.writeCampaign({
+      ...current,
+      completedMaps: normalizeStringList([...current.completedMaps, mapId]),
+      discoveredSecretMaps: normalizeStringList([
+        ...current.discoveredSecretMaps,
+        ...(discoveredSecretMap ? [discoveredSecretMap] : []),
+      ]),
+      records,
+    }, achievedAt);
   }
 
   completeEpisode(episodeId: string, unlockNextEpisodeId?: string): CampaignUnlocks {
@@ -386,8 +467,8 @@ export class PersistenceSystem<TState> {
     return this.campaignUnlocks().unlockedEpisodes.includes(episodeId);
   }
 
-  private writeCampaign(progress: Omit<CampaignUnlocks, 'updatedAt'> | CampaignUnlocks): CampaignUnlocks {
-    const next: CampaignUnlocks = { ...progress, updatedAt: this.now() };
+  private writeCampaign(progress: Omit<CampaignUnlocks, 'updatedAt'> | CampaignUnlocks, updatedAt = this.now()): CampaignUnlocks {
+    const next: CampaignUnlocks = { ...progress, updatedAt };
     const unsigned = { schema: 'red-ledger-campaign' as const, version: SAVE_SCHEMA_VERSION, progress: next };
     const envelope: CampaignEnvelope = withChecksum(unsigned);
     this.storage.setItem(this.key('campaign'), JSON.stringify(envelope));

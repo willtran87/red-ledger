@@ -19,6 +19,8 @@ export class AudioSystem {
   private musicTimer?: number;
   private step = 0;
   private musicPattern: Array<number | null> = [];
+  private noiseState = 0x51f15e;
+  private combatIntensity = 0;
   private settings: AudioSettings = { master: .8, music: .65, sfx: .8, muted: false };
 
   constructor() { this.restoreSettings(); }
@@ -78,7 +80,10 @@ export class AudioSystem {
     const length = Math.floor(this.context.sampleRate * duration);
     const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
     const data = buffer.getChannelData(0);
-    for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
+    for (let i = 0; i < length; i += 1) {
+      this.noiseState = (Math.imul(this.noiseState, 1664525) + 1013904223) >>> 0;
+      data[i] = this.noiseState / 0x80000000 - 1;
+    }
     const source = this.context.createBufferSource();
     const gain = this.context.createGain();
     source.buffer = buffer;
@@ -112,8 +117,32 @@ export class AudioSystem {
       if (note !== null) this.tone(root * 2 ** (note / 12), .19, this.step % 8 === 0 ? 'sawtooth' : 'square', .011, 'music');
       if (this.step % 8 === 0) this.tone(root / 2 * 2 ** ((map % 5 - 2) / 12), .38, 'triangle', .017, 'music');
       if (this.step % 32 === 28) this.tone(root * 4, .06, 'square', .008, 'music');
+      if (this.combatIntensity > .15 && this.step % 4 === 0) {
+        this.tone(root * (this.step % 8 === 0 ? 1 : 1.5), .065, episode === 2 ? 'sawtooth' : 'square', .006 + this.combatIntensity * .008, 'music');
+      }
       this.step = (this.step + 1) % this.musicPattern.length;
     }, 300);
+  }
+
+  setCombatIntensity(value: number): void { this.combatIntensity = clamp(value); }
+
+  weaponCue(id: string, pan = 0): void {
+    const profiles: Record<string, { transient: number; body: number; tail: number; noise: number; type: OscillatorType }> = {
+      'claim-stamp': { transient: 120, body: 62, tail: 48, noise: .018, type: 'square' },
+      'staple-driver': { transient: 620, body: 155, tail: 92, noise: .035, type: 'square' },
+      'twin-bore-riveter': { transient: 390, body: 92, tail: 58, noise: .065, type: 'sawtooth' },
+      'audit-repeater': { transient: 760, body: 210, tail: 118, noise: .032, type: 'square' },
+      'catastrophe-launcher': { transient: 105, body: 48, tail: 38, noise: .1, type: 'sawtooth' },
+      'plasma-copier': { transient: 980, body: 330, tail: 180, noise: .025, type: 'triangle' },
+      'binding-engine': { transient: 1320, body: 245, tail: 112, noise: .02, type: 'sawtooth' },
+      'umbra-saw': { transient: 185, body: 74, tail: 52, noise: .07, type: 'sawtooth' },
+    };
+    const profile = profiles[id] ?? profiles['staple-driver'];
+    this.noise(id === 'catastrophe-launcher' ? .11 : .045, profile.noise, 'sfx', pan);
+    this.tone(profile.transient, .045, profile.type, .028, 'sfx', pan);
+    this.tone(profile.body, id === 'umbra-saw' ? .17 : .09, profile.type, .034, 'sfx', pan);
+    this.tone(profile.tail, id === 'catastrophe-launcher' ? .19 : .12, 'triangle', .018, 'sfx', pan);
+    this.duckMusic(id === 'catastrophe-launcher' || id === 'binding-engine' ? .18 : .1);
   }
 
   enemyCue(id: string, event: EnemyCueEvent, pan = 0): void {
@@ -132,6 +161,7 @@ export class AudioSystem {
   stopMusic(): void {
     if (this.musicTimer !== undefined) window.clearInterval(this.musicTimer);
     this.musicTimer = undefined;
+    this.combatIntensity = 0;
   }
 
   private connectToBus(node: AudioNode, bus: AudioBus, pan: number): void {
@@ -143,6 +173,16 @@ export class AudioSystem {
       panner.pan.value = Math.max(-1, Math.min(1, pan));
       node.connect(panner).connect(destination);
     } else node.connect(destination);
+  }
+
+  private duckMusic(duration: number): void {
+    if (!this.context || !this.musicGain) return;
+    const now = this.context.currentTime;
+    const target = this.settings.music;
+    this.musicGain.gain.cancelScheduledValues(now);
+    this.musicGain.gain.setValueAtTime(this.musicGain.gain.value, now);
+    this.musicGain.gain.linearRampToValueAtTime(target * .52, now + .015);
+    this.musicGain.gain.linearRampToValueAtTime(target, now + duration);
   }
 
   private settingsChanged(): void {

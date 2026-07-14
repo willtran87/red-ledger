@@ -27,6 +27,9 @@ import {
   PersistenceSystem,
   validateDemo,
   type DemoData,
+  type CampaignUnlocks,
+  type MapPerformance,
+  type MapRecord,
   type SaveMetadataInput,
   type SaveThumbnail,
 } from './PersistenceSystem';
@@ -74,6 +77,14 @@ export interface CombatMomentum {
   timer: number;
 }
 
+export interface MapResult {
+  readonly performance: MapPerformance;
+  readonly record: MapRecord;
+  readonly completionBonus: number;
+  readonly newBests: readonly string[];
+  readonly secretRoute: boolean;
+}
+
 export interface InteractionHint {
   label: string;
   icon: string;
@@ -102,7 +113,7 @@ interface SaveData {
     ammo: PlayerState['ammo']; weapons: WeaponId[]; weapon: WeaponId; credentials: Credential[]; floorPlan: boolean; powerups: PlayerState['powerups'];
   };
   actors: Array<{
-    uid: string; kind?: 'enemy' | 'boss'; id?: RuntimeActor['id']; health: number; dead: boolean; phaseLocked: boolean;
+    uid: string; kind?: 'enemy' | 'boss'; id?: RuntimeActor['id']; health: number; dead: boolean; scoreEligible?: boolean; phaseLocked: boolean;
     position: [number, number, number]; awake?: boolean; facing?: number; animationTime?: number; attackFlash?: number; redacted?: boolean;
   }>;
   pickups: Array<{ uid: string; collected: boolean }>;
@@ -143,6 +154,15 @@ interface PlayerProjectile {
   remaining: number;
 }
 
+interface AnimatedEffect {
+  readonly family: string;
+  readonly sprite: Sprite;
+  readonly frames: readonly string[];
+  readonly frameDuration: number;
+  elapsed: number;
+  frame: number;
+}
+
 export interface GameplayCommand {
   forward: number;
   strafe: number;
@@ -181,6 +201,25 @@ const isGameplayCommand = (value: unknown): value is GameplayCommand => {
 
 const LEGACY_SAVE_KEY = 'red-ledger-save-v1';
 const STEP = 1 / 35;
+const DIFFICULTY_SCORE_MULTIPLIER: Record<GameDifficulty, number> = {
+  orientation: .75,
+  'desk-adjuster': .9,
+  'field-adjuster': 1,
+  'catastrophe-team': 1.2,
+  'binding-authority': 1.5,
+};
+
+const tallyPercent = (value: number, total: number): number => total > 0 ? Math.round(value / total * 100) : 100;
+
+const performanceGrade = (kills: number, items: number, secrets: number, elapsed: number, parSeconds: number): MapPerformance['grade'] => {
+  const time = elapsed <= parSeconds ? 100 : Math.max(0, 100 - (elapsed / Math.max(1, parSeconds) - 1) * 60);
+  const mastery = kills * .35 + items * .15 + secrets * .25 + time * .25;
+  if (mastery >= 95 && elapsed <= parSeconds) return 'S';
+  if (mastery >= 85) return 'A';
+  if (mastery >= 70) return 'B';
+  if (mastery >= 55) return 'C';
+  return 'D';
+};
 
 export interface ManualSlotSummary {
   slot: number;
@@ -326,6 +365,8 @@ export class GameEngine {
   private pendingWeapon?: WeaponId;
   private renderScale = 1;
   private ambientParticleTimer = 0;
+  private lastMapResult?: MapResult;
+  private readonly animatedEffects: AnimatedEffect[] = [];
 
   private constructor(private readonly canvas: HTMLCanvasElement, readonly assets: AssetCatalog) {
     this.renderer = new WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
@@ -388,6 +429,7 @@ export class GameEngine {
     const map = CAMPAIGN.maps[id];
     if (!map) throw new Error(`Unknown map ${id}`);
     if (!preserveInventory) this.resetInventory();
+    this.clearAnimatedEffects();
     this.assets.disposeTextures();
     this.configureParticleTextures();
     this.world.load(map, DIFFICULTY[this.difficulty].placement);
@@ -400,6 +442,7 @@ export class GameEngine {
     this.playerProjectileSprites.clear();
     this.projectileSequence = 0;
     this.bindingBeam = undefined;
+    this.lastMapResult = undefined;
     this.player.position.set(map.playerStart.x * map.cellSize, 0, map.playerStart.z * map.cellSize);
     this.player.position.y = this.world.floorHeightAt(this.player.position) + 1.35;
     this.player.yaw = ({ north: Math.PI, east: -Math.PI / 2, south: 0, west: Math.PI / 2 })[map.playerStart.facing];
@@ -474,6 +517,7 @@ export class GameEngine {
     this.damageCooldown = Math.max(0, this.damageCooldown - dt);
     this.messageTimer = Math.max(0, this.messageTimer - dt);
     this.particles.update(dt);
+    this.updateAnimatedEffects(dt);
     this.updateAmbientParticles(dt);
     for (const key of Object.keys(this.player.powerups) as Array<keyof PlayerState['powerups']>) {
       this.player.powerups[key] = Math.max(0, this.player.powerups[key] - dt);
@@ -614,8 +658,7 @@ export class GameEngine {
     }
     if (weapon.ammo !== 'none') this.player.ammo[weapon.ammo] -= weapon.ammoCost;
     this.weaponCooldown = weapon.cooldown * (this.player.powerups.rapid > 0 ? .55 : 1);
-    this.audio.noise(.055, weapon.slot >= 5 ? .09 : .045);
-    this.audio.tone(110 + weapon.slot * 28, .08, weapon.slot % 2 ? 'square' : 'sawtooth', .035);
+    this.audio.weaponCue(weapon.id);
     this.enemyBehavior.emitSound(this.player.position, weapon.slot === 8 ? 8 : weapon.slot === 1 ? 12 : 24, 'player');
     const muzzle = this.player.position.clone().addScaledVector(this.aimDirection(), .72).add(new Vector3(0, -.22, 0));
     const muzzleKind: ParticleKind = weapon.id === 'catastrophe-launcher' ? 'ember'
@@ -655,14 +698,19 @@ export class GameEngine {
         if (breakable) {
           this.damageBreakable(breakable.key, this.rollWeaponDamage(weapon.id));
           this.emitParticles('debris', breakable.position.clone().add(new Vector3(0, .6, 0)), 2, direction);
+          if (pellet === 0) this.playWeaponImpact(weapon.id, breakable.position.clone().add(new Vector3(0, .6, 0)));
         } else if (pellet === 0) {
-          this.emitParticles('spark', this.player.position.clone().addScaledVector(direction, Math.min(weapon.range, 9)), 3, direction);
+          const impact = this.traceWorldImpact(direction, weapon.range);
+          this.emitParticles('spark', impact, 3, direction);
+          this.playWeaponImpact(weapon.id, impact);
         }
         window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: weapon.id, kind: 'wall' } }));
         continue;
       }
       this.damageActor(target, this.rollWeaponDamage(weapon.id), 'player');
-      this.emitParticles('ink', target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .55, 0)), weapon.pellets > 1 ? 1 : 4, direction);
+      const impact = target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .55, 0));
+      this.emitParticles('ink', impact, weapon.pellets > 1 ? 1 : 4, direction);
+      if (pellet === 0) this.playWeaponImpact(weapon.id, impact, true);
       window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: weapon.id, kind: 'actor', targetUid: target.uid, killed: target.dead } }));
     }
   }
@@ -670,6 +718,24 @@ export class GameEngine {
   private rollWeaponDamage(id: WeaponId): number {
     const weapon = WEAPONS[id];
     return weapon.damageMin + Math.floor(this.random() * (weapon.damageMax - weapon.damageMin + 1));
+  }
+
+  private traceWorldImpact(direction: Vector3, range: number): Vector3 {
+    const point = this.player.position.clone();
+    for (let distance = .25; distance <= range; distance += .25) {
+      point.copy(this.player.position).addScaledVector(direction, distance);
+      if (this.world.isSolid(point, .04)) return point.clone().addScaledVector(direction, -.12);
+    }
+    return this.player.position.clone().addScaledVector(direction, range);
+  }
+
+  private playWeaponImpact(weapon: WeaponId, position: Vector3, actor = false): void {
+    if (this.accessibility.reducedEffects) return;
+    const family = actor || weapon === 'claim-stamp' ? 'hit-ink-small'
+      : weapon === 'staple-driver' ? 'staple-impact'
+        : weapon === 'twin-bore-riveter' || weapon === 'audit-repeater' ? 'fastener-impact'
+          : 'hit-spark';
+    this.playStandardEffect(family, 4, position, actor ? .7 : .55, .04);
   }
 
   private updateBindingBeam(dt: number): void {
@@ -735,6 +801,9 @@ export class GameEngine {
         if (projectile.weapon === 'catastrophe-launcher') {
           const launcher = WEAPONS['catastrophe-launcher'];
           this.applyPlayerSplash(projectile.position, launcher.splashDamage ?? 128, launcher.splashRadius ?? 3.8, target);
+          this.playStandardEffect('canister-explosion', 8, projectile.position, 2.5, .055);
+        } else {
+          this.playStandardEffect('binding-impact', 8, projectile.position, 1.05, .045);
         }
         this.emitParticles(projectile.weapon === 'catastrophe-launcher' ? 'ember' : 'energy', projectile.position, projectile.weapon === 'catastrophe-launcher' ? 18 : 9, projectile.velocity.clone().normalize());
         if (projectile.weapon === 'catastrophe-launcher') this.emitParticles('smoke', projectile.position, 7);
@@ -773,8 +842,15 @@ export class GameEngine {
     let sprite = this.playerProjectileSprites.get(projectile.id);
     if (!sprite) {
       const family = projectile.weapon === 'catastrophe-launcher' ? 'canister-projectile' : 'plasma-bolt';
-      sprite = this.createEffectSprite(`/public_runtime/effects/${family}/fx_${family}_F_01.png`, projectile.weapon === 'catastrophe-launcher' ? .72 : .46);
+      sprite = this.createEffectSprite(this.standardEffectFrame(family, 1), projectile.weapon === 'catastrophe-launcher' ? .72 : .46);
+      sprite.userData.effectFamily = family;
       this.playerProjectileSprites.set(projectile.id, sprite);
+    }
+    const family = String(sprite.userData.effectFamily);
+    const frame = Math.floor(this.tally.elapsed * 14) % 4 + 1;
+    if (sprite.userData.effectFrame !== frame) {
+      sprite.userData.effectFrame = frame;
+      sprite.material.map = this.assets.texture(this.standardEffectFrame(family, frame));
     }
     sprite.material.depthTest = !this.accessibility.highContrast;
     sprite.renderOrder = this.accessibility.highContrast ? 20 : 0;
@@ -855,7 +931,9 @@ export class GameEngine {
     actor.dead = true;
     actor.health = 0;
     this.tally.kills += 1;
-    if (sourceUid === 'player') {
+    const awardsScore = sourceUid === 'player' && actor.scoreEligible;
+    actor.scoreEligible = false;
+    if (awardsScore) {
       this.momentum.chain = this.momentum.timer > 0 ? this.momentum.chain + 1 : 1;
       this.momentum.best = Math.max(this.momentum.best, this.momentum.chain);
       this.momentum.timer = 4;
@@ -964,6 +1042,10 @@ export class GameEngine {
       difficulty: { reaction: difficulty.reaction, refire: difficulty.refire, projectileSpeed: difficulty.projectileSpeed, aggression: difficulty.aggression },
     });
     result.events.forEach((event) => this.applyEnemyEvent(event, dt, difficulty.enemySpeed, difficulty.enemyDamage));
+    const livePressure = this.world.actors.filter((actor) => actor.awake && !actor.dead && !actor.phaseLocked
+      && this.horizontalDistance(actor.position, this.player.position) < 28).length;
+    const bossPressure = this.world.actors.some((actor) => actor.kind === 'boss' && actor.awake && !actor.dead && !actor.phaseLocked) ? .35 : 0;
+    this.audio.setCombatIntensity(Math.min(1, livePressure / 9 + bossPressure));
     this.syncCombatEffects(result.projectiles, result.hazards);
     this.world.actors.forEach((actor) => this.updateActorVisual(actor));
   }
@@ -1054,6 +1136,8 @@ export class GameEngine {
         this.showMessage('Closed exposure reopened', 1.2);
         this.emitParticles('smoke', target.position.clone().add(new Vector3(0, .4, 0)), 10);
         this.emitParticles('approval', target.position.clone().add(new Vector3(0, .6, 0)), 6);
+        this.playStandardEffect('resurrection-redaction', 8,
+          target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0)), ENEMIES[target.id].height * 1.15, .065);
         break;
       }
       case 'summon':
@@ -1070,6 +1154,23 @@ export class GameEngine {
         if (actor) this.emitParticles('approval', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0)), 20);
         this.showMessage(`${this.pretty(event.phaseId)} phase`, 1.5);
         break;
+      case 'remove-projectile': {
+        const sprite = this.projectileSprites.get(event.projectileId);
+        if (sprite && event.reason === 'impact') {
+          const family = String(sprite.userData.effectFamily ?? '');
+          if (family === 'canister-projectile') this.playStandardEffect('canister-explosion', 8, sprite.position, 2.25, .055);
+          else this.playStandardEffect('binding-impact', 8, sprite.position, 1, .045);
+        }
+        break;
+      }
+      case 'hazard-armed': {
+        const sprite = this.hazardSprites.get(event.hazardId);
+        if (sprite) {
+          const family = String(sprite.userData.effectFamily ?? 'reserve-hazard');
+          this.playStandardEffect(family, family === 'prediction-zone' ? 4 : 6, sprite.position, sprite.scale.x * 1.08, .06);
+        }
+        break;
+      }
       case 'boss-mechanism':
         if (event.mechanism === 'open-add-shutters') this.world.applyBossMechanism('open-add-shutters', event.actorUid);
         else if (event.mechanism === 'disable-left-emitter') this.world.applyBossMechanism('disable-left-emitter', event.actorUid);
@@ -1144,9 +1245,17 @@ export class GameEngine {
     for (const item of projectiles) {
       let sprite = this.projectileSprites.get(item.id);
       if (!sprite) {
-        sprite = this.createEffectSprite(this.projectileEffect(item.kind), Math.max(.4, item.radius * 2.5));
+        const family = this.projectileEffectFamily(item.kind);
+        sprite = this.createEffectSprite(this.standardEffectFrame(family, 1), Math.max(.4, item.radius * 2.5));
+        sprite.userData.effectFamily = family;
         this.projectileSprites.set(item.id, sprite);
         this.emitParticles(item.kind.includes('ember') ? 'ember' : 'energy', new Vector3(item.position.x, item.position.y, item.position.z), 4);
+      }
+      const family = String(sprite.userData.effectFamily);
+      const frame = Math.floor(this.tally.elapsed * 12) % 4 + 1;
+      if (sprite.userData.effectFrame !== frame) {
+        sprite.userData.effectFrame = frame;
+        sprite.material.map = this.assets.texture(this.standardEffectFrame(family, frame));
       }
       sprite.material.depthTest = !this.accessibility.highContrast;
       sprite.renderOrder = this.accessibility.highContrast ? 20 : 0;
@@ -1164,10 +1273,18 @@ export class GameEngine {
       let sprite = this.hazardSprites.get(item.id);
       if (!sprite) {
         const effect = item.kind.includes('prediction') || item.kind.includes('actuarial') ? 'prediction-zone' : 'reserve-hazard';
-        sprite = this.createEffectSprite(`/public_runtime/effects/${effect}/fx_${effect}_F_01.png`, item.radius * 2);
+        sprite = this.createEffectSprite(this.standardEffectFrame(effect, 1), item.radius * 2);
+        sprite.userData.effectFamily = effect;
         sprite.center.set(.5, .18);
         this.hazardSprites.set(item.id, sprite);
         this.emitParticles(effect === 'prediction-zone' ? 'energy' : 'ember', new Vector3(item.position.x, .15, item.position.z), 8);
+      }
+      const family = String(sprite.userData.effectFamily);
+      const frameCount = family === 'prediction-zone' ? 4 : 6;
+      const frame = Math.floor(this.tally.elapsed * 8) % frameCount + 1;
+      if (sprite.userData.effectFrame !== frame) {
+        sprite.userData.effectFrame = frame;
+        sprite.material.map = this.assets.texture(this.standardEffectFrame(family, frame));
       }
       sprite.position.set(item.position.x, .08, item.position.z);
       sprite.material.opacity = item.armed ? .86 : .48;
@@ -1185,13 +1302,57 @@ export class GameEngine {
     return sprite;
   }
 
-  private projectileEffect(kind: string): string {
-    const family = kind.includes('ember') ? 'ember-claim-fire'
+  private projectileEffectFamily(kind: string): string {
+    return kind.includes('ember') ? 'ember-claim-fire'
       : kind.includes('coverage') ? 'coverage-bolt'
         : kind.includes('liability') ? 'liability-orb'
+          : kind.includes('paired') || kind.includes('reserve-spill') || kind.includes('redaction') ? 'denial-packet'
           : kind.includes('canister') ? 'canister-projectile'
             : 'plasma-bolt';
-    return `/public_runtime/effects/${family}/fx_${family}_F_01.png`;
+  }
+
+  private standardEffectFrame(family: string, frame: number): string {
+    return `/public_runtime/effects/${family}/fx_${family}_F_${String(frame).padStart(2, '0')}.png`;
+  }
+
+  private playStandardEffect(family: string, frameCount: number, position: Vector3, size: number, frameDuration: number): void {
+    const frames = Array.from({ length: frameCount }, (_, index) => this.standardEffectFrame(family, index + 1));
+    this.playAnimatedEffect(family, frames, position, size, frameDuration);
+  }
+
+  private playAnimatedEffect(family: string, frames: readonly string[], position: Vector3, size: number, frameDuration: number): void {
+    if (this.accessibility.reducedEffects || frames.length === 0) return;
+    while (this.animatedEffects.length >= 48) this.removeAnimatedEffect(0);
+    const sprite = this.createEffectSprite(frames[0], size);
+    sprite.position.copy(position);
+    sprite.renderOrder = this.accessibility.highContrast ? 21 : 1;
+    this.animatedEffects.push({ family, sprite, frames, frameDuration, elapsed: 0, frame: 0 });
+  }
+
+  private updateAnimatedEffects(dt: number): void {
+    for (let index = this.animatedEffects.length - 1; index >= 0; index -= 1) {
+      const effect = this.animatedEffects[index];
+      effect.elapsed += dt;
+      const frame = Math.floor(effect.elapsed / effect.frameDuration);
+      if (frame >= effect.frames.length) {
+        this.removeAnimatedEffect(index);
+        continue;
+      }
+      if (frame === effect.frame) continue;
+      effect.frame = frame;
+      effect.sprite.material.map = this.assets.texture(effect.frames[frame]);
+    }
+  }
+
+  private removeAnimatedEffect(index: number): void {
+    const [effect] = this.animatedEffects.splice(index, 1);
+    if (!effect) return;
+    this.world.root.remove(effect.sprite);
+    effect.sprite.material.dispose();
+  }
+
+  private clearAnimatedEffects(): void {
+    while (this.animatedEffects.length) this.removeAnimatedEffect(this.animatedEffects.length - 1);
   }
 
   private damagePlayer(amount: number, sourceUid?: string): void {
@@ -1498,13 +1659,48 @@ export class GameEngine {
     this.audio.tone(240, .18, 'square', .045);
     if (this.accessibility.reducedEffects) return;
     this.emitParticles('approval', position.clone().add(new Vector3(0, .35, 0)), 18);
-    const sprite = this.createEffectSprite('/public_runtime/effects/teleport-approval-ring/fx_teleport-approval-ring_peak.png', 2.2);
-    sprite.position.copy(position).setY(this.world.floorHeightAt(position) + .08);
-    window.setTimeout(() => { this.world.root.remove(sprite); sprite.material.dispose(); }, 320);
+    const frames = ['start', 'expand-01', 'expand-02', 'expand-03', 'peak', 'collapse-01', 'collapse-02', 'end']
+      .map((frame) => `/public_runtime/effects/teleport-approval-ring/fx_teleport-approval-ring_${frame}.png`);
+    const point = position.clone().addScaledVector(this.aimDirection(), 1.45).setY(this.world.floorHeightAt(position) + .85);
+    this.playAnimatedEffect('teleport-approval-ring', frames, point, 1.8, .075);
   }
 
   private completeMap(nextMap?: MapId): void {
-    this.persistence.completeMap(this.world.map.id);
+    const killsPercent = tallyPercent(this.tally.kills, this.tally.totalKills);
+    const itemsPercent = tallyPercent(this.tally.items, this.tally.totalItems);
+    const secretsPercent = tallyPercent(this.tally.secrets, this.tally.totalSecrets);
+    const secretRoute = Boolean(nextMap && nextMap === this.world.map.secretExitTo);
+    const completionBonus = (killsPercent === 100 ? 1000 : 0)
+      + (itemsPercent === 100 ? 500 : 0)
+      + (secretsPercent === 100 ? 1500 : 0)
+      + (this.tally.elapsed <= this.world.map.parSeconds ? 1000 : 0)
+      + (secretRoute ? 1000 : 0);
+    this.momentum.score = Math.round((this.momentum.score + completionBonus) * DIFFICULTY_SCORE_MULTIPLIER[this.difficulty]);
+    const performance: MapPerformance = {
+      mapId: this.world.map.id,
+      difficulty: this.difficulty,
+      elapsed: this.tally.elapsed,
+      parSeconds: this.world.map.parSeconds,
+      score: this.momentum.score,
+      bestChain: this.momentum.best,
+      killsPercent,
+      itemsPercent,
+      secretsPercent,
+      grade: performanceGrade(killsPercent, itemsPercent, secretsPercent, this.tally.elapsed, this.world.map.parSeconds),
+    };
+    const before = this.persistence.campaignUnlocks().records[`${performance.mapId}:${performance.difficulty}`];
+    const progress = this.persistence.completeMap(this.world.map.id, performance, secretRoute ? nextMap : undefined);
+    const record = progress.records[`${performance.mapId}:${performance.difficulty}`];
+    const newBests = before ? [
+      ...(performance.elapsed < before.bestTime ? ['Best time'] : []),
+      ...(performance.score > before.highScore ? ['High score'] : []),
+      ...(performance.bestChain > before.bestChain ? ['Best chain'] : []),
+      ...(performance.killsPercent > before.bestKillsPercent ? ['Threat mastery'] : []),
+      ...(performance.itemsPercent > before.bestItemsPercent ? ['Item mastery'] : []),
+      ...(performance.secretsPercent > before.bestSecretsPercent ? ['Secret mastery'] : []),
+      ...(performance.grade !== before.bestGrade && record.bestGrade === performance.grade ? ['Grade'] : []),
+    ] : ['First clear'];
+    this.lastMapResult = { performance, record, completionBonus, newBests, secretRoute };
     if (this.world.map.index === 8) {
       const episode = CAMPAIGN.episodes.find((candidate) => candidate.id === this.world.map.episode);
       const nextEpisode = episode && CAMPAIGN.episodes[episode.number];
@@ -1607,7 +1803,7 @@ export class GameEngine {
         credentials: [...this.player.credentials], floorPlan: this.player.floorPlan, powerups: { ...this.player.powerups },
       },
       actors: this.world.actors.map((actor) => ({
-        uid: actor.uid, kind: actor.kind, id: actor.id, health: actor.health, dead: actor.dead, phaseLocked: actor.phaseLocked,
+        uid: actor.uid, kind: actor.kind, id: actor.id, health: actor.health, dead: actor.dead, scoreEligible: actor.scoreEligible, phaseLocked: actor.phaseLocked,
         position: actor.position.toArray(), awake: actor.awake, facing: actor.facing, animationTime: actor.animationTime, attackFlash: actor.attackFlash,
         ...((actor as RuntimeActor & { redacted?: boolean }).redacted ? { redacted: true } : {}),
       })),
@@ -1764,6 +1960,7 @@ export class GameEngine {
         if (!actor) continue;
         actor.health = saved.health;
         actor.dead = saved.dead;
+        actor.scoreEligible = saved.scoreEligible ?? !saved.dead;
         actor.phaseLocked = saved.phaseLocked ?? false;
         actor.awake = saved.awake ?? actor.awake;
         actor.facing = saved.facing ?? actor.facing;
@@ -1852,6 +2049,7 @@ export class GameEngine {
 
   hasSave(): boolean { return Boolean(this.persistence.newestValidContinue()); }
   get pendingMap(): MapId | undefined { return this.nextMap; }
+  get mapResult(): MapResult | undefined { return this.lastMapResult; }
 
   startDemoRecording(): boolean {
     if (this.mode !== 'playing' || !this.world.map || this.demoRecorder) return false;
@@ -1903,13 +2101,9 @@ export class GameEngine {
     return Boolean(episode && this.persistence.isEpisodeUnlocked(episode.id));
   }
 
-  campaignProgress(): { completedMaps: readonly string[]; completedEpisodes: readonly string[]; unlockedEpisodes: readonly string[] } {
+  campaignProgress(): CampaignUnlocks {
     const progress = this.persistence.campaignUnlocks();
-    return {
-      completedMaps: progress.completedMaps,
-      completedEpisodes: progress.completedEpisodes,
-      unlockedEpisodes: progress.unlockedEpisodes,
-    };
+    return { ...progress, completedMaps: progress.completedMaps, completedEpisodes: progress.completedEpisodes };
   }
 
   setRadialSelecting(active: boolean): void { this.radialSelecting = active; }
@@ -1924,7 +2118,9 @@ export class GameEngine {
     const progress = this.persistence.campaignUnlocks();
     const episode = CAMPAIGN.episodes.find((candidate) => candidate.id === map.episode)!;
     const mapIndex = episode.maps.indexOf(map.id);
-    const available = mapIndex === 0 || progress.completedMaps.includes(map.id) || progress.completedMaps.includes(episode.maps[mapIndex - 1]);
+    const available = map.secretMap
+      ? progress.discoveredSecretMaps.includes(map.id) || progress.completedMaps.includes(map.id)
+      : mapIndex === 0 || progress.completedMaps.includes(map.id) || progress.completedMaps.includes(episode.maps[mapIndex - 1]);
     if (!available) throw new Error(`Locked map ${mapId}`);
     this.difficulty = difficulty;
     this.resetInventory();
@@ -2013,8 +2209,9 @@ export class GameEngine {
   debugUse(): void { this.use(); }
   debugFire(): void { this.weaponCooldown = 0; this.fireWeapon(); }
 
-  debugTeleportToTrigger(action: string): boolean {
+  debugTeleportToTrigger(action: string, target?: string): boolean {
     const trigger = this.world.map.triggers.find((candidate) => candidate.action === action
+      && (!target || candidate.targets.includes(target))
       && (candidate.repeatable || !this.triggered.has(candidate.id)));
     if (!trigger) return false;
     this.debugTeleport(trigger.x * this.world.map.cellSize, trigger.z * this.world.map.cellSize);
@@ -2097,6 +2294,7 @@ export class GameEngine {
         hazards: this.enemyBehavior.serialize().hazards.map((item) => ({ id: item.id, kind: item.kind, armed: item.armed, x: +item.position.x.toFixed(2), z: +item.position.z.toFixed(2), remaining: +item.remaining.toFixed(2) })),
         playerProjectiles: this.playerProjectiles.map((item) => ({ id: item.id, weapon: item.weapon, x: +item.position.x.toFixed(2), z: +item.position.z.toFixed(2), remaining: +item.remaining.toFixed(2) })),
         bindingPulses: this.bindingBeam?.pulses ?? 0,
+        animated: this.animatedEffects.map((effect) => ({ family: effect.family, frame: effect.frame + 1 })),
         particles: { active: this.particles.activeCount, capacity: this.particles.capacity, byKind: this.particles.counts() },
       },
       bosses: this.world.actors.filter((actor) => actor.kind === 'boss').map((actor) => ({ id: actor.id, health: actor.health, dead: actor.dead, phaseLocked: actor.phaseLocked })),

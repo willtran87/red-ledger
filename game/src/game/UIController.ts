@@ -7,6 +7,17 @@ import { runtimeUrl } from './AssetCatalog';
 
 type PortraitState = 'neutral' | 'pain-center' | 'pain-left' | 'pain-right' | 'glance-left' | 'glance-right' | 'weapon-acquired' | 'overcharge' | 'invulnerable' | 'dead';
 
+const DIFFICULTY_OPTIONS: ReadonlyArray<{ id: GameDifficulty; label: string; detail: string }> = [
+  { id: 'orientation', label: 'Orientation', detail: 'Story-focused. More supplies, slower threats, forgiving damage.' },
+  { id: 'desk-adjuster', label: 'Desk Adjuster', detail: 'A measured first campaign with generous recovery.' },
+  { id: 'field-adjuster', label: 'Field Adjuster', detail: 'Recommended. The intended balance of pressure, supplies, and speed.' },
+  { id: 'catastrophe-team', label: 'Catastrophe Team', detail: 'Hard placements and lean supplies demand route mastery.' },
+  { id: 'binding-authority', label: 'Binding Authority', detail: 'Relentless speed and damage for fully mastered files.' },
+];
+
+const formatTime = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+const formatLabel = (value: string): string => value.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
+
 const $ = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
   if (!element) throw new Error(`Missing UI element: ${selector}`);
@@ -88,16 +99,13 @@ export class UIController {
 
   private buildDifficulties(): void {
     const container = $('#difficulty-actions');
-    const difficulties: Array<[GameDifficulty, string]> = [
-      ['orientation', 'Orientation'],
-      ['desk-adjuster', 'Desk Adjuster'],
-      ['field-adjuster', 'Field Adjuster'],
-      ['catastrophe-team', 'Catastrophe Team'],
-      ['binding-authority', 'Binding Authority'],
-    ];
-    difficulties.forEach(([id, label]) => {
+    const detail = $('#difficulty-detail');
+    const describe = (copy: string) => { detail.textContent = copy; };
+    DIFFICULTY_OPTIONS.forEach(({ id, label, detail: copy }) => {
       const button = document.createElement('button');
-      button.textContent = label;
+      button.textContent = id === 'field-adjuster' ? `${label} - Recommended` : label;
+      button.addEventListener('focus', () => describe(copy));
+      button.addEventListener('mouseenter', () => describe(copy));
       button.addEventListener('click', () => {
         this.game.audio.unlock();
         this.pendingDifficulty = id;
@@ -105,6 +113,7 @@ export class UIController {
       });
       container.append(button);
     });
+    describe(DIFFICULTY_OPTIONS.find(({ id }) => id === 'field-adjuster')!.detail);
   }
 
   private bindActions(): void {
@@ -264,7 +273,12 @@ export class UIController {
     $('#keys').innerHTML = [...snapshot.player.credentials].map((key) => `<img alt="${key}" src="${runtimeUrl(`public_runtime/ui/icons/credential-${key}.png`)}">`).join('');
     const bossBar = $('#boss-bar');
     bossBar.toggleAttribute('hidden', !snapshot.boss);
-    if (snapshot.boss) bossBar.querySelector<HTMLElement>('span')!.style.width = `${Math.max(0, snapshot.boss.health / snapshot.boss.maxHealth * 100)}%`;
+    if (snapshot.boss) {
+      bossBar.querySelector<HTMLElement>('strong')!.textContent = formatLabel(snapshot.boss.id);
+      const phase = this.game.enemyBehavior.getActorState(snapshot.boss.uid)?.phaseId;
+      bossBar.querySelector<HTMLElement>('small')!.textContent = phase ? formatLabel(phase) : 'Active';
+      bossBar.querySelector<HTMLElement>('span')!.style.width = `${Math.max(0, snapshot.boss.health / snapshot.boss.maxHealth * 100)}%`;
+    }
     $('#hud').classList.toggle('active', snapshot.mode === 'playing' || snapshot.mode === 'paused');
     if (snapshot.mode === 'paused' && this.lastMode !== 'paused') this.showScreen('pause-menu');
     if (snapshot.mode === 'dead' && this.lastMode !== 'dead') this.showScreen('death-menu');
@@ -321,6 +335,45 @@ export class UIController {
     context.arc(px, pz, 2.5, 0, Math.PI * 2); context.fill();
     context.strokeStyle = '#d9232e'; context.beginPath(); context.moveTo(px, pz);
     context.lineTo(px - Math.sin(snapshot.player.yaw) * 7, pz - Math.cos(snapshot.player.yaw) * 7); context.stroke();
+
+    const mapPoint = (x: number, z: number) => ({ x: ox + x / snapshot.map.cellSize * scale, y: oy + z / snapshot.map.cellSize * scale });
+    this.game.world.doors.forEach((door) => {
+      if (!snapshot.player.floorPlan && !this.game.world.visitedTiles.has(`${door.x},${door.z}`)) return;
+      const point = mapPoint((door.x + .5) * snapshot.map.cellSize, (door.z + .5) * snapshot.map.cellSize);
+      context.fillStyle = door.open ? '#646a70' : door.credential === 'red' ? '#d9232e' : door.credential === 'yellow' ? '#e2b93b' : door.credential === 'cyan' ? '#47bcd1' : '#f4f1ea';
+      context.fillRect(point.x - 2, point.y - (door.open ? 1 : 3), 4, door.open ? 2 : 6);
+    });
+    const exit = mapPoint(snapshot.map.exit.x * snapshot.map.cellSize, snapshot.map.exit.z * snapshot.map.cellSize);
+    context.strokeStyle = '#ffe17a'; context.lineWidth = 1.5; context.beginPath();
+    context.moveTo(exit.x - 4, exit.y - 4); context.lineTo(exit.x + 4, exit.y + 4);
+    context.moveTo(exit.x + 4, exit.y - 4); context.lineTo(exit.x - 4, exit.y + 4); context.stroke();
+    this.game.world.pickups.filter((pickup) => !pickup.collected).forEach((pickup) => {
+      const tile = `${Math.floor(pickup.position.x / snapshot.map.cellSize)},${Math.floor(pickup.position.z / snapshot.map.cellSize)}`;
+      if (!snapshot.player.floorPlan && !this.game.world.visitedTiles.has(tile)) return;
+      const point = mapPoint(pickup.position.x, pickup.position.z);
+      context.fillStyle = pickup.kind === 'credential' ? '#ffe17a' : pickup.kind === 'weapon' ? '#d9232e' : '#47bcd1';
+      context.fillRect(point.x - 1.5, point.y - 1.5, 3, 3);
+    });
+    if (snapshot.player.powerups.forensic > 0) this.game.world.actors.filter((actor) => !actor.dead && !actor.phaseLocked).forEach((actor) => {
+      const point = mapPoint(actor.position.x, actor.position.z);
+      context.fillStyle = actor.kind === 'boss' ? '#ffe17a' : '#d9232e';
+      context.beginPath(); context.arc(point.x, point.y, actor.kind === 'boss' ? 2.5 : 1.5, 0, Math.PI * 2); context.fill();
+    });
+    snapshot.map.triggers.filter((trigger) => !this.game.world.activatedMechanisms.has(trigger.id)
+      && this.game.world.visitedTiles.has(`${Math.floor(trigger.x)},${Math.floor(trigger.z)}`)
+      && ['open-door', 'toggle-sectors', 'lower-floor', 'raise-floor', 'drain-liquid', 'flood-liquid', 'move-walls'].includes(trigger.action))
+      .forEach((trigger) => {
+        const point = mapPoint(trigger.x * snapshot.map.cellSize, trigger.z * snapshot.map.cellSize);
+        context.fillStyle = '#e2b93b'; context.fillRect(point.x - 2, point.y - 2, 4, 4);
+      });
+    snapshot.map.secrets.filter((secret) => this.game.world.discoveredSecrets.has(secret.id)).forEach((secret) => {
+      const point = mapPoint(secret.at.x * snapshot.map.cellSize, secret.at.z * snapshot.map.cellSize);
+      context.strokeStyle = '#fffdf7'; context.strokeRect(point.x - 3, point.y - 3, 6, 6);
+    });
+    if (this.automapMode === 'full') {
+      context.fillStyle = '#d4d2cb'; context.font = '6px monospace';
+      context.fillText('EXIT X   DOOR |   RESOURCE []   CONTROL []', 7, canvas.height - 7);
+    }
   }
 
   private showIntermission(): void {
@@ -328,22 +381,29 @@ export class UIController {
     const art = this.game.world.map.index === 8 ? `episode-${episode}-outro` : `intermission-episode-${episode}`;
     $('#intermission-art').setAttribute('src', runtimeUrl(`public_runtime/ui/illustrations/${art}.png`));
     const tally = this.game.tally;
+    const result = this.game.mapResult;
     const percent = (value: number, total: number) => total ? Math.round(value / total * 100) : 100;
+    $('#intermission-grade').textContent = result ? result.performance.grade : '-';
     $('#tally').textContent = [
       `${this.game.world.map.id}: ${this.game.world.map.title}`,
       `Threats ${tally.kills}/${tally.totalKills}  ${percent(tally.kills, tally.totalKills)}%`,
       `Items   ${tally.items}/${tally.totalItems}  ${percent(tally.items, tally.totalItems)}%`,
       `Secrets ${tally.secrets}/${tally.totalSecrets}  ${percent(tally.secrets, tally.totalSecrets)}%`,
       `Score   ${this.game.momentum.score}`,
+      ...(result?.completionBonus ? [`Clear bonus +${result.completionBonus}`] : []),
       `Best chain x${this.game.momentum.best}`,
-      `Time    ${Math.floor(tally.elapsed / 60)}:${String(Math.floor(tally.elapsed % 60)).padStart(2, '0')}`,
+      `Time    ${formatTime(tally.elapsed)} / Par ${formatTime(this.game.world.map.parSeconds)}`,
+      ...(result ? [`Record  ${formatTime(result.record.bestTime)} / ${result.record.highScore} pts / ${result.record.completions} clear${result.record.completions === 1 ? '' : 's'}`] : []),
     ].join('\n');
+    $('#result-bests').textContent = result?.newBests.length ? `NEW: ${result.newBests.join(' / ')}` : 'Record held';
     const episodeMaps = CAMPAIGN.episodes[episode - 1].maps;
-    const currentIndex = episodeMaps.indexOf(this.game.world.map.id);
-    $('#episode-progress').replaceChildren(...episodeMaps.map((id, index) => {
+    const progress = this.game.campaignProgress();
+    const visibleMaps = episodeMaps.filter((id) => !CAMPAIGN.maps[id].secretMap
+      || id === this.game.world.map.id || progress.discoveredSecretMaps.includes(id) || progress.completedMaps.includes(id));
+    $('#episode-progress').replaceChildren(...visibleMaps.map((id) => {
       const marker = document.createElement('span');
       marker.textContent = id;
-      marker.className = index < currentIndex ? 'complete' : index === currentIndex ? 'current' : '';
+      marker.className = id === this.game.world.map.id ? 'current' : progress.completedMaps.includes(id) ? 'complete' : '';
       return marker;
     }));
     this.showScreen('intermission');
@@ -405,7 +465,8 @@ export class UIController {
     if ($<HTMLInputElement>('#reduced-effects').checked || weapon === 'claim-stamp') return;
     const flash = $<HTMLElement>('#muzzle-flash');
     const frame = weapon === 'binding-engine' || weapon === 'plasma-copier' ? 6
-      : weapon === 'catastrophe-launcher' ? 5 : weapon === 'umbra-saw' ? 4 : weapon === 'audit-repeater' ? 3 : 2;
+      : weapon === 'catastrophe-launcher' ? 7 : weapon === 'umbra-saw' ? 5
+        : weapon === 'audit-repeater' || weapon === 'twin-bore-riveter' ? 3 : 2;
     const anchors: Partial<Record<keyof typeof WEAPONS, [number, number]>> = {
       'staple-driver': [50, 35], 'audit-repeater': [49, 34], 'twin-bore-riveter': [51, 36],
       'catastrophe-launcher': [52, 35], 'plasma-copier': [50, 34], 'binding-engine': [50, 33], 'umbra-saw': [53, 32],
@@ -558,6 +619,7 @@ export class UIController {
     else { this.automapVisible = true; this.automapMode = mode; }
     canvas.classList.toggle('overlay', this.automapMode === 'overlay');
     canvas.toggleAttribute('hidden', !this.automapVisible);
+    $('#hud').classList.toggle('full-automap', this.automapVisible && this.automapMode === 'full');
   }
 
   private showSlotScreen(mode: 'save' | 'load'): void {
@@ -620,24 +682,45 @@ export class UIController {
     const container = $('#level-select-list');
     container.replaceChildren();
     const progress = this.game.campaignProgress();
-    (Object.keys(CAMPAIGN.maps) as MapId[]).forEach((id) => {
-      const map = CAMPAIGN.maps[id];
-      const episodeIndex = Number(id[1]) - 1;
-      const episode = CAMPAIGN.episodes[episodeIndex];
-      const mapIndex = episode.maps.indexOf(id);
-      const unlocked = this.game.isEpisodeUnlocked(episodeIndex)
-        && (mapIndex === 0 || progress.completedMaps.includes(id) || progress.completedMaps.includes(episode.maps[mapIndex - 1]));
-      const button = document.createElement('button');
-      button.textContent = `${id} ${map.title}`;
-      button.disabled = !unlocked;
-      button.title = unlocked ? `Start ${id}` : `${id} - locked`;
-      button.addEventListener('click', () => {
-        this.game.audio.unlock();
-        this.game.startMapFromSelect(id, 'field-adjuster');
-        this.prepareGameEntry();
+    const difficulty = $<HTMLSelectElement>('#level-select-difficulty');
+    difficulty.value = this.pendingDifficulty;
+    CAMPAIGN.episodes.forEach((episode, episodeIndex) => {
+      if (!this.game.isEpisodeUnlocked(episodeIndex)) return;
+      const section = document.createElement('section');
+      section.className = 'level-episode';
+      const heading = document.createElement('h2');
+      heading.textContent = `Episode ${episode.number}: ${episode.title}`;
+      const grid = document.createElement('div');
+      grid.className = 'level-map-grid';
+      episode.maps.forEach((id, mapIndex) => {
+        const map = CAMPAIGN.maps[id];
+        const secretKnown = progress.discoveredSecretMaps.includes(id) || progress.completedMaps.includes(id);
+        if (map.secretMap && !secretKnown) return;
+        const unlocked = map.secretMap ? secretKnown
+          : mapIndex === 0 || progress.completedMaps.includes(id) || progress.completedMaps.includes(episode.maps[mapIndex - 1]);
+        const record = progress.records[`${id}:${difficulty.value}`];
+        const button = document.createElement('button');
+        const label = document.createElement('strong');
+        label.textContent = `${id} ${map.title}`;
+        const detail = document.createElement('small');
+        detail.textContent = record
+          ? `Grade ${record.bestGrade}  PB ${formatTime(record.bestTime)}  ${record.highScore} pts`
+          : `Par ${formatTime(map.parSeconds)}`;
+        button.append(label, detail);
+        button.disabled = !unlocked;
+        button.title = unlocked ? `Start ${id}` : `${id} - locked`;
+        button.addEventListener('click', () => {
+          this.game.audio.unlock();
+          this.pendingDifficulty = difficulty.value as GameDifficulty;
+          this.game.startMapFromSelect(id, this.pendingDifficulty);
+          this.prepareGameEntry();
+        });
+        grid.append(button);
       });
-      container.append(button);
+      section.append(heading, grid);
+      container.append(section);
     });
+    difficulty.onchange = () => this.showLevelSelect();
     this.showScreen('level-select');
   }
 
@@ -845,7 +928,10 @@ export class UIController {
     this.hideScreens();
     const screen = $<HTMLElement>(`#${id}`);
     screen.classList.add('active');
-    requestAnimationFrame(() => screen.querySelector<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled)')?.focus());
+    requestAnimationFrame(() => {
+      screen.querySelector<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled)')?.focus({ preventScroll: true });
+      screen.scrollTop = 0;
+    });
   }
 
   private confirm(title: string, copy: string, acceptLabel: string, action: () => void): void {

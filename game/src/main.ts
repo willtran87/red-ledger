@@ -41,7 +41,9 @@ if (import.meta.env.DEV) {
     teleportToExit: () => game.debugTeleportToExit(),
     use: () => game.debugUse(),
     fire: () => game.debugFire(),
-    teleportToTrigger: (action) => game.debugTeleportToTrigger(action),
+    pause: () => game.pause(),
+    resume: () => game.resume(),
+    teleportToTrigger: (action, target) => game.debugTeleportToTrigger(action, target),
     defeatActor: (id) => game.debugDefeatActor(id),
     teleportNearActor: (id, distance) => game.debugTeleportNearActor(id, distance),
     startDemo: () => game.startDemoRecording(),
@@ -71,7 +73,9 @@ declare global {
       teleportToExit: () => void;
       use: () => void;
       fire: () => void;
-      teleportToTrigger: (action: string) => boolean;
+      pause: () => void;
+      resume: () => void;
+      teleportToTrigger: (action: string, target?: string) => boolean;
       defeatActor: (id: string) => boolean;
       teleportNearActor: (id: string, distance?: number) => boolean;
       startDemo: () => boolean;
