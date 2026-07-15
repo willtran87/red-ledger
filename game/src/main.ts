@@ -8,33 +8,51 @@ if (!canvas) throw new Error('Game canvas is missing');
 const showFatalError = (reason: unknown): void => {
   const message = reason instanceof Error ? reason.message : String(reason || 'Unknown startup error');
   document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
+  ['#ready-overlay', '#replay-controls', '#runtime-warning'].forEach((selector) => {
+    document.querySelector<HTMLElement>(selector)?.toggleAttribute('hidden', true);
+  });
+  const dialog = document.querySelector<HTMLDialogElement>('#confirm-dialog');
+  if (dialog?.open) dialog.close();
   const screen = document.querySelector<HTMLElement>('#fatal-error');
   const copy = document.querySelector<HTMLElement>('#fatal-error-copy');
+  const reload = document.querySelector<HTMLButtonElement>('#fatal-reload');
   if (copy) copy.textContent = `The renderer or asset library could not initialize. ${message}`;
+  document.querySelector<HTMLElement>('#bootstrap-status')?.toggleAttribute('hidden', true);
+  document.querySelector<HTMLElement>('#game-shell')?.setAttribute('aria-busy', 'false');
   screen?.classList.add('active');
+  reload?.focus({ preventScroll: true });
 };
 
+document.querySelector<HTMLButtonElement>('#fatal-reload')?.addEventListener('click', () => location.reload());
+
+let game: GameEngine | undefined;
 canvas.addEventListener('webglcontextlost', (event) => {
   event.preventDefault();
+  game?.shutdownForFatal();
   showFatalError(new Error('The graphics context was lost. Reload to continue.'));
 });
 
-let game: GameEngine;
 try {
   game = await GameEngine.create(canvas);
 } catch (error) {
   showFatalError(error);
-  throw error;
 }
-new UIController(game);
+if (game) initializeGame(game);
 
-window.render_game_to_text = () => game.renderText();
-window.advanceTime = (milliseconds: number) => game.step(milliseconds / 1000);
-if (import.meta.env.DEV) {
-  window.__redLedger = {
+function initializeGame(activeGame: GameEngine): void {
+  new UIController(activeGame);
+  document.querySelector<HTMLElement>('#bootstrap-status')?.toggleAttribute('hidden', true);
+  document.querySelector<HTMLElement>('#game-shell')?.setAttribute('aria-busy', 'false');
+  window.render_game_to_text = () => activeGame.renderText();
+  window.advanceTime = (milliseconds: number) => activeGame.step(milliseconds / 1000);
+  if (import.meta.env.DEV) {
+    const game = activeGame;
+    window.__redLedger = {
     loadMap: (id) => game.loadMap(id),
     teleport: (x, z) => game.debugTeleport(x, z),
     defeatAll: () => game.debugDefeatAll(),
+    defeatPlayer: () => game.debugDefeatPlayer(),
+    setAmmo: (type, amount) => game.debugSetAmmo(type, amount),
     defeatEncounter: (id) => game.debugDefeatEncounter(id),
     defeatMandatory: (id) => game.debugDefeatMandatory(id),
     teleportToPickup: (kind, id) => game.debugTeleportToPickup(kind, id),
@@ -61,7 +79,8 @@ if (import.meta.env.DEV) {
         detail: { action: 'weapon-radial', source: 'gamepad', repeat: false },
       }));
     },
-  };
+    };
+  }
 }
 
 declare global {
@@ -72,6 +91,8 @@ declare global {
       loadMap: (id: import('./data').MapId) => void;
       teleport: (x: number, z: number) => void;
       defeatAll: () => void;
+      defeatPlayer: () => void;
+      setAmmo: (type: Exclude<import('./game/definitions').AmmoType, 'none'>, amount: number) => void;
       defeatEncounter: (id: string) => number;
       defeatMandatory: (id: string) => number;
       teleportToPickup: (kind: 'pickup' | 'weapon' | 'credential', id?: string) => boolean;

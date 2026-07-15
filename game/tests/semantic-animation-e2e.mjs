@@ -28,6 +28,7 @@ await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').first().click();
 await page.click('#begin-episode');
 if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
 await page.evaluate(() => window.__redLedger.loadMap('E1M3'));
 assert(await page.evaluate(() => window.__redLedger.teleportNearActor('liability-mass', 8)), 'No Liability Mass available');

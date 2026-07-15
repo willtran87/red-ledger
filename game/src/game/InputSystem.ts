@@ -300,6 +300,7 @@ export class InputSystem {
     source: 'keyboard' | 'mouse' | 'gamepad' | 'touch',
     includeMenu = true,
   ): void {
+    const pauseOwnsSharedBack = actions.includes('pause') && actions.includes('menu-back');
     for (const action of actions) {
       const canonical = CANONICAL_KEY[action];
       if (canonical) this.keys.add(canonical);
@@ -320,7 +321,9 @@ export class InputSystem {
       if (action === 'automap' && !repeat && source === 'gamepad') window.dispatchEvent(new CustomEvent('gamepad-automap'));
       if (action === 'automap-overlay' && !repeat) this.keys.add('KeyO');
       const menuAction = MENU_ACTIONS[action];
-      if (menuAction && includeMenu && this.menuNavigationEnabled) this.emitMenuNavigation(menuAction, source === 'gamepad' ? 'gamepad' : 'keyboard', repeat);
+      if (menuAction && includeMenu && this.menuNavigationEnabled && !(pauseOwnsSharedBack && action === 'menu-back')) {
+        this.emitMenuNavigation(menuAction, source === 'gamepad' ? 'gamepad' : 'keyboard', repeat);
+      }
       if (!repeat) {
         const detail = { action, source, repeat } satisfies InputActionEvent;
         window.dispatchEvent(new CustomEvent<InputActionEvent>('input-action', { detail }));

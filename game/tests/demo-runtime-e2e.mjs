@@ -14,6 +14,7 @@ await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
 await page.click('#begin-episode');
 if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
 const result = await page.evaluate(() => {
   const api = window.__redLedger;

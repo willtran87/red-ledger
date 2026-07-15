@@ -19,12 +19,31 @@ const run = (label, args, env = {}) => new Promise((resolve, reject) => {
   });
 });
 
-const waitForServer = async (url, timeoutMs = 15_000) => {
+const runWithRetry = async (label, args, env = {}, attempts = 1) => {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await run(label, args, env);
+      return;
+    } catch (error) {
+      if (attempt === attempts) throw error;
+      console.warn(`[release] ${label} missed attempt ${attempt}/${attempts}; retrying after browser cleanup`);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
+};
+
+const waitForServer = async (url, child, timeoutMs = 15_000) => {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      throw new Error(`Vite exited before becoming ready at ${url}`);
+    }
     try {
       const response = await fetch(url);
-      if (response.ok) return;
+      if (response.ok) {
+        if (child.exitCode !== null || child.signalCode !== null) throw new Error(`Vite exited while checking ${url}`);
+        return;
+      }
     } catch { /* Server is still starting. */ }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
@@ -43,6 +62,7 @@ server.stdout.on('data', (chunk) => { serverLog += chunk; });
 server.stderr.on('data', (chunk) => { serverLog += chunk; });
 
 const browserTests = [
+  ['lifecycle and active-combat performance', 'tests/lifecycle-performance-e2e.mjs', 2],
   ['gameplay', 'tests/gameplay-e2e.mjs'],
   ['campaign runtime', 'tests/campaign-runtime-e2e.mjs'],
   ['progression', 'tests/progression-e2e.mjs'],
@@ -54,8 +74,11 @@ const browserTests = [
   ['save management and recovery', 'tests/save-management-e2e.mjs'],
   ['deterministic demos', 'tests/demo-runtime-e2e.mjs'],
   ['player replay library', 'tests/replay-library-e2e.mjs'],
+  ['navigation and session continuity', 'tests/navigation-continuity-e2e.mjs'],
+  ['startup and storage resilience', 'tests/resilience-e2e.mjs'],
   ['hostile telegraphs', 'tests/hostile-telegraph-e2e.mjs'],
   ['input remapping', 'tests/controls-e2e.mjs'],
+  ['weapon selection and fallback', 'tests/weapon-selection-e2e.mjs'],
   ['map mechanisms', 'tests/mechanisms-e2e.mjs'],
   ['generated particle feedback', 'tests/particles-e2e.mjs'],
   ['material and status particle feedback', 'tests/particle-materials-e2e.mjs'],
@@ -65,13 +88,14 @@ const browserTests = [
   ['authored transient effect animation', 'tests/transient-effects-e2e.mjs'],
   ['binding beam presentation', 'tests/binding-beam-e2e.mjs'],
   ['semantic enemy and boss animation', 'tests/semantic-animation-e2e.mjs'],
-  ['lifecycle and active-combat performance', 'tests/lifecycle-performance-e2e.mjs'],
   ['Chromium, Firefox, and WebKit', 'tests/cross-browser-smoke.mjs'],
 ];
 
 try {
-  await waitForServer(gameUrl);
-  for (const [label, script] of browserTests) await run(label, [script], { GAME_URL: gameUrl });
+  await waitForServer(gameUrl, server);
+  for (const [label, script, attempts] of browserTests) {
+    await runWithRetry(label, [script], { GAME_URL: gameUrl }, attempts);
+  }
   console.log('\n[release] all release gates passed');
 } catch (error) {
   if (serverLog.trim()) console.error(`\n[release] Vite output:\n${serverLog.trim()}`);

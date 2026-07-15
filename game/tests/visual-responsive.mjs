@@ -18,7 +18,18 @@ async function run(viewport, name, mobile = false) {
   await page.locator('.episode-card').first().click();
   await page.locator('#difficulty-actions button').nth(1).click();
   await page.click('#begin-episode');
+  if (!mobile && viewport.width >= 1920) {
+    const briefing = await page.locator('#entry-controls').evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const value = element.querySelector('small');
+      return { width: rect.width, valueFontSize: Number.parseFloat(getComputedStyle(value).fontSize) };
+    });
+    assert(briefing.width >= 720, `${name}: entry briefing is undersized on a high-resolution display`);
+    assert(briefing.valueFontSize >= 14, `${name}: entry briefing values are too small on a high-resolution display`);
+    await page.screenshot({ path: `output/responsive/${name}-briefing.png` });
+  }
   if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
   await page.waitForTimeout(500);
   const metrics = await page.evaluate(() => {
     const shell = document.querySelector('#game-shell').getBoundingClientRect();

@@ -18,6 +18,7 @@ await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(1).click();
 await page.click('#begin-episode');
 if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 await page.waitForTimeout(1200);
 
 const initial = await state();
@@ -58,19 +59,34 @@ await page.waitForTimeout(200);
 const restored = await state();
 assert(Math.abs(restored.player.yaw - saved.player.yaw) < 0.02, `Quicksave restore did not restore yaw: saved ${saved.player.yaw}, restored ${restored.player.yaw}`);
 
-await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape' })));
+const escapeActions = await page.evaluate(() => {
+  const actions = [];
+  const onAction = (event) => actions.push(`action:${event.detail.action}`);
+  const onMenu = (event) => actions.push(`menu:${event.detail.action}`);
+  window.addEventListener('input-action', onAction);
+  window.addEventListener('input-menu-navigation', onMenu);
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape' }));
+  window.removeEventListener('input-action', onAction);
+  window.removeEventListener('input-menu-navigation', onMenu);
+  return actions;
+});
 await page.waitForTimeout(100);
-assert((await state()).mode === 'paused', 'Escape did not pause');
+const escaped = await state();
+const escapeUi = await page.evaluate(() => ({
+  activeScreen: document.querySelector('.screen.active')?.id ?? null,
+  ready: !document.querySelector('#ready-overlay').hasAttribute('hidden'),
+  pointerLocked: document.pointerLockElement === document.querySelector('#game-canvas'),
+  activeElement: document.activeElement?.id ?? document.activeElement?.tagName ?? null,
+}));
+assert(escaped.mode === 'paused', `Escape did not pause: mode=${escaped.mode}, active=${escapeUi.activeScreen}, ready=${escapeUi.ready}, pointerLocked=${escapeUi.pointerLocked}, activeElement=${escapeUi.activeElement}, actions=${escapeActions.join(',')}`);
 assert(await page.locator('#pause-menu').isVisible(), 'Pause menu is not visible');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(100);
 assert((await state()).mode === 'playing', 'Escape did not resume paused play');
 assert(!(await page.locator('#pause-menu').isVisible()), 'Escape resume left the pause menu visible');
+assert(await page.evaluate(() => document.pointerLockElement === document.querySelector('#game-canvas')), 'Escape resumed without restoring desktop pointer ownership');
 
 const quickTapAmmo = (await state()).player.ammo.staples;
-await page.mouse.click(640, 300, { delay: 1 });
-await page.waitForFunction(() => document.pointerLockElement === document.querySelector('#game-canvas'));
-assert((await state()).player.ammo.staples === quickTapAmmo, 'Pointer recapture spent ammunition');
 await page.mouse.click(640, 300, { delay: 1 });
 await page.waitForTimeout(90);
 assert((await state()).player.ammo.staples < quickTapAmmo, 'A sub-tick fire tap was lost');

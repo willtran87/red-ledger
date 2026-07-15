@@ -17,6 +17,7 @@ await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
 await page.click('#begin-episode');
 if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
 assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 4)), 'Could not stage particle impact');
 await page.evaluate(() => window.__redLedger.fire());

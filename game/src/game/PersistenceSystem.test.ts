@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   AUTOSAVE_SLOT_COUNT,
+  DEMO_SCHEMA_VERSION,
   DemoPlayback,
   DemoRecorder,
   MANUAL_SLOT_COUNT,
@@ -19,6 +20,31 @@ class MemoryStorage implements Storage {
   key(index: number): string | null { return [...this.values.keys()][index] ?? null; }
   removeItem(key: string): void { this.values.delete(key); }
   setItem(key: string, value: string): void { this.values.set(key, String(value)); }
+}
+
+class FaultingStorage implements Storage {
+  readonly backing = new MemoryStorage();
+  denyReads = false;
+  denyWrites = false;
+  denyRemoves = false;
+  quotaKey?: string;
+
+  get length(): number { return this.backing.length; }
+  clear(): void { this.backing.clear(); }
+  getItem(key: string): string | null {
+    if (this.denyReads) throw new DOMException('Storage access denied', 'SecurityError');
+    return this.backing.getItem(key);
+  }
+  key(index: number): string | null { return this.backing.key(index); }
+  removeItem(key: string): void {
+    if (this.denyRemoves) throw new DOMException('Storage access denied', 'SecurityError');
+    this.backing.removeItem(key);
+  }
+  setItem(key: string, value: string): void {
+    if (this.denyWrites) throw new DOMException('Storage access denied', 'SecurityError');
+    if (this.quotaKey && key.includes(this.quotaKey)) throw new DOMException('Quota exceeded', 'QuotaExceededError');
+    this.backing.setItem(key, value);
+  }
 }
 
 interface TestState {
@@ -183,6 +209,85 @@ describe('PersistenceSystem save slots', () => {
   });
 });
 
+describe('PersistenceSystem storage degradation', () => {
+  it('falls back to session memory when reads and writes are denied', () => {
+    const storage = new FaultingStorage();
+    storage.denyReads = true;
+    const system = makeSystem(storage);
+    expect(() => system.loadManual(1)).not.toThrow();
+    expect(system.loadManual(1)).toMatchObject({ status: 'empty' });
+    expect(system.storageStatus()).toMatchObject({
+      mode: 'memory-fallback', failureCount: 2, lastFailure: { operation: 'read', name: 'SecurityError' },
+    });
+
+    storage.denyWrites = true;
+    const saved = system.saveManual(1, state('SESSION'), metadata('E1M1'));
+    expect(saved.status).toBe('valid');
+    expect(system.loadManual(1)).toMatchObject({ status: 'valid', state: { map: 'SESSION' } });
+    expect(storage.backing.getItem('test:save:manual-1')).toBeNull();
+  });
+
+  it('retains quota-failed writes without weakening serialization validation', () => {
+    const storage = new FaultingStorage();
+    const system = makeSystem(storage);
+    system.saveManual(1, state('PERSISTED'), metadata('E1M1'));
+    storage.quotaKey = 'save:manual-1';
+    system.saveManual(1, state('FALLBACK'), metadata('E1M2'));
+
+    expect(system.loadManual(1)).toMatchObject({ status: 'valid', state: { map: 'FALLBACK' } });
+    expect(system.storageStatus()).toMatchObject({
+      mode: 'memory-fallback', lastFailure: { operation: 'write', key: 'test:save:manual-1', name: 'QuotaExceededError' },
+    });
+    expect(() => system.saveManual(1, { ...state('BAD'), health: Number.NaN }, metadata('E1M3'))).toThrow(TypeError);
+    expect(system.loadManual(1)).toMatchObject({ state: { map: 'FALLBACK' } });
+  });
+
+  it('keeps campaign progress available when persistent writes fail', () => {
+    const storage = new FaultingStorage();
+    storage.denyWrites = true;
+    const system = makeSystem(storage, [100, 200, 300]);
+    system.completeMap('E1M8');
+    system.completeEpisode('first-notice', 'exclusions-apply');
+
+    expect(system.campaignUnlocks()).toMatchObject({
+      unlockedEpisodes: ['exclusions-apply', 'first-notice'],
+      completedEpisodes: ['first-notice'],
+      completedMaps: ['E1M8'],
+    });
+    expect(storage.backing.getItem('test:campaign')).toBeNull();
+  });
+
+  it('rotates autosave cursors entirely within the memory fallback', () => {
+    const storage = new FaultingStorage();
+    storage.denyWrites = true;
+    const system = makeSystem(storage, [10, 20, 30, 40, 50]);
+    for (let index = 1; index <= AUTOSAVE_SLOT_COUNT + 2; index += 1) {
+      system.autosave(state(`AUTO-${index}`), metadata(`E1M${index}`));
+    }
+    expect(system.listAutosaves().map((slot) => slot.status === 'valid' ? slot.state.map : '')).toEqual([
+      'AUTO-4', 'AUTO-5', 'AUTO-3',
+    ]);
+    expect(storage.backing.getItem('test:autosave-cursor')).toBeNull();
+  });
+
+  it('honors session deletes when persistent removal is denied', () => {
+    const storage = new FaultingStorage();
+    const system = makeSystem(storage);
+    system.saveManual(1, state('DELETE-ME'), metadata('E1M1'));
+    system.quicksave(state('QUICK'), metadata('E1M1'));
+    storage.denyRemoves = true;
+
+    expect(() => system.clearManual(1)).not.toThrow();
+    expect(() => system.clearQuicksave()).not.toThrow();
+    expect(system.loadManual(1)).toMatchObject({ status: 'empty' });
+    expect(system.loadQuicksave()).toMatchObject({ status: 'empty' });
+    expect(storage.backing.getItem('test:save:manual-1')).not.toBeNull();
+    expect(system.storageStatus()).toMatchObject({
+      mode: 'memory-fallback', lastFailure: { operation: 'remove', key: 'test:save:quicksave' },
+    });
+  });
+});
+
 describe('PersistenceSystem campaign unlocks', () => {
   it('tracks map completion, episode completion, and ordered campaign unlocks', () => {
     const system = makeSystem(new MemoryStorage(), [100, 200, 300]);
@@ -280,6 +385,18 @@ describe('deterministic demos', () => {
       { tick: 3, commands: [{ action: 'move', value: 0 }] },
     ]);
     expect(validateDemo(demo, { validateInitialState: isTestState, validateCommand: isCommand })).toMatchObject({ valid: true });
+    expect(demo.version).toBe(DEMO_SCHEMA_VERSION);
+  });
+
+  it('rejects a checksum-valid replay from the previous deterministic simulation version', () => {
+    const recorder = new DemoRecorder<TestState, Command>({ seed: 7, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 9 });
+    recorder.record(0, { action: 'fire', value: 1 });
+    const current = recorder.finish(1);
+    const { checksum: _currentChecksum, ...currentUnsigned } = current;
+    const legacyUnsigned = { ...currentUnsigned, version: DEMO_SCHEMA_VERSION - 1 };
+    const legacy = { ...legacyUnsigned, checksum: checksum(legacyUnsigned) };
+
+    expect(validateDemo(legacy)).toEqual({ valid: false, reason: 'Unsupported demo version' });
   });
 
   it('plays commands at exact ticks and supports deterministic reset and seek', () => {

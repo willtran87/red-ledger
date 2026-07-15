@@ -3,7 +3,7 @@
   "families": 6,
   "frames": [
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-small/base.png",
+      "file": "assets/public_runtime/pickups/toner-small/base.png",
       "size": [
         48,
         48
@@ -20,43 +20,43 @@
       ]
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-small/shine-0.png",
+      "file": "assets/public_runtime/pickups/toner-small/shine-0.png",
       "size": [
         48,
         48
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-small/base.png",
+      "derived_from": "assets/public_runtime/pickups/toner-small/base.png",
       "shine_frame": 0
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-small/shine-1.png",
+      "file": "assets/public_runtime/pickups/toner-small/shine-1.png",
       "size": [
         48,
         48
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-small/base.png",
+      "derived_from": "assets/public_runtime/pickups/toner-small/base.png",
       "shine_frame": 1
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-small/shine-2.png",
+      "file": "assets/public_runtime/pickups/toner-small/shine-2.png",
       "size": [
         48,
         48
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-small/base.png",
+      "derived_from": "assets/public_runtime/pickups/toner-small/base.png",
       "shine_frame": 2
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-small/shine-3.png",
+      "file": "assets/public_runtime/pickups/toner-small/shine-3.png",
       "size": [
         48,
         48
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-small/base.png",
+      "derived_from": "assets/public_runtime/pickups/toner-small/base.png",
       "shine_frame": 3
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-large/base.png",
+      "file": "assets/public_runtime/pickups/toner-large/base.png",
       "size": [
         64,
         64
@@ -73,43 +73,43 @@
       ]
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-large/shine-0.png",
+      "file": "assets/public_runtime/pickups/toner-large/shine-0.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-large/base.png",
+      "derived_from": "assets/public_runtime/pickups/toner-large/base.png",
       "shine_frame": 0
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-large/shine-1.png",
+      "file": "assets/public_runtime/pickups/toner-large/shine-1.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-large/base.png",
+      "derived_from": "assets/public_runtime/pickups/toner-large/base.png",
       "shine_frame": 1
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-large/shine-2.png",
+      "file": "assets/public_runtime/pickups/toner-large/shine-2.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-large/base.png",
+      "derived_from": "assets/public_runtime/pickups/toner-large/base.png",
       "shine_frame": 2
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-large/shine-3.png",
+      "file": "assets/public_runtime/pickups/toner-large/shine-3.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/toner-large/base.png",
+      "derived_from": "assets/public_runtime/pickups/toner-large/base.png",
       "shine_frame": 3
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/emergency-reserve/base.png",
+      "file": "assets/public_runtime/pickups/emergency-reserve/base.png",
       "size": [
         64,
         64
@@ -126,43 +126,43 @@
       ]
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/emergency-reserve/shine-0.png",
+      "file": "assets/public_runtime/pickups/emergency-reserve/shine-0.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/emergency-reserve/base.png",
+      "derived_from": "assets/public_runtime/pickups/emergency-reserve/base.png",
       "shine_frame": 0
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/emergency-reserve/shine-1.png",
+      "file": "assets/public_runtime/pickups/emergency-reserve/shine-1.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/emergency-reserve/base.png",
+      "derived_from": "assets/public_runtime/pickups/emergency-reserve/base.png",
       "shine_frame": 1
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/emergency-reserve/shine-2.png",
+      "file": "assets/public_runtime/pickups/emergency-reserve/shine-2.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/emergency-reserve/base.png",
+      "derived_from": "assets/public_runtime/pickups/emergency-reserve/base.png",
       "shine_frame": 2
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/emergency-reserve/shine-3.png",
+      "file": "assets/public_runtime/pickups/emergency-reserve/shine-3.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/emergency-reserve/base.png",
+      "derived_from": "assets/public_runtime/pickups/emergency-reserve/base.png",
       "shine_frame": 3
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/temporary-binder/base.png",
+      "file": "assets/public_runtime/pickups/temporary-binder/base.png",
       "size": [
         64,
         64
@@ -179,43 +179,43 @@
       ]
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/temporary-binder/shine-0.png",
+      "file": "assets/public_runtime/pickups/temporary-binder/shine-0.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/temporary-binder/base.png",
+      "derived_from": "assets/public_runtime/pickups/temporary-binder/base.png",
       "shine_frame": 0
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/temporary-binder/shine-1.png",
+      "file": "assets/public_runtime/pickups/temporary-binder/shine-1.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/temporary-binder/base.png",
+      "derived_from": "assets/public_runtime/pickups/temporary-binder/base.png",
       "shine_frame": 1
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/temporary-binder/shine-2.png",
+      "file": "assets/public_runtime/pickups/temporary-binder/shine-2.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/temporary-binder/base.png",
+      "derived_from": "assets/public_runtime/pickups/temporary-binder/base.png",
       "shine_frame": 2
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/temporary-binder/shine-3.png",
+      "file": "assets/public_runtime/pickups/temporary-binder/shine-3.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/temporary-binder/base.png",
+      "derived_from": "assets/public_runtime/pickups/temporary-binder/base.png",
       "shine_frame": 3
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/rapid-authority/base.png",
+      "file": "assets/public_runtime/pickups/rapid-authority/base.png",
       "size": [
         64,
         64
@@ -232,43 +232,43 @@
       ]
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/rapid-authority/shine-0.png",
+      "file": "assets/public_runtime/pickups/rapid-authority/shine-0.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/rapid-authority/base.png",
+      "derived_from": "assets/public_runtime/pickups/rapid-authority/base.png",
       "shine_frame": 0
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/rapid-authority/shine-1.png",
+      "file": "assets/public_runtime/pickups/rapid-authority/shine-1.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/rapid-authority/base.png",
+      "derived_from": "assets/public_runtime/pickups/rapid-authority/base.png",
       "shine_frame": 1
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/rapid-authority/shine-2.png",
+      "file": "assets/public_runtime/pickups/rapid-authority/shine-2.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/rapid-authority/base.png",
+      "derived_from": "assets/public_runtime/pickups/rapid-authority/base.png",
       "shine_frame": 2
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/rapid-authority/shine-3.png",
+      "file": "assets/public_runtime/pickups/rapid-authority/shine-3.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/rapid-authority/base.png",
+      "derived_from": "assets/public_runtime/pickups/rapid-authority/base.png",
       "shine_frame": 3
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/forensic-lens/base.png",
+      "file": "assets/public_runtime/pickups/forensic-lens/base.png",
       "size": [
         64,
         64
@@ -285,39 +285,39 @@
       ]
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/forensic-lens/shine-0.png",
+      "file": "assets/public_runtime/pickups/forensic-lens/shine-0.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/forensic-lens/base.png",
+      "derived_from": "assets/public_runtime/pickups/forensic-lens/base.png",
       "shine_frame": 0
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/forensic-lens/shine-1.png",
+      "file": "assets/public_runtime/pickups/forensic-lens/shine-1.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/forensic-lens/base.png",
+      "derived_from": "assets/public_runtime/pickups/forensic-lens/base.png",
       "shine_frame": 1
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/forensic-lens/shine-2.png",
+      "file": "assets/public_runtime/pickups/forensic-lens/shine-2.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/forensic-lens/base.png",
+      "derived_from": "assets/public_runtime/pickups/forensic-lens/base.png",
       "shine_frame": 2
     },
     {
-      "file": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/forensic-lens/shine-3.png",
+      "file": "assets/public_runtime/pickups/forensic-lens/shine-3.png",
       "size": [
         64,
         64
       ],
-      "derived_from": "C:/Users/Will/Projects/project-insurance-doom/assets/public_runtime/pickups/forensic-lens/base.png",
+      "derived_from": "assets/public_runtime/pickups/forensic-lens/base.png",
       "shine_frame": 3
     }
   ]

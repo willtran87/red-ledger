@@ -35,19 +35,42 @@ await page.screenshot({ path: fileURLToPath(new URL('ready.png', output)) });
 
 const ammoBeforeEntry = state.player.ammo.staples;
 await page.click('#enter-file');
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 await page.waitForTimeout(80);
 state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(state.mode === 'playing', 'Enter File did not resume gameplay');
 assert(state.player.ammo.staples === ammoBeforeEntry, 'Pointer capture spent ammunition');
 assert(await page.locator('#reticle').isVisible(), 'Persistent reticle is not visible');
 assert((await page.locator('#objective').textContent())?.trim().length > 0, 'Objective cue is empty');
+assert(await page.locator('#reticle').getAttribute('data-weapon') === 'staple-driver', 'Reticle does not identify the equipped weapon');
 
 assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 5)), 'Could not stage weapon feedback target');
+await page.evaluate(() => window.advanceTime(60));
+const reticleGapBeforeFire = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
 await page.evaluate(() => window.__redLedger.fire());
 await page.waitForTimeout(70);
+const reticleGapAfterFire = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
+assert(reticleGapAfterFire > reticleGapBeforeFire + .5, 'Reticle did not communicate weapon recoil/spread after firing');
 assert(await page.locator('#muzzle-flash').evaluate((element) => element.style.backgroundImage.includes('particle-weapon-feedback')), 'Muzzle feedback did not select an authored effect');
 assert(await page.locator('#hit-marker').evaluate((element) => element.classList.contains('active')), 'Actor hit did not activate the hit marker');
 await page.screenshot({ path: fileURLToPath(new URL('weapon-fire.png', output)) });
+
+await page.evaluate(() => {
+  const setting = document.querySelector('#reduced-motion');
+  setting.checked = true;
+  setting.dispatchEvent(new Event('change', { bubbles: true }));
+  window.advanceTime(120);
+});
+const reducedReticleBefore = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
+await page.evaluate(() => window.__redLedger.fire());
+await page.waitForTimeout(70);
+const reducedReticleAfter = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
+assert(Math.abs(reducedReticleAfter - reducedReticleBefore) < .05, 'Reduced Motion did not suppress reticle recoil animation');
+await page.evaluate(() => {
+  const setting = document.querySelector('#reduced-motion');
+  setting.checked = false;
+  setting.dispatchEvent(new Event('change', { bubbles: true }));
+});
 
 assert(await page.evaluate(() => window.__redLedger.teleportToDoor('red')), 'Could not stage credential door');
 await page.evaluate(() => window.advanceTime(60));

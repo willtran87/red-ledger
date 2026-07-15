@@ -56,14 +56,19 @@ Original prompt: implement the game
 - 2026-07-14: Added goal-directed selected-difficulty mastery across Intermission and Level Select, including current-vs-PB metrics, retry targets, campaign/episode aggregates, and unlock prerequisites. Continue identifies save kind/play time when resolvable, while binding-aware desktop/touch entry briefings freeze safely before play; focused mastery, combat-feel, mobile, save, intermission, TypeScript, production build, and installed web-game-client checks pass.
 - 2026-07-14: Wired the authored denial-beam frames into bounded incoming hitscan visuals with rejection particles, added distinct hostile windup and hazard placed/armed cues, applied line-of-sight-aware distance attenuation to enemy audio, removed duplicate wake cues, preserved true hazard footprints under Reduced Effects, and propagated damage kinds to player feedback. Focused hostile, animation, transient-effect, particle, demo, replay, unit, and visual checks pass.
 - 2026-07-14: Full replay/mastery/telegraph release gate passes 83 unit/data checks, production portability, all 27 maps, every focused desktop/mobile browser flow, lifecycle performance, and Chromium/Firefox/WebKit. The integrated software-renderer combat soak sampled 223 frames at 45.2 ms mean / 83.4 ms p95 with 89 resident textures.
+- 2026-07-15: Hardened session continuity across first-run Continue, episode/difficulty/intro Back, intermission and replay returns, confirmation-first controller navigation, and desktop pointer-lock recapture. Entry briefings now present device-native guidance, explicit locked episodes, readable high-resolution typography, and mobile replay controls without truncation.
+- 2026-07-15: Added storage-denial and quota-safe session persistence, recoverable catalog bootstrap, WebGL-safe missing-texture placeholders, runtime warning states, a compact 233 KB shipped asset catalog, lazy title assets, and deterministic resilience coverage for storage, catalog, texture, and delayed-start failures.
+- 2026-07-15: Corrected twin-bore pellet rays, hit/blocked denial-beam endpoints, predictive hazard placement and line-of-sight damage, empty-weapon fallback, radial selection geometry, and weapon-aware reticle bloom. Added a compressed 32-voice audio bus with deterministic reusable noise and pause/resume lifecycle control.
+- 2026-07-15: Added public license and third-party notices, restricted-reference artifact scanning, release-gated Pages publishing, 105 passing unit/data/public-release checks, and focused desktop/mobile navigation, resilience, weapon-selection, responsive, combat-feel, and installed web-game-client verification.
+- 2026-07-15: Final release hardening added event-driven legacy Firefox pointer-lock settlement, deterministic entry/resume readiness across every browser suite, fatal-state simulation shutdown, replay/audio lifecycle coordination, and bounded performance confirmation after browser cleanup. The complete release gate passes all 27 maps, every focused scenario, and Chromium/Firefox/WebKit; active SwiftShader combat delivered 262 frames over 10 seconds at 38.2 ms mean / 66.8 ms p95 with 89 resident textures. Pages matches all 3,614 production files exactly.
 
 ## Verified Baseline
 
-- Development URL during this session: `http://127.0.0.1:5400/`
+- Development URL during this session: `http://127.0.0.1:5425/`
 - High-resolution viewport: `2560x1600`
 - Desktop viewport: `1280x720`
 - Mobile viewport: `390x844`
-- Runtime asset catalog: 3,541 PNGs / 3,608 files
+- Production Pages package: 3,614 files with the compact 233 KB runtime catalog
 
 ## External Signoff
 

@@ -9,8 +9,10 @@
     <title>Red Ledger</title>
   </head>
   <body>
-    <main id="game-shell">
+    <main id="game-shell" aria-busy="true">
       <canvas id="game-canvas" aria-label="Red Ledger game view"></canvas>
+      <div id="bootstrap-status" role="status"><strong>RED LEDGER</strong><span>Opening records...</span></div>
+      <div id="runtime-warning" role="status" aria-live="polite" hidden></div>
       <section id="menu" class="screen active" aria-label="Main menu">
         <h1 class="game-title">RED LEDGER</h1>
         <img class="title-art" src="/public_runtime/ui/title-screen.png" alt="Figure entering a damaged records facility" />
@@ -64,7 +66,10 @@
       <section id="episode-intro" class="screen" aria-label="Episode introduction">
         <img id="episode-intro-art" class="intro-art" alt="Episode introduction" />
         <p id="episode-intro-copy"></p>
-        <button id="begin-episode">Begin</button>
+        <div class="intro-actions">
+          <button id="begin-episode">Begin</button>
+          <button data-back>Back</button>
+        </div>
       </section>
       <section id="options-menu" class="screen compact" aria-label="Options">
         <h1>Options</h1>
@@ -138,7 +143,7 @@
         <button class="slot-back">Back</button>
       </section>
       <section id="epilogue" class="screen" aria-label="Epilogue">
-        <img class="intro-art" src="/public_runtime/ui/illustrations/final-epilogue.png" alt="Dawn over the restored office" />
+        <img id="epilogue-art" class="intro-art" data-src="/public_runtime/ui/illustrations/final-epilogue.png" alt="Dawn over the restored office" />
         <p>The model is quiet. The ordinary risks remain ordinary, which is enough for now.</p>
         <button id="epilogue-menu">Main Menu</button>
       </section>
@@ -149,6 +154,7 @@
           <span>Design, engineering, art direction, and production</span>
           <span>Original fictional world and characters</span>
           <span>Built with Three.js and Web Audio</span>
+          <span><a href="./LICENSE.txt" target="_blank" rel="noopener">Project terms</a> | <a href="./THIRD_PARTY_NOTICES.txt" target="_blank" rel="noopener">Third-party notices</a></span>
         </div>
         <button data-back>Back</button>
       </section>

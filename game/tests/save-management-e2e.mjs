@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 
 const url = process.env.GAME_URL ?? 'http://127.0.0.1:5400';
 const browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader'] });
+try {
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('pageerror', (error) => errors.push(String(error)));
@@ -15,6 +16,7 @@ await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
 await page.click('#begin-episode');
 if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
 await page.evaluate(() => {
   localStorage.removeItem('red-ledger-v2:save:quicksave');
@@ -53,4 +55,6 @@ assert(await page.evaluate(() => localStorage.getItem('red-ledger-v2:save:manual
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 
 console.log('Save management and recovery E2E passed');
-await browser.close();
+} finally {
+  await browser.close();
+}

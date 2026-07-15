@@ -15,6 +15,7 @@ await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(1).click();
 await page.click('#begin-episode');
 if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 await page.waitForTimeout(300);
 
 assert(await page.evaluate(() => window.__redLedger.teleportToPickup('credential', 'red')), 'No red credential pickup found');

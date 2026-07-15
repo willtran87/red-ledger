@@ -16,6 +16,7 @@ await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(4).click();
 await page.click('#begin-episode');
 if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
 let snapshot = await state();
 const totalKills = snapshot.tally.totalKills;

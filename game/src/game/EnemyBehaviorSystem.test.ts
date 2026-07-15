@@ -89,7 +89,17 @@ describe('EnemyBehaviorSystem state machine', () => {
     visible = false;
     const covered = runFor(system, { actors: [warden], target: target(7), world: { hasLineOfSight: () => visible } }, .5);
     expect(eventsOf(covered, 'attack')).toHaveLength(1);
+    expect(eventsOf(covered, 'attack')[0]).toMatchObject({ resolved: false, blocked: true, hitCount: 0 });
     expect(eventsOf(covered, 'damage')).toHaveLength(0);
+  });
+
+  it('distinguishes an accuracy miss from a blocked hitscan resolution', () => {
+    const system = new EnemyBehaviorSystem({ rng: () => .999 });
+    const events = runFor(system, {
+      actors: [actor('denial-officer')], target: target(7), world: { hasLineOfSight: () => true },
+    }, 1);
+    expect(eventsOf(events, 'attack')[0]).toMatchObject({ attackId: 'denial-beam', resolved: true, blocked: false, hitCount: 0 });
+    expect(eventsOf(events, 'damage')).toHaveLength(0);
   });
 
   it('interrupts a pending attack with pain and retains the provoker', () => {
@@ -185,6 +195,76 @@ describe('EnemyBehaviorSystem role mechanics', () => {
     const corpse = actor('desk-warden', { uid: 'fallen', position: { x: 2, y: 0, z: 0 }, health: 0, dead: true });
     const resurrection = runFor(counselSystem, { actors: [counsel, corpse], target: target(10) }, 1);
     expect(eventsOf(resurrection, 'resurrect')[0]).toEqual({ type: 'resurrect', actorUid: counsel.uid, targetUid: corpse.uid, health: 21, redacted: true });
+  });
+
+  it('cancels predicted hazards that resolve behind cover or on invalid geometry', () => {
+    const coveredSystem = new EnemyBehaviorSystem({ rng: () => 0 });
+    const cat = actor('cat-model');
+    let visible = true;
+    runFor(coveredSystem, {
+      actors: [cat], target: target(12), world: { hasLineOfSight: () => visible, canPlaceHazard: () => true },
+    }, .55);
+    expect(coveredSystem.getActorState(cat.uid)?.action).toBe('windup');
+    visible = false;
+    const covered = runFor(coveredSystem, {
+      actors: [cat], target: target(12), world: { hasLineOfSight: () => visible, canPlaceHazard: () => true },
+    }, .5);
+    expect(eventsOf(covered, 'attack')[0]).toMatchObject({ attackId: 'loss-prediction', resolved: false });
+    expect(eventsOf(covered, 'spawn-hazard')).toHaveLength(0);
+
+    const invalidSystem = new EnemyBehaviorSystem({ rng: () => 0 });
+    const invalid = runFor(invalidSystem, {
+      actors: [actor('cat-model')], target: target(12),
+      world: { hasLineOfSight: () => true, canPlaceHazard: () => false },
+    }, 1);
+    expect(eventsOf(invalid, 'attack')[0]).toMatchObject({ attackId: 'loss-prediction', resolved: false });
+    expect(eventsOf(invalid, 'spawn-hazard')).toHaveLength(0);
+  });
+
+  it('does not apply an armed hazard through cover', () => {
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    const cat = actor('cat-model');
+    const player = target(12);
+    const placed = runFor(system, {
+      actors: [cat], target: player, world: { hasLineOfSight: () => true, canPlaceHazard: () => true },
+    }, .9);
+    expect(eventsOf(placed, 'spawn-hazard')).toHaveLength(1);
+    const covered = runFor(system, {
+      actors: [cat], target: player, world: { hasLineOfSight: () => false, canPlaceHazard: () => true },
+    }, 1);
+    expect(eventsOf(covered, 'hazard-armed')).toHaveLength(1);
+    expect(eventsOf(covered, 'damage')).toHaveLength(0);
+  });
+
+  it('skips covered pulse times without banking catch-up damage for re-exposure', () => {
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    system.restore({
+      version: 1,
+      elapsed: 0,
+      nextEntityId: 2,
+      actors: [],
+      projectiles: [],
+      hazards: [{
+        id: 'covered-hazard', ownerUid: 'reserve-eater-1', ownerId: 'reserve-eater', kind: 'reserve-hazard',
+        position: { x: 0, y: 0, z: 0 }, radius: 2, damage: 8, damageKind: 'hazard',
+        remaining: 4, armRemaining: 0, pulseRemaining: 0, pulseInterval: .5, armed: true,
+      }],
+    });
+    const player = target(0);
+    const covered = runFor(system, {
+      actors: [], target: player, world: { hasLineOfSight: () => false },
+    }, 1.125, .125);
+    expect(eventsOf(covered, 'damage')).toHaveLength(0);
+    expect(system.serialize().hazards[0].pulseRemaining).toBe(.375);
+
+    const beforeNextPulse = runFor(system, {
+      actors: [], target: player, world: { hasLineOfSight: () => true },
+    }, .25, .125);
+    expect(eventsOf(beforeNextPulse, 'damage')).toHaveLength(0);
+    const nextPulse = runFor(system, {
+      actors: [], target: player, world: { hasLineOfSight: () => true },
+    }, .125, .125);
+    expect(eventsOf(nextPulse, 'damage')).toHaveLength(1);
   });
 
   it.each([

@@ -84,9 +84,10 @@ describe('public runtime asset URLs and package', () => {
     for (const url of urls) expect(existsSync(join(projectRoot, 'assets', url))).toBe(true);
   });
 
-  it('ships the runtime catalog and public assets in the standalone production dist package', () => {
+  it('ships the compact game catalog and public assets in the standalone production dist package', () => {
     const dist = join(projectRoot, 'game/dist');
-    expect(existsSync(join(dist, 'data/runtime-assets.json'))).toBe(true);
+    expect(existsSync(join(dist, 'data/game-assets.json'))).toBe(true);
+    expect(existsSync(join(dist, 'data/runtime-assets.json'))).toBe(false);
     expect(existsSync(join(dist, 'public_runtime'))).toBe(true);
   });
 });

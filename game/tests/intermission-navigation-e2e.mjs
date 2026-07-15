@@ -2,12 +2,18 @@ import { chromium } from 'playwright';
 
 const url = process.env.GAME_URL ?? 'http://127.0.0.1:5400';
 const browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader'] });
+try {
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('pageerror', (error) => errors.push(String(error)));
 page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
 const state = async () => JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const enterFile = async () => {
+  await page.click('#enter-file');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing'
+    && document.querySelector('#ready-overlay').hasAttribute('hidden'));
+};
 const finishMap = async () => {
   await page.evaluate(() => {
     window.__redLedger.defeatAll();
@@ -22,7 +28,7 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
 await page.click('#begin-episode');
-if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+if (await page.locator('#ready-overlay').isVisible()) await enterFile();
 
 await finishMap();
 for (const id of ['continue-map', 'retry-map', 'intermission-level-select', 'intermission-menu']) {
@@ -31,7 +37,7 @@ for (const id of ['continue-map', 'retry-map', 'intermission-level-select', 'int
 
 await page.click('#retry-map');
 assert(await page.locator('#ready-overlay').isVisible(), 'Retry did not restore the entry gate');
-await page.click('#enter-file');
+await enterFile();
 let snapshot = await state();
 assert(snapshot.mode === 'playing' && snapshot.map.id === 'E1M1', 'Retry did not restart the completed map');
 assert(snapshot.tally.kills === 0 && snapshot.tally.elapsed < .5, 'Retry retained the prior run tally');
@@ -44,7 +50,7 @@ assert(await page.locator('#level-select-difficulty').inputValue() === 'field-ad
 assert(await page.locator('#level-select-list button').first().isEnabled(), 'Completed map is not replayable from Level Select');
 await page.locator('#level-select-list button').first().click();
 assert(await page.locator('#ready-overlay').isVisible(), 'Level Select replay did not restore the entry gate');
-await page.click('#enter-file');
+await enterFile();
 assert((await state()).map.id === 'E1M1', 'Level Select did not start the selected map');
 
 await finishMap();
@@ -54,4 +60,6 @@ assert((await state()).mode === 'menu', 'Game mode did not return to menu');
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 
 console.log('Intermission replay navigation E2E passed');
-await browser.close();
+} finally {
+  await browser.close();
+}

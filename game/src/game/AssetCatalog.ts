@@ -11,6 +11,13 @@ interface CatalogFile { url: string }
 interface ActorState { angles?: Record<string, CatalogFile[]> }
 interface ActorEntry { states: Record<string, ActorState> }
 
+export const ASSET_DEGRADED_EVENT = 'red-ledger-asset-degraded';
+
+export interface AssetCatalogStatus {
+  readonly mode: 'complete' | 'placeholder-fallback';
+  readonly failedUrls: readonly string[];
+}
+
 export function runtimeUrl(path: string): string {
   if (/^(?:data:|blob:|https?:)/.test(path)) return path;
   const clean = path.replace(/^\.\//, '').replace(/^\//, '');
@@ -29,11 +36,13 @@ export interface RuntimeCatalog {
 export class AssetCatalog {
   readonly loader = new TextureLoader();
   readonly textures = new Map<string, Texture>();
+  private readonly failedUrls = new Set<string>();
+  private fallbackImage?: HTMLCanvasElement;
 
   constructor(readonly data: RuntimeCatalog) {}
 
   static async load(): Promise<AssetCatalog> {
-    const response = await fetch(runtimeUrl('data/runtime-assets.json'));
+    const response = await fetch(runtimeUrl('data/game-assets.json'));
     if (!response.ok) throw new Error(`Asset catalog failed: ${response.status}`);
     return new AssetCatalog(await response.json() as RuntimeCatalog);
   }
@@ -42,20 +51,56 @@ export class AssetCatalog {
     const key = `${url}|${repeat}`;
     const cached = this.textures.get(key);
     if (cached) return cached;
-    const texture = this.loader.load(runtimeUrl(url));
+    let texture: Texture;
+    texture = this.loader.load(runtimeUrl(url), undefined, undefined, () => {
+      texture.image = this.placeholderImage();
+      this.configureTexture(texture, repeat);
+      texture.needsUpdate = true;
+      this.failedUrls.add(url);
+      if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(ASSET_DEGRADED_EVENT, { detail: { url } }));
+      }
+    });
+    this.configureTexture(texture, repeat);
+    this.textures.set(key, texture);
+    return texture;
+  }
+
+  status(): AssetCatalogStatus {
+    return {
+      mode: this.failedUrls.size ? 'placeholder-fallback' : 'complete',
+      failedUrls: [...this.failedUrls],
+    };
+  }
+
+  disposeTextures(): void {
+    this.textures.forEach((texture) => texture.dispose());
+    this.textures.clear();
+  }
+
+  private configureTexture(texture: Texture, repeat: boolean): void {
     texture.colorSpace = SRGBColorSpace;
     texture.magFilter = NearestFilter;
     texture.minFilter = NearestFilter;
     texture.generateMipmaps = false;
     texture.wrapS = repeat ? RepeatWrapping : ClampToEdgeWrapping;
     texture.wrapT = repeat ? RepeatWrapping : ClampToEdgeWrapping;
-    this.textures.set(key, texture);
-    return texture;
   }
 
-  disposeTextures(): void {
-    this.textures.forEach((texture) => texture.dispose());
-    this.textures.clear();
+  private placeholderImage(): HTMLCanvasElement {
+    if (this.fallbackImage) return this.fallbackImage;
+    const canvas = document.createElement('canvas');
+    canvas.width = 4;
+    canvas.height = 4;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Could not create fallback texture');
+    context.fillStyle = '#34383d';
+    context.fillRect(0, 0, 4, 4);
+    context.fillStyle = '#d9232e';
+    context.fillRect(0, 0, 2, 2);
+    context.fillRect(2, 2, 2, 2);
+    this.fallbackImage = canvas;
+    return canvas;
   }
 
   actorFrame(kind: 'enemy' | 'boss', id: string, desired: string, angle = 'F', frameIndex = 0): string {

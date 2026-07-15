@@ -1,5 +1,5 @@
 export const SAVE_SCHEMA_VERSION = 1;
-export const DEMO_SCHEMA_VERSION = 1;
+export const DEMO_SCHEMA_VERSION = 2;
 export const MANUAL_SLOT_COUNT = 8;
 export const AUTOSAVE_SLOT_COUNT = 3;
 
@@ -133,6 +133,23 @@ export interface PersistenceOptions<TState> {
   readonly validateState?: (state: unknown) => state is TState;
   readonly now?: () => number;
 }
+
+export type PersistenceStorageOperation = 'read' | 'write' | 'remove';
+
+export interface PersistenceStorageFailure {
+  readonly operation: PersistenceStorageOperation;
+  readonly key: string;
+  readonly name: string;
+  readonly reason: string;
+}
+
+export interface PersistenceStorageStatus {
+  readonly mode: 'persistent' | 'memory-fallback';
+  readonly failureCount: number;
+  readonly lastFailure?: PersistenceStorageFailure;
+}
+
+export const PERSISTENCE_DEGRADED_EVENT = 'red-ledger-persistence-degraded';
 
 interface SlotDescriptor {
   readonly id: string;
@@ -302,6 +319,10 @@ export class PersistenceSystem<TState> {
   private readonly initialUnlockedEpisodes: readonly string[];
   private readonly validateState?: (state: unknown) => state is TState;
   private readonly now: () => number;
+  private readonly memoryFallback = new Map<string, string>();
+  private readonly volatileKeys = new Set<string>();
+  private storageFailureCount = 0;
+  private lastStorageFailure?: PersistenceStorageFailure;
 
   constructor(private readonly storage: Storage, options: PersistenceOptions<TState> = {}) {
     this.namespace = options.namespace ?? 'red-ledger';
@@ -310,6 +331,14 @@ export class PersistenceSystem<TState> {
     this.initialUnlockedEpisodes = normalizeStringList(options.initialUnlockedEpisodes ?? this.episodeIds.slice(0, 1));
     this.validateState = options.validateState;
     this.now = options.now ?? Date.now;
+  }
+
+  storageStatus(): PersistenceStorageStatus {
+    return {
+      mode: this.storageFailureCount > 0 ? 'memory-fallback' : 'persistent',
+      failureCount: this.storageFailureCount,
+      ...(this.lastStorageFailure ? { lastFailure: { ...this.lastStorageFailure } } : {}),
+    };
   }
 
   saveManual(slot: number, state: TState, metadata: SaveMetadataInput): ValidSlotResult<TState> {
@@ -334,10 +363,10 @@ export class PersistenceSystem<TState> {
 
   autosave(state: TState, metadata: SaveMetadataInput): ValidSlotResult<TState> {
     const cursorKey = this.key('autosave-cursor');
-    const current = Number.parseInt(this.storage.getItem(cursorKey) ?? '0', 10);
+    const current = Number.parseInt(this.getItem(cursorKey) ?? '0', 10);
     const next = Number.isSafeInteger(current) && current >= 0 ? current % AUTOSAVE_SLOT_COUNT + 1 : 1;
     const result = this.writeSlot(autoDescriptor(next), state, metadata);
-    this.storage.setItem(cursorKey, String(next));
+    this.setItem(cursorKey, String(next));
     return result;
   }
 
@@ -377,15 +406,15 @@ export class PersistenceSystem<TState> {
   }
 
   clearManual(slot: number): void {
-    this.storage.removeItem(this.slotKey(manualDescriptor(slot)));
+    this.removeItem(this.slotKey(manualDescriptor(slot)));
   }
 
   clearQuicksave(): void {
-    this.storage.removeItem(this.slotKey(quickDescriptor));
+    this.removeItem(this.slotKey(quickDescriptor));
   }
 
   campaignUnlocks(): CampaignUnlocks {
-    const raw = this.storage.getItem(this.key('campaign'));
+    const raw = this.getItem(this.key('campaign'));
     if (raw) {
       try {
         const parsed: unknown = JSON.parse(raw);
@@ -471,7 +500,7 @@ export class PersistenceSystem<TState> {
     const next: CampaignUnlocks = { ...progress, updatedAt };
     const unsigned = { schema: 'red-ledger-campaign' as const, version: SAVE_SCHEMA_VERSION, progress: next };
     const envelope: CampaignEnvelope = withChecksum(unsigned);
-    this.storage.setItem(this.key('campaign'), JSON.stringify(envelope));
+    this.setItem(this.key('campaign'), JSON.stringify(envelope));
     return next;
   }
 
@@ -504,12 +533,12 @@ export class PersistenceSystem<TState> {
       state,
     };
     const envelope: SaveEnvelope<TState> = withChecksum(unsigned);
-    this.storage.setItem(this.slotKey(descriptor), JSON.stringify(envelope));
+    this.setItem(this.slotKey(descriptor), JSON.stringify(envelope));
     return { status: 'valid', slotId: descriptor.id, kind: descriptor.kind, defaultName: descriptor.defaultName, metadata, state };
   }
 
   private readSlot(descriptor: SlotDescriptor): SaveSlotResult<TState> {
-    const raw = this.storage.getItem(this.slotKey(descriptor));
+    const raw = this.getItem(this.slotKey(descriptor));
     if (raw === null) return { status: 'empty', slotId: descriptor.id, kind: descriptor.kind, defaultName: descriptor.defaultName };
     try {
       const parsed: unknown = JSON.parse(raw);
@@ -542,19 +571,19 @@ export class PersistenceSystem<TState> {
 
   private nextSequence(): number {
     const key = this.key('sequence');
-    const stored = Number.parseInt(this.storage.getItem(key) ?? '0', 10);
+    const stored = Number.parseInt(this.getItem(key) ?? '0', 10);
     const next = Number.isSafeInteger(stored) && stored >= 0 ? stored + 1 : 1;
-    this.storage.setItem(key, String(next));
+    this.setItem(key, String(next));
     return next;
   }
 
   private rememberRecoveryEpisode(episodeId: string): void {
     const key = this.key('recovery-index');
-    this.storage.setItem(key, JSON.stringify(normalizeStringList([...this.recoveryEpisodes(), episodeId])));
+    this.setItem(key, JSON.stringify(normalizeStringList([...this.recoveryEpisodes(), episodeId])));
   }
 
   private recoveryEpisodes(): readonly string[] {
-    const raw = this.storage.getItem(this.key('recovery-index'));
+    const raw = this.getItem(this.key('recovery-index'));
     if (!raw) return this.episodeIds;
     try {
       const parsed: unknown = JSON.parse(raw);
@@ -565,6 +594,55 @@ export class PersistenceSystem<TState> {
       // Configured episodes still remain discoverable when the optional index is damaged.
     }
     return this.episodeIds;
+  }
+
+  private getItem(key: string): string | null {
+    if (this.volatileKeys.has(key)) return this.memoryFallback.get(key) ?? null;
+    try {
+      const value = this.storage.getItem(key);
+      if (value === null) this.memoryFallback.delete(key);
+      else this.memoryFallback.set(key, value);
+      return value;
+    } catch (error) {
+      this.reportStorageFailure('read', key, error);
+      return this.memoryFallback.get(key) ?? null;
+    }
+  }
+
+  private setItem(key: string, value: string): void {
+    this.memoryFallback.set(key, value);
+    try {
+      this.storage.setItem(key, value);
+      this.volatileKeys.delete(key);
+    } catch (error) {
+      this.volatileKeys.add(key);
+      this.reportStorageFailure('write', key, error);
+    }
+  }
+
+  private removeItem(key: string): void {
+    this.memoryFallback.delete(key);
+    try {
+      this.storage.removeItem(key);
+      this.volatileKeys.delete(key);
+    } catch (error) {
+      this.volatileKeys.add(key);
+      this.reportStorageFailure('remove', key, error);
+    }
+  }
+
+  private reportStorageFailure(operation: PersistenceStorageOperation, key: string, error: unknown): void {
+    const name = error instanceof Error && error.name ? error.name : 'StorageError';
+    const reason = error instanceof Error ? error.message : String(error || 'Storage operation failed');
+    const failure: PersistenceStorageFailure = { operation, key, name, reason };
+    this.storageFailureCount += 1;
+    this.lastStorageFailure = failure;
+    if (typeof window === 'undefined' || typeof CustomEvent === 'undefined') return;
+    try {
+      window.dispatchEvent(new CustomEvent<PersistenceStorageFailure>(PERSISTENCE_DEGRADED_EVENT, { detail: { ...failure } }));
+    } catch {
+      // Persistence remains usable through the memory fallback when event delivery is unavailable.
+    }
   }
 
   private slotKey(descriptor: SlotDescriptor): string {

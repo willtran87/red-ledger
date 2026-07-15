@@ -9,17 +9,32 @@ interface AudioSettings {
 }
 
 const STORAGE_KEY = 'red-ledger-audio-v1';
+const ACTIVE_VOICE_BUDGET = 32;
+const NOISE_BUFFER_SECONDS = 1;
 const clamp = (value: number): number => Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+
+interface ActiveVoice {
+  source: AudioScheduledSourceNode;
+  gain: GainNode;
+  auxiliaryNodes: AudioNode[];
+  loudness: number;
+  order: number;
+}
 
 export class AudioSystem {
   private context?: AudioContext;
   private masterGain?: GainNode;
+  private masterCompressor?: DynamicsCompressorNode;
   private musicGain?: GainNode;
   private sfxGain?: GainNode;
+  private noiseBuffer?: AudioBuffer;
+  private noiseCursor = 0;
+  private activeVoices: ActiveVoice[] = [];
+  private voiceOrder = 0;
+  private lifecycleSuspended = false;
   private musicTimer?: number;
   private step = 0;
   private musicPattern: Array<number | null> = [];
-  private noiseState = 0x51f15e;
   private combatIntensity = 0;
   private lastSpatialCue?: { kind: string; pan: number; gain: number };
   private settings: AudioSettings = { master: .8, music: .65, sfx: .8, muted: false };
@@ -38,14 +53,34 @@ export class AudioSystem {
     this.context ??= new AudioContextClass();
     if (!this.masterGain) {
       this.masterGain = this.context.createGain();
+      this.masterCompressor = this.context.createDynamicsCompressor();
       this.musicGain = this.context.createGain();
       this.sfxGain = this.context.createGain();
+      const now = this.context.currentTime;
+      this.masterCompressor.threshold.setValueAtTime(-18, now);
+      this.masterCompressor.knee.setValueAtTime(12, now);
+      this.masterCompressor.ratio.setValueAtTime(6, now);
+      this.masterCompressor.attack.setValueAtTime(.003, now);
+      this.masterCompressor.release.setValueAtTime(.22, now);
       this.musicGain.connect(this.masterGain);
       this.sfxGain.connect(this.masterGain);
-      this.masterGain.connect(this.context.destination);
+      this.masterGain.connect(this.masterCompressor);
+      this.masterCompressor.connect(this.context.destination);
+      this.noiseBuffer = this.createNoiseBuffer();
       this.applyGainValues();
     }
-    void this.context.resume();
+    if (this.lifecycleSuspended) this.changeContextState('suspend');
+    else this.resumeContext();
+  }
+
+  suspend(): void {
+    this.lifecycleSuspended = true;
+    this.changeContextState('suspend');
+  }
+
+  resume(): void {
+    this.lifecycleSuspended = false;
+    this.resumeContext();
   }
 
   setMasterVolume(value: number): void { this.settings.master = clamp(value); this.settingsChanged(); }
@@ -61,38 +96,43 @@ export class AudioSystem {
     bus: AudioBus = 'sfx',
     pan = 0,
   ): void {
-    if (!this.context) return;
+    if (!this.context || this.lifecycleSuspended) return;
+    const safeDuration = Math.max(.001, Number.isFinite(duration) ? duration : .08);
     const now = this.context.currentTime;
     const oscillator = this.context.createOscillator();
     const gain = this.context.createGain();
     oscillator.type = type;
     oscillator.frequency.setValueAtTime(frequency, now);
-    oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, frequency * .62), now + duration);
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, frequency * .62), now + safeDuration);
     gain.gain.setValueAtTime(volume, now);
-    gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + safeDuration);
     oscillator.connect(gain);
-    this.connectToBus(gain, bus, pan);
+    const auxiliaryNodes = this.connectToBus(gain, bus, pan);
+    this.trackVoice(oscillator, gain, volume, auxiliaryNodes);
     oscillator.start(now);
-    oscillator.stop(now + duration);
+    oscillator.stop(now + safeDuration);
   }
 
   noise(duration = .06, volume = .045, bus: AudioBus = 'sfx', pan = 0): void {
-    if (!this.context) return;
-    const length = Math.floor(this.context.sampleRate * duration);
-    const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < length; i += 1) {
-      this.noiseState = (Math.imul(this.noiseState, 1664525) + 1013904223) >>> 0;
-      data[i] = this.noiseState / 0x80000000 - 1;
-    }
+    if (!this.context || !this.noiseBuffer || this.lifecycleSuspended) return;
+    const safeDuration = Math.max(.001, Number.isFinite(duration) ? duration : .06);
+    const now = this.context.currentTime;
     const source = this.context.createBufferSource();
     const gain = this.context.createGain();
-    source.buffer = buffer;
-    gain.gain.setValueAtTime(volume, this.context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(.0001, this.context.currentTime + duration);
+    source.buffer = this.noiseBuffer;
+    source.loop = true;
+    source.loopStart = 0;
+    source.loopEnd = this.noiseBuffer.duration;
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + safeDuration);
     source.connect(gain);
-    this.connectToBus(gain, bus, pan);
-    source.start();
+    const auxiliaryNodes = this.connectToBus(gain, bus, pan);
+    this.trackVoice(source, gain, volume, auxiliaryNodes);
+    const offsetSamples = this.noiseCursor;
+    const durationSamples = Math.max(1, Math.floor(this.context.sampleRate * safeDuration));
+    this.noiseCursor = (this.noiseCursor + durationSamples) % this.noiseBuffer.length;
+    source.start(now, offsetSamples / this.context.sampleRate);
+    source.stop(now + safeDuration);
   }
 
   startMusic(episode: number, map: number): void {
@@ -114,6 +154,7 @@ export class AudioSystem {
     });
     this.step = 0;
     this.musicTimer = window.setInterval(() => {
+      if (this.lifecycleSuspended) return;
       const note = this.musicPattern[this.step % this.musicPattern.length];
       if (note !== null) this.tone(root * 2 ** (note / 12), .19, this.step % 8 === 0 ? 'sawtooth' : 'square', .011, 'music');
       if (this.step % 8 === 0) this.tone(root / 2 * 2 ** ((map % 5 - 2) / 12), .38, 'triangle', .017, 'music');
@@ -174,8 +215,20 @@ export class AudioSystem {
     this.tone(920, .07, 'sine', .012 * spatialGain, 'sfx', pan);
   }
 
-  diagnostics(): { lastSpatialCue?: { kind: string; pan: number; gain: number } } {
-    return this.lastSpatialCue ? { lastSpatialCue: { ...this.lastSpatialCue } } : {};
+  diagnostics(): {
+    lifecycleSuspended: boolean;
+    contextState?: AudioContextState;
+    activeVoices: number;
+    musicActive?: boolean;
+    lastSpatialCue?: { kind: string; pan: number; gain: number };
+  } {
+    return {
+      lifecycleSuspended: this.lifecycleSuspended,
+      activeVoices: this.activeVoices.length,
+      ...(this.context ? { contextState: this.context.state } : {}),
+      ...(this.musicTimer !== undefined ? { musicActive: true } : {}),
+      ...(this.lastSpatialCue ? { lastSpatialCue: { ...this.lastSpatialCue } } : {}),
+    };
   }
 
   stopMusic(): void {
@@ -184,15 +237,76 @@ export class AudioSystem {
     this.combatIntensity = 0;
   }
 
-  private connectToBus(node: AudioNode, bus: AudioBus, pan: number): void {
-    if (!this.context) return;
+  private connectToBus(node: AudioNode, bus: AudioBus, pan: number): AudioNode[] {
+    if (!this.context) return [];
     const destination = bus === 'music' ? this.musicGain : this.sfxGain;
-    if (!destination) return;
+    if (!destination) return [];
     if (typeof this.context.createStereoPanner === 'function' && Math.abs(pan) > .001) {
       const panner = this.context.createStereoPanner();
       panner.pan.value = Math.max(-1, Math.min(1, pan));
       node.connect(panner).connect(destination);
-    } else node.connect(destination);
+      return [panner];
+    }
+    node.connect(destination);
+    return [];
+  }
+
+  private createNoiseBuffer(): AudioBuffer {
+    if (!this.context) throw new Error('Audio context must exist before creating noise');
+    const length = Math.max(1, Math.floor(this.context.sampleRate * NOISE_BUFFER_SECONDS));
+    const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
+    const data = buffer.getChannelData(0);
+    let state = 0x51f15e;
+    for (let index = 0; index < length; index += 1) {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      data[index] = state / 0x80000000 - 1;
+    }
+    return buffer;
+  }
+
+  private trackVoice(source: AudioScheduledSourceNode, gain: GainNode, volume: number, auxiliaryNodes: AudioNode[]): void {
+    while (this.activeVoices.length >= ACTIVE_VOICE_BUDGET) {
+      let candidate = this.activeVoices[0];
+      for (const voice of this.activeVoices.slice(1)) {
+        if (voice.loudness < candidate.loudness
+          || (voice.loudness === candidate.loudness && voice.order < candidate.order)) candidate = voice;
+      }
+      this.releaseVoice(candidate, true);
+    }
+    const voice: ActiveVoice = {
+      source,
+      gain,
+      auxiliaryNodes,
+      loudness: Math.max(0, Number.isFinite(volume) ? volume : 0),
+      order: this.voiceOrder++,
+    };
+    source.onended = () => this.releaseVoice(voice, false);
+    this.activeVoices.push(voice);
+  }
+
+  private releaseVoice(voice: ActiveVoice, stop: boolean): void {
+    const index = this.activeVoices.indexOf(voice);
+    if (index < 0) return;
+    this.activeVoices.splice(index, 1);
+    voice.source.onended = null;
+    if (stop) {
+      try { voice.source.stop(this.context?.currentTime ?? 0); } catch { /* A naturally ended source is already released. */ }
+    }
+    try { voice.source.disconnect(); } catch { /* Disconnection is best-effort across browser implementations. */ }
+    try { voice.gain.disconnect(); } catch { /* Disconnection is best-effort across browser implementations. */ }
+    for (const node of voice.auxiliaryNodes) {
+      try { node.disconnect(); } catch { /* Disconnection is best-effort across browser implementations. */ }
+    }
+  }
+
+  private resumeContext(): void { this.changeContextState('resume'); }
+
+  private changeContextState(action: 'suspend' | 'resume'): void {
+    if (!this.context || this.context.state === 'closed') return;
+    try {
+      const transition = action === 'suspend' ? this.context.suspend() : this.context.resume();
+      void transition.catch(() => undefined);
+    } catch { /* Lifecycle requests remain safe if a browser rejects an early transition. */ }
   }
 
   private duckMusic(duration: number): void {

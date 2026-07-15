@@ -10,7 +10,7 @@ npm install
 npm run dev
 ```
 
-The Vite configuration mounts `../assets` as the public root. Runtime images resolve under `/public_runtime`; the generated catalog resolves at `/data/runtime-assets.json`.
+The Vite configuration mounts `../assets` as the public root. Runtime images resolve under `/public_runtime`; `npm run build` projects the authoring catalog into the compact runtime catalog at `/data/game-assets.json` and removes authoring-only metadata from the production package.
 
 ## Controls
 
@@ -67,6 +67,8 @@ High-resolution visual coverage uses `2560x1600`, ordinary desktop uses `1280x72
 
 - Campaign: `src/data`
 - Engine: `src/game`
-- Asset catalog: `../assets/data/runtime-assets.json`
-- Catalog generator: `../implementation/generate-runtime-catalog.mjs`
+- Runtime catalog: `../assets/data/game-assets.json`
+- Authoring catalog: `../assets/data/runtime-assets.json`
+- Runtime projection: `scripts/build-game-catalog.mjs`
+- Authoring catalog generator: `../implementation/generate-runtime-catalog.mjs`
 - Requirements matrix: `../implementation/requirements.md`

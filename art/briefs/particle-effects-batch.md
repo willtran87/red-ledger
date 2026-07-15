@@ -89,7 +89,7 @@ node implementation/generate-runtime-catalog.mjs
 node implementation/generate-runtime-catalog.mjs --check
 ```
 
-The generator writes the synchronized catalogs to `assets/data/runtime-assets.json`, `docs/data/runtime-assets.json`, and `game/public/data/runtime-assets.json`. The release completeness assertion in `implementation/generate-runtime-catalog.mjs` is `3541` PNGs. This complete batch adds exactly 40 runtime PNGs.
+The authoring generator writes `assets/data/runtime-assets.json`; the game build projects it into `assets/data/game-assets.json`, and Pages synchronization copies only the finalized production package to `docs`. The release completeness assertion in `implementation/generate-runtime-catalog.mjs` is `3541` PNGs. This complete batch adds exactly 40 runtime PNGs.
 
 ## Runtime Kind Map
 

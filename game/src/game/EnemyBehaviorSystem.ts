@@ -41,6 +41,7 @@ export interface ProjectileTraceHit {
 export interface BehaviorWorldAdapter {
   hasLineOfSight?(from: BehaviorVector, to: BehaviorVector): boolean;
   canOccupy?(actor: BehaviorActor, position: BehaviorVector): boolean;
+  canPlaceHazard?(position: BehaviorVector, radius: number): boolean;
   traceProjectile?(
     projectile: Readonly<ProjectileState>,
     from: BehaviorVector,
@@ -277,7 +278,7 @@ export type BehaviorEvent =
   | { type: 'move'; actorUid: string; velocity: BehaviorVector; mode: MovementKind | 'lunge'; duration?: number }
   | { type: 'elevation'; actorUid: string; offset: number }
   | { type: 'visibility'; actorUid: string; visible: boolean; opacity: number }
-  | { type: 'attack'; actorUid: string; attackId: string; attackKind: AttackSpec['kind'] }
+  | { type: 'attack'; actorUid: string; attackId: string; attackKind: AttackSpec['kind']; resolved: boolean; blocked?: boolean; hitCount?: number }
   | { type: 'state'; actorUid: string; state: ActorActionState; duration: number; attackId?: string }
   | { type: 'wake'; actorUid: string; sourceUid: string; through: 'sight' | 'sound' | 'damage' }
   | { type: 'pain'; actorUid: string; sourceUid: string; interruptedAttack?: string }
@@ -570,7 +571,7 @@ export class EnemyBehaviorSystem {
     const difficulty = input.difficulty ?? { reaction: 1, refire: 1, projectileSpeed: 1, aggression: 1 };
     this.elapsed += input.dt;
 
-    this.updateHazards(input.dt, input.target, events);
+    this.updateHazards(input.dt, input.target, world, events);
     this.updateProjectiles(input.dt, targets, world, events);
 
     for (const actor of actors) {
@@ -943,29 +944,41 @@ export class EnemyBehaviorSystem {
   ): void {
     const attack = profile.attacks.find((candidate) => candidate.id === state.pendingAttackId);
     if (!attack) return;
-    events.push({ type: 'attack', actorUid: actor.uid, attackId: attack.id, attackKind: attack.kind });
+    const attackEvent: Extract<BehaviorEvent, { type: 'attack' }> = {
+      type: 'attack', actorUid: actor.uid, attackId: attack.id, attackKind: attack.kind, resolved: true,
+    };
+    events.push(attackEvent);
     switch (attack.kind) {
-      case 'hitscan': this.executeHitscan(actor, target, distance, attack, world, events); break;
+      case 'hitscan': {
+        const resolution = this.executeHitscan(actor, target, distance, attack, world, events);
+        attackEvent.resolved = resolution.resolved;
+        attackEvent.blocked = resolution.blocked;
+        attackEvent.hitCount = resolution.hitCount;
+        break;
+      }
       case 'melee': this.executeMelee(actor, target, distance, attack, state, world, events); break;
       case 'projectile': this.executeProjectile(actor, target, state, attack, events, projectileSpeed); break;
       case 'hazard':
-      case 'prediction': this.executeHazard(actor, target, attack, events); break;
+      case 'prediction': attackEvent.resolved = this.executeHazard(actor, target, attack, world, events); break;
       case 'resurrect': this.executeResurrection(actor, actors, attack, events); break;
       case 'summon': this.executeSummon(actor, attack, events); break;
     }
   }
 
-  private executeHitscan(actor: BehaviorActor, target: BehaviorTarget, distance: number, attack: HitscanAttack, world: BehaviorWorldAdapter, events: BehaviorEvent[]): void {
+  private executeHitscan(actor: BehaviorActor, target: BehaviorTarget, distance: number, attack: HitscanAttack, world: BehaviorWorldAdapter, events: BehaviorEvent[]): { resolved: boolean; blocked: boolean; hitCount: number } {
     const currentDistance = horizontalDistance(actor.position, target.position);
-    if (currentDistance > attack.range || currentDistance < (attack.minRange ?? 0)) return;
-    if (attack.requiresLineOfSight && !(world.hasLineOfSight?.(actor.position, target.position) ?? true)) return;
+    if (currentDistance > attack.range || currentDistance < (attack.minRange ?? 0)) return { resolved: false, blocked: false, hitCount: 0 };
+    if (attack.requiresLineOfSight && !(world.hasLineOfSight?.(actor.position, target.position) ?? true)) return { resolved: false, blocked: true, hitCount: 0 };
     const pellets = attack.pellets ?? 1;
     const rangeFactor = 1 - .45 * clamp01(currentDistance / Math.max(attack.range, 1));
+    let hitCount = 0;
     for (let index = 0; index < pellets; index += 1) {
       if (this.random() > attack.accuracy * rangeFactor) continue;
       const amount = attack.damage * (.85 + this.random() * .3);
       events.push({ type: 'damage', sourceUid: actor.uid, targetUid: target.uid, amount, damageKind: attack.damageKind });
+      hitCount += 1;
     }
+    return { resolved: true, blocked: false, hitCount };
   }
 
   private executeMelee(actor: BehaviorActor, target: BehaviorTarget, distance: number, attack: MeleeAttack, state: ActorBehaviorState, world: BehaviorWorldAdapter, events: BehaviorEvent[]): void {
@@ -1022,10 +1035,16 @@ export class EnemyBehaviorSystem {
     }
   }
 
-  private executeHazard(actor: BehaviorActor, target: BehaviorTarget, attack: HazardAttack, events: BehaviorEvent[]): void {
+  private executeHazard(actor: BehaviorActor, target: BehaviorTarget, attack: HazardAttack, world: BehaviorWorldAdapter, events: BehaviorEvent[]): boolean {
+    if (horizontalDistance(actor.position, target.position) > attack.range) return false;
+    if (attack.requiresLineOfSight && !(world.hasLineOfSight?.(actor.position, target.position) ?? true)) return false;
     const position = add(target.position, scale(target.velocity, attack.leadSeconds ?? 0));
     position.y = 0;
+    const predictedSightline = { ...position, y: target.position.y };
+    if (attack.requiresLineOfSight && !(world.hasLineOfSight?.(actor.position, predictedSightline) ?? true)) return false;
+    if (world.canPlaceHazard && !world.canPlaceHazard(position, attack.hazard.radius)) return false;
     this.spawnHazard(actor.uid, actor.id, position, attack.hazard, events);
+    return true;
   }
 
   private findResurrectionTarget(actor: BehaviorActor, actors: readonly BehaviorActor[], attack: ResurrectAttack): BehaviorActor | undefined {
@@ -1131,7 +1150,7 @@ export class EnemyBehaviorSystem {
     events.push({ type: 'spawn-hazard', hazard: cloneHazard(item) });
   }
 
-  private updateHazards(dt: number, target: BehaviorTarget, events: BehaviorEvent[]): void {
+  private updateHazards(dt: number, target: BehaviorTarget, world: BehaviorWorldAdapter, events: BehaviorEvent[]): void {
     const survivors: HazardState[] = [];
     for (const item of this.hazards) {
       item.remaining -= dt;
@@ -1144,9 +1163,12 @@ export class EnemyBehaviorSystem {
           events.push({ type: 'hazard-armed', hazardId: item.id });
         }
       }
-      if (item.armed && target.alive !== false && horizontalDistance(item.position, target.position) <= item.radius + target.radius) {
+      const targetExposed = world.hasLineOfSight?.(item.position, target.position) ?? true;
+      if (item.armed) {
+        const canDamage = target.alive !== false && targetExposed
+          && horizontalDistance(item.position, target.position) <= item.radius + target.radius;
         while (item.pulseRemaining <= 0 && item.remaining > 0) {
-          events.push({ type: 'damage', sourceUid: item.ownerUid, targetUid: target.uid, amount: item.damage, damageKind: item.damageKind });
+          if (canDamage) events.push({ type: 'damage', sourceUid: item.ownerUid, targetUid: target.uid, amount: item.damage, damageKind: item.damageKind });
           item.pulseRemaining += Math.max(.05, item.pulseInterval);
         }
       }

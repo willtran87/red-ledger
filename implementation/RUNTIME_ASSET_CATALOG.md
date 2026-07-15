@@ -1,18 +1,21 @@
 # Runtime Asset Catalog
 
-The deterministic runtime catalog is generated at:
+The deterministic authoring catalog is generated at:
 
 `assets/data/runtime-assets.json`
 
-The game should fetch it from `/data/runtime-assets.json`. Every asset reference uses a browser URL under
-`/public_runtime/`, matching the Vite `publicDir: '../assets'` mount, and also retains its repository-relative
-`sourcePath` for diagnostics.
+It is the complete validation and diagnostics source. Every asset reference uses a browser URL under
+`/public_runtime/` and retains its repository-relative `sourcePath`. The game build projects only the fields it
+consumes into `assets/data/game-assets.json`, fetched at runtime from `/data/game-assets.json`. The finalized
+production package deliberately omits `runtime-assets.json`.
 
 ## Regenerate and verify
 
 ```powershell
 node implementation/generate-runtime-catalog.mjs
 node implementation/generate-runtime-catalog.mjs --check
+cd game
+npm run assets:catalog
 ```
 
 `--check` rebuilds the catalog in memory, validates all referenced files and structured category coverage, and

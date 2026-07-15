@@ -16,7 +16,10 @@ for (const [name, type] of Object.entries(engines)) {
   }
   executed.push(name);
   try {
-    const page = await browser.newPage({ viewport: { width: 1024, height: 640 } });
+    // Headless Gecko and WebKit do not grant pointer lock. Use the coarse-input
+    // entry path here; dedicated Chromium coverage verifies desktop capture.
+    const context = await browser.newContext({ viewport: { width: 1024, height: 640 }, hasTouch: true });
+    const page = await context.newPage();
     page.setDefaultTimeout(8000);
     const errors = [];
     page.on('pageerror', (error) => errors.push(String(error)));
@@ -27,9 +30,10 @@ for (const [name, type] of Object.entries(engines)) {
     await page.locator('#episode-intro.active').waitFor();
     await page.click('#begin-episode');
     if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
     await page.waitForTimeout(250);
     const state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
-    if (state.mode !== 'playing') failures.push(`${name}: campaign did not enter gameplay`);
+    if (state.mode !== 'playing') failures.push(`${name}: campaign did not enter gameplay (mode=${state.mode})`);
     if (errors.length) failures.push(`${name}: ${errors.join(' | ')}`);
   } catch (error) {
     failures.push(`${name}: ${error instanceof Error ? error.message : error}`);

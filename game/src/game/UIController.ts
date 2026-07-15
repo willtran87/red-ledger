@@ -3,8 +3,8 @@ import { INPUT_ACTIONS, bindingLabel, type InputAction } from './InputBindings';
 import type { InputActionEvent, MenuNavigationEvent } from './InputSystem';
 import { WEAPONS, type GameDifficulty } from './definitions';
 import { GameEngine, type GameSnapshot } from './GameEngine';
-import { runtimeUrl } from './AssetCatalog';
-import type { CampaignUnlocks, MapPerformance, MapRecord } from './PersistenceSystem';
+import { ASSET_DEGRADED_EVENT, runtimeUrl } from './AssetCatalog';
+import { DEMO_SCHEMA_VERSION, PERSISTENCE_DEGRADED_EVENT, type CampaignUnlocks, type MapPerformance, type MapRecord } from './PersistenceSystem';
 
 type PortraitState = 'neutral' | 'pain-center' | 'pain-left' | 'pain-right' | 'glance-left' | 'glance-right' | 'weapon-acquired' | 'overcharge' | 'invulnerable' | 'dead';
 
@@ -17,7 +17,8 @@ interface ReplayLibraryEntry {
   demo: unknown;
 }
 
-const REPLAY_LIBRARY_KEY = 'red-ledger-replays-v1';
+const REPLAY_LIBRARY_KEY = 'red-ledger-replays-v2';
+const LEGACY_REPLAY_LIBRARY_KEY = 'red-ledger-replays-v1';
 const REPLAY_LIBRARY_BYTES = 3_500_000;
 const REPLAY_LIBRARY_LIMIT = 6;
 
@@ -119,8 +120,20 @@ export class UIController {
   private weaponBobPhase = 0;
   private weaponBob = { x: 0, y: 0 };
   private lastView?: { x: number; z: number; yaw: number };
+  private levelSelectReturn: 'menu' | 'intermission' = 'menu';
+  private replayReturn: 'menu' | 'pause-menu' = 'menu';
+  private entryDevice: 'desktop' | 'gamepad' | 'touch' = 'desktop';
+  private entryContinuation?: () => void;
+  private readonly runtimeWarnings = new Set<string>();
+  private reticleKick = 0;
 
   constructor(readonly game: GameEngine) {
+    window.addEventListener(PERSISTENCE_DEGRADED_EVENT, () => this.showRuntimeWarning(
+      'Browser storage is unavailable. Progress is protected for this session, but it will be lost when this tab closes.',
+    ));
+    window.addEventListener(ASSET_DEGRADED_EVENT, () => this.showRuntimeWarning(
+      'One or more visual assets could not load. Safe placeholder art is in use; reload when the connection is stable.',
+    ));
     this.buildEpisodeCards();
     this.buildDifficulties();
     this.bindActions();
@@ -148,6 +161,12 @@ export class UIController {
       this.showMessageInReplayLibrary(detail.reason === 'limit' ? 'Five-minute recording saved.' : 'Replay saved.');
     });
     this.loadSettings();
+    if (this.game.persistence.storageStatus().mode === 'memory-fallback') this.showRuntimeWarning(
+      'Browser storage is unavailable. Progress is protected for this session, but it will be lost when this tab closes.',
+    );
+    if (this.game.assets.status().mode === 'placeholder-fallback') this.showRuntimeWarning(
+      'One or more visual assets could not load. Safe placeholder art is in use; reload when the connection is stable.',
+    );
   }
 
   private buildEpisodeCards(): void {
@@ -156,9 +175,13 @@ export class UIController {
       const button = document.createElement('button');
       button.className = 'episode-card';
       button.title = title;
+      button.dataset.title = title;
       button.setAttribute('aria-label', title);
       button.style.backgroundImage = `url('${runtimeUrl(`public_runtime/ui/episode-select-${index + 1}.png`)}')`;
+      const label = document.createElement('span');
+      button.append(label);
       button.disabled = !this.game.isEpisodeUnlocked(index);
+      label.textContent = `Episode ${index + 1}: ${title}${button.disabled ? ' - Locked' : ''}`;
       if (button.disabled) button.title = `${title} - locked`;
       button.addEventListener('click', () => {
         this.pendingEpisode = index;
@@ -188,6 +211,10 @@ export class UIController {
   }
 
   private bindActions(): void {
+    window.addEventListener('pointerdown', (event) => {
+      this.entryDevice = event.pointerType === 'touch' ? 'touch' : 'desktop';
+    }, { capture: true });
+    window.addEventListener('keydown', () => { this.entryDevice = 'desktop'; }, { capture: true });
     $('#new-game').addEventListener('click', () => { this.updateEpisodeLocks(); this.showScreen('episode-menu'); });
     $('#continue-game').addEventListener('click', () => {
       this.game.audio.unlock();
@@ -195,8 +222,9 @@ export class UIController {
         $('#menu-feedback').textContent = '';
         this.prepareGameEntry();
       } else {
-        const message = 'No valid save is available. Start a new game to create one.';
-        $('#menu-feedback').textContent = message;
+        const message = 'No saved file found. Choose an episode to begin.';
+        this.updateEpisodeLocks();
+        this.showScreen('episode-menu');
         this.announce(message);
       }
     });
@@ -216,33 +244,38 @@ export class UIController {
       () => { this.game.input.resetBindings(); this.buildControls(); },
     ));
     $('#cancel-binding').addEventListener('click', () => this.cancelBindingCapture());
-    $('#level-select-button').addEventListener('click', () => this.showLevelSelect());
-    $('#replays-button').addEventListener('click', () => this.showReplayLibrary());
-    $('#replay-back').addEventListener('click', () => this.showScreen('menu'));
+    $('#level-select-button').addEventListener('click', () => { this.levelSelectReturn = 'menu'; this.showLevelSelect(); });
+    $('#replays-button').addEventListener('click', () => { this.replayReturn = 'menu'; this.showReplayLibrary(); });
+    $('#replay-back').addEventListener('click', () => this.returnFromReplayLibrary());
     $('#import-replay').addEventListener('click', () => $<HTMLInputElement>('#replay-file').click());
     $<HTMLInputElement>('#replay-file').addEventListener('change', (event) => void this.importReplay((event.target as HTMLInputElement).files?.[0]));
     document.querySelectorAll<HTMLElement>('[data-back]').forEach((button) => button.addEventListener('click', () => {
-      this.showScreen(button.closest('#options-menu') ? this.optionsReturn : 'menu');
+      const screen = button.closest<HTMLElement>('.screen');
+      this.returnFromScreen(screen?.id ?? 'menu');
     }));
-    $('#resume-game').addEventListener('click', () => { this.hideScreens(); this.game.resume(); });
+    $('#resume-game').addEventListener('click', () => this.resumeGameplay());
     $('#save-game').addEventListener('click', () => { this.slotReturn = 'pause-menu'; this.showSlotScreen('save'); });
     $('#load-game').addEventListener('click', () => { this.slotReturn = 'pause-menu'; this.showSlotScreen('load'); });
     $('#record-replay').addEventListener('click', () => {
       if (this.game.isDemoRecording()) {
         const demo = this.game.finishDemoRecording();
         if (demo) this.storeReplay(demo);
+        this.replayReturn = 'pause-menu';
         this.showReplayLibrary('Replay saved.');
         return;
       }
-      this.hideScreens();
-      this.game.resume();
-      if (!this.game.startDemoRecording()) this.showScreen('pause-menu');
+      this.resumeGameplay(() => {
+        if (!this.game.startDemoRecording()) {
+          this.game.pause();
+          this.showScreen('pause-menu');
+        }
+      });
     });
     document.querySelectorAll('.slot-back').forEach((button) => button.addEventListener('click', () => this.showScreen(this.slotReturn)));
     $('#quit-menu').addEventListener('click', () => this.confirmMainMenu());
     $('#restart-checkpoint').addEventListener('click', () => {
       const game = this.game as GameEngine & { restartFromCheckpoint?: () => boolean };
-      if (game.restartFromCheckpoint?.()) this.hideScreens();
+      if (game.restartFromCheckpoint?.()) this.prepareGameEntry();
     });
     $('#death-load').addEventListener('click', () => { this.slotReturn = 'death-menu'; this.showSlotScreen('load'); });
     $('#death-menu-button').addEventListener('click', () => this.confirmMainMenu());
@@ -253,7 +286,6 @@ export class UIController {
       action?.();
     });
     $<HTMLDialogElement>('#confirm-dialog').addEventListener('cancel', (event) => { event.preventDefault(); this.closeConfirm(); });
-    $('#fatal-reload').addEventListener('click', () => location.reload());
     $('#continue-map').addEventListener('click', () => {
       const next = this.game.pendingMap;
       if (next && Number(next[1]) !== Number(this.game.world.map.id[1])) {
@@ -262,8 +294,8 @@ export class UIController {
         this.showEpisodeIntro();
         return;
       }
-      this.hideScreens();
       this.game.continueFromIntermission();
+      if (this.game.mode === 'playing') this.prepareGameEntry();
     });
     $('#retry-map').addEventListener('click', () => {
       this.game.retryCurrentMap();
@@ -271,6 +303,7 @@ export class UIController {
     });
     $('#intermission-level-select').addEventListener('click', () => {
       this.pendingDifficulty = this.game.difficulty;
+      this.levelSelectReturn = 'intermission';
       this.showLevelSelect();
     });
     $('#intermission-menu').addEventListener('click', () => {
@@ -292,7 +325,13 @@ export class UIController {
     });
     $('#begin-episode').addEventListener('click', () => { this.game.startEpisode(this.pendingEpisode, this.pendingDifficulty); this.prepareGameEntry(); });
     $('#enter-file').addEventListener('click', () => this.enterReadyState());
-    $('#epilogue-menu').addEventListener('click', () => this.showScreen('menu'));
+    $('#epilogue-menu').addEventListener('click', () => {
+      this.game.audio.stopMusic();
+      this.game.mode = 'menu';
+      this.updateEpisodeLocks();
+      this.updateContinue();
+      this.showScreen('menu');
+    });
     $('#sensitivity').addEventListener('input', (event) => { this.game.sensitivity = Number((event.target as HTMLInputElement).value); });
     $('#render-scale').addEventListener('change', (event) => this.game.setRenderScale(Number((event.target as HTMLSelectElement).value)));
     ['sensitivity', 'render-scale', 'hud-mode', 'classic-input', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects',
@@ -349,7 +388,13 @@ export class UIController {
   }
 
   private update(snapshot: GameSnapshot): void {
-    if (this.trailMap !== snapshot.map.id) { this.playerTrail.length = 0; this.trailMap = snapshot.map.id; this.automapPan = { x: 0, z: 0 }; }
+    if (this.trailMap !== snapshot.map.id) {
+      this.playerTrail.length = 0;
+      this.trailMap = snapshot.map.id;
+      this.automapPan = { x: 0, z: 0 };
+      this.lastView = undefined;
+      this.reticleKick = 0;
+    }
     $('#health').textContent = String(Math.max(0, Math.ceil(snapshot.player.health)));
     $('#armor').textContent = String(Math.ceil(snapshot.player.armor));
     const weapon = WEAPONS[snapshot.player.weapon];
@@ -383,7 +428,8 @@ export class UIController {
       weaponView.dataset.weapon = weapon.id;
       this.currentWeapon = weapon.id;
     }
-    this.updateWeaponBob(snapshot);
+    const movementDistance = this.updateWeaponBob(snapshot);
+    this.updateReticle(weapon.id, movementDistance);
     $('#keys').innerHTML = [...snapshot.player.credentials].map((key) => `<img alt="${key}" src="${runtimeUrl(`public_runtime/ui/icons/credential-${key}.png`)}">`).join('');
     const bossBar = $('#boss-bar');
     bossBar.toggleAttribute('hidden', !snapshot.boss);
@@ -414,6 +460,8 @@ export class UIController {
     if (!snapshot.replay && snapshot.mode === 'paused' && this.lastMode !== 'paused') this.showScreen('pause-menu');
     if (!snapshot.replay && snapshot.mode === 'dead' && this.lastMode !== 'dead') this.showScreen('death-menu');
     if (!snapshot.replay && snapshot.mode === 'complete') {
+      const art = $<HTMLImageElement>('#epilogue-art');
+      art.src ||= runtimeUrl(art.dataset.src ?? 'public_runtime/ui/illustrations/final-epilogue.png');
       this.showScreen('epilogue');
     }
     if (this.radialActive) this.updateWeaponRadial();
@@ -608,7 +656,7 @@ export class UIController {
     }
   }
 
-  private flashWeapon(detail: { weapon: keyof typeof WEAPONS; duration: number }): void {
+  private flashWeapon(detail: { weapon: keyof typeof WEAPONS; duration: number; recoil?: number }): void {
     const element = $<HTMLElement>('#weapon-view');
     const weapon = WEAPONS[detail.weapon];
     this.cancelWeaponFrames();
@@ -623,6 +671,8 @@ export class UIController {
     this.weaponTimer = window.setTimeout(() => {
       if (token === this.weaponVisualToken && this.currentWeapon === detail.weapon) element.style.backgroundImage = `url('${runtimeUrl(weapon.idle)}')`;
     }, visualDuration);
+    if ($<HTMLInputElement>('#reduced-motion').checked) this.reticleKick = 0;
+    else this.reticleKick = Math.min(9, this.reticleKick + 2 + (detail.recoil ?? weapon.recoil) * 90);
     this.flashMuzzle(detail.weapon);
     this.setPortrait(Math.floor(performance.now() / 180) % 2 ? 'glance-left' : 'glance-right');
     this.portraitUntil = performance.now() + Math.min(220, detail.duration * 1000);
@@ -697,7 +747,7 @@ export class UIController {
     }, 120);
   }
 
-  private updateWeaponBob(snapshot: GameSnapshot): void {
+  private updateWeaponBob(snapshot: GameSnapshot): number {
     const reduced = $<HTMLInputElement>('#reduced-motion').checked;
     const current = { x: snapshot.player.position.x, z: snapshot.player.position.z, yaw: snapshot.player.yaw };
     const previous = this.lastView;
@@ -712,22 +762,53 @@ export class UIController {
     const element = $<HTMLElement>('#weapon-view');
     element.style.setProperty('--weapon-bob-x', `${this.weaponBob.x.toFixed(2)}px`);
     element.style.setProperty('--weapon-bob-y', `${this.weaponBob.y.toFixed(2)}px`);
+    return distance;
   }
 
-  private entryBinding(action: InputAction, device: 'keyboard' | 'mouse-button' = 'keyboard'): string {
+  private updateReticle(weaponId: keyof typeof WEAPONS, movementDistance: number): void {
+    const weapon = WEAPONS[weaponId];
+    const baseGap = 4 + Math.min(6, weapon.spread * 52) + (weapon.pellets > 1 ? 1.5 : 0);
+    const reduced = $<HTMLInputElement>('#reduced-motion').checked;
+    const movementGap = reduced ? 0 : Math.min(4, movementDistance * 70);
+    this.reticleKick = reduced ? 0 : this.reticleKick * .82;
+    const gap = Math.max(4, Math.min(15, baseGap + movementGap + this.reticleKick));
+    const reticle = $<HTMLElement>('#reticle');
+    reticle.dataset.weapon = weaponId;
+    reticle.style.setProperty('--reticle-gap', `${gap.toFixed(2)}px`);
+  }
+
+  private entryBinding(
+    action: InputAction,
+    device: 'keyboard' | 'mouse-button' | 'gamepad-button' | 'gamepad-axis' = 'keyboard',
+  ): string {
     const bindings = this.game.input.getBinding(action);
     const preferred = bindings.find((binding) => binding.device === device) ?? bindings[0];
     return preferred ? bindingLabel(preferred) : '--';
   }
 
+  private entryGamepadBinding(action: InputAction): string {
+    const raw = this.entryBinding(action, 'gamepad-button');
+    const button = /^Gamepad (\d+)$/.exec(raw)?.[1];
+    if (button === undefined) return raw;
+    return ({
+      0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'LB', 5: 'RB', 6: 'LT', 7: 'RT',
+      8: 'View', 9: 'Menu', 10: 'L3', 11: 'R3',
+    } as Record<string, string>)[button] ?? raw;
+  }
+
   private buildEntryBriefing(): void {
     const coarse = matchMedia('(pointer: coarse)').matches;
+    const device = coarse ? 'touch' : this.entryDevice;
     const container = $('#entry-controls');
     const movement = ['move-forward', 'strafe-left', 'move-backward', 'strafe-right']
       .map((action) => this.entryBinding(action as InputAction)).join(' ');
-    const entries = coarse ? [
+    const entries = device === 'touch' ? [
       ['MOVE', 'Left pad'], ['LOOK', 'Right pad'], ['FIRE', 'Red control'],
       ['USE', 'Use control'], ['WEAPON', 'WPN control'], ['MAP', 'Map control'],
+    ] : device === 'gamepad' ? [
+      ['MOVE', 'Left stick'], ['LOOK', 'Right stick'], ['FIRE', this.entryGamepadBinding('fire')],
+      ['USE', this.entryGamepadBinding('use')], ['WEAPON', this.entryGamepadBinding('weapon-radial')],
+      ['MAP', this.entryGamepadBinding('automap')],
     ] : [
       ['MOVE', movement], ['LOOK', 'Mouse / Right stick'], ['FIRE', this.entryBinding('fire', 'mouse-button')],
       ['USE', this.entryBinding('use')], ['WEAPON', this.entryBinding('weapon-next')], ['MAP', this.entryBinding('automap')],
@@ -741,24 +822,68 @@ export class UIController {
       item.append(title, binding);
       return item;
     }));
-    $('#ready-overlay').setAttribute('data-input', coarse ? 'touch' : 'desktop');
+    $('#ready-overlay').setAttribute('data-input', device);
     $('#ready-map').textContent = `${this.game.world.map.id} ${this.game.world.map.title}`;
   }
 
-  private prepareGameEntry(): void {
+  private prepareGameEntry(onEntered?: () => void): void {
     this.buildEntryBriefing();
     this.game.pause();
+    this.entryContinuation = onEntered;
     this.hideScreens();
     $('#ready-overlay').toggleAttribute('hidden', false);
+    $<HTMLButtonElement>('#enter-file').textContent = 'Enter File';
     $<HTMLButtonElement>('#enter-file').focus();
   }
 
   private enterReadyState(): void {
-    $('#ready-overlay').toggleAttribute('hidden', true);
-    this.game.resume();
-    if (matchMedia('(pointer: coarse)').matches) return;
-    const request = $<HTMLCanvasElement>('#game-canvas').requestPointerLock() as Promise<void> | undefined;
-    void request?.catch(() => undefined);
+    this.resumeGameplay(this.entryContinuation);
+  }
+
+  private resumeGameplay(onEntered?: () => void): void {
+    this.entryContinuation = onEntered;
+    const resume = () => {
+      const continuation = this.entryContinuation;
+      this.entryContinuation = undefined;
+      $('#ready-overlay').toggleAttribute('hidden', true);
+      this.hideScreens();
+      this.game.resume();
+      continuation?.();
+    };
+    if (matchMedia('(pointer: coarse)').matches || this.entryDevice === 'gamepad') {
+      resume();
+      return;
+    }
+    const canvas = $<HTMLCanvasElement>('#game-canvas');
+    const verifyCapture = () => {
+      if (document.pointerLockElement === canvas) resume();
+      else {
+        this.buildEntryBriefing();
+        this.hideScreens();
+        $('#ready-overlay').toggleAttribute('hidden', false);
+        $<HTMLButtonElement>('#enter-file').textContent = 'Resume File';
+        $<HTMLButtonElement>('#enter-file').focus();
+      }
+    };
+    let settled = false;
+    let fallbackTimer: number | undefined;
+    const settleCapture = () => {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('pointerlockchange', settleCapture);
+      document.removeEventListener('pointerlockerror', settleCapture);
+      if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
+      verifyCapture();
+    };
+    document.addEventListener('pointerlockchange', settleCapture);
+    document.addEventListener('pointerlockerror', settleCapture);
+    fallbackTimer = window.setTimeout(settleCapture, 1500);
+    try {
+      const request = canvas.requestPointerLock() as Promise<void> | undefined;
+      void request?.catch(settleCapture);
+    } catch {
+      settleCapture();
+    }
   }
 
   private useFailure(detail: { reason: 'credential' | 'encounter' | 'nothing'; direction: 'left' | 'right' | 'center'; icon: string; credential?: string }): void {
@@ -898,6 +1023,7 @@ export class UIController {
           else write();
         } else if (this.game.loadManual(slot.slot)) {
           if (this.game.mode === 'paused') this.showScreen('pause-menu');
+          else if (this.game.mode === 'playing') this.prepareGameEntry();
           else this.hideScreens();
         }
       });
@@ -950,6 +1076,7 @@ export class UIController {
       action.addEventListener('click', () => {
         if (!this.game.loadAutomatic(slot.slotId)) return;
         if (this.game.mode === 'paused') this.showScreen('pause-menu');
+        else if (this.game.mode === 'playing') this.prepareGameEntry();
         else this.hideScreens();
       });
       row.append(badge, copy, action);
@@ -1037,6 +1164,7 @@ export class UIController {
         }];
       }).sort((left, right) => right.createdAt - left.createdAt);
     } catch {
+      this.showRuntimeWarning('The replay library is unavailable in this browser session.');
       return [];
     }
   }
@@ -1044,8 +1172,13 @@ export class UIController {
   private writeReplayLibrary(entries: ReplayLibraryEntry[]): boolean {
     const bounded = [...entries].sort((left, right) => right.createdAt - left.createdAt).slice(0, REPLAY_LIBRARY_LIMIT);
     if (!bounded.length) {
-      localStorage.removeItem(REPLAY_LIBRARY_KEY);
-      return true;
+      try {
+        localStorage.removeItem(REPLAY_LIBRARY_KEY);
+        return true;
+      } catch {
+        this.showRuntimeWarning('The replay library could not be updated. Existing campaign progress is unaffected.');
+        return false;
+      }
     }
     let serialized = JSON.stringify(bounded);
     while (bounded.length > 1 && serialized.length * 2 > REPLAY_LIBRARY_BYTES) {
@@ -1061,6 +1194,7 @@ export class UIController {
         serialized = JSON.stringify(bounded);
       }
     }
+    this.showRuntimeWarning('The replay library could not be saved. Existing campaign progress is unaffected.');
     return false;
   }
 
@@ -1080,8 +1214,19 @@ export class UIController {
 
   private showReplayLibrary(message = ''): void {
     this.buildReplayLibrary();
-    $('#replay-feedback').textContent = message;
+    $('#replay-feedback').textContent = message || (this.hasLegacyReplayLibrary()
+      ? 'Older replays use an incompatible simulation version and were left untouched.'
+      : '');
     this.showScreen('replay-library');
+  }
+
+  private hasLegacyReplayLibrary(): boolean {
+    try {
+      const value: unknown = JSON.parse(localStorage.getItem(LEGACY_REPLAY_LIBRARY_KEY) ?? '[]');
+      return Array.isArray(value) && value.length > 0;
+    } catch {
+      return false;
+    }
   }
 
   private showMessageInReplayLibrary(message: string): void {
@@ -1121,6 +1266,7 @@ export class UIController {
       const play = document.createElement('button');
       play.textContent = 'Play';
       play.addEventListener('click', () => {
+        this.game.audio.unlock();
         if (!this.game.startDemoPlayback(entry.demo)) {
           $('#replay-feedback').textContent = 'Replay could not be loaded.';
           return;
@@ -1162,7 +1308,13 @@ export class UIController {
     }
     try {
       const demo: unknown = JSON.parse(await file.text());
-      if (!this.storeReplay(demo)) throw new Error('invalid');
+      if (!this.storeReplay(demo)) {
+        const candidate = demo && typeof demo === 'object' ? demo as { schema?: unknown; version?: unknown } : undefined;
+        $('#replay-feedback').textContent = candidate?.schema === 'red-ledger-demo' && candidate.version !== DEMO_SCHEMA_VERSION
+          ? 'Replay uses an incompatible simulation version and cannot be imported.'
+          : 'Replay file is invalid or storage is full.';
+        return;
+      }
       this.showReplayLibrary('Replay imported.');
     } catch {
       $('#replay-feedback').textContent = 'Replay file is invalid or storage is full.';
@@ -1203,14 +1355,28 @@ export class UIController {
 
   private handleInputAction(detail: InputActionEvent): void {
     if (detail.repeat) return;
+    if (detail.source === 'gamepad') this.entryDevice = 'gamepad';
+    else if (detail.source === 'touch') this.entryDevice = 'touch';
+    else this.entryDevice = 'desktop';
+    const dialog = $<HTMLDialogElement>('#confirm-dialog');
+    if (dialog.open) {
+      if (detail.action === 'pause') this.closeConfirm();
+      return;
+    }
     if (detail.action === 'pause') {
       this.game.input.keys.delete('Escape');
       const activeScreen = document.querySelector<HTMLElement>('.screen.active');
+      const ready = !$('#ready-overlay').hasAttribute('hidden');
       if (this.game.mode === 'playing') this.game.pause();
-      else if (this.game.mode === 'paused' && activeScreen?.id === 'pause-menu') {
-        this.hideScreens();
-        this.game.resume();
+      else if (this.game.mode === 'paused' && ready) {
+        this.entryContinuation = undefined;
+        $('#ready-overlay').toggleAttribute('hidden', true);
+        this.showScreen('pause-menu');
       }
+      else if (this.game.mode === 'paused' && activeScreen?.id === 'pause-menu') {
+        this.resumeGameplay();
+      }
+      else this.handleBackNavigation();
       return;
     }
     if (this.game.mode !== 'playing') return;
@@ -1238,6 +1404,7 @@ export class UIController {
       const angle = index / weapons.length * Math.PI * 2;
       button.textContent = String(weapon.slot);
       button.title = weapon.id;
+      button.dataset.weapon = weapon.id;
       button.disabled = !this.game.player.weapons.has(weapon.id);
       button.style.transform = `translate(${Math.sin(angle) * 72}px, ${-Math.cos(angle) * 72}px)`;
       container.append(button);
@@ -1247,22 +1414,38 @@ export class UIController {
   }
 
   private updateWeaponRadial(): void {
-    const owned = Object.values(WEAPONS).filter((weapon) => this.game.player.weapons.has(weapon.id)).sort((left, right) => left.slot - right.slot);
+    const weapons = Object.values(WEAPONS).sort((left, right) => left.slot - right.slot);
+    const owned = weapons.filter((weapon) => this.game.player.weapons.has(weapon.id));
     if (!owned.length) return;
     const stick = this.game.input.gamepadLook;
     if (Math.hypot(stick.x, stick.y) > .35) {
       const angle = (Math.atan2(stick.x, -stick.y) + Math.PI * 2) % (Math.PI * 2);
-      this.radialWeapon = owned[Math.round(angle / (Math.PI * 2) * owned.length) % owned.length].id;
+      const slotIndex = Math.round(angle / (Math.PI * 2) * weapons.length) % weapons.length;
+      this.radialWeapon = [...owned].sort((left, right) => {
+        const leftIndex = weapons.indexOf(left);
+        const rightIndex = weapons.indexOf(right);
+        const leftDistance = Math.min(Math.abs(leftIndex - slotIndex), weapons.length - Math.abs(leftIndex - slotIndex));
+        const rightDistance = Math.min(Math.abs(rightIndex - slotIndex), weapons.length - Math.abs(rightIndex - slotIndex));
+        return leftDistance - rightDistance || left.slot - right.slot;
+      })[0].id;
     } else this.radialWeapon ??= this.game.player.weapon;
     document.querySelectorAll<HTMLButtonElement>('#weapon-radial button').forEach((button) => {
-      button.classList.toggle('selected', Number(button.textContent) === WEAPONS[this.radialWeapon!].slot);
+      button.classList.toggle('selected', button.dataset.weapon === this.radialWeapon);
     });
   }
 
   private handleMenuNavigation(detail: MenuNavigationEvent): void {
+    this.entryDevice = detail.source === 'gamepad' ? 'gamepad' : 'desktop';
+    if (detail.action === 'back' && !detail.repeat) {
+      this.handleBackNavigation();
+      return;
+    }
+    const dialog = $<HTMLDialogElement>('#confirm-dialog');
+    const ready = $('#ready-overlay');
     const active = document.querySelector<HTMLElement>('.screen.active');
-    if (!active || this.capturingAction) return;
-    const focusable = [...active.querySelectorAll<HTMLElement>('button:not(:disabled):not([hidden]), select:not(:disabled), input:not(:disabled)')]
+    const root = dialog.open ? dialog : !ready.hasAttribute('hidden') ? ready : active;
+    if (!root || this.capturingAction) return;
+    const focusable = [...root.querySelectorAll<HTMLElement>('button:not(:disabled):not([hidden]), select:not(:disabled), input:not(:disabled)')]
       .filter((element) => element.offsetParent !== null);
     if (!focusable.length) return;
     const current = document.activeElement instanceof HTMLElement ? focusable.indexOf(document.activeElement) : -1;
@@ -1287,7 +1470,23 @@ export class UIController {
       (current >= 0 ? focusable[current] : focusable[0]).click();
       return;
     }
-    if (detail.action !== 'back' || detail.repeat) return;
+  }
+
+  private handleBackNavigation(): void {
+    const dialog = $<HTMLDialogElement>('#confirm-dialog');
+    const ready = $('#ready-overlay');
+    const active = document.querySelector<HTMLElement>('.screen.active');
+    if (dialog.open) {
+      $<HTMLButtonElement>('#confirm-cancel').click();
+      return;
+    }
+    if (!ready.hasAttribute('hidden')) {
+      this.entryContinuation = undefined;
+      ready.toggleAttribute('hidden', true);
+      this.showScreen('pause-menu');
+      return;
+    }
+    if (!active) return;
     if (active.id === 'controls-menu') $<HTMLButtonElement>('#controls-back').click();
     else if (active.id === 'save-slots' || active.id === 'load-slots') active.querySelector<HTMLElement>('.slot-back')?.click();
     else if (active.id === 'pause-menu') $<HTMLButtonElement>('#resume-game').click();
@@ -1298,6 +1497,9 @@ export class UIController {
     document.querySelectorAll<HTMLButtonElement>('.episode-card').forEach((button, index) => {
       button.disabled = !this.game.isEpisodeUnlocked(index);
       button.title = button.disabled ? `${button.getAttribute('aria-label')} - locked` : button.getAttribute('aria-label') ?? '';
+      const title = button.dataset.title ?? button.getAttribute('aria-label') ?? `Episode ${index + 1}`;
+      const label = button.querySelector('span');
+      if (label) label.textContent = `Episode ${index + 1}: ${title}${button.disabled ? ' - Locked' : ''}`;
     });
   }
 
@@ -1310,7 +1512,11 @@ export class UIController {
       for (const id of ['classic-input', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects']) {
         if (typeof settings[id] === 'boolean') $<HTMLInputElement>(`#${id}`).checked = Boolean(settings[id]);
       }
-    } catch { localStorage.removeItem('red-ledger-settings-v1'); }
+    } catch {
+      try { localStorage.removeItem('red-ledger-settings-v1'); } catch {
+        this.showRuntimeWarning('Browser storage is unavailable. Settings apply for this session only.');
+      }
+    }
     $<HTMLInputElement>('#master-volume').value = String(this.game.audio.masterVolume);
     $<HTMLInputElement>('#music-volume').value = String(this.game.audio.musicVolume);
     $<HTMLInputElement>('#sfx-volume').value = String(this.game.audio.sfxVolume);
@@ -1342,17 +1548,21 @@ export class UIController {
       screenShake: $<HTMLInputElement>('#screen-shake').checked,
     } }));
     if (!persist) return;
-    localStorage.setItem('red-ledger-settings-v1', JSON.stringify({
-      sensitivity,
-      renderScale,
-      hudMode,
-      'classic-input': $<HTMLInputElement>('#classic-input').checked,
-      'screen-shake': $<HTMLInputElement>('#screen-shake').checked,
-      'reduced-motion': $<HTMLInputElement>('#reduced-motion').checked,
-      'high-contrast': $<HTMLInputElement>('#high-contrast').checked,
-      'reduced-effects': $<HTMLInputElement>('#reduced-effects').checked,
-      'flash-effects': $<HTMLInputElement>('#flash-effects').checked,
-    }));
+    try {
+      localStorage.setItem('red-ledger-settings-v1', JSON.stringify({
+        sensitivity,
+        renderScale,
+        hudMode,
+        'classic-input': $<HTMLInputElement>('#classic-input').checked,
+        'screen-shake': $<HTMLInputElement>('#screen-shake').checked,
+        'reduced-motion': $<HTMLInputElement>('#reduced-motion').checked,
+        'high-contrast': $<HTMLInputElement>('#high-contrast').checked,
+        'reduced-effects': $<HTMLInputElement>('#reduced-effects').checked,
+        'flash-effects': $<HTMLInputElement>('#flash-effects').checked,
+      }));
+    } catch {
+      this.showRuntimeWarning('Browser storage is unavailable. Settings apply for this session only.');
+    }
   }
 
   private updateContinue(): void {
@@ -1361,7 +1571,7 @@ export class UIController {
     button.disabled = false;
     button.dataset.available = String(available);
     button.setAttribute('aria-describedby', 'menu-feedback');
-    button.title = available ? 'Continue the newest valid save' : 'No valid save is available';
+    button.title = available ? 'Continue the newest valid save' : 'Start a new game';
     $('#menu-feedback').textContent = this.continuePreview();
   }
   private continuePreview(): string {
@@ -1389,8 +1599,15 @@ export class UIController {
     announcer.textContent = '';
     requestAnimationFrame(() => { announcer.textContent = message; });
   }
+  private showRuntimeWarning(message: string): void {
+    this.runtimeWarnings.add(message);
+    const warning = $('#runtime-warning');
+    warning.textContent = [...this.runtimeWarnings].join(' ');
+    warning.toggleAttribute('hidden', false);
+  }
   private hideScreens(): void { document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active')); }
   private showScreen(id: string): void {
+    $('#ready-overlay').toggleAttribute('hidden', true);
     this.hideScreens();
     const screen = $<HTMLElement>(`#${id}`);
     screen.classList.add('active');
@@ -1398,6 +1615,20 @@ export class UIController {
       screen.querySelector<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled)')?.focus({ preventScroll: true });
       screen.scrollTop = 0;
     });
+  }
+
+  private returnFromScreen(id: string): void {
+    const target = id === 'level-select' ? this.levelSelectReturn
+      : id === 'difficulty-menu' ? 'episode-menu'
+        : id === 'episode-intro' ? 'difficulty-menu'
+          : id === 'options-menu' ? this.optionsReturn
+            : 'menu';
+    this.showScreen(target);
+  }
+
+  private returnFromReplayLibrary(): void {
+    const target = this.replayReturn === 'pause-menu' && this.game.mode === 'paused' ? 'pause-menu' : 'menu';
+    this.showScreen(target);
   }
 
   private confirm(title: string, copy: string, acceptLabel: string, action: () => void): void {

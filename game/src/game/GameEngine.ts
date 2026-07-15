@@ -18,6 +18,7 @@ import {
 import { CAMPAIGN, type CampaignMap, type Credential, type MapId, type PickupId, type WeaponId } from '../data';
 import { AssetCatalog } from './AssetCatalog';
 import { AudioSystem } from './AudioSystem';
+import { directionFromView, rayVerticalCylinderDistance, sampleShotSpread } from './CombatMath';
 import { DIFFICULTY, ENEMIES, WEAPONS, type AmmoType, type GameDifficulty } from './definitions';
 import {
   EnemyBehaviorSystem,
@@ -182,10 +183,16 @@ interface BeamVisual {
   length: number;
 }
 
-interface HostileBeamVisual extends BeamVisual {
+interface HostileBeamVisual {
+  readonly mesh: Mesh<BufferGeometry, MeshBasicMaterial>;
+  readonly line: Line<BufferGeometry, LineBasicMaterial>;
+  readonly impact?: Sprite;
   readonly source: Vector3;
   readonly endpoint: Vector3;
   readonly duration: number;
+  readonly hit: boolean;
+  elapsed: number;
+  length: number;
 }
 
 interface ActiveDemoPlayback {
@@ -235,6 +242,21 @@ const isGameplayCommand = (value: unknown): value is GameplayCommand => {
 
 const LEGACY_SAVE_KEY = 'red-ledger-save-v1';
 const STEP = 1 / 35;
+const browserStorage = (): Storage => {
+  try {
+    return window.localStorage;
+  } catch (error) {
+    const fail = (): never => { throw error; };
+    return {
+      get length(): number { return fail(); },
+      clear: fail,
+      getItem: fail,
+      key: fail,
+      removeItem: fail,
+      setItem: fail,
+    } as Storage;
+  }
+};
 const DIFFICULTY_SCORE_MULTIPLIER: Record<GameDifficulty, number> = {
   orientation: .75,
   'desk-adjuster': .9,
@@ -443,6 +465,7 @@ export class GameEngine {
   private weaponTransition = 0;
   private pendingWeapon?: WeaponId;
   private renderScale = 1;
+  private halted = false;
   private ambientParticleTimer = 0;
   private lastMapResult?: MapResult;
   private readonly animatedEffects: AnimatedEffect[] = [];
@@ -457,15 +480,15 @@ export class GameEngine {
     window.addEventListener('resize', () => this.applyViewportSize());
     this.world = new World(this.scene, this.camera, assets);
     this.particles = new ParticleSystem(this.scene);
-    this.configureParticleTextures();
-    this.persistence = new PersistenceSystem<SaveData>(localStorage, {
+    const storage = browserStorage();
+    this.persistence = new PersistenceSystem<SaveData>(storage, {
       namespace: 'red-ledger-v2',
       gameVersion: '1',
       episodeIds: CAMPAIGN.episodes.map((episode) => episode.id),
       initialUnlockedEpisodes: [CAMPAIGN.episodes[0].id],
       validateState: isSaveData,
     });
-    this.migrateLegacySave();
+    this.migrateLegacySave(storage);
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement !== canvas && this.mode === 'playing') this.pause();
     });
@@ -558,6 +581,7 @@ export class GameEngine {
   pause(): void {
     if (this.mode !== 'playing') return;
     this.mode = 'paused';
+    this.audio.suspend();
     document.exitPointerLock();
     this.emit();
   }
@@ -565,11 +589,23 @@ export class GameEngine {
   resume(): void {
     if (this.mode !== 'paused') return;
     this.mode = 'playing';
+    this.audio.resume();
     this.emit();
   }
 
+  shutdownForFatal(): void {
+    if (this.halted) return;
+    this.halted = true;
+    cancelAnimationFrame(this.animationFrame);
+    if (this.activeDemo) this.activeDemo.paused = true;
+    if (this.mode === 'playing') this.mode = 'paused';
+    this.audio.stopMusic();
+    this.audio.suspend();
+    document.exitPointerLock();
+  }
+
   step(seconds: number): void {
-    if (this.mode !== 'playing') return;
+    if (this.halted || this.mode !== 'playing') return;
     const ticks = Math.round(Math.min(.25, Math.max(0, seconds)) / STEP);
     for (let tick = 0; tick < ticks; tick += 1) {
       if (this.activeDemo) this.advanceDemoPlayback();
@@ -579,6 +615,7 @@ export class GameEngine {
   }
 
   private loop(now: number): void {
+    if (this.halted) return;
     const elapsed = Math.min(.1, (now - this.lastTime) / 1000);
     this.lastTime = now;
     if (this.mode === 'playing') {
@@ -738,13 +775,9 @@ export class GameEngine {
       && this.horizontalDistance(actor.position, position) < ENEMIES[actor.id].radius + .32);
   }
 
-  private aimDirection(yawOffset = 0): Vector3 {
-    const cosPitch = Math.cos(this.player.pitch);
-    return new Vector3(
-      -Math.sin(this.player.yaw + yawOffset) * cosPitch,
-      -Math.sin(this.player.pitch),
-      -Math.cos(this.player.yaw + yawOffset) * cosPitch,
-    ).normalize();
+  private aimDirection(yawOffset = 0, pitchOffset = 0): Vector3 {
+    const direction = directionFromView(this.player.yaw, this.player.pitch, yawOffset, pitchOffset);
+    return new Vector3(direction.x, direction.y, direction.z);
   }
 
   private fireWeapon(): void {
@@ -753,8 +786,12 @@ export class GameEngine {
     if (weapon.ammo !== 'none' && this.player.ammo[weapon.ammo] < weapon.ammoCost) {
       this.weaponCooldown = .25;
       this.audio.tone(80, .06, 'square', .025);
-      this.showMessage(`${this.pretty(weapon.ammo)} needed`, .7);
+      const fallback = this.bestUsableWeapon(weapon.id);
+      this.showMessage(fallback
+        ? `${this.pretty(weapon.ammo)} needed - switching to ${this.pretty(fallback)}`
+        : `${this.pretty(weapon.ammo)} needed`, .9);
       window.dispatchEvent(new CustomEvent('weapon-dry', { detail: { weapon: weapon.id } }));
+      if (fallback) this.requestWeapon(fallback);
       return;
     }
     if (weapon.ammo !== 'none') this.player.ammo[weapon.ammo] -= weapon.ammoCost;
@@ -795,11 +832,12 @@ export class GameEngine {
     let actorImpact: Vector3 | undefined;
     let wallImpact: Vector3 | undefined;
     for (let pellet = 0; pellet < weapon.pellets; pellet += 1) {
-      const spread = (this.random() - .5) * weapon.spread;
-      const direction = this.aimDirection(spread);
-      const target = this.findTarget(direction, weapon.range, Math.max(.025, weapon.spread + .03));
+      const spread = sampleShotSpread(weapon.spread, () => this.random());
+      const direction = this.aimDirection(spread.yaw, spread.pitch);
+      const aimAssist = weapon.pellets === 1 ? .025 : 0;
+      const target = this.findTarget(direction, weapon.range, aimAssist);
       if (!target) {
-        const breakable = this.findBreakableTarget(direction, weapon.range, Math.max(.025, weapon.spread + .03));
+        const breakable = this.findBreakableTarget(direction, weapon.range, aimAssist);
         if (breakable) {
           this.damageBreakable(breakable.key, this.rollWeaponDamage(weapon.id));
           this.emitParticles('debris', breakable.position.clone().add(new Vector3(0, .6, 0)), 2, direction);
@@ -834,12 +872,16 @@ export class GameEngine {
   }
 
   private traceWorldImpact(direction: Vector3, range: number): Vector3 {
-    const point = this.player.position.clone();
+    return this.traceWorldImpactFrom(this.player.position, direction, range).position;
+  }
+
+  private traceWorldImpactFrom(origin: Vector3, direction: Vector3, range: number): { position: Vector3; hit: boolean } {
+    const point = origin.clone();
     for (let distance = .25; distance <= range; distance += .25) {
-      point.copy(this.player.position).addScaledVector(direction, distance);
-      if (this.world.isSolid(point, .04)) return point.clone().addScaledVector(direction, -.12);
+      point.copy(origin).addScaledVector(direction, distance);
+      if (this.world.isSolid(point, .04)) return { position: point.clone().addScaledVector(direction, -.12), hit: true };
     }
-    return this.player.position.clone().addScaledVector(direction, range);
+    return { position: origin.clone().addScaledVector(direction, range), hit: false };
   }
 
   private playWeaponImpact(weapon: WeaponId, position: Vector3, actor = false): void {
@@ -983,14 +1025,23 @@ export class GameEngine {
     this.bindingBeamVisual = undefined;
   }
 
-  private spawnHostileBeamVisual(actor: RuntimeActor): void {
+  private spawnHostileBeamVisual(actor: RuntimeActor, resolved: boolean, hit: boolean): void {
     const source = actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .62, 0));
-    const endpoint = this.player.position.clone().addScaledVector(this.aimDirection(), .78).add(new Vector3(0, -.08, 0));
+    const playerTarget = this.player.position.clone().add(new Vector3(0, -.08, 0));
+    const centerDirection = playerTarget.clone().sub(source).normalize();
+    const lateral = centerDirection.clone().cross(new Vector3(0, 1, 0)).normalize();
+    const missSide = [...actor.uid].reduce((hash, char) => hash + char.charCodeAt(0), 0) % 2 === 0 ? 1 : -1;
+    const desiredEndpoint = hit
+      ? playerTarget
+      : resolved ? playerTarget.clone().addScaledVector(lateral, missSide * .9) : playerTarget;
+    const desiredDelta = desiredEndpoint.clone().sub(source);
+    const trace = this.traceWorldImpactFrom(source, desiredDelta.clone().normalize(), desiredDelta.length());
+    const endpoint = hit ? playerTarget : trace.position;
     const geometry = new BufferGeometry();
     const material = new MeshBasicMaterial({
       map: this.assets.texture('/public_runtime/effects/denial-beam/fx_denial-beam_start_F_01.png'),
       transparent: true,
-      depthTest: false,
+      depthTest: true,
       depthWrite: false,
       alphaTest: .02,
       side: DoubleSide,
@@ -1004,18 +1055,22 @@ export class GameEngine {
       color: 0xffd45c,
       transparent: true,
       opacity: this.accessibility.reducedEffects ? .9 : .72,
-      depthTest: false,
+      depthTest: true,
       depthWrite: false,
       blending: AdditiveBlending,
     }));
     line.frustumCulled = false;
     line.renderOrder = this.accessibility.highContrast ? 27 : 7;
     this.world.root.add(line);
-    const impact = this.createEffectSprite('/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_01.png', this.accessibility.reducedEffects ? .44 : .62, true);
-    impact.material.depthTest = false;
-    impact.renderOrder = this.accessibility.highContrast ? 27 : 7;
-    this.hostileBeamVisuals.push({ mesh, line, impact, source, endpoint, elapsed: 0, length: source.distanceTo(endpoint), duration: .24 });
-    this.emitParticles('rejection', endpoint, this.accessibility.reducedEffects ? 3 : 7);
+    const impact = hit
+      ? this.createEffectSprite('/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_01.png', this.accessibility.reducedEffects ? .44 : .62, true)
+      : undefined;
+    if (impact) {
+      impact.material.depthTest = true;
+      impact.renderOrder = this.accessibility.highContrast ? 27 : 7;
+    }
+    this.hostileBeamVisuals.push({ mesh, line, impact, source, endpoint, hit, elapsed: 0, length: source.distanceTo(endpoint), duration: .24 });
+    if (hit) this.emitParticles('rejection', endpoint, this.accessibility.reducedEffects ? 3 : 7);
   }
 
   private updateHostileBeamVisuals(dt: number): void {
@@ -1066,22 +1121,25 @@ export class GameEngine {
       const fade = Math.min(1, (visual.duration - visual.elapsed) / .07);
       visual.mesh.material.opacity = (this.accessibility.reducedEffects ? .55 : 1) * fade;
       visual.line.material.opacity = (this.accessibility.reducedEffects ? .9 : .72) * fade;
-      visual.impact.material.opacity = fade;
-      visual.impact.position.copy(visual.endpoint);
-      const impactFrame = Math.floor(visual.elapsed * 30) % 5 + 1;
-      visual.impact.material.map = this.assets.texture(`/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_${String(impactFrame).padStart(2, '0')}.png`);
+      if (visual.impact) {
+        visual.impact.material.opacity = fade;
+        visual.impact.position.copy(visual.endpoint);
+        const impactFrame = Math.floor(visual.elapsed * 30) % 5 + 1;
+        visual.impact.material.map = this.assets.texture(`/public_runtime/effects/denial-beam/fx_denial-beam_impact_F_${String(impactFrame).padStart(2, '0')}.png`);
+      }
     }
   }
 
   private removeHostileBeamVisual(index: number): void {
     const [visual] = this.hostileBeamVisuals.splice(index, 1);
     if (!visual) return;
-    this.world.root.remove(visual.mesh, visual.line, visual.impact);
+    this.world.root.remove(visual.mesh, visual.line);
+    if (visual.impact) this.world.root.remove(visual.impact);
     visual.mesh.geometry.dispose();
     visual.mesh.material.dispose();
     visual.line.geometry.dispose();
     visual.line.material.dispose();
-    visual.impact.material.dispose();
+    visual.impact?.material.dispose();
   }
 
   private clearHostileBeamVisuals(): void {
@@ -1208,15 +1266,18 @@ export class GameEngine {
     let bestDistance = range;
     for (const actor of this.world.actors) {
       if (actor.dead || actor.phaseLocked) continue;
-      const delta = actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0)).sub(this.player.position);
-      const distance = delta.length();
-      if (distance >= bestDistance || !this.world.hasLineOfSight(this.player.position, actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0)))) continue;
-      const angularMiss = Math.acos(Math.max(-1, Math.min(1, direction.dot(delta.normalize()))));
-      const sizeAllowance = Math.asin(Math.min(1, ENEMIES[actor.id].radius / Math.max(ENEMIES[actor.id].radius, distance)));
-      if (angularMiss <= tolerance + sizeAllowance) {
-        result = actor;
-        bestDistance = distance;
-      }
+      const definition = ENEMIES[actor.id];
+      const center = actor.position.clone().add(new Vector3(0, definition.height * .5, 0));
+      const centerDistance = center.distanceTo(this.player.position);
+      const assistance = Math.tan(tolerance) * centerDistance;
+      const base = actor.position.clone().add(new Vector3(0, -assistance, 0));
+      const distance = rayVerticalCylinderDistance(
+        this.player.position, direction, base,
+        definition.radius + assistance, definition.height + assistance * 2, bestDistance,
+      );
+      if (distance === undefined || !this.world.hasLineOfSight(this.player.position, center)) continue;
+      result = actor;
+      bestDistance = distance;
     }
     return result;
   }
@@ -1226,15 +1287,16 @@ export class GameEngine {
     let bestDistance = range;
     for (const breakable of this.world.breakables.values()) {
       if (breakable.destroyed) continue;
-      const delta = breakable.position.clone().add(new Vector3(0, .6, 0)).sub(this.player.position);
-      const distance = delta.length();
-      if (distance >= bestDistance || !this.world.hasLineOfSight(this.player.position, breakable.position)) continue;
-      const angularMiss = Math.acos(Math.max(-1, Math.min(1, direction.dot(delta.normalize()))));
-      const sizeAllowance = Math.asin(Math.min(1, .35 / Math.max(.35, distance)));
-      if (angularMiss <= tolerance + sizeAllowance) {
-        result = breakable;
-        bestDistance = distance;
-      }
+      const center = breakable.position.clone().add(new Vector3(0, .6, 0));
+      const centerDistance = center.distanceTo(this.player.position);
+      const assistance = Math.tan(tolerance) * centerDistance;
+      const base = breakable.position.clone().add(new Vector3(0, -assistance, 0));
+      const distance = rayVerticalCylinderDistance(
+        this.player.position, direction, base, .35 + assistance, 1.2 + assistance * 2, bestDistance,
+      );
+      if (distance === undefined || !this.world.hasLineOfSight(this.player.position, center)) continue;
+      result = breakable;
+      bestDistance = distance;
     }
     return result;
   }
@@ -1375,6 +1437,11 @@ export class GameEngine {
             && Math.abs(other.position.y - position.y) < Math.max(ENEMIES[other.id].height, actor.height ?? 1)
             && this.horizontalDistance(other.position, point) < ENEMIES[other.id].radius + actor.radius);
         },
+        canPlaceHazard: (position, radius) => {
+          const point = new Vector3(position.x, 0, position.z);
+          point.y = this.world.floorHeightAt(point) + .04;
+          return !this.world.isSolid(point, Math.min(.45, Math.max(.16, radius * .18)));
+        },
         traceProjectile: (projectile, from, to) => this.traceEnemyProjectile(projectile, from, to),
       },
       difficulty: { reaction: difficulty.reaction, refire: difficulty.refire, projectileSpeed: difficulty.projectileSpeed, aggression: difficulty.aggression },
@@ -1430,7 +1497,9 @@ export class GameEngine {
         if (actor) actor.attackFlash = .2;
         if (actor) {
           this.audio.enemyCue(actor.id, 'attack', this.actorPan(actor), this.actorAudibility(actor));
-          if (event.attackId === 'denial-beam' || event.attackId === 'uninsurable-denial') this.spawnHostileBeamVisual(actor);
+          if (event.attackId === 'denial-beam' || event.attackId === 'uninsurable-denial') {
+            if (event.resolved || event.blocked) this.spawnHostileBeamVisual(actor, event.resolved, (event.hitCount ?? 0) > 0);
+          }
         }
         break;
       case 'state':
@@ -2127,6 +2196,7 @@ export class GameEngine {
     this.nextMap = nextMap;
     this.mode = 'intermission';
     this.audio.stopMusic();
+    this.audio.suspend();
     document.exitPointerLock();
     this.onIntermission?.(nextMap);
     this.emit();
@@ -2167,6 +2237,7 @@ export class GameEngine {
     }
     this.mode = 'dead';
     this.audio.stopMusic();
+    this.audio.suspend();
     document.exitPointerLock();
     this.showMessage('Claim denied', 2);
     this.emit();
@@ -2208,6 +2279,18 @@ export class GameEngine {
       window.dispatchEvent(new CustomEvent('weapon-switch', { detail: { from: this.player.weapon, to: id, state: 'lowering', duration: this.weaponTransition } }));
     }
     return true;
+  }
+
+  private bestUsableWeapon(exclude?: WeaponId): WeaponId | undefined {
+    const priority: readonly WeaponId[] = [
+      'binding-engine', 'plasma-copier', 'catastrophe-launcher', 'audit-repeater',
+      'twin-bore-riveter', 'staple-driver', 'umbra-saw', 'claim-stamp',
+    ];
+    return priority.find((id) => {
+      if (id === exclude || !this.player.weapons.has(id)) return false;
+      const candidate = WEAPONS[id];
+      return candidate.ammo === 'none' || this.player.ammo[candidate.ammo] >= candidate.ammoCost;
+    });
   }
 
   private updateWeaponTransition(dt: number): void {
@@ -2557,6 +2640,7 @@ export class GameEngine {
   pauseDemoPlayback(): void {
     if (!this.activeDemo || this.activeDemo.paused || this.activeDemo.finished) return;
     this.activeDemo.paused = true;
+    this.audio.suspend();
     this.emit();
   }
 
@@ -2592,6 +2676,7 @@ export class GameEngine {
       speed: 1,
       tickCredit: 0,
     };
+    this.audio.suspend();
     document.exitPointerLock();
     this.emit();
     this.render();
@@ -2601,6 +2686,11 @@ export class GameEngine {
   toggleDemoPlayback(): boolean {
     if (!this.activeDemo || this.activeDemo.finished) return false;
     this.activeDemo.paused = !this.activeDemo.paused;
+    if (this.activeDemo.paused) this.audio.suspend();
+    else {
+      this.audio.unlock();
+      this.audio.resume();
+    }
     this.emit();
     return this.activeDemo.paused;
   }
@@ -2622,6 +2712,7 @@ export class GameEngine {
     this.activeDemo = undefined;
     this.mode = 'menu';
     this.audio.stopMusic();
+    this.audio.suspend();
     this.emit();
   }
 
@@ -2641,6 +2732,7 @@ export class GameEngine {
     if (active.playback.finished) active.finished = true;
     if (active.finished) {
       active.paused = true;
+      this.audio.suspend();
       document.exitPointerLock();
       this.emit();
     }
@@ -2669,6 +2761,7 @@ export class GameEngine {
       this.demoReadOnly = false;
     }
     this.mode = 'paused';
+    this.audio.suspend();
     document.exitPointerLock();
     this.emit();
     this.render();
@@ -2706,9 +2799,10 @@ export class GameEngine {
     this.loadMap(mapId, true);
   }
 
-  private migrateLegacySave(): void {
+  private migrateLegacySave(storage: Storage): void {
     if (this.persistence.newestValidContinue()) return;
-    const raw = localStorage.getItem(LEGACY_SAVE_KEY);
+    let raw: string | null;
+    try { raw = storage.getItem(LEGACY_SAVE_KEY); } catch { return; }
     if (!raw) return;
     try {
       const state: unknown = JSON.parse(raw);
@@ -2740,6 +2834,17 @@ export class GameEngine {
       actor.sprite.visible = true;
       this.damageActor(actor, actor.health + 1);
     });
+  }
+
+  debugDefeatPlayer(): void {
+    if (this.mode !== 'playing') return;
+    this.player.health = 0;
+    this.die();
+  }
+
+  debugSetAmmo(type: Exclude<AmmoType, 'none'>, amount: number): void {
+    this.player.ammo[type] = Math.max(0, Math.floor(amount));
+    this.emit();
   }
 
   debugDefeatEncounter(id: string): number {
@@ -2927,7 +3032,7 @@ export class GameEngine {
         playerProjectiles: this.playerProjectiles.map((item) => ({ id: item.id, weapon: item.weapon, x: +item.position.x.toFixed(2), z: +item.position.z.toFixed(2), remaining: +item.remaining.toFixed(2) })),
         bindingPulses: this.bindingBeam?.pulses ?? 0,
         bindingBeam: this.bindingBeamVisual ? { active: true, length: +this.bindingBeamVisual.length.toFixed(2) } : { active: false, length: 0 },
-        hostileBeams: this.hostileBeamVisuals.map((beam) => ({ length: +beam.length.toFixed(2), remaining: +(beam.duration - beam.elapsed).toFixed(3) })),
+        hostileBeams: this.hostileBeamVisuals.map((beam) => ({ hit: beam.hit, length: +beam.length.toFixed(2), remaining: +(beam.duration - beam.elapsed).toFixed(3) })),
         animated: this.animatedEffects.map((effect) => ({ family: effect.family, frame: effect.frame + 1 })),
         particles: { active: this.particles.activeCount, capacity: this.particles.capacity, byKind: this.particles.counts() },
       },
@@ -2950,6 +3055,7 @@ export class GameEngine {
         } : null,
       },
       runtime: {
+        halted: this.halted,
         textureCount: this.assets.textures.size,
         drawCalls: this.renderer.info.render.calls,
         triangles: this.renderer.info.render.triangles,
