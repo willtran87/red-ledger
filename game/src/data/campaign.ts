@@ -173,7 +173,7 @@ const specs: readonly MapSpec[] = [
   },
   {
     id: 'E2M1', title: 'Catastrophe Staging', location: 'Storm logistics yard and response hangar', layout: 'loop',
-    parSeconds: 270, normalEnemies: 68, enemies: E2_OPEN, weapons: ['catastrophe-launcher', 'audit-repeater'], credentials: ['yellow'],
+    parSeconds: 270, normalEnemies: 68, enemies: E2_OPEN, weapons: ['catastrophe-launcher', 'twin-bore-riveter', 'audit-repeater'], credentials: ['yellow'],
     transformation: 'move-walls', nextMap: 'E2M2',
     signatureBeat: 'Lightning silhouettes long-range threats between shifting container lanes.',
     secretClues: ['A container with inward-facing locks', 'A warning beacon blinking out of sequence', 'A painted loading number visible only in lightning'],
@@ -236,7 +236,7 @@ const specs: readonly MapSpec[] = [
   },
   {
     id: 'E3M1', title: 'Earned Premium', location: 'Brass premium foundry at the underworld edge', layout: 'loop',
-    parSeconds: 420, normalEnemies: 92, enemies: E3_OPEN, weapons: ['plasma-copier'], credentials: ['yellow'],
+    parSeconds: 420, normalEnemies: 92, enemies: E3_OPEN, weapons: ['plasma-copier', 'twin-bore-riveter', 'catastrophe-launcher'], credentials: ['yellow'],
     transformation: 'open-door', nextMap: 'E3M2',
     signatureBeat: 'Currency channels power the foundry doors and release Reserve Eaters in return.',
     secretClues: ['A coin channel flowing uphill', 'A silent calculator wheel', 'A brass tile colder than the surrounding floor'],
@@ -466,6 +466,11 @@ const baseRoutePoints = (grid: readonly string[], blocked = 's'): readonly GridP
   });
 };
 
+const DOOR_CELLS = 'DRYC';
+const actorRoutePoints = (grid: readonly string[], blocked = 's'): readonly GridPoint[] =>
+  baseRoutePoints(grid, blocked).filter((point) =>
+    !DOOR_CELLS.includes(grid[Math.floor(point.z)]?.[Math.floor(point.x)] ?? ''));
+
 const chooseStartExit = (grid: readonly string[]): { start: GridPoint & { facing: Facing }; exit: GridPoint } => {
   const points = baseRoutePoints(grid);
   const start = points[0];
@@ -474,21 +479,35 @@ const chooseStartExit = (grid: readonly string[]): { start: GridPoint & { facing
   return { start: { ...start, facing }, exit };
 };
 
-const difficultyMask = (index: number, normalCount: number): readonly Difficulty[] => {
-  const common = Math.ceil(normalCount * 0.72);
-  if (index < common) return ['easy', 'normal', 'hard'];
-  if (index < normalCount) return ['normal', 'hard'];
+const ENCOUNTER_PHASES = ['entry', 'transformation', 'climax'] as const;
+type EncounterPhase = typeof ENCOUNTER_PHASES[number];
+
+const splitPhaseCounts = (total: number): Readonly<Record<EncounterPhase, number>> => {
+  const entry = Math.ceil(total * .34);
+  const transformationEnd = Math.ceil(total * .72);
+  return {
+    entry,
+    transformation: transformationEnd - entry,
+    climax: total - transformationEnd,
+  };
+};
+
+const difficultyMask = (phaseIndex: number, easyCount: number, normalCount: number): readonly Difficulty[] => {
+  if (phaseIndex < easyCount) return ['easy', 'normal', 'hard'];
+  if (phaseIndex < normalCount) return ['normal', 'hard'];
   return ['hard'];
 };
 
 const supplyFor = (episode: 1 | 2 | 3): readonly PickupId[] => episode === 1
-  ? ['staples-small', 'fasteners-small', 'adhesive-bandage', 'goodwill-token', 'staples-large', 'field-medical-case', 'loss-control-vest', 'canister']
+  ? ['staples-small', 'fasteners-small', 'adhesive-bandage', 'goodwill-token', 'staples-large', 'field-medical-case', 'loss-control-vest', 'canister', 'night-inspection-goggles']
   : episode === 2
-    ? ['staples-large', 'fasteners-large', 'canister', 'toner-cell', 'adhesive-bandage', 'field-medical-case', 'loss-control-vest', 'hazard-endorsement']
-    : ['staples-large', 'fasteners-large', 'canister-crate', 'toner-cell', 'toner-pack', 'field-medical-case', 'catastrophe-suit', 'rapid-authority', 'emergency-reserve'];
+    ? ['staples-large', 'fasteners-large', 'canister', 'toner-cell', 'adhesive-bandage', 'field-medical-case', 'loss-control-vest', 'hazard-endorsement', 'forensic-lens']
+    : ['staples-large', 'fasteners-large', 'canister-crate', 'toner-cell', 'toner-pack', 'field-medical-case', 'catastrophe-suit', 'rapid-authority', 'emergency-reserve', 'temporary-binder'];
+
+const credentialDoorSymbol: Readonly<Record<Credential, string>> = { red: 'R', yellow: 'Y', cyan: 'C' };
 
 const makeEncounterBlueprint = (spec: MapSpec, grid: readonly string[]): EncounterBlueprint => {
-  const cells = baseRoutePoints(grid);
+  const cells = actorRoutePoints(grid);
   const authored = ENCOUNTER_BLUEPRINTS[spec.id];
   const point = (index: number): GridPoint => cells[index % cells.length];
   return {
@@ -509,18 +528,26 @@ const makeActors = (
   exit: GridPoint,
   blueprint: EncounterBlueprint,
 ): readonly ActorPlacement[] => {
-  const available = baseRoutePoints(grid).filter((point) => distance(point, start) > 4 && distance(point, exit) > 2);
+  const available = actorRoutePoints(grid).filter((point) => distance(point, start) > 4 && distance(point, exit) > 2);
   const authoredZones = {
     entry: [...available].sort((a, b) => distance(a, blueprint.entryAnchor) - distance(b, blueprint.entryAnchor)),
     transformation: [...available].sort((a, b) => distance(a, blueprint.transformationAnchor) - distance(b, blueprint.transformationAnchor)),
     climax: [...available].sort((a, b) => distance(a, blueprint.climaxAnchor) - distance(b, blueprint.climaxAnchor)),
   };
   const normalCount = phaseEnemyBudget(spec);
+  const easyCount = Math.ceil(normalCount * .72);
   const hardCount = normalCount + Math.ceil(normalCount * 0.25);
+  const phaseCounts = {
+    easy: splitPhaseCounts(easyCount),
+    normal: splitPhaseCounts(normalCount),
+    hard: splitPhaseCounts(hardCount),
+  } as const;
   const actors: ActorPlacement[] = [];
   const occupancy = new Map<string, number>();
+  const hostileOccupancy = new Map<string, number>();
+  const cellKey = (point: GridPoint): string => `${Math.floor(point.x)},${Math.floor(point.z)}`;
   const occupy = (point: GridPoint): GridPoint => {
-    const key = `${Math.floor(point.x)},${Math.floor(point.z)}`;
+    const key = cellKey(point);
     const slot = occupancy.get(key) ?? 0;
     occupancy.set(key, slot + 1);
     const ring = Math.floor(slot / 8) + 1;
@@ -530,27 +557,49 @@ const makeActors = (
     const offsetZ = Math.sin(angle) * radius;
     return { x: point.x + offsetX, z: point.z + offsetZ };
   };
+  const reserveHostile = (zone: readonly GridPoint[], preferredIndex: number, preferred?: GridPoint): GridPoint => {
+    const safePreferred = preferred && !DOOR_CELLS.includes(grid[Math.floor(preferred.z)]?.[Math.floor(preferred.x)] ?? '')
+      ? preferred
+      : undefined;
+    const preferredKey = safePreferred && cellKey(safePreferred);
+    const candidates = safePreferred
+      ? [safePreferred, ...zone.filter((point) => cellKey(point) !== preferredKey)]
+      : zone;
+    const startIndex = safePreferred ? 0 : preferredIndex % candidates.length;
+    for (let offset = 0; offset < candidates.length; offset += 1) {
+      const point = candidates[(startIndex + offset) % candidates.length];
+      const key = cellKey(point);
+      if ((hostileOccupancy.get(key) ?? 0) >= 2) continue;
+      hostileOccupancy.set(key, (hostileOccupancy.get(key) ?? 0) + 1);
+      return occupy(point);
+    }
+    throw new Error(`${spec.id} encounter zone has no spawn cell below its occupancy cap`);
+  };
 
-  for (let i = 0; i < hardCount; i += 1) {
-    const encounter = i < hardCount * 0.34 ? 'entry' : i < hardCount * 0.72 ? 'transformation' : 'climax';
-    const encounterStart = encounter === 'entry' ? 0 : encounter === 'transformation' ? Math.ceil(hardCount * .34) : Math.ceil(hardCount * .72);
+  let enemyIndex = 0;
+  for (const encounter of ENCOUNTER_PHASES) {
     const zone = authoredZones[encounter];
-    let point = blueprint.infightingPocket && i > 0 && i % 19 === 0
-      ? blueprint.infightingPocket
-      : zone[(i * 7 + hash(`${spec.id}:${encounter}`)) % zone.length];
-    if (spec.id === 'E1M1' && i === 0) point = { x: start.x + 3, z: start.z };
-    const enemy = spec.enemies[(i * 5 + hash(`${spec.id}:${i}`)) % spec.enemies.length];
-    actors.push({
-      ...occupy(point),
-      type: 'enemy',
-      enemy,
-      difficulties: difficultyMask(i, normalCount),
-      dormant: i % 5 === 0,
-      encounter,
-      mandatory: i - encounterStart < 3,
-      route: encounter,
-      facing: i % 4 === 0 ? blueprint.ambushFacing : (['north', 'east', 'south', 'west'] as const)[i % 4],
-    });
+    for (let phaseIndex = 0; phaseIndex < phaseCounts.hard[encounter]; phaseIndex += 1) {
+      const preferred = spec.id === 'E1M1' && enemyIndex === 0
+        ? { x: start.x + 3, z: start.z }
+        : blueprint.infightingPocket && enemyIndex > 0 && enemyIndex % 19 === 0
+          ? blueprint.infightingPocket
+          : undefined;
+      const point = reserveHostile(zone, enemyIndex * 7 + hash(`${spec.id}:${encounter}`), preferred);
+      const enemy = spec.enemies[(enemyIndex * 5 + hash(`${spec.id}:${enemyIndex}`)) % spec.enemies.length];
+      actors.push({
+        ...point,
+        type: 'enemy',
+        enemy,
+        difficulties: difficultyMask(phaseIndex, phaseCounts.easy[encounter], phaseCounts.normal[encounter]),
+        dormant: enemyIndex % 5 === 0,
+        encounter,
+        mandatory: phaseIndex < 3,
+        route: encounter,
+        facing: enemyIndex % 4 === 0 ? blueprint.ambushFacing : (['north', 'east', 'south', 'west'] as const)[enemyIndex % 4],
+      });
+      enemyIndex += 1;
+    }
   }
 
   const supply = supplyFor(episode);
@@ -571,23 +620,34 @@ const makeActors = (
     actors.push({ ...occupy(point), type: 'pickup', pickup, route: routeId });
   }
 
+  const standardWeaponCount = spec.id.endsWith('M1') ? episode : 1;
   spec.weapons.forEach((weapon, index) => {
     const point = available[(hardCount + pickupCount + index * 11) % available.length];
-    actors.push({ ...occupy(point), type: 'weapon', weapon, secret: index > 0, route: index === 0 ? 'entry' : 'transformation' });
+    actors.push({ ...occupy(point), type: 'weapon', weapon, secret: index >= standardWeaponCount, route: index === 0 ? 'entry' : 'transformation' });
   });
 
+  let previousCredentialReach = new Set<string>();
   spec.credentials.forEach((credential, index) => {
-    const ungated = baseRoutePoints(grid, 'sRYC').filter((point) => distance(point, start) > 2);
-    const point = ungated[(hash(`${spec.id}:credential:${credential}`) + index * 7) % ungated.length] ?? available[index];
+    const acquired = new Set(spec.credentials.slice(0, index));
+    const blockedDoors = (['red', 'yellow', 'cyan'] as const)
+      .filter((candidate) => !acquired.has(candidate))
+      .map((candidate) => credentialDoorSymbol[candidate])
+      .join('');
+    const reachable = actorRoutePoints(grid, `s${blockedDoors}`).filter((point) => distance(point, start) > 2);
+    const newlyUnlocked = index === 0 ? reachable : reachable.filter((point) => !previousCredentialReach.has(cellKey(point)));
+    const candidates = newlyUnlocked.length > 0 ? newlyUnlocked : reachable;
+    const point = candidates[(hash(`${spec.id}:credential:${credential}`) + index * 7) % candidates.length] ?? available[index];
     actors.push({ ...occupy(point), type: 'credential', credential });
+    previousCredentialReach = new Set(reachable.map(cellKey));
   });
 
   spec.bosses?.forEach((boss, index) => {
-    const point = available.reduce((best, candidate) => {
+    const preferred = available.reduce((best, candidate) => {
       const offsetCenter = { x: blueprint.climaxAnchor.x + index * 2, z: blueprint.climaxAnchor.z };
       return distance(candidate, offsetCenter) < distance(best, offsetCenter) ? candidate : best;
     }, available[0]);
-    actors.push({ ...occupy(point), type: 'boss', boss, encounter: `boss-${index + 1}`, facing: 'south' });
+    const point = reserveHostile(authoredZones.climax, hash(`${spec.id}:boss:${boss}`), preferred);
+    actors.push({ ...point, type: 'boss', boss, encounter: `boss-${index + 1}`, facing: 'south' });
   });
 
   return actors;

@@ -188,6 +188,18 @@ const PICKUP_IDS: Record<PickupId, string> = {
   'floor-plan': 'floor-plan', 'forensic-lens': 'forensic-lens',
 };
 
+// Item mastery tracks deliberate exploration rewards, mirroring the classic
+// COUNTITEM distinction. Capped ammunition, recovery, and equipment remain
+// useful without requiring the player to waste them just to reach 100%.
+export const COUNTED_PICKUP_IDS: ReadonlySet<PickupId> = new Set([
+  'temporary-binder',
+  'night-inspection-goggles',
+  'hazard-endorsement',
+  'rapid-authority',
+  'floor-plan',
+  'forensic-lens',
+]);
+
 export class World {
   readonly root = new Group();
   readonly actors: RuntimeActor[] = [];
@@ -457,7 +469,15 @@ export class World {
       sprite.scale.set(.85, .85, 1);
       sprite.position.copy(position);
       this.root.add(sprite);
-      this.pickups.push({ uid: `${placement.type}-${index}`, kind: placement.type, id, sprite, position, collected: false, counted: placement.type === 'pickup' });
+      this.pickups.push({
+        uid: `${placement.type}-${index}`,
+        kind: placement.type,
+        id,
+        sprite,
+        position,
+        collected: false,
+        counted: placement.type === 'pickup' && COUNTED_PICKUP_IDS.has(placement.pickup),
+      });
     });
   }
 

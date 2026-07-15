@@ -13,6 +13,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 dialog:focus-visible { outline: 0; }
 
 #game-shell {
+  --ui-button-min-width: 132px;
+  --ui-button-min-height: 36px;
+  --ui-button-font-size: 16px;
+  --ui-screen-gap: 12px;
+  --ui-heading-max: 34px;
+  --ui-episode-width: 192px;
+  --ui-episode-height: 120px;
+  --ui-intro-max-width: 640px;
   position: relative;
   width: min(100vw, 160vh);
   height: min(100vh, 62.5vw);
@@ -43,7 +51,7 @@ dialog:focus-visible { outline: 0; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: var(--ui-screen-gap);
   background: rgba(8, 9, 10, 0.94);
   z-index: 20;
 }
@@ -51,7 +59,7 @@ dialog:focus-visible { outline: 0; }
 .screen.active { display: flex; }
 .screen.compact { inset: 8% 22%; padding: 12px; overflow-y: auto; border: 2px solid #646a70; background: rgba(17, 18, 20, 0.97); }
 .screen-copy { max-width: 480px; margin: 0; text-align: center; color: #d4d2cb; }
-.screen h1 { margin: 0 0 12px; color: #fffdf7; font-size: clamp(20px, 4vh, 34px); letter-spacing: 0; }
+.screen h1 { margin: 0 0 12px; color: #fffdf7; font-size: clamp(20px, 4vh, var(--ui-heading-max)); letter-spacing: 0; }
 .title-art { width: min(78%, 960px); max-height: 58%; object-fit: contain; image-rendering: pixelated; }
 #menu .game-title { margin: 0; color: #fffdf7; font-size: 64px; line-height: 1; text-shadow: 4px 4px #7a1018; }
 .menu-actions { display: flex; gap: 8px; }
@@ -84,8 +92,9 @@ dialog:focus-visible { outline: 0; }
 .level-map-grid button.mastered { border-color: #47bcd1; }
 .level-map-grid button.mastered .map-mastery-target { color: #47bcd1; }
 button {
-  min-width: 132px;
-  min-height: 36px;
+  min-width: var(--ui-button-min-width);
+  min-height: var(--ui-button-min-height);
+  font-size: var(--ui-button-font-size);
   border: 1px solid #b7b8b4;
   border-radius: 2px;
   color: #f4f1ea;
@@ -95,7 +104,7 @@ button {
 button:hover { color: #fffdf7; border-color: #d9232e; background: #4b5055; }
 button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #episode-cards { display: flex; gap: 10px; }
-.episode-card { position: relative; width: 192px; height: 120px; padding: 0; overflow: hidden; background-size: cover; image-rendering: pixelated; }
+.episode-card { position: relative; width: var(--ui-episode-width); height: var(--ui-episode-height); padding: 0; overflow: hidden; background-size: cover; image-rendering: pixelated; }
 .episode-card span { position: absolute; inset: auto 0 0; padding: 7px 6px 6px; color: #fffdf7; background: rgba(8,9,10,.88); font-size: 9px; text-shadow: 1px 1px #08090a; }
 .episode-card:disabled { opacity: .72; filter: grayscale(.55); }
 .episode-card:disabled span { color: #fffdf7; }
@@ -176,7 +185,7 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #context-prompt[hidden] { display: none; }
 #context-prompt img { width: 16px; height: 16px; image-rendering: pixelated; }
 #context-prompt.locked { color: #ffe17a; }
-#muzzle-flash { position: absolute; z-index: 3; left: 50%; bottom: 37%; width: 64px; height: 64px; opacity: 0; background: center / contain no-repeat; image-rendering: pixelated; mix-blend-mode: screen; }
+#muzzle-flash { position: absolute; z-index: 3; left: 50%; bottom: 37%; width: 64px; height: 64px; opacity: 0; contain: paint; pointer-events: none; background: center / contain no-repeat; image-rendering: pixelated; will-change: transform, opacity; }
 #use-feedback { position: absolute; top: 44%; left: 50%; display: flex; align-items: center; gap: 8px; min-width: 190px; padding: 7px 10px; transform: translate(-50%, -50%); border: 1px solid #d9232e; color: #fffdf7; background: rgba(8,9,10,.86); text-shadow: 1px 1px #08090a; }
 #use-feedback[hidden] { display: none; }
 #use-feedback.from-left { left: 38%; }
@@ -189,6 +198,15 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #weapon-view[data-weapon="catastrophe-launcher"], #weapon-view[data-weapon="plasma-copier"] { bottom: 11%; height: 45%; }
 #weapon-view[data-weapon="binding-engine"] { bottom: 10%; height: 42%; }
 #weapon-view[data-weapon="umbra-saw"] { bottom: 10%; height: 45%; }
+@media (pointer: fine) {
+  #weapon-view { bottom: 16%; height: 32%; }
+  #weapon-view[data-weapon="claim-stamp"] { bottom: 16%; height: 28%; }
+  #weapon-view[data-weapon="staple-driver"], #weapon-view[data-weapon="audit-repeater"] { bottom: 16%; height: 31%; }
+  #weapon-view[data-weapon="twin-bore-riveter"] { bottom: 16%; height: 32%; }
+  #weapon-view[data-weapon="catastrophe-launcher"], #weapon-view[data-weapon="plasma-copier"] { bottom: 16%; height: 32%; }
+  #weapon-view[data-weapon="binding-engine"] { bottom: 16%; height: 30%; }
+  #weapon-view[data-weapon="umbra-saw"] { bottom: 16%; height: 32%; }
+}
 #status { position: absolute; left: 0; right: 0; bottom: 0; height: 16%; display: grid; grid-template-columns: minmax(70px, 1fr) minmax(70px, 1fr) minmax(70px, 1fr) 1fr auto; align-items: center; gap: 1.2cqw; padding: 0 2.2cqw; background: #34383d url('/public_runtime/ui/status-bar.png') center / auto 100% repeat-x; border-top: 2px solid #b7b8b4; font-size: clamp(12px, 2.6cqh, 25px); text-shadow: 2px 2px #08090a; }
 #portrait { position: absolute; left: 50%; bottom: 4%; width: auto; height: 88%; transform: translateX(-50%); image-rendering: pixelated; }
 #health::before { content: 'HLT '; color: #d9232e; } #armor::before { content: 'ARM '; color: #47bcd1; } #ammo::before { content: 'AMM '; color: #e2b93b; }
@@ -207,11 +225,12 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #boss-bar small { color: #b7b8b4; font-size: 8px; }
 #boss-bar i { display: block; height: 8px; border: 1px solid #f4f1ea; background: #111214; }
 #boss-bar span { display: block; width: 100%; height: 100%; background: #d9232e; }
-#automap { position: absolute; inset: 0; width: 100%; height: 84%; background: rgba(8, 9, 10, .9); image-rendering: pixelated; }
+#automap { position: absolute; inset: 0; width: 100%; height: 84%; background: rgba(8, 9, 10, .9); image-rendering: pixelated; pointer-events: auto; touch-action: none; }
 #automap.overlay { inset: 10px 10px auto auto; width: 42%; height: 42%; border: 1px solid #b7b8b4; background: rgba(8, 9, 10, .76); }
 #hud.full-automap #objective, #hud.full-automap #message, #hud.full-automap #combat-streak, #hud.full-automap #reticle,
 #hud.full-automap #hit-marker, #hud.full-automap #context-prompt, #hud.full-automap #muzzle-flash, #hud.full-automap #weapon-view,
 #hud.full-automap #use-feedback, #hud.full-automap #damage-flash { display: none; }
+#hud.full-automap ~ #touch-controls { display: none; }
 #weapon-radial { position: absolute; left: 50%; top: 48%; width: 190px; height: 190px; transform: translate(-50%, -50%); border: 2px solid #646a70; border-radius: 50%; background: rgba(8, 9, 10, .82); }
 #weapon-radial button { position: absolute; left: 73px; top: 77px; width: 42px; min-width: 42px; min-height: 30px; height: 30px; padding: 0; pointer-events: none; border-color: #646a70; }
 #weapon-radial button.selected { color: #fffdf7; border-color: #ffe17a; background: #7a1018; }
@@ -240,6 +259,26 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #intermission-art { width: min(70vw, 560px); max-height: 31%; object-fit: contain; image-rendering: pixelated; }
 
 @media (min-width: 1920px) and (min-height: 1080px) and (pointer: fine) {
+  #game-shell {
+    --ui-button-min-width: 180px;
+    --ui-button-min-height: 48px;
+    --ui-button-font-size: 19px;
+    --ui-screen-gap: 18px;
+    --ui-heading-max: 46px;
+    --ui-episode-width: 288px;
+    --ui-episode-height: 180px;
+    --ui-intro-max-width: 960px;
+  }
+  .screen.compact { padding: 24px; border-width: 3px; }
+  #menu .game-title { font-size: 82px; text-shadow: 5px 5px #7a1018; }
+  #menu .title-art { width: min(76%, 1200px); }
+  #episode-cards { gap: 15px; }
+  .episode-card span { padding: 10px 9px 9px; font-size: 14px; }
+  #difficulty-actions { gap: 9px; }
+  #difficulty-actions button { width: 420px; }
+  #difficulty-detail { max-width: 760px; font-size: 20px; }
+  #game-shell #episode-intro p, #game-shell #epilogue p { max-width: 1020px; font-size: 21px; }
+  #pause-menu > img { width: 192px; image-rendering: pixelated; }
   #ready-overlay { gap: 18px; padding: 24px; }
   #ready-overlay header { gap: 15px; }
   #ready-overlay header strong { font-size: 22px; }
@@ -265,7 +304,7 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #episode-progress span { min-width: 34px; padding: 4px; border: 1px solid #4b5055; color: #777d82; font-size: 10px; }
 #episode-progress span.complete { color: #b7b8b4; background: #34383d; }
 #episode-progress span.current { color: #fffdf7; border-color: #d9232e; background: #7a1018; }
-.intro-art { width: min(62%, 640px); max-height: 56%; object-fit: contain; image-rendering: pixelated; }
+.intro-art { width: min(62%, var(--ui-intro-max-width)); max-height: 56%; object-fit: contain; image-rendering: pixelated; }
 #episode-intro p, #epilogue p { max-width: 680px; margin: 0 24px; color: #d4d2cb; line-height: 1.45; text-align: center; }
 .intro-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 #tally { white-space: pre-line; line-height: 1.35; text-align: left; }
@@ -291,8 +330,18 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 @media (pointer: coarse) {
+  #game-shell {
+    --ui-button-min-width: 100px;
+    --ui-button-min-height: 44px;
+    --ui-button-font-size: 12px;
+    --ui-screen-gap: 8px;
+    --ui-heading-max: 18px;
+    --ui-episode-width: 105px;
+    --ui-episode-height: 66px;
+  }
   #hud.active ~ #touch-controls { display: block; }
   #hud.active ~ #ready-overlay:not([hidden]) ~ #touch-controls { display: none; }
+  #hud.active.full-automap ~ #touch-controls { display: none; }
   #status { grid-template-columns: repeat(3, 1fr); height: 54px; font-size: 12px; }
   #keys, #map-name { display: none; }
   #portrait { width: 44px; height: 44px; }
@@ -303,8 +352,6 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
   .screen h1 { margin-bottom: 4px; font-size: 18px; }
   .title-art { max-height: 150px; }
   #menu .game-title { font-size: 30px; text-shadow: 2px 2px #7a1018; }
-  button { min-width: 100px; min-height: 32px; font-size: 12px; }
-  .episode-card { width: 105px; height: 66px; }
   .menu-actions { flex-wrap: wrap; justify-content: center; }
   .replay-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; gap: 3px; }
   .replay-row > span { grid-column: 1 / -1; }
@@ -316,16 +363,17 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
   .slot-screen { inset: 2% 5%; }
   .controls-screen { inset: 2% 4%; }
   .controls-list { gap: 1px; }
-  .control-row { min-height: 27px; grid-template-columns: 1fr 1.35fr; padding: 1px 3px; font-size: 9px; }
-  .control-row button { min-height: 23px; font-size: 8px; }
+  .control-row { min-height: 48px; grid-template-columns: 1fr 1.35fr; padding: 2px 3px; font-size: 9px; }
+  .control-row button { min-height: 44px; font-size: 9px; }
   .slot-list { width: 96%; }
-  .slot-row { min-height: 33px; grid-template-columns: 66px 1fr 62px; font-size: 9px; }
+  .slot-row { min-height: 50px; grid-template-columns: 66px 1fr 62px; font-size: 9px; }
   .slot-row.deletable { grid-template-columns: 66px 1fr 58px 32px; }
   .automatic-slot-row { grid-template-columns: 60px 1fr 58px; }
   .slot-preview { width: 66px; height: 36px; }
-  .slot-row button { min-width: 58px; min-height: 26px; font-size: 9px; }
+  .slot-row button { min-width: 58px; min-height: 44px; font-size: 9px; }
   .slot-copy small { font-size: 8px; }
   #episode-intro p, #epilogue p { font-size: 10px; line-height: 1.2; }
+  .touch-command { min-height: 44px; height: 44px; }
 }
 
 @media (pointer: coarse) and (orientation: portrait) {

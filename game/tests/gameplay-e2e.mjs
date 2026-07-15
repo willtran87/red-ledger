@@ -97,6 +97,23 @@ assert(await page.locator('#use-feedback').isVisible(), 'Failed use has no immed
 assert((await page.locator('#use-feedback').getAttribute('role')) === 'status', 'Failed use feedback is not exposed accessibly');
 assert(await page.locator('#use-feedback img').evaluate((image) => image.complete && image.naturalWidth > 0), 'Failed use feedback icon did not load');
 
+const repeatedFloorPlan = await page.evaluate(() => {
+  const api = window.__redLedger;
+  api.loadMap('E1M2');
+  const firstFound = api.teleportToPickup('pickup', 'floor-plan');
+  window.advanceTime(80);
+  const first = JSON.parse(window.render_game_to_text());
+  api.loadMap('E1M3');
+  const before = JSON.parse(window.render_game_to_text());
+  const secondFound = api.teleportToPickup('pickup', 'floor-plan');
+  window.advanceTime(80);
+  const second = JSON.parse(window.render_game_to_text());
+  return { firstFound, secondFound, first, before, second };
+});
+assert(repeatedFloorPlan.firstFound && repeatedFloorPlan.first.player.floorPlan, 'First Floor Plan was not collected');
+assert(repeatedFloorPlan.secondFound, 'Second map did not expose its authored Floor Plan');
+assert(repeatedFloorPlan.second.tally.items === repeatedFloorPlan.before.tally.items + 1, 'Carried Floor Plan stranded second-map item mastery');
+
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 fs.writeFileSync('output/e2e/final-state.json', JSON.stringify(await state(), null, 2));
 console.log('Gameplay E2E passed');

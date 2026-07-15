@@ -196,6 +196,16 @@ describe('AudioSystem production lifecycle', () => {
       lifecycleSuspended: false,
       activeVoices: 0,
       lastSpatialCue: { kind: 'enemy:denial-officer:attack', pan: -.35, gain: .72 },
+      recentSpatialCues: [{ kind: 'enemy:denial-officer:attack', pan: -.35, gain: .72 }],
+    });
+
+    for (let index = 0; index < 20; index += 1) audio.hazardCue('placed', index / 20, .5);
+    expect(audio.diagnostics().recentSpatialCues).toHaveLength(16);
+    audio.clearSpatialDiagnostics();
+    expect(audio.diagnostics()).toEqual({
+      lifecycleSuspended: false,
+      activeVoices: 0,
+      recentSpatialCues: [],
     });
   });
 });

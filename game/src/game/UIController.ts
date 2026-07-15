@@ -15,7 +15,10 @@ interface ReplayLibraryEntry {
   createdAt: number;
   duration: number;
   demo: unknown;
+  sessionOnly?: true;
 }
+
+type ReplayStoreResult = 'persistent' | 'session-only' | 'invalid';
 
 const REPLAY_LIBRARY_KEY = 'red-ledger-replays-v2';
 const LEGACY_REPLAY_LIBRARY_KEY = 'red-ledger-replays-v1';
@@ -91,6 +94,35 @@ const $ = <T extends Element>(selector: string): T => {
   return element;
 };
 
+export const automapPanDelta = (pixels: number, renderedCellSize: number): number =>
+  Number.isFinite(renderedCellSize) && renderedCellSize > 0 ? pixels / renderedCellSize : 0;
+
+export const boundedReplayEntries = <T extends { id: string; createdAt: number }>(
+  entries: readonly T[],
+  requiredEntryId?: string,
+  countLimit = REPLAY_LIBRARY_LIMIT,
+  byteLimit = REPLAY_LIBRARY_BYTES,
+): T[] => {
+  const sorted = [...entries].sort((left, right) => right.createdAt - left.createdAt);
+  const required = requiredEntryId ? sorted.find((entry) => entry.id === requiredEntryId) : undefined;
+  const protectedId = required?.id ?? sorted[0]?.id;
+  const bounded = required
+    ? [required, ...sorted.filter((entry) => entry.id !== required.id)].slice(0, Math.max(1, countLimit))
+    : sorted.slice(0, Math.max(1, countLimit));
+  bounded.sort((left, right) => right.createdAt - left.createdAt);
+  const removeOldestOptional = (): boolean => {
+    let index = bounded.length - 1;
+    while (index >= 0 && bounded[index].id === protectedId) index -= 1;
+    if (index < 0) return false;
+    bounded.splice(index, 1);
+    return true;
+  };
+  while (JSON.stringify(bounded).length * 2 > byteLimit && removeOldestOptional()) {
+    // A single protected replay may exceed the aggregate target, but is never silently discarded.
+  }
+  return bounded;
+};
+
 export class UIController {
   private pendingEpisode = 0;
   private pendingDifficulty: GameDifficulty = 'field-adjuster';
@@ -98,7 +130,7 @@ export class UIController {
   private automapMode: 'full' | 'overlay' = 'full';
   private automapZoom = 1;
   private automapPan = { x: 0, z: 0 };
-  private automapDrag?: { pointerId: number; x: number; y: number };
+  private automapDrag?: { pointerId: number; originX: number; originY: number; x: number; y: number; moved: boolean };
   private readonly playerTrail: Array<{ x: number; z: number }> = [];
   private trailMap = '';
   private weaponTimer?: number;
@@ -122,6 +154,7 @@ export class UIController {
   private lastView?: { x: number; z: number; yaw: number };
   private levelSelectReturn: 'menu' | 'intermission' = 'menu';
   private replayReturn: 'menu' | 'pause-menu' = 'menu';
+  private sessionReplays: ReplayLibraryEntry[] = [];
   private entryDevice: 'desktop' | 'gamepad' | 'touch' = 'desktop';
   private entryContinuation?: () => void;
   private readonly runtimeWarnings = new Set<string>();
@@ -157,8 +190,13 @@ export class UIController {
     }>).detail));
     window.addEventListener('demo-recording-complete', (event) => {
       const detail = (event as CustomEvent<{ demo: unknown; reason: string }>).detail;
-      this.storeReplay(detail.demo);
-      this.showMessageInReplayLibrary(detail.reason === 'limit' ? 'Five-minute recording saved.' : 'Replay saved.');
+      const result = this.storeReplay(detail.demo);
+      const message = this.replayStorageMessage(detail.reason, result);
+      this.buildReplayLibrary();
+      this.showMessageInReplayLibrary(message);
+      if (detail.reason === 'size' || detail.reason === 'duration' || result !== 'persistent') {
+        this.showRuntimeWarning(message);
+      }
     });
     this.loadSettings();
     if (this.game.persistence.storageStatus().mode === 'memory-fallback') this.showRuntimeWarning(
@@ -259,9 +297,9 @@ export class UIController {
     $('#record-replay').addEventListener('click', () => {
       if (this.game.isDemoRecording()) {
         const demo = this.game.finishDemoRecording();
-        if (demo) this.storeReplay(demo);
+        const result = demo ? this.storeReplay(demo) : 'invalid';
         this.replayReturn = 'pause-menu';
-        this.showReplayLibrary('Replay saved.');
+        this.showReplayLibrary(this.replayStorageMessage('manual', result));
         return;
       }
       this.resumeGameplay(() => {
@@ -357,21 +395,32 @@ export class UIController {
     });
     const automap = $<HTMLCanvasElement>('#automap');
     automap.addEventListener('pointerdown', (event) => {
-      this.automapDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+      this.automapDrag = { pointerId: event.pointerId, originX: event.clientX, originY: event.clientY, x: event.clientX, y: event.clientY, moved: false };
       automap.setPointerCapture(event.pointerId);
+      event.preventDefault();
     });
     automap.addEventListener('pointermove', (event) => {
       if (!this.automapDrag || this.automapDrag.pointerId !== event.pointerId) return;
-      this.automapPan.x += (event.clientX - this.automapDrag.x) / 12;
-      this.automapPan.z += (event.clientY - this.automapDrag.y) / 12;
+      const dx = event.clientX - this.automapDrag.x;
+      const dy = event.clientY - this.automapDrag.y;
+      const cellSize = Number(automap.dataset.cellSize);
+      this.automapDrag.moved ||= Math.hypot(event.clientX - this.automapDrag.originX, event.clientY - this.automapDrag.originY) > 3;
+      this.automapPan.x += automapPanDelta(dx, cellSize);
+      this.automapPan.z += automapPanDelta(dy, cellSize);
       this.automapDrag.x = event.clientX;
       this.automapDrag.y = event.clientY;
     });
     const stopMapDrag = (event: PointerEvent) => {
-      if (this.automapDrag?.pointerId === event.pointerId) this.automapDrag = undefined;
+      if (this.automapDrag?.pointerId !== event.pointerId) return;
+      const closeOnTap = event.pointerType === 'touch' && !this.automapDrag.moved
+        && this.automapVisible && this.automapMode === 'full';
+      this.automapDrag = undefined;
+      if (closeOnTap) this.toggleAutomap('full');
     };
     automap.addEventListener('pointerup', stopMapDrag);
-    automap.addEventListener('pointercancel', stopMapDrag);
+    automap.addEventListener('pointercancel', (event) => {
+      if (this.automapDrag?.pointerId === event.pointerId) this.automapDrag = undefined;
+    });
     window.addEventListener('input-action', (event) => this.handleInputAction((event as CustomEvent<InputActionEvent>).detail));
     window.addEventListener('input-action-release', (event) => this.handleInputRelease((event as CustomEvent<InputActionEvent>).detail));
     window.addEventListener('input-menu-navigation', (event) => this.handleMenuNavigation((event as CustomEvent<MenuNavigationEvent>).detail));
@@ -477,15 +526,49 @@ export class UIController {
 
   private drawAutomap(snapshot: GameSnapshot): void {
     const canvas = $('#automap') as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    const width = Math.round(rect.width);
+    const height = Math.round(rect.height);
+    const pixelBudgetRatio = Math.sqrt(4_000_000 / Math.max(1, width * height));
+    const pixelRatio = Math.min(2, pixelBudgetRatio, Math.max(1, window.devicePixelRatio || 1));
+    const backingWidth = Math.max(1, Math.round(width * pixelRatio));
+    const backingHeight = Math.max(1, Math.round(height * pixelRatio));
+    if (canvas.width !== backingWidth || canvas.height !== backingHeight) {
+      canvas.width = backingWidth;
+      canvas.height = backingHeight;
+    }
     const context = canvas.getContext('2d')!;
+    const scaleX = canvas.width / width;
+    const scaleY = canvas.height / height;
+    context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = '#08090a'; context.fillRect(0, 0, canvas.width, canvas.height);
+    context.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+    context.imageSmoothingEnabled = false;
+    context.fillStyle = '#08090a'; context.fillRect(0, 0, width, height);
     const grid = snapshot.map.grid;
-    const scale = Math.min((canvas.width - 20) / grid[0].length, (canvas.height - 20) / grid.length) * this.automapZoom;
+    const full = this.automapMode === 'full';
+    const portrait = height > width;
+    const legendHeight = full ? Math.max(30, Math.min(44, Math.round(height * .065))) : 0;
+    const mapHeight = height - legendHeight;
+    const padding = Math.max(10, Math.min(24, Math.round(Math.min(width, mapHeight) * .04)));
+    const targetColumns = portrait ? 18 : full ? 30 : 24;
+    const targetRows = portrait ? 34 : full ? 16 : 18;
+    const baseScale = Math.max(6, Math.min(
+      (width - padding * 2) / targetColumns,
+      (mapHeight - padding * 2) / targetRows,
+    ));
+    const scale = baseScale * this.automapZoom;
     const playerGridX = snapshot.player.position.x / snapshot.map.cellSize;
     const playerGridZ = snapshot.player.position.z / snapshot.map.cellSize;
-    const ox = canvas.width / 2 - playerGridX * scale + this.automapPan.x * scale;
-    const oy = canvas.height / 2 - playerGridZ * scale + this.automapPan.z * scale;
+    const ox = width / 2 - playerGridX * scale + this.automapPan.x * scale;
+    const oy = mapHeight / 2 - playerGridZ * scale + this.automapPan.z * scale;
+    canvas.dataset.cellSize = scale.toFixed(3);
+    canvas.dataset.pixelRatioX = scaleX.toFixed(3);
+    canvas.dataset.pixelRatioY = scaleY.toFixed(3);
+    canvas.dataset.legendHeight = String(legendHeight);
+    canvas.dataset.viewportCellsX = (width / scale).toFixed(2);
+    canvas.dataset.viewportCellsZ = (mapHeight / scale).toFixed(2);
     for (let z = 0; z < grid.length; z += 1) {
       for (let x = 0; x < grid[z].length; x += 1) {
         if (!snapshot.player.floorPlan && !this.game.world.visitedTiles.has(`${x},${z}`)) continue;
@@ -511,6 +594,8 @@ export class UIController {
     context.beginPath();
     const px = ox + snapshot.player.position.x / snapshot.map.cellSize * scale;
     const pz = oy + snapshot.player.position.z / snapshot.map.cellSize * scale;
+    canvas.dataset.playerX = px.toFixed(2);
+    canvas.dataset.playerY = pz.toFixed(2);
     context.arc(px, pz, 2.5, 0, Math.PI * 2); context.fill();
     context.strokeStyle = '#d9232e'; context.beginPath(); context.moveTo(px, pz);
     context.lineTo(px - Math.sin(snapshot.player.yaw) * 7, pz - Math.cos(snapshot.player.yaw) * 7); context.stroke();
@@ -549,9 +634,14 @@ export class UIController {
       const point = mapPoint(secret.at.x * snapshot.map.cellSize, secret.at.z * snapshot.map.cellSize);
       context.strokeStyle = '#fffdf7'; context.strokeRect(point.x - 3, point.y - 3, 6, 6);
     });
-    if (this.automapMode === 'full') {
-      context.fillStyle = '#d4d2cb'; context.font = '6px monospace';
-      context.fillText('EXIT X   DOOR |   RESOURCE []   CONTROL []', 7, canvas.height - 7);
+    if (full) {
+      const fontSize = Math.max(9, Math.min(13, Math.floor(width / 48)));
+      context.fillStyle = 'rgba(17,18,20,.97)';
+      context.fillRect(0, mapHeight, width, legendHeight);
+      context.strokeStyle = '#646a70'; context.lineWidth = 1;
+      context.beginPath(); context.moveTo(0, mapHeight + .5); context.lineTo(width, mapHeight + .5); context.stroke();
+      context.fillStyle = '#d4d2cb'; context.font = `${fontSize}px monospace`; context.textAlign = 'center';
+      context.fillText('EXIT X   DOOR |   RESOURCE []   CONTROL []', width / 2, mapHeight + legendHeight / 2 + fontSize * .35);
     }
   }
 
@@ -633,20 +723,32 @@ export class UIController {
   }
 
   private playCompletionBurst(): void {
-    if ($<HTMLInputElement>('#reduced-effects').checked) return;
     const screen = $('#intermission');
     screen.querySelectorAll('.completion-particle').forEach((element) => element.remove());
     const texture = runtimeUrl('public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_08.png');
-    for (let index = 0; index < 20; index += 1) {
+    const restrained = $<HTMLInputElement>('#reduced-effects').checked
+      || !$<HTMLInputElement>('#flash-effects').checked
+      || $<HTMLInputElement>('#reduced-motion').checked;
+    const count = restrained ? 1 : 10;
+    for (let index = 0; index < count; index += 1) {
       const particle = document.createElement('i');
       particle.className = 'completion-particle';
       particle.setAttribute('aria-hidden', 'true');
       particle.style.backgroundImage = `url('${texture}')`;
       screen.append(particle);
+      if (restrained) {
+        const animation = particle.animate([
+          { opacity: 0, transform: 'translate(-50%, -50%) scale(.72)' },
+          { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: .3 },
+          { opacity: 0, transform: 'translate(-50%, -50%) scale(.9)' },
+        ], { duration: 620, easing: 'steps(4, end)', fill: 'forwards' });
+        void animation.finished.then(() => particle.remove(), () => particle.remove());
+        continue;
+      }
       const side = index % 2 ? 1 : -1;
-      const spread = side * (70 + (index * 43) % 360);
-      const rise = -90 - (index * 29) % 180;
-      const fall = 130 + (index * 31) % 210;
+      const spread = side * (70 + (index * 43) % 250);
+      const rise = -90 - (index * 29) % 140;
+      const fall = 120 + (index * 31) % 150;
       const animation = particle.animate([
         { opacity: 0, transform: 'translate(-50%, -50%) scale(.45) rotate(0deg)' },
         { opacity: 1, transform: `translate(calc(-50% + ${spread * .55}px), calc(-50% + ${rise}px)) scale(1) rotate(${side * 120}deg)`, offset: .28 },
@@ -699,7 +801,10 @@ export class UIController {
       return;
     }
     if ($<HTMLInputElement>('#reduced-effects').checked || !$<HTMLInputElement>('#flash-effects').checked) return;
-    $<HTMLCanvasElement>('#game-canvas').animate([{ filter: 'brightness(1.12)' }, { filter: 'none' }], { duration: 65 });
+    $<HTMLElement>('#reticle').animate([
+      { opacity: .68, transform: 'translate(-50%, -50%) scale(1.16)' },
+      { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
+    ], { duration: 65, easing: 'steps(2, end)' });
   }
 
   private cancelWeaponFrames(): void {
@@ -721,8 +826,9 @@ export class UIController {
       'catastrophe-launcher': [52, 35], 'plasma-copier': [50, 34], 'binding-engine': [50, 33], 'umbra-saw': [53, 32],
     };
     const [left, bottom] = anchors[weapon] ?? [50, 35];
+    const presentationBottom = bottom - (window.matchMedia('(pointer: fine)').matches ? 8 : 0);
     flash.style.left = `${left}%`;
-    flash.style.bottom = `${bottom}%`;
+    flash.style.bottom = `${presentationBottom}%`;
     flash.style.backgroundImage = `url('${runtimeUrl(`public_runtime/effects/particle-weapon-feedback/fx_particle-weapon-feedback_F_${String(frame).padStart(2, '0')}.png`)}')`;
     flash.getAnimations().forEach((animation) => animation.cancel());
     flash.animate([
@@ -972,6 +1078,8 @@ export class UIController {
     else { this.automapVisible = true; this.automapMode = mode; }
     canvas.classList.toggle('overlay', this.automapMode === 'overlay');
     canvas.toggleAttribute('hidden', !this.automapVisible);
+    canvas.setAttribute('aria-label', this.automapVisible && this.automapMode === 'full'
+      ? 'Automap. Drag to pan or tap to close.' : 'Automap');
     $('#hud').classList.toggle('full-automap', this.automapVisible && this.automapMode === 'full');
   }
 
@@ -1145,7 +1253,7 @@ export class UIController {
     this.showScreen('level-select');
   }
 
-  private replayLibrary(): ReplayLibraryEntry[] {
+  private persistentReplayLibrary(): ReplayLibraryEntry[] {
     try {
       const parsed: unknown = JSON.parse(localStorage.getItem(REPLAY_LIBRARY_KEY) ?? '[]');
       if (!Array.isArray(parsed)) return [];
@@ -1169,8 +1277,21 @@ export class UIController {
     }
   }
 
-  private writeReplayLibrary(entries: ReplayLibraryEntry[]): boolean {
-    const bounded = [...entries].sort((left, right) => right.createdAt - left.createdAt).slice(0, REPLAY_LIBRARY_LIMIT);
+  private replayLibrary(): ReplayLibraryEntry[] {
+    const entries = [...this.sessionReplays, ...this.persistentReplayLibrary()];
+    return [...new Map(entries.map((entry) => [entry.id, entry])).values()]
+      .sort((left, right) => right.createdAt - left.createdAt);
+  }
+
+  private writeReplayLibrary(entries: ReplayLibraryEntry[], warnOnFailure = true, requiredEntryId?: string): boolean {
+    this.sessionReplays = boundedReplayEntries(entries.filter((entry) => entry.sessionOnly), requiredEntryId);
+    const sorted = entries.filter((entry) => !entry.sessionOnly)
+      .sort((left, right) => right.createdAt - left.createdAt);
+    const required = requiredEntryId ? sorted.find((entry) => entry.id === requiredEntryId) : undefined;
+    const bounded = required
+      ? [required, ...sorted.filter((entry) => entry.id !== requiredEntryId)].slice(0, REPLAY_LIBRARY_LIMIT)
+      : sorted.slice(0, REPLAY_LIBRARY_LIMIT);
+    bounded.sort((left, right) => right.createdAt - left.createdAt);
     if (!bounded.length) {
       try {
         localStorage.removeItem(REPLAY_LIBRARY_KEY);
@@ -1181,26 +1302,36 @@ export class UIController {
       }
     }
     let serialized = JSON.stringify(bounded);
-    while (bounded.length > 1 && serialized.length * 2 > REPLAY_LIBRARY_BYTES) {
-      bounded.pop();
+    const removeOldestOptional = (): boolean => {
+      let index = bounded.length - 1;
+      while (index >= 0 && bounded[index].id === requiredEntryId) index -= 1;
+      if (index < 0) return false;
+      bounded.splice(index, 1);
       serialized = JSON.stringify(bounded);
+      return true;
+    };
+    while (serialized.length * 2 > REPLAY_LIBRARY_BYTES && removeOldestOptional()) {
+      // Keep the replay currently being added; older entries yield first.
+    }
+    if (serialized.length * 2 > REPLAY_LIBRARY_BYTES) {
+      if (warnOnFailure) this.showRuntimeWarning('The replay is too large for persistent browser storage.');
+      return false;
     }
     while (bounded.length) {
       try {
         localStorage.setItem(REPLAY_LIBRARY_KEY, serialized);
         return true;
       } catch {
-        bounded.pop();
-        serialized = JSON.stringify(bounded);
+        if (!removeOldestOptional()) break;
       }
     }
-    this.showRuntimeWarning('The replay library could not be saved. Existing campaign progress is unaffected.');
+    if (warnOnFailure) this.showRuntimeWarning('The replay library could not be saved. Existing campaign progress is unaffected.');
     return false;
   }
 
-  private storeReplay(demo: unknown): boolean {
+  private storeReplay(demo: unknown): ReplayStoreResult {
     const summary = this.game.demoSummary(demo);
-    if (!summary) return false;
+    if (!summary) return 'invalid';
     const entry: ReplayLibraryEntry = {
       id: crypto.randomUUID(),
       name: `${summary.mapId} ${CAMPAIGN.maps[summary.mapId].title}`,
@@ -1209,7 +1340,23 @@ export class UIController {
       duration: summary.duration,
       demo,
     };
-    return this.writeReplayLibrary([entry, ...this.replayLibrary()]);
+    if (this.writeReplayLibrary([entry, ...this.replayLibrary()], false, entry.id)) return 'persistent';
+    const sessionEntry: ReplayLibraryEntry = { ...entry, sessionOnly: true };
+    this.sessionReplays = boundedReplayEntries([sessionEntry, ...this.sessionReplays], entry.id);
+    return 'session-only';
+  }
+
+  private replayStorageMessage(reason: string, result: ReplayStoreResult): string {
+    const subject = reason === 'size'
+      ? 'Replay storage limit reached.'
+      : reason === 'duration'
+        ? '45-minute recording limit reached.'
+        : 'Replay complete.';
+    if (result === 'persistent') return `${subject} Saved to this browser.`;
+    if (result === 'session-only') {
+      return `${subject} Browser storage is full or unavailable, so it is kept in this tab only. Play or export it before closing.`;
+    }
+    return `${subject} The recording could not be validated.`;
   }
 
   private showReplayLibrary(message = ''): void {
@@ -1261,7 +1408,7 @@ export class UIController {
         this.writeReplayLibrary(entriesNow);
       });
       const detail = document.createElement('small');
-      detail.textContent = `${entry.mapId} | ${formatTime(entry.duration)} | ${new Date(entry.createdAt).toLocaleString()}`;
+      detail.textContent = `${entry.mapId} | ${formatTime(entry.duration)} | ${new Date(entry.createdAt).toLocaleString()}${entry.sessionOnly ? ' | This tab only' : ''}`;
       copy.append(name, detail);
       const play = document.createElement('button');
       play.textContent = 'Play';
@@ -1308,14 +1455,17 @@ export class UIController {
     }
     try {
       const demo: unknown = JSON.parse(await file.text());
-      if (!this.storeReplay(demo)) {
+      const result = this.storeReplay(demo);
+      if (result === 'invalid') {
         const candidate = demo && typeof demo === 'object' ? demo as { schema?: unknown; version?: unknown } : undefined;
         $('#replay-feedback').textContent = candidate?.schema === 'red-ledger-demo' && candidate.version !== DEMO_SCHEMA_VERSION
           ? 'Replay uses an incompatible simulation version and cannot be imported.'
           : 'Replay file is invalid or storage is full.';
         return;
       }
-      this.showReplayLibrary('Replay imported.');
+      this.showReplayLibrary(result === 'persistent'
+        ? 'Replay imported and saved to this browser.'
+        : 'Replay imported, but browser storage is full or unavailable. It is kept in this tab only; play or export it before closing.');
     } catch {
       $('#replay-feedback').textContent = 'Replay file is invalid or storage is full.';
     }

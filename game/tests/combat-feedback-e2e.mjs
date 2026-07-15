@@ -46,13 +46,24 @@ await page.evaluate(() => {
   const reduced = document.querySelector('#reduced-effects');
   reduced.checked = false;
   reduced.dispatchEvent(new Event('change', { bubbles: true }));
+  document.querySelector('#reticle').getAnimations().forEach((animation) => animation.cancel());
+  document.querySelector('#game-canvas').getAnimations().forEach((animation) => animation.cancel());
+  window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { kind: 'wall' } }));
+});
+assert(await page.locator('#reticle').evaluate((element) => element.getAnimations().length > 0), 'Wall impact lost its reticle-local flash cue');
+assert(await page.locator('#game-canvas').evaluate((element) => element.getAnimations().length === 0), 'Wall impact animated the full WebGL canvas');
+
+await page.evaluate(() => {
   const flashes = document.querySelector('#flash-effects');
   flashes.checked = false;
   flashes.dispatchEvent(new Event('change', { bubbles: true }));
   document.querySelector('#muzzle-flash').getAnimations().forEach((animation) => animation.cancel());
+  document.querySelector('#reticle').getAnimations().forEach((animation) => animation.cancel());
+  window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { kind: 'wall' } }));
   window.__redLedger.fire();
 });
 assert(await page.locator('#muzzle-flash').evaluate((element) => element.getAnimations().length === 0), 'Screen Flashes off still animated the muzzle flash');
+assert(await page.locator('#reticle').evaluate((element) => element.getAnimations().length === 0), 'Screen Flashes off still animated the wall-impact pulse');
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 
 console.log('Aggregated and accessible combat feedback E2E passed');

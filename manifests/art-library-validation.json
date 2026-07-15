@@ -1,16 +1,24 @@
 {
   "sheet_inventory": {
     "counts": {
-      "source_alpha": 92,
-      "source_keyed": 92,
-      "normalized_alpha": 92,
-      "normalized_keyed": 92
+      "source_alpha": 93,
+      "source_keyed": 93,
+      "normalized_alpha": 93,
+      "normalized_keyed": 93
     },
-    "registered": 92,
+    "registered": 93,
     "missing_pairs": {},
     "unexpected_pairs": {},
     "unregistered": [],
     "registered_not_present": [],
+    "passed": true
+  },
+  "generation_sources": {
+    "log": "manifests/generation-log.jsonl",
+    "count": 14,
+    "passed_count": 14,
+    "parse_errors": [],
+    "failed": [],
     "passed": true
   },
   "actors": [
@@ -819,6 +827,18 @@
       "border_max_distance": 0.0,
       "passed": true,
       "file": "art/source/keyed/normalized/fx_death-feedback_v01.png"
+    },
+    {
+      "key": "green",
+      "border_average": [
+        0,
+        255,
+        0
+      ],
+      "border_mean_distance": 0.0,
+      "border_max_distance": 0.0,
+      "passed": true,
+      "file": "art/source/keyed/normalized/fx_ember-impact_v01.png"
     },
     {
       "key": "magenta",
@@ -2174,6 +2194,24 @@
       ],
       "mode_ok": true,
       "visible_coverage": 0.0674,
+      "transparent_corners": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "border_max_alpha": 0,
+      "key_like_visible_pixels": 0,
+      "passed": true
+    },
+    {
+      "file": "art/source/alpha/normalized/fx_ember-impact_v01.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode_ok": true,
+      "visible_coverage": 0.0439,
       "transparent_corners": [
         0,
         0,
@@ -10971,6 +11009,118 @@
       "passed": true
     },
     {
+      "file": "art/source/alpha/normalized/fx_ember-impact_v01.png",
+      "count": 6,
+      "cell_width": 362,
+      "divisible_width": true,
+      "baseline_spread": 0,
+      "cells": [
+        {
+          "index": 0,
+          "bbox": [
+            147,
+            612,
+            215,
+            666
+          ],
+          "gaps": [
+            147,
+            612,
+            147,
+            58
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 1,
+          "bbox": [
+            117,
+            531,
+            245,
+            666
+          ],
+          "gaps": [
+            117,
+            531,
+            117,
+            58
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 2,
+          "bbox": [
+            74,
+            446,
+            288,
+            666
+          ],
+          "gaps": [
+            74,
+            446,
+            74,
+            58
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 3,
+          "bbox": [
+            49,
+            402,
+            313,
+            666
+          ],
+          "gaps": [
+            49,
+            402,
+            49,
+            58
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 4,
+          "bbox": [
+            69,
+            446,
+            293,
+            666
+          ],
+          "gaps": [
+            69,
+            446,
+            69,
+            58
+          ],
+          "center_offset": 0,
+          "passed": true
+        },
+        {
+          "index": 5,
+          "bbox": [
+            132,
+            559,
+            229,
+            666
+          ],
+          "gaps": [
+            132,
+            559,
+            133,
+            58
+          ],
+          "center_offset": -1,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
       "file": "art/source/alpha/normalized/ui_portrait_damage-0_states_v01.png",
       "count": 6,
       "cell_width": 362,
@@ -13113,8 +13263,8 @@
     }
   ],
   "other_runtime_pngs": {
-    "count": 1361,
-    "passed": 1361,
+    "count": 1383,
+    "passed": 1383,
     "failed": []
   },
   "passed": true

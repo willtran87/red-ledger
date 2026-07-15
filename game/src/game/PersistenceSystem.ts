@@ -1,5 +1,7 @@
 export const SAVE_SCHEMA_VERSION = 1;
-export const DEMO_SCHEMA_VERSION = 2;
+export const DEMO_SCHEMA_VERSION = 3;
+/** Leaves room for the replay-library wrapper inside its 3.5 MB UTF-16 budget. */
+export const DEMO_STORAGE_BUDGET_BYTES = 3_000_000;
 export const MANUAL_SLOT_COUNT = 8;
 export const AUTOSAVE_SLOT_COUNT = 3;
 
@@ -160,6 +162,8 @@ interface SlotDescriptor {
 export interface DemoFrame<TCommand> {
   readonly tick: number;
   readonly commands: readonly TCommand[];
+  /** Consecutive ticks that repeat this command list. Omitted for single-tick frames. */
+  readonly duration?: number;
 }
 
 export interface DemoData<TInitialState, TCommand> {
@@ -185,6 +189,8 @@ export interface DemoRecorderOptions<TInitialState> {
   readonly mapId: string;
   readonly initialState: TInitialState;
   readonly createdAt?: number;
+  /** Maximum JSON storage footprint, measured as UTF-16 bytes like localStorage. */
+  readonly maxSerializedBytes?: number;
 }
 
 export interface DemoValidationOptions<TInitialState, TCommand> {
@@ -655,41 +661,145 @@ export class PersistenceSystem<TState> {
 }
 
 export class DemoRecorder<TInitialState, TCommand> {
-  private readonly frames: Array<{ tick: number; commands: TCommand[] }> = [];
+  private readonly frames: Array<{
+    tick: number;
+    commands: TCommand[];
+    duration?: number;
+    signature: string;
+    serializedCharacters: number;
+  }> = [];
+  private readonly createdAt: number;
+  private readonly baseSerializedCharacters: number;
+  private readonly maxSerializedBytes?: number;
+  private frameCharacters = 0;
   private lastTick = -1;
+  private pendingTick = -1;
+  private pendingCommands: TCommand[] = [];
+  private pendingCommandSignatures: string[] = [];
 
   constructor(private readonly options: DemoRecorderOptions<TInitialState>) {
     const tickRate = options.tickRate ?? 35;
     if (!Number.isSafeInteger(tickRate) || tickRate <= 0) throw new RangeError('Demo tick rate must be a positive integer');
     if (!Number.isSafeInteger(options.seed) || options.seed < 0) throw new RangeError('Demo seed must be a non-negative integer');
     stableStringify(options.initialState);
+    if (options.maxSerializedBytes !== undefined
+      && (!Number.isSafeInteger(options.maxSerializedBytes) || options.maxSerializedBytes <= 0)) {
+      throw new RangeError('Demo storage budget must be a positive integer');
+    }
+    this.createdAt = options.createdAt ?? Date.now();
+    this.maxSerializedBytes = options.maxSerializedBytes;
+    this.baseSerializedCharacters = JSON.stringify(withChecksum({
+      schema: 'red-ledger-demo' as const,
+      version: DEMO_SCHEMA_VERSION,
+      tickRate,
+      seed: options.seed,
+      mapId: options.mapId,
+      createdAt: this.createdAt,
+      initialState: options.initialState,
+      frames: [] as readonly DemoFrame<TCommand>[],
+      totalTicks: 0,
+    })).length;
   }
 
-  record(tick: number, command: TCommand): void {
+  /** Returns false without mutating the stream when the next command would exceed its storage budget. */
+  record(tick: number, command: TCommand): boolean {
     if (!Number.isSafeInteger(tick) || tick < 0) throw new RangeError('Demo tick must be a non-negative integer');
     if (tick < this.lastTick) throw new RangeError('Demo commands must be recorded in tick order');
-    stableStringify(command);
-    if (tick === this.lastTick) this.frames[this.frames.length - 1].commands.push(command);
-    else this.frames.push({ tick, commands: [command] });
+    const commandSignature = stableStringify(command);
+    if (this.pendingTick !== -1 && tick !== this.pendingTick) this.flushPendingTick();
+    if (this.pendingTick === -1) this.pendingTick = tick;
+    const prospectiveSignatures = [...this.pendingCommandSignatures, commandSignature];
+    const prospectiveSignature = `[${prospectiveSignatures.join(',')}]`;
+    if (this.maxSerializedBytes !== undefined
+      && this.estimateSerializedBytes(tick + 1, this.pendingTick, prospectiveSignature) > this.maxSerializedBytes) {
+      if (this.pendingCommands.length === 0) this.pendingTick = -1;
+      return false;
+    }
+    this.pendingCommands.push(command);
+    this.pendingCommandSignatures.push(commandSignature);
     this.lastTick = tick;
+    return true;
+  }
+
+  /** Exact JSON footprint for accepted data, without serializing the accumulated frame list. */
+  estimatedSerializedBytes(totalTicks = Math.max(0, this.lastTick + 1)): number {
+    const signature = this.pendingSignature();
+    return this.estimateSerializedBytes(totalTicks, this.pendingTick, signature);
   }
 
   finish(totalTicks = this.lastTick + 1): DemoData<TInitialState, TCommand> {
     if (!Number.isSafeInteger(totalTicks) || totalTicks < 0 || totalTicks < this.lastTick + 1) {
       throw new RangeError('Demo total ticks cannot precede recorded commands');
     }
+    this.flushPendingTick();
     const unsigned = {
       schema: 'red-ledger-demo' as const,
       version: DEMO_SCHEMA_VERSION,
       tickRate: this.options.tickRate ?? 35,
       seed: this.options.seed,
       mapId: this.options.mapId,
-      createdAt: this.options.createdAt ?? Date.now(),
+      createdAt: this.createdAt,
       initialState: this.options.initialState,
-      frames: this.frames.map((frame) => ({ tick: frame.tick, commands: [...frame.commands] })),
+      frames: this.frames.map((frame) => ({
+        tick: frame.tick,
+        commands: [...frame.commands],
+        ...(frame.duration && frame.duration > 1 ? { duration: frame.duration } : {}),
+      })),
       totalTicks,
     };
     return withChecksum(unsigned);
+  }
+
+  private flushPendingTick(): void {
+    if (this.pendingTick < 0 || this.pendingCommands.length === 0) return;
+    const signature = this.pendingSignature();
+    const previous = this.frames[this.frames.length - 1];
+    const previousEnd = previous ? previous.tick + (previous.duration ?? 1) : -1;
+    if (previous && this.pendingTick === previousEnd && previous.signature === signature) {
+      this.frameCharacters -= previous.serializedCharacters;
+      previous.duration = (previous.duration ?? 1) + 1;
+      previous.serializedCharacters = this.serializedFrameCharacters(previous.tick, previous.signature, previous.duration);
+      this.frameCharacters += previous.serializedCharacters;
+    } else {
+      const serializedCharacters = this.serializedFrameCharacters(this.pendingTick, signature);
+      this.frames.push({
+        tick: this.pendingTick,
+        commands: [...this.pendingCommands],
+        signature,
+        serializedCharacters,
+      });
+      this.frameCharacters += serializedCharacters;
+    }
+    this.pendingTick = -1;
+    this.pendingCommands = [];
+    this.pendingCommandSignatures = [];
+  }
+
+  private pendingSignature(): string {
+    return `[${this.pendingCommandSignatures.join(',')}]`;
+  }
+
+  private serializedFrameCharacters(tick: number, signature: string, duration = 1): number {
+    return `{"tick":${tick},"commands":${signature}${duration > 1 ? `,"duration":${duration}` : ''}}`.length;
+  }
+
+  private estimateSerializedBytes(totalTicks: number, pendingTick = -1, pendingSignature = '[]'): number {
+    let frameCount = this.frames.length;
+    let characters = this.frameCharacters;
+    if (pendingTick >= 0 && pendingSignature !== '[]') {
+      const previous = this.frames[this.frames.length - 1];
+      const previousEnd = previous ? previous.tick + (previous.duration ?? 1) : -1;
+      if (previous && pendingTick === previousEnd && previous.signature === pendingSignature) {
+        characters += this.serializedFrameCharacters(previous.tick, previous.signature, (previous.duration ?? 1) + 1)
+          - previous.serializedCharacters;
+      } else {
+        characters += this.serializedFrameCharacters(pendingTick, pendingSignature);
+        frameCount += 1;
+      }
+    }
+    const separators = Math.max(0, frameCount - 1);
+    const totalTickDigitDelta = String(totalTicks).length - 1;
+    return (this.baseSerializedCharacters + characters + separators + totalTickDigitDelta) * 2;
   }
 }
 
@@ -710,18 +820,23 @@ export function validateDemo<TInitialState, TCommand>(
       return { valid: false, reason: 'Invalid initial state' };
     }
     if (!Array.isArray(value.frames)) return { valid: false, reason: 'Invalid frame list' };
-    let previousTick = -1;
+    let previousEnd = 0;
     for (const frame of value.frames) {
       if (!isRecord(frame)
         || !Number.isSafeInteger(frame.tick)
-        || (frame.tick as number) <= previousTick
+        || (frame.tick as number) < previousEnd
         || (frame.tick as number) >= (value.totalTicks as number)
         || !Array.isArray(frame.commands)
         || frame.commands.length === 0) return { valid: false, reason: 'Invalid or unordered demo frame' };
+      const duration = frame.duration === undefined ? 1 : frame.duration;
+      if (!Number.isSafeInteger(duration) || (duration as number) <= 0
+        || (frame.tick as number) + (duration as number) > (value.totalTicks as number)) {
+        return { valid: false, reason: 'Invalid demo frame duration' };
+      }
       if (validators.validateCommand && !frame.commands.every(validators.validateCommand)) {
         return { valid: false, reason: 'Invalid demo command' };
       }
-      previousTick = frame.tick as number;
+      previousEnd = (frame.tick as number) + (duration as number);
     }
     return { valid: true, demo: value as unknown as DemoData<TInitialState, TCommand> };
   } catch (error) {
@@ -742,9 +857,10 @@ export class DemoPlayback<TCommand> {
   next(): readonly TCommand[] {
     if (this.finished) return [];
     const frame = this.demo.frames[this.frameIndex];
-    const commands = frame?.tick === this.tick ? frame.commands : [];
-    if (frame?.tick === this.tick) this.frameIndex += 1;
+    const frameEnd = frame ? frame.tick + (frame.duration ?? 1) : -1;
+    const commands = frame && this.tick >= frame.tick && this.tick < frameEnd ? frame.commands : [];
     this.tick += 1;
+    if (frame && this.tick >= frameEnd) this.frameIndex += 1;
     return commands;
   }
 
@@ -756,7 +872,7 @@ export class DemoPlayback<TCommand> {
   seek(tick: number): void {
     if (!Number.isSafeInteger(tick) || tick < 0 || tick > this.demo.totalTicks) throw new RangeError('Invalid demo seek tick');
     this.tick = tick;
-    this.frameIndex = this.demo.frames.findIndex((frame) => frame.tick >= tick);
+    this.frameIndex = this.demo.frames.findIndex((frame) => frame.tick + (frame.duration ?? 1) > tick);
     if (this.frameIndex < 0) this.frameIndex = this.demo.frames.length;
   }
 }

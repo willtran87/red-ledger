@@ -61,14 +61,19 @@ Original prompt: implement the game
 - 2026-07-15: Corrected twin-bore pellet rays, hit/blocked denial-beam endpoints, predictive hazard placement and line-of-sight damage, empty-weapon fallback, radial selection geometry, and weapon-aware reticle bloom. Added a compressed 32-voice audio bus with deterministic reusable noise and pause/resume lifecycle control.
 - 2026-07-15: Added public license and third-party notices, restricted-reference artifact scanning, release-gated Pages publishing, 105 passing unit/data/public-release checks, and focused desktop/mobile navigation, resilience, weapon-selection, responsive, combat-feel, and installed web-game-client verification.
 - 2026-07-15: Final release hardening added event-driven legacy Firefox pointer-lock settlement, deterministic entry/resume readiness across every browser suite, fatal-state simulation shutdown, replay/audio lifecycle coordination, and bounded performance confirmation after browser cleanup. The complete release gate passes all 27 maps, every focused scenario, and Chromium/Firefox/WebKit; active SwiftShader combat delivered 262 frames over 10 seconds at 38.2 ms mean / 66.8 ms p95 with 89 resident textures. Pages matches all 3,614 production files exactly.
+- 2026-07-15: Removed a default-effects compositing bottleneck by replacing the repeated full-WebGL-canvas brightness filter with a reticle-local wall-impact pulse and normally compositing the authored muzzle sprite. Identical SwiftShader combat improved from 200-203 frames at roughly 50 ms mean / 100 ms p95 to repeat passes of 335 and 347 frames at 29.9/29.1 ms mean and 66.6/50.1 ms p95; focused accessibility, combat-feel, TypeScript, installed-client, and visual checks pass.
+- 2026-07-15: Replay storage hardening added an exact incremental UTF-16 size budget, a distinct storage-size stop reason, and truthful persistent/session-only results. Quota-denied recordings remain named, playable, exportable, and visibly marked for the life of the tab; noisy 45-minute streams stop below the 3 MB per-demo ceiling, and schema-v3 unit plus browser recovery coverage passes.
+- 2026-07-15: Rebalanced campaign combat space across all 27 maps: repaired E1M2 route coverage, capped hostile occupancy at two per cell, kept every actor and reward off moving door cells, restored episode-opening weapon progression, staged credentials and temporary powerups, and limited mastery items to deliberate exploration rewards. Door-aware reverse distance fields now route hostiles around corners with a bounded topology cache.
+- 2026-07-15: Rebuilt particle rendering into two fog-aware atlas-backed instanced batches with ambient/critical capacity guarantees, semantic status cues, material-aware contact direction, bounded authored-effect coalescing, and accessibility-safe blending. Generated and integrated a deterministic six-frame ember impact with shared scale, fixed pivots, chroma/source integrity validation, and reproducible metadata; the 128-particle stress scene holds at 29 to 31 draw calls.
+- 2026-07-15: Final responsive and performance polish added player-centered high-DPI automap rendering, zoom-invariant drag, touch tap/cancel handling, readable 2560px menus, 44px coarse targets, a less obstructive desktop weapon silhouette, and localized hit feedback. The complete release gate passes 138 unit/data tests, all 27 campaign maps, replay fallback, responsive gestures, semantic/transient effects, and Chromium/Firefox/WebKit; the isolated SwiftShader soak delivered 372 frames at 26.9 ms mean / 50.1 ms p95 with 91 textures.
 
 ## Verified Baseline
 
-- Development URL during this session: `http://127.0.0.1:5425/`
+- Development URL during this session: `http://127.0.0.1:5432/`
 - High-resolution viewport: `2560x1600`
 - Desktop viewport: `1280x720`
 - Mobile viewport: `390x844`
-- Production Pages package: 3,614 files with the compact 233 KB runtime catalog
+- Production Pages package: 3,620 files with the compact runtime catalog
 
 ## External Signoff
 

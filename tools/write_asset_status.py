@@ -70,7 +70,7 @@ def main() -> None:
         "",
         f"Latest automated validation: **{'PASS' if payload['validation_passed'] else 'FAIL OR NOT RUN'}**.",
         "",
-        "Run `python tools/normalize_chroma_sheets.py` followed by `python tools/validate_art_library.py`. Any unregistered sheet, missing stage pair, non-exact keyed border, chroma spill, off-center cell, baseline drift, wrong image mode, palette leak, or actor metadata mismatch blocks approval.",
+        "Run `python tools/normalize_chroma_sheets.py` followed by `python tools/validate_art_library.py`. Any missing logged generation original, keyed-copy checksum mismatch, unregistered sheet, missing stage pair, non-exact keyed border, chroma spill, off-center cell, baseline drift, wrong image mode, palette leak, or actor metadata mismatch blocks approval.",
         "",
         "## Identity Rule",
         "",

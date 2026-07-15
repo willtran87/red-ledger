@@ -37,7 +37,8 @@ const result = await page.evaluate(() => {
 assert(result.accepted, 'Valid deterministic demo was rejected');
 assert(!result.corruptAccepted, 'Checksum-tampered demo was accepted');
 assert(result.demo.tickRate === 35 && result.demo.totalTicks === 7, `Expected seven 35 Hz ticks, got ${result.demo.totalTicks}`);
-assert(result.demo.frames.length === result.demo.totalTicks, 'Recorder did not capture one command frame per simulated tick');
+assert(result.demo.frames.length > 0 && result.demo.frames.length < result.demo.totalTicks, 'Recorder did not compress repeated command ticks');
+assert(result.demo.frames.reduce((ticks, frame) => ticks + (frame.duration ?? 1), 0) === result.demo.totalTicks, 'Compressed demo spans do not cover every simulated tick');
 
 const terminal = (state) => ({
   map: state.map,

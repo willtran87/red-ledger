@@ -8,6 +8,7 @@ import {
   LineBasicMaterial,
   Mesh,
   MeshBasicMaterial,
+  NormalBlending,
   PerspectiveCamera,
   Scene,
   Sprite,
@@ -21,20 +22,36 @@ import { AudioSystem } from './AudioSystem';
 import { directionFromView, rayVerticalCylinderDistance, sampleShotSpread } from './CombatMath';
 import { DIFFICULTY, ENEMIES, WEAPONS, type AmmoType, type GameDifficulty } from './definitions';
 import {
+  actorDeathEffects,
+  breakableDestructionEffects,
+  fraudVisibilityEffect,
+  projectileResolutionEffect,
+  resurrectionEffect,
+  type AuthoredEffectCue,
+} from './EffectSemantics';
+import {
   EnemyBehaviorSystem,
+  buildNavigationDistanceField,
+  navigationDirectionFromField,
   type ActorBehaviorState,
+  type BehaviorActor,
   type BehaviorEvent,
+  type BehaviorTarget,
   type BehaviorVector,
   type DamageKind,
   type EnemyBehaviorSnapshot,
   type HazardState,
+  type NavigationCell,
+  type NavigationDistanceField,
+  type NavigationGridAdapter,
   type ProjectileState,
 } from './EnemyBehaviorSystem';
 import { InputSystem } from './InputSystem';
-import { ParticleSystem, type ParticleKind } from './ParticleSystem';
+import { ParticleSystem, type ParticleKind, type ParticlePriority } from './ParticleSystem';
 import {
   DemoPlayback,
   DemoRecorder,
+  DEMO_STORAGE_BUDGET_BYTES,
   PersistenceSystem,
   validateDemo,
   type DemoData,
@@ -175,6 +192,18 @@ interface AnimatedEffect {
   frame: number;
 }
 
+type SemanticCueKind =
+  | 'deflection' | 'neutralize' | 'authority' | 'scan' | 'inspection-scan'
+  | 'momentum' | 'rejection' | 'map-clear' | 'secret' | 'teleport';
+
+interface SemanticCue {
+  readonly kind: SemanticCueKind;
+  readonly sprite: Sprite;
+  readonly baseSize: number;
+  readonly duration: number;
+  elapsed: number;
+}
+
 interface BeamVisual {
   readonly mesh: Mesh<BufferGeometry, MeshBasicMaterial>;
   readonly line: Line<BufferGeometry, LineBasicMaterial>;
@@ -242,6 +271,86 @@ const isGameplayCommand = (value: unknown): value is GameplayCommand => {
 
 const LEGACY_SAVE_KEY = 'red-ledger-save-v1';
 const STEP = 1 / 35;
+export const MAX_DEMO_TICKS = 35 * 60 * 45;
+const ADDITIVE_PARTICLE_KINDS: ReadonlySet<ParticleKind> = new Set([
+  'spark', 'ember', 'energy', 'approval', 'metal', 'deflection', 'neutralize',
+  'authority', 'scan', 'momentum', 'rejection',
+]);
+const SEMANTIC_CUE_ASSETS: Readonly<Record<SemanticCueKind, string>> = {
+  deflection: '/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_01.png',
+  neutralize: '/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_02.png',
+  authority: '/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_03.png',
+  scan: '/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_04.png',
+  'inspection-scan': '/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_05.png',
+  momentum: '/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_06.png',
+  rejection: '/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_07.png',
+  'map-clear': '/public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_08.png',
+  secret: '/public_runtime/effects/particle-world-feedback/fx_particle-world-feedback_F_05.png',
+  teleport: '/public_runtime/effects/particle-world-feedback/fx_particle-world-feedback_F_07.png',
+};
+const SEMANTIC_CUE_SIZES: Readonly<Record<SemanticCueKind, number>> = {
+  deflection: .62,
+  neutralize: .58,
+  authority: .68,
+  scan: .6,
+  'inspection-scan': .6,
+  momentum: .7,
+  rejection: .58,
+  'map-clear': .66,
+  secret: .66,
+  teleport: .78,
+};
+const PARTICLE_SEMANTIC_CUES: Readonly<Partial<Record<ParticleKind, SemanticCueKind>>> = {
+  deflection: 'deflection',
+  neutralize: 'neutralize',
+  authority: 'authority',
+  scan: 'scan',
+  momentum: 'momentum',
+  rejection: 'rejection',
+  confetti: 'map-clear',
+};
+const MAX_ANIMATED_EFFECTS = 10;
+const ANIMATED_EFFECT_COALESCE_DISTANCE_SQ = .75 * .75;
+
+export const particleEmissionCount = (
+  kind: ParticleKind,
+  requested: number,
+  accessibility: Pick<GameEngine['accessibility'], 'reducedEffects' | 'flashEffects'>,
+): number => {
+  const count = Math.max(0, Math.floor(requested));
+  if (!accessibility.flashEffects && ADDITIVE_PARTICLE_KINDS.has(kind)) return 0;
+  return accessibility.reducedEffects && count > 0 ? 1 : count;
+};
+
+export interface ParticlePickupDescriptor {
+  kind: 'pickup' | 'weapon' | 'credential';
+  id: string;
+  ammoDrop?: { ammoId: AmmoType };
+}
+
+export const pickupParticleFeedbackKind = (pickup: ParticlePickupDescriptor): ParticleKind => {
+  if (pickup.kind === 'credential') return 'approval';
+  if (pickup.kind === 'weapon') return 'metal';
+  if (pickup.ammoDrop?.ammoId === 'toner-cells' || pickup.id === 'toner-cell' || pickup.id === 'toner-pack') return 'toner';
+  if (pickup.ammoDrop?.ammoId === 'canisters' || pickup.id.includes('canister')) return 'wax';
+  if (pickup.ammoDrop?.ammoId === 'fasteners' || pickup.id.includes('fastener')) return 'metal';
+  if (pickup.id === 'temporary-binder') return 'deflection';
+  if (pickup.id === 'hazard-endorsement') return 'neutralize';
+  if (pickup.id === 'rapid-authority') return 'authority';
+  if (pickup.id === 'forensic-lens' || pickup.id === 'floor-plan') return 'scan';
+  if (pickup.id === 'night-inspection-goggles') return 'scan';
+  return 'paper';
+};
+
+export const impactParticleDirection = (travelDirection: Readonly<Vector3>): Vector3 =>
+  new Vector3(-travelDirection.x, -travelDirection.y, -travelDirection.z).normalize();
+
+export const promoteRecent = <T>(entries: T[], index: number): T | undefined => {
+  if (index < 0 || index >= entries.length) return undefined;
+  const [entry] = entries.splice(index, 1);
+  entries.push(entry);
+  return entry;
+};
 const browserStorage = (): Storage => {
   try {
     return window.localStorage;
@@ -456,6 +565,8 @@ export class GameEngine {
   private bindingBeam?: { pulses: number; timer: number };
   private bindingBeamVisual?: BeamVisual;
   private readonly hostileBeamVisuals: HostileBeamVisual[] = [];
+  private readonly hostileNavigationFields = new Map<string, NavigationDistanceField>();
+  private hostileNavigationTopology = '';
   private demoRecorder?: DemoRecorder<SaveData, GameplayCommand>;
   private demoTick = 0;
   private activeDemo?: ActiveDemoPlayback;
@@ -469,6 +580,7 @@ export class GameEngine {
   private ambientParticleTimer = 0;
   private lastMapResult?: MapResult;
   private readonly animatedEffects: AnimatedEffect[] = [];
+  private readonly semanticCues: SemanticCue[] = [];
 
   private constructor(private readonly canvas: HTMLCanvasElement, readonly assets: AssetCatalog) {
     this.renderer = new WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
@@ -535,6 +647,7 @@ export class GameEngine {
     if (!preserveInventory) this.resetInventory();
     this.clearAnimatedEffects();
     this.assets.disposeTextures();
+    this.particles.clearTextureBindings();
     this.configureParticleTextures();
     this.world.load(map, DIFFICULTY[this.difficulty].placement);
     this.particles.clear();
@@ -550,6 +663,9 @@ export class GameEngine {
     this.bindingBeam = undefined;
     this.clearBindingBeamVisual();
     this.clearHostileBeamVisuals();
+    this.hostileNavigationFields.clear();
+    this.hostileNavigationTopology = '';
+    this.audio.clearSpatialDiagnostics();
     this.activeDemo = undefined;
     this.lastMapResult = undefined;
     this.player.position.set(map.playerStart.x * map.cellSize, 0, map.playerStart.z * map.cellSize);
@@ -645,6 +761,7 @@ export class GameEngine {
     this.messageTimer = Math.max(0, this.messageTimer - dt);
     this.particles.update(dt);
     this.updateAnimatedEffects(dt);
+    this.updateSemanticCues(dt);
     this.updateAmbientParticles(dt);
     for (const key of Object.keys(this.player.powerups) as Array<keyof PlayerState['powerups']>) {
       this.player.powerups[key] = Math.max(0, this.player.powerups[key] - dt);
@@ -653,10 +770,15 @@ export class GameEngine {
     if (this.messageTimer === 0) this.message = '';
     const command = playbackCommand ?? this.captureGameplayCommand();
     if (recordDemo && this.demoRecorder) {
-      this.demoRecorder.record(this.demoTick++, command);
-      if (this.demoTick >= 35 * 60 * 5) {
+      if (!this.demoRecorder.record(this.demoTick, command)) {
         const demo = this.finishDemoRecording();
-        if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'limit' } }));
+        if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'size' } }));
+      } else {
+        this.demoTick += 1;
+      }
+      if (this.demoRecorder && this.demoTick >= MAX_DEMO_TICKS) {
+        const demo = this.finishDemoRecording();
+        if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'duration' } }));
       }
     }
     if (command.walkToggle) this.walkMode = !this.walkMode;
@@ -750,7 +872,7 @@ export class GameEngine {
     else this.playerVelocity.z = 0;
     this.player.position.y = this.world.floorHeightAt(this.player.position) + 1.35;
     if (this.world.isHazardAt(this.player.position) && this.damageCooldown <= 0) {
-      if (this.player.powerups.hazard > 0) this.emitParticles('neutralize', this.player.position.clone().add(new Vector3(0, -.75, 0)), 4);
+      if (this.player.powerups.hazard > 0) this.playSemanticCue('neutralize', this.player.position.clone().add(new Vector3(0, -.55, 0)));
       else {
         this.damagePlayer(this.world.hazardDamageAt(this.player.position) * .4);
         this.emitParticles(this.world.episode === 2 ? 'water' : 'spittle', this.player.position.clone().add(new Vector3(0, -.75, 0)), 5);
@@ -839,19 +961,20 @@ export class GameEngine {
       if (!target) {
         const breakable = this.findBreakableTarget(direction, weapon.range, aimAssist);
         if (breakable) {
-          this.damageBreakable(breakable.key, this.rollWeaponDamage(weapon.id));
-          this.emitParticles('debris', breakable.position.clone().add(new Vector3(0, .6, 0)), 2, direction);
+          const impactDirection = impactParticleDirection(direction);
+          this.damageBreakable(breakable.key, this.rollWeaponDamage(weapon.id), impactDirection);
+          this.emitParticles('debris', breakable.position.clone().add(new Vector3(0, .6, 0)), 2, impactDirection);
           wallImpact ??= breakable.position.clone().add(new Vector3(0, .6, 0));
         } else if (!wallImpact) {
           const impact = this.traceWorldImpact(direction, weapon.range);
-          this.emitParticles('spark', impact, 3, direction);
+          this.emitParticles('spark', impact, 3, impactParticleDirection(direction));
           wallImpact = impact;
         }
         continue;
       }
       this.damageActor(target, this.rollWeaponDamage(weapon.id), 'player');
       const impact = target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .55, 0));
-      this.emitParticles('ink', impact, weapon.pellets > 1 ? 1 : 4, direction);
+      this.emitParticles('ink', impact, weapon.pellets > 1 ? 1 : 4, impactParticleDirection(direction));
       actorImpact ??= impact;
       hitCount += 1;
       killedAny ||= target.dead;
@@ -903,14 +1026,14 @@ export class GameEngine {
       if (target) {
         this.damageActor(target, this.rollWeaponDamage('binding-engine'), 'player');
         endpoint = target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0));
-        this.emitParticles('energy', endpoint, 2, direction);
+        this.emitParticles('energy', endpoint, 2, impactParticleDirection(direction));
         window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: 'binding-engine', kind: 'actor', targetUid: target.uid, killed: target.dead } }));
       }
       else {
         const breakable = this.findBreakableTarget(direction, WEAPONS['binding-engine'].range, .055);
         if (breakable) {
           endpoint = breakable.position.clone().add(new Vector3(0, .6, 0));
-          this.damageBreakable(breakable.key, this.rollWeaponDamage('binding-engine'));
+          this.damageBreakable(breakable.key, this.rollWeaponDamage('binding-engine'), impactParticleDirection(direction));
         }
       }
       this.audio.tone(150 + this.bindingBeam.pulses * 7, .035, 'sawtooth', .022);
@@ -1070,7 +1193,7 @@ export class GameEngine {
       impact.renderOrder = this.accessibility.highContrast ? 27 : 7;
     }
     this.hostileBeamVisuals.push({ mesh, line, impact, source, endpoint, hit, elapsed: 0, length: source.distanceTo(endpoint), duration: .24 });
-    if (hit) this.emitParticles('rejection', endpoint, this.accessibility.reducedEffects ? 3 : 7);
+    if (hit) this.playSemanticCue('rejection', endpoint);
   }
 
   private updateHostileBeamVisuals(dt: number): void {
@@ -1182,7 +1305,7 @@ export class GameEngine {
         if (target) this.damageActor(target, projectile.damage, 'player');
         else {
           const breakable = this.world.closestBreakable(projectile.position, projectile.radius + .9);
-          if (breakable) this.damageBreakable(breakable.key, projectile.damage);
+          if (breakable) this.damageBreakable(breakable.key, projectile.damage, impactParticleDirection(projectile.velocity));
         }
         if (projectile.weapon === 'catastrophe-launcher') {
           const launcher = WEAPONS['catastrophe-launcher'];
@@ -1191,7 +1314,12 @@ export class GameEngine {
         } else {
           this.playStandardEffect('binding-impact', 8, projectile.position, 1.05, .045);
         }
-        this.emitParticles(projectile.weapon === 'catastrophe-launcher' ? 'ember' : 'energy', projectile.position, projectile.weapon === 'catastrophe-launcher' ? 18 : 9, projectile.velocity.clone().normalize());
+        this.emitParticles(
+          projectile.weapon === 'catastrophe-launcher' ? 'ember' : 'energy',
+          projectile.position,
+          projectile.weapon === 'catastrophe-launcher' ? 18 : 9,
+          impactParticleDirection(projectile.velocity),
+        );
         if (projectile.weapon === 'catastrophe-launcher') this.emitParticles('smoke', projectile.position, 7);
         window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: projectile.weapon, kind: target ? 'actor' : 'wall', targetUid: target?.uid, killed: target?.dead ?? false } }));
         this.removePlayerProjectile(index);
@@ -1201,7 +1329,7 @@ export class GameEngine {
       if (!this.accessibility.reducedEffects) {
         const nextTrail = (this.playerProjectileTrailTimers.get(projectile.id) ?? 0) - dt;
         if (nextTrail <= 0) {
-          this.emitParticles(projectile.weapon === 'catastrophe-launcher' ? 'ember' : 'energy', projectile.position, 1);
+          this.emitParticles(projectile.weapon === 'catastrophe-launcher' ? 'ember' : 'energy', projectile.position, 1, undefined, 'ambient');
           this.playerProjectileTrailTimers.set(projectile.id, projectile.weapon === 'catastrophe-launcher' ? .085 : .055);
         } else this.playerProjectileTrailTimers.set(projectile.id, nextTrail);
       }
@@ -1225,7 +1353,14 @@ export class GameEngine {
       if (breakable.destroyed) continue;
       const target = breakable.position.clone().add(new Vector3(0, .6, 0));
       const distance = center.distanceTo(target);
-      if (distance < radius && this.world.hasLineOfSight(center, target)) this.damageBreakable(breakable.key, maxDamage * (1 - distance / radius));
+      if (distance < radius && this.world.hasLineOfSight(center, target)) {
+        const outward = target.clone().sub(center);
+        this.damageBreakable(
+          breakable.key,
+          maxDamage * (1 - distance / radius),
+          outward.lengthSq() > 1e-6 ? outward.normalize() : undefined,
+        );
+      }
     }
     const playerDistance = center.distanceTo(this.player.position);
     if (playerDistance < radius && this.world.hasLineOfSight(center, this.player.position)) this.damagePlayer(maxDamage * (1 - playerDistance / radius));
@@ -1301,18 +1436,20 @@ export class GameEngine {
     return result;
   }
 
-  private damageBreakable(key: string, damage: number): void {
+  private damageBreakable(key: string, damage: number, impactDirection?: Readonly<Vector3>): void {
     const item = this.world.breakables.get(key);
     if (!item) return;
     const result = this.world.damageBreakable(key, damage);
     const material = this.breakableParticleKind(item.definition.prop);
+    const impactPoint = item.position.clone().add(new Vector3(0, .55, 0));
     if (!result?.destroyed) {
-      this.emitParticles(material, item.position.clone().add(new Vector3(0, .55, 0)), 3);
+      this.emitParticles(material, impactPoint, 3, impactDirection);
       return;
     }
     this.audio.noise(.12, .055);
-    this.emitParticles(material, item.position.clone().add(new Vector3(0, .55, 0)), 12);
-    this.emitParticles('paper', item.position.clone().add(new Vector3(0, .55, 0)), 7);
+    this.emitParticles(material, impactPoint, 12, impactDirection);
+    breakableDestructionEffects(item.definition.prop, material)
+      .forEach((effect) => this.playEffectCue(effect, impactPoint));
     window.dispatchEvent(new CustomEvent('world-breakable-destroyed', { detail: { key } }));
     const reward = result.reward;
     if (!reward) return;
@@ -1342,14 +1479,25 @@ export class GameEngine {
       this.momentum.score += Math.round((100 + Math.min(400, actor.maxHealth * .35)) * this.momentum.chain);
       if (this.momentum.chain > 1) this.audio.tone(430 + Math.min(6, this.momentum.chain) * 55, .075, 'square', .026);
       window.dispatchEvent(new CustomEvent('combat-momentum', { detail: { ...this.momentum } }));
-      if ([3, 5, 8].includes(this.momentum.chain)) this.emitParticles('momentum', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .7, 0)), 8 + this.momentum.chain);
+      if ([3, 5, 8].includes(this.momentum.chain)) {
+        this.playSemanticCue('momentum', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .7, 0)));
+      }
     }
     this.setActorDeadVisual(actor, true);
     this.audio.enemyCue(actor.id, 'death', this.actorPan(actor), this.actorAudibility(actor));
     const deathPoint = actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .48, 0));
+    const deathMaterial = this.actorDeathParticleKind(actor);
     this.emitParticles('ink', deathPoint, actor.kind === 'boss' ? 14 : 5);
-    this.emitParticles(this.actorDeathParticleKind(actor), deathPoint, actor.kind === 'boss' ? 24 : 10);
-    this.emitParticles(actor.kind === 'boss' ? 'debris' : 'paper', deathPoint, actor.kind === 'boss' ? 14 : 4);
+    if (actor.kind === 'boss') this.playSemanticCue(deathMaterial === 'deflection' ? 'deflection' : 'authority', deathPoint);
+    else this.emitParticles(deathMaterial, deathPoint, 10);
+    if (actor.kind === 'boss') this.emitParticles('debris', deathPoint, 14);
+    actorDeathEffects(
+      actor.id,
+      deathMaterial,
+      Boolean((actor as RuntimeActor & { redacted?: boolean }).redacted),
+      ENEMIES[actor.id].height,
+      actor.kind === 'boss',
+    ).forEach((effect) => this.playEffectCue(effect, deathPoint));
     const drop = ENEMIES[actor.id].drop;
     if (drop && this.random() <= drop.chance) {
       this.world.spawnAmmoDrop(actor.position, drop.id, drop.amount, `actor-drop-${actor.uid}`);
@@ -1391,6 +1539,12 @@ export class GameEngine {
 
   private updateEnemies(dt: number): void {
     const difficulty = DIFFICULTY[this.difficulty];
+    const topology = this.hostileNavigationTopologyKey();
+    if (topology !== this.hostileNavigationTopology) {
+      this.hostileNavigationFields.clear();
+      this.hostileNavigationTopology = topology;
+    }
+    const navigationFields = this.hostileNavigationFields;
     for (const actor of this.world.actors) {
       if (actor.phaseLocked) continue;
       actor.animationTime += dt;
@@ -1428,6 +1582,7 @@ export class GameEngine {
       },
       world: {
         hasLineOfSight: (from, to) => this.world.hasLineOfSight(new Vector3(from.x, from.y, from.z), new Vector3(to.x, to.y, to.z)),
+        navigationDirection: (actor, target) => this.hostileNavigationDirection(actor, target, navigationFields),
         canOccupy: (actor, position) => {
           const point = new Vector3(position.x, position.y, position.z);
           if (this.world.isSolid(point, actor.radius * .55)) return false;
@@ -1453,6 +1608,70 @@ export class GameEngine {
     this.audio.setCombatIntensity(Math.min(1, livePressure / 9 + bossPressure));
     this.syncCombatEffects(result.projectiles, result.hazards, dt);
     this.world.actors.forEach((actor) => this.updateActorVisual(actor));
+  }
+
+  private hostileNavigationDirection(
+    actor: BehaviorActor,
+    target: BehaviorTarget,
+    fields: Map<string, NavigationDistanceField>,
+  ): BehaviorVector | undefined {
+    const from = new Vector3(actor.position.x, actor.position.y, actor.position.z);
+    const to = new Vector3(target.position.x, target.position.y, target.position.z);
+    if (this.world.hasLineOfSight(from, to)) return undefined;
+
+    const cellSize = this.world.map.cellSize;
+    const goal = { x: Math.floor(target.position.x / cellSize), z: Math.floor(target.position.z / cellSize) };
+    const radius = actor.radius * .55;
+    const grid: NavigationGridAdapter = {
+      width: this.world.map.grid[0]?.length ?? 0,
+      height: this.world.map.grid.length,
+      cellSize,
+      canTraverse: (start, end) => this.canHostileTraverseCell(start, end, radius),
+    };
+    const fieldKey = `${goal.x},${goal.z}|${radius.toFixed(3)}`;
+    let field = fields.get(fieldKey);
+    if (!field) {
+      field = buildNavigationDistanceField(goal, grid);
+      if (fields.size >= 72) fields.delete(fields.keys().next().value!);
+      fields.set(fieldKey, field);
+    } else {
+      fields.delete(fieldKey);
+      fields.set(fieldKey, field);
+    }
+    return navigationDirectionFromField(actor.uid, actor.position, target.position, field, grid);
+  }
+
+  private hostileNavigationTopologyKey(): string {
+    const credentialDoors = [...this.world.doors.values()]
+      .filter((door) => door.credential)
+      .map((door) => `${door.key}:${Number(door.progress >= .72)}`)
+      .join(',');
+    const sectors = this.world.serializeSectorMovers()
+      .map((sector) => `${sector.key}:${Math.round(sector.height * 20)}`)
+      .join(',');
+    const secrets = [...this.world.discoveredSecrets].sort().join(',');
+    const breakables = this.world.serializeBreakables()
+      .filter((breakable) => breakable.destroyed)
+      .map((breakable) => breakable.key)
+      .sort()
+      .join(',');
+    return `${this.world.map.id}|${credentialDoors}|${sectors}|${secrets}|${breakables}`;
+  }
+
+  private canHostileTraverseCell(from: NavigationCell, to: NavigationCell, radius: number): boolean {
+    const row = this.world.map.grid[to.z];
+    if (!row || to.x < 0 || to.x >= row.length || row[to.x] === '#') return false;
+    const cellSize = this.world.map.cellSize;
+    const fromPoint = new Vector3((from.x + .5) * cellSize, 0, (from.z + .5) * cellSize);
+    const toPoint = new Vector3((to.x + .5) * cellSize, 0, (to.z + .5) * cellSize);
+    fromPoint.y = this.world.floorHeightAt(fromPoint);
+    toPoint.y = this.world.floorHeightAt(toPoint);
+    const door = this.world.doors.get(`${to.x},${to.z}`);
+    if (door) {
+      if (door.credential && door.progress < .72) return false;
+      return toPoint.y - fromPoint.y <= 1.05;
+    }
+    return this.world.canTraverse(fromPoint, toPoint, radius);
   }
 
   private applyEnemyEvent(event: BehaviorEvent, dt: number, speedScale: number, damageScale: number): void {
@@ -1491,6 +1710,10 @@ export class GameEngine {
           actor.sprite.visible = !actor.phaseLocked;
           actor.sprite.material.opacity = event.opacity;
           actor.sprite.material.depthWrite = event.visible;
+          if (actor.id === 'fraud-apparition') {
+            const point = actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0));
+            this.playEffectCue(fraudVisibilityEffect(event.visible, ENEMIES[actor.id].height), point);
+          }
         }
         break;
       case 'attack':
@@ -1551,8 +1774,10 @@ export class GameEngine {
         this.showMessage('Closed exposure reopened', 1.2);
         this.emitParticles('smoke', target.position.clone().add(new Vector3(0, .4, 0)), 10);
         this.emitParticles('toner', target.position.clone().add(new Vector3(0, .6, 0)), 8);
-        this.playStandardEffect('resurrection-redaction', 8,
-          target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0)), ENEMIES[target.id].height * 1.15, .065);
+        this.playEffectCue(
+          resurrectionEffect(ENEMIES[target.id].height),
+          target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0)),
+        );
         break;
       }
       case 'summon':
@@ -1566,16 +1791,11 @@ export class GameEngine {
         break;
       case 'boss-phase':
         if (actor) this.audio.enemyCue(actor.id, 'phase', this.actorPan(actor), Math.max(.35, this.actorAudibility(actor)));
-        if (actor) this.emitParticles('authority', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0)), 20);
+        if (actor) this.playSemanticCue('authority', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0)));
         this.showMessage(`${this.pretty(event.phaseId)} phase`, 1.5);
         break;
       case 'remove-projectile': {
-        const sprite = this.projectileSprites.get(event.projectileId);
-        if (sprite && event.reason === 'impact') {
-          const family = String(sprite.userData.effectFamily ?? '');
-          if (family === 'canister-projectile') this.playStandardEffect('canister-explosion', 8, sprite.position, 2.25, .055);
-          else this.playStandardEffect('binding-impact', 8, sprite.position, 1, .045);
-        }
+        this.resolveEnemyProjectile(event);
         break;
       }
       case 'hazard-armed': {
@@ -1583,7 +1803,7 @@ export class GameEngine {
         if (sprite) {
           const family = String(sprite.userData.effectFamily ?? 'reserve-hazard');
           this.playStandardEffect(family, family === 'prediction-zone' ? 4 : 6, sprite.position, sprite.scale.x * 1.08, .06);
-          this.emitParticles(family === 'prediction-zone' ? 'scan' : 'authority', sprite.position.clone().add(new Vector3(0, .15, 0)), 8);
+          this.playSemanticCue(family === 'prediction-zone' ? 'scan' : 'authority', sprite.position.clone().add(new Vector3(0, .15, 0)));
           const spatial = this.pointSpatialAudio(sprite.position);
           this.audio.hazardCue('armed', spatial.pan, spatial.gain);
         }
@@ -1660,15 +1880,51 @@ export class GameEngine {
     return { position: { x: hit.x, y: hit.y, z: hit.z }, ...(targetUid ? { targetUid } : {}) };
   }
 
-  private syncCombatEffects(projectiles: readonly ProjectileState[], hazards: readonly HazardState[], dt = 0): void {
-    const projectileIds = new Set(projectiles.map((item) => item.id));
-    for (const [id, sprite] of this.projectileSprites) {
-      if (projectileIds.has(id)) continue;
-      this.emitParticles('energy', sprite.position.clone(), 5);
+  private resolveEnemyProjectile(event: Extract<BehaviorEvent, { type: 'remove-projectile' }>): void {
+    const point = new Vector3(event.position.x, event.position.y, event.position.z);
+    if (event.reason === 'impact') {
+      this.playEffectCue(projectileResolutionEffect(event.kind, event.damageKind, event.targetUid), point);
+      const impactDirection = impactParticleDirection(new Vector3(event.velocity.x, event.velocity.y, event.velocity.z));
+      if (event.kind.includes('canister')) {
+        this.emitParticles('ember', point, 18, impactDirection);
+        this.emitParticles('smoke', point, 7, impactDirection);
+      } else if (event.damageKind === 'fire' || event.kind.includes('ember')) {
+        this.emitParticles('ember', point, 9, impactDirection);
+        this.emitParticles('smoke', point, 3, impactDirection);
+      } else if (event.damageKind === 'redaction' || event.kind.includes('redaction') || event.kind.includes('subrogation')) {
+        this.emitParticles('toner', point, 8, impactDirection);
+        this.emitParticles('paper', point, 3, impactDirection);
+      } else if (event.damageKind === 'hazard' || event.kind.includes('reserve-glob') || event.kind.includes('liability')) {
+        this.emitParticles('wax', point, 9, impactDirection);
+      } else if (!event.targetUid) {
+        this.emitParticles('debris', point, 7, impactDirection);
+      } else {
+        this.emitParticles(event.damageKind === 'toner' ? 'toner' : 'energy', point, 6, impactDirection);
+      }
+    } else {
+      const kind: ParticleKind = event.damageKind === 'fire' ? 'ember'
+        : event.damageKind === 'redaction' ? 'toner'
+          : event.damageKind === 'hazard' ? 'wax' : 'smoke';
+      this.emitParticles(kind, point, 2);
+    }
+    this.removeEnemyProjectileVisual(event.projectileId);
+  }
+
+  private removeEnemyProjectileVisual(id: string): void {
+    const sprite = this.projectileSprites.get(id);
+    if (sprite) {
       this.world.root.remove(sprite);
       sprite.material.dispose();
       this.projectileSprites.delete(id);
-      this.enemyProjectileTrailTimers.delete(id);
+    }
+    this.enemyProjectileTrailTimers.delete(id);
+  }
+
+  private syncCombatEffects(projectiles: readonly ProjectileState[], hazards: readonly HazardState[], dt = 0): void {
+    const projectileIds = new Set(projectiles.map((item) => item.id));
+    for (const [id] of this.projectileSprites) {
+      if (projectileIds.has(id)) continue;
+      this.removeEnemyProjectileVisual(id);
     }
     for (const item of projectiles) {
       let sprite = this.projectileSprites.get(item.id);
@@ -1692,7 +1948,7 @@ export class GameEngine {
       if (dt > 0 && !this.accessibility.reducedEffects) {
         const nextTrail = (this.enemyProjectileTrailTimers.get(item.id) ?? 0) - dt;
         if (nextTrail <= 0) {
-          this.emitParticles(item.kind.includes('ember') ? 'ember' : item.kind.includes('reserve') ? 'toner' : 'energy', sprite.position, 1);
+          this.emitParticles(item.kind.includes('ember') ? 'ember' : item.kind.includes('reserve') ? 'toner' : 'energy', sprite.position, 1, undefined, 'ambient');
           this.enemyProjectileTrailTimers.set(item.id, .075);
         } else this.enemyProjectileTrailTimers.set(item.id, nextTrail);
       }
@@ -1756,11 +2012,39 @@ export class GameEngine {
     this.playAnimatedEffect(family, frames, position, size, frameDuration);
   }
 
-  private playAnimatedEffect(family: string, frames: readonly string[], position: Vector3, size: number, frameDuration: number): void {
+  private playEffectCue(effect: AuthoredEffectCue, position: Vector3): void {
+    this.playAnimatedEffect(effect.family, effect.frames, position, effect.size, effect.frameDuration, effect.blend);
+  }
+
+  private playAnimatedEffect(
+    family: string,
+    frames: readonly string[],
+    position: Vector3,
+    size: number,
+    frameDuration: number,
+    blend: AuthoredEffectCue['blend'] = 'normal',
+  ): void {
     if (this.accessibility.reducedEffects || frames.length === 0) return;
-    while (this.animatedEffects.length >= 48) this.removeAnimatedEffect(0);
+    const additive = blend === 'additive' && this.accessibility.flashEffects;
+    const existingIndex = this.animatedEffects.findIndex((effect) => effect.family === family
+      && effect.sprite.position.distanceToSquared(position) <= ANIMATED_EFFECT_COALESCE_DISTANCE_SQ);
+    const existing = promoteRecent(this.animatedEffects, existingIndex);
+    if (existing) {
+      existing.elapsed = 0;
+      existing.frame = 0;
+      existing.sprite.position.copy(position);
+      const nextSize = Math.max(existing.sprite.scale.x, size);
+      existing.sprite.scale.set(nextSize, nextSize, 1);
+      existing.sprite.material.map = this.assets.texture(frames[0]);
+      existing.sprite.material.blending = additive ? AdditiveBlending : NormalBlending;
+      existing.sprite.material.needsUpdate = true;
+      return;
+    }
+    while (this.animatedEffects.length >= MAX_ANIMATED_EFFECTS) this.removeAnimatedEffect(0);
     const sprite = this.createEffectSprite(frames[0], size);
     sprite.position.copy(position);
+    sprite.material.blending = additive ? AdditiveBlending : NormalBlending;
+    sprite.material.needsUpdate = true;
     sprite.renderOrder = this.accessibility.highContrast ? 21 : 1;
     this.animatedEffects.push({ family, sprite, frames, frameDuration, elapsed: 0, frame: 0 });
   }
@@ -1787,14 +2071,69 @@ export class GameEngine {
     effect.sprite.material.dispose();
   }
 
+  private playSemanticCue(kind: SemanticCueKind, position: Vector3): void {
+    const existingIndex = this.semanticCues.findIndex((cue) => cue.kind === kind && cue.sprite.position.distanceToSquared(position) < 1);
+    const existing = promoteRecent(this.semanticCues, existingIndex);
+    const additive = this.accessibility.flashEffects && !this.accessibility.reducedEffects;
+    if (existing) {
+      existing.elapsed = 0;
+      existing.sprite.position.copy(position);
+      existing.sprite.material.opacity = 1;
+      existing.sprite.material.blending = additive ? AdditiveBlending : NormalBlending;
+      existing.sprite.material.needsUpdate = true;
+      return;
+    }
+    while (this.semanticCues.length >= 12) this.removeSemanticCue(0);
+    const baseSize = SEMANTIC_CUE_SIZES[kind];
+    const sprite = this.createEffectSprite(SEMANTIC_CUE_ASSETS[kind], baseSize, true);
+    sprite.position.copy(position);
+    sprite.material.opacity = 0;
+    sprite.material.depthTest = false;
+    sprite.material.blending = additive ? AdditiveBlending : NormalBlending;
+    sprite.material.needsUpdate = true;
+    sprite.renderOrder = this.accessibility.highContrast ? 26 : 8;
+    this.semanticCues.push({
+      kind,
+      sprite,
+      baseSize,
+      duration: this.accessibility.reducedEffects ? .5 : .64,
+      elapsed: 0,
+    });
+  }
+
+  private updateSemanticCues(dt: number): void {
+    for (let index = this.semanticCues.length - 1; index >= 0; index -= 1) {
+      const cue = this.semanticCues[index];
+      cue.elapsed += dt;
+      if (cue.elapsed >= cue.duration) {
+        this.removeSemanticCue(index);
+        continue;
+      }
+      const progress = cue.elapsed / cue.duration;
+      const fadeIn = Math.min(1, cue.elapsed / .06);
+      const fadeOut = Math.min(1, (cue.duration - cue.elapsed) / .16);
+      cue.sprite.material.opacity = Math.min(fadeIn, fadeOut);
+      const pulse = this.accessibility.reducedMotion ? 1 : .88 + Math.sin(progress * Math.PI) * .12;
+      cue.sprite.scale.set(cue.baseSize * pulse, cue.baseSize * pulse, 1);
+    }
+  }
+
+  private removeSemanticCue(index: number): void {
+    const [cue] = this.semanticCues.splice(index, 1);
+    if (!cue) return;
+    this.world.root.remove(cue.sprite);
+    cue.sprite.material.dispose();
+  }
+
   private clearAnimatedEffects(): void {
     while (this.animatedEffects.length) this.removeAnimatedEffect(this.animatedEffects.length - 1);
+    while (this.semanticCues.length) this.removeSemanticCue(this.semanticCues.length - 1);
   }
 
   private damagePlayer(amount: number, sourceUid?: string, damageKind?: DamageKind): void {
     if (this.player.powerups.binder > 0) {
       const point = this.player.position.clone().addScaledVector(this.aimDirection(), .65).add(new Vector3(0, -.05, 0));
-      this.emitParticles('deflection', point, 7, this.aimDirection());
+      this.playSemanticCue('deflection', point);
       window.dispatchEvent(new CustomEvent('player-deflection', { detail: { amount } }));
       return;
     }
@@ -1888,14 +2227,15 @@ export class GameEngine {
         this.showMessage(`${this.pretty(pickup.id)} credential acquired`);
       } else this.applyPickup(pickup.id as PickupId);
       const pickupId = String(pickup.id);
-      const feedbackKind: ParticleKind = pickup.kind === 'credential' ? 'approval'
-        : pickup.kind === 'weapon' ? 'metal'
-          : pickupId === 'temporary-binder' ? 'deflection'
-            : pickupId === 'hazard-endorsement' ? 'neutralize'
-              : pickupId === 'rapid-authority' ? 'authority'
-                : pickupId === 'forensic-lens' || pickupId === 'night-inspection-goggles' || pickupId === 'floor-plan' ? 'scan'
-                  : pickupId.includes('canister') ? 'wax' : pickupId.includes('fastener') ? 'metal' : 'paper';
-      this.emitParticles(feedbackKind, this.player.position.clone().addScaledVector(this.aimDirection(), .9).add(new Vector3(0, .15, 0)), 7);
+      const feedbackKind = pickupParticleFeedbackKind(pickup);
+      const feedbackPoint = this.player.position.clone().addScaledVector(this.aimDirection(), .9).add(new Vector3(0, .15, 0));
+      if (feedbackKind === 'deflection' || feedbackKind === 'neutralize' || feedbackKind === 'authority') {
+        this.playSemanticCue(feedbackKind, feedbackPoint);
+      } else if (feedbackKind === 'scan') {
+        this.playSemanticCue(pickupId === 'night-inspection-goggles' ? 'inspection-scan' : 'scan', feedbackPoint);
+      } else {
+        this.emitParticles(feedbackKind, feedbackPoint, pickup.kind === 'pickup' ? 3 : 4);
+      }
       this.audio.tone(660, .1, 'square', .035);
     }
   }
@@ -1917,7 +2257,6 @@ export class GameEngine {
     if (id === 'loss-control-vest') return this.player.armor < 100 || this.player.armorClass === 'none';
     if (id === 'catastrophe-suit') return this.player.armor < 200 || this.player.armorClass !== 'heavy';
     if (id === 'emergency-reserve') return this.player.health < 200 || this.player.armor < 200;
-    if (id === 'floor-plan') return !this.player.floorPlan;
     if (id === 'goodwill-token') return this.player.health < 200;
     if (id === 'adhesive-bandage' || id === 'field-medical-case') return this.player.health < 100;
     return true;
@@ -1989,7 +2328,6 @@ export class GameEngine {
         return;
       }
       if (trigger.action === 'teleport') {
-        this.emitParticles('approval', this.player.position.clone().add(new Vector3(0, .35, 0)), 14);
         const destination = this.world.map.triggers.find((candidate) => trigger.targets.includes(candidate.id));
         if (destination) {
           this.debugTeleport(destination.x * this.world.map.cellSize, destination.z * this.world.map.cellSize);
@@ -2007,7 +2345,7 @@ export class GameEngine {
           this.showMessage('Optional exposure discovered', 1.5);
           this.audio.tone(880, .16, 'triangle', .04);
           const secret = this.world.map.secrets.find((candidate) => candidate.id === secretId);
-          if (secret) this.emitParticles('approval', this.player.position.clone().addScaledVector(this.aimDirection(), 1.1).add(new Vector3(0, .2, 0)), 18);
+          if (secret) this.playSemanticCue('secret', this.player.position.clone().addScaledVector(this.aimDirection(), 1.05).add(new Vector3(0, .2, 0)));
         }
       } else {
         const mechanismId = trigger.targets.find((target) => this.world.map.mechanisms.some((mechanism) => mechanism.id === target));
@@ -2119,7 +2457,9 @@ export class GameEngine {
     if (point) {
       const relative = Math.atan2(point.x - this.player.position.x, point.z - this.player.position.z) - this.player.yaw;
       direction = Math.sin(relative) > .25 ? 'right' : Math.sin(relative) < -.25 ? 'left' : 'center';
-      this.emitParticles(reason === 'credential' ? 'rejection' : 'spark', point.clone().add(new Vector3(0, .7, 0)), 3);
+      const cuePoint = point.clone().add(new Vector3(0, .7, 0));
+      if (reason === 'credential') this.playSemanticCue('rejection', cuePoint);
+      else this.emitParticles('spark', cuePoint, 2);
     }
     window.dispatchEvent(new CustomEvent('use-failed', { detail: { reason, direction, icon: credential ?? (reason === 'encounter' ? 'authority' : 'use'), ...(credential ? { credential } : {}) } }));
   }
@@ -2130,11 +2470,11 @@ export class GameEngine {
 
   private teleportTell(position: Vector3): void {
     this.audio.tone(240, .18, 'square', .045);
-    if (this.accessibility.reducedEffects) return;
-    this.emitParticles('approval', position.clone().add(new Vector3(0, .35, 0)), 18);
     const frames = ['start', 'expand-01', 'expand-02', 'expand-03', 'peak', 'collapse-01', 'collapse-02', 'end']
       .map((frame) => `/public_runtime/effects/teleport-approval-ring/fx_teleport-approval-ring_${frame}.png`);
     const point = position.clone().addScaledVector(this.aimDirection(), 1.45).setY(this.world.floorHeightAt(position) + .85);
+    this.playSemanticCue('teleport', point);
+    if (this.accessibility.reducedEffects || !this.accessibility.flashEffects) return;
     this.playAnimatedEffect('teleport-approval-ring', frames, point, 1.8, .075);
   }
 
@@ -2619,6 +2959,7 @@ export class GameEngine {
       seed: initialState.rng,
       mapId: initialState.mapId,
       initialState,
+      maxSerializedBytes: DEMO_STORAGE_BUDGET_BYTES,
     });
     this.demoTick = 0;
     this.emit();
@@ -2651,7 +2992,7 @@ export class GameEngine {
     });
     if (!validation.valid) return undefined;
     const demo = validation.demo;
-    if (demo.tickRate !== 35 || demo.totalTicks > 35 * 60 * 5 || demo.frames.length > demo.totalTicks
+    if (demo.tickRate !== 35 || demo.totalTicks > MAX_DEMO_TICKS || demo.frames.length > demo.totalTicks
       || demo.mapId !== demo.initialState.mapId || demo.seed !== demo.initialState.rng || !(demo.mapId in CAMPAIGN.maps)) return undefined;
     return { mapId: demo.mapId as MapId, createdAt: demo.createdAt, totalTicks: demo.totalTicks, duration: demo.totalTicks / demo.tickRate };
   }
@@ -2907,7 +3248,9 @@ export class GameEngine {
 
   debugParticleBurst(kind: ParticleKind): void {
     const point = this.player.position.clone().addScaledVector(this.aimDirection(), 2.2).add(new Vector3(0, -.15, 0));
-    this.emitParticles(kind, point, 18, this.aimDirection());
+    const semantic = PARTICLE_SEMANTIC_CUES[kind];
+    if (semantic) this.playSemanticCue(semantic, point);
+    else this.emitParticles(kind, point, 18, this.aimDirection());
   }
 
   debugParticleGallery(kinds: readonly ParticleKind[]): void {
@@ -2918,7 +3261,9 @@ export class GameEngine {
         .addScaledVector(forward, 2.55)
         .addScaledVector(right, (index - (list.length - 1) * .5) * .48)
         .add(new Vector3(0, .22 + (index % 2) * .4, 0));
-      this.emitParticles(kind, point, 16);
+      const semantic = PARTICLE_SEMANTIC_CUES[kind];
+      if (semantic) this.playSemanticCue(semantic, point);
+      else this.emitParticles(kind, point, 16);
     });
   }
   debugFire(): void { this.weaponCooldown = 0; this.fireWeapon(); }
@@ -3004,7 +3349,7 @@ export class GameEngine {
       coordinateSystem: 'world units; x increases east/right on automap, z increases south/down; yaw 0 faces north (-z)',
       mode: this.mode,
       map: this.world.map ? { id: this.world.map.id, title: this.world.map.title, exit: this.world.map.exit } : null,
-      player: { x: +this.player.position.x.toFixed(2), z: +this.player.position.z.toFixed(2), yaw: +this.player.yaw.toFixed(3), pitch: +this.player.pitch.toFixed(3), health: Math.ceil(this.player.health), armor: Math.ceil(this.player.armor), armorClass: this.player.armorClass, weapon: this.player.weapon, ammo: this.player.ammo, credentials: [...this.player.credentials], powerups: this.player.powerups },
+      player: { x: +this.player.position.x.toFixed(2), z: +this.player.position.z.toFixed(2), yaw: +this.player.yaw.toFixed(3), pitch: +this.player.pitch.toFixed(3), health: Math.ceil(this.player.health), armor: Math.ceil(this.player.armor), armorClass: this.player.armorClass, weapon: this.player.weapon, ammo: this.player.ammo, credentials: [...this.player.credentials], floorPlan: this.player.floorPlan, powerups: this.player.powerups },
       visibleActors,
       visibleCorpses,
       nearbyPickups,
@@ -3034,6 +3379,12 @@ export class GameEngine {
         bindingBeam: this.bindingBeamVisual ? { active: true, length: +this.bindingBeamVisual.length.toFixed(2) } : { active: false, length: 0 },
         hostileBeams: this.hostileBeamVisuals.map((beam) => ({ hit: beam.hit, length: +beam.length.toFixed(2), remaining: +(beam.duration - beam.elapsed).toFixed(3) })),
         animated: this.animatedEffects.map((effect) => ({ family: effect.family, frame: effect.frame + 1 })),
+        semanticCues: this.semanticCues.map((cue) => ({
+          kind: cue.kind,
+          blend: cue.sprite.material.blending === AdditiveBlending ? 'additive' : 'normal',
+          opacity: +cue.sprite.material.opacity.toFixed(3),
+          remaining: +(cue.duration - cue.elapsed).toFixed(3),
+        })),
         particles: { active: this.particles.activeCount, capacity: this.particles.capacity, byKind: this.particles.counts() },
       },
       audio: this.audio.diagnostics(),
@@ -3059,6 +3410,7 @@ export class GameEngine {
         textureCount: this.assets.textures.size,
         drawCalls: this.renderer.info.render.calls,
         triangles: this.renderer.info.render.triangles,
+        navigationFields: this.hostileNavigationFields.size,
       },
     });
   }
@@ -3119,9 +3471,15 @@ export class GameEngine {
   private showMessage(message: string, duration = 1.2): void { this.message = message; this.messageTimer = duration; }
   private pretty(value: string): string { return value.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' '); }
   private saveTime(seconds: number): string { return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`; }
-  private emitParticles(kind: ParticleKind, position: Vector3, count: number, direction?: Vector3): void {
-    const scaledCount = this.accessibility.reducedEffects ? Math.max(1, Math.ceil(count * .35)) : count;
-    this.particles.emit(kind, position, scaledCount, direction);
+  private emitParticles(
+    kind: ParticleKind,
+    position: Vector3,
+    count: number,
+    direction?: Vector3,
+    priority?: ParticlePriority,
+  ): void {
+    const emissionCount = particleEmissionCount(kind, count, this.accessibility);
+    if (emissionCount > 0) this.particles.emit(kind, position, emissionCount, direction, { priority });
   }
   private actorDeathParticleKind(actor: RuntimeActor): ParticleKind {
     if (actor.kind === 'boss') return actor.id === 'uninsurable' ? 'deflection' : 'authority';
@@ -3144,17 +3502,17 @@ export class GameEngine {
       indices.map((index) => this.assets.texture(`/public_runtime/effects/particle-${family}/fx_particle-${family}_F_${String(index).padStart(2, '0')}.png`));
     this.particles.setTextures('ink', frames('weapon-feedback', [1, 6]));
     this.particles.setTextures('paper', [...frames('weapon-feedback', [4]), ...frames('death-feedback', [1])]);
-    this.particles.setTextures('spark', [...frames('weapon-feedback', [2, 3, 5]), ...frames('world-feedback', [2])]);
+    this.particles.setTextures('spark', [...frames('weapon-feedback', [2, 3, 5]), ...frames('world-feedback', [2]), ...frames('death-feedback', [7])]);
     this.particles.setTextures('ember', [...frames('weapon-feedback', [7]), ...frames('death-feedback', [5])]);
     this.particles.setTextures('energy', [...frames('world-feedback', [8]), ...frames('death-feedback', [8])]);
     this.particles.setTextures('smoke', [...frames('world-feedback', [1, 3]), ...frames('death-feedback', [4, 5])]);
-    this.particles.setTextures('debris', [...frames('weapon-feedback', [7, 8]), ...frames('death-feedback', [1, 2, 3, 6])]);
+    this.particles.setTextures('debris', [...frames('weapon-feedback', [7, 8]), ...frames('death-feedback', [1, 2, 3, 6, 7])]);
     this.particles.setTextures('approval', frames('world-feedback', [5, 6, 7]));
     this.particles.setTextures('fiber', frames('environment-material-feedback', [1]));
     this.particles.setTextures('concrete', frames('environment-material-feedback', [2]));
     this.particles.setTextures('glass', frames('environment-material-feedback', [3]));
-    this.particles.setTextures('water', frames('environment-material-feedback', [4]));
-    this.particles.setTextures('metal', frames('environment-material-feedback', [5]));
+    this.particles.setTextures('water', [...frames('environment-material-feedback', [4]), ...frames('world-feedback', [4])]);
+    this.particles.setTextures('metal', [...frames('environment-material-feedback', [5]), ...frames('death-feedback', [7])]);
     this.particles.setTextures('toner', frames('environment-material-feedback', [6]));
     this.particles.setTextures('wax', frames('environment-material-feedback', [7]));
     this.particles.setTextures('spittle', frames('environment-material-feedback', [8]));
@@ -3177,7 +3535,7 @@ export class GameEngine {
     const hasLiquidTransformation = this.world.map.triggers.some((trigger) => trigger.action === 'drain-liquid' || trigger.action === 'flood-liquid');
     const kind: ParticleKind = hasLiquidTransformation ? 'water'
       : this.world.episode === 1 ? 'fiber' : this.world.episode === 2 ? 'smoke' : 'scan';
-    this.particles.emit(kind, point, 2);
+    this.particles.emit(kind, point, 2, undefined, { priority: 'ambient' });
   }
   private random(): number { this.rngState = (Math.imul(1664525, this.rngState) + 1013904223) >>> 0; return this.rngState / 0x100000000; }
   private horizontalDistance(a: Vector3, b: Vector3): number { return Math.hypot(a.x - b.x, a.z - b.z); }

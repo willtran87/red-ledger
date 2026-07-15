@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from statistics import mean
@@ -81,6 +82,7 @@ SHEET_COUNTS = {
     "fx_death-feedback_v01.png": 8,
     "fx_environment-material-feedback_v01.png": 8,
     "fx_status-feedback_v01.png": 8,
+    "fx_ember-impact_v01.png": 6,
     "ui_portrait_damage-0_states_v01.png": 6,
     "ui_portrait_damage-1_states_v01.png": 6,
     "ui_portrait_damage-2_states_v01.png": 6,
@@ -297,6 +299,86 @@ def sheet_inventory(root: Path) -> dict:
     }
 
 
+def generation_source_integrity(root: Path) -> dict:
+    log_path = root / "manifests/generation-log.jsonl"
+    entries = []
+    parse_errors = []
+    if not log_path.exists():
+        return {
+            "log": log_path.relative_to(root).as_posix(),
+            "count": 0,
+            "passed_count": 0,
+            "parse_errors": ["generation log is missing"],
+            "failed": [],
+            "passed": False,
+        }
+
+    imagegen_root = (root / "art/source/imagegen").resolve()
+    keyed_root = root / "art/source/keyed"
+    for line_number, line in enumerate(log_path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as error:
+            parse_errors.append(f"line {line_number}: {error.msg}")
+            continue
+        source_file = record.get("source_file")
+        if not isinstance(source_file, str) or not source_file:
+            entries.append({
+                "line": line_number,
+                "asset_id": record.get("asset_id"),
+                "source_file": source_file,
+                "source_exists": False,
+                "keyed_file": None,
+                "keyed_exists": False,
+                "byte_equal": None,
+                "passed": False,
+            })
+            continue
+
+        source_path = (root / source_file).resolve()
+        try:
+            source_path.relative_to(root)
+            source_within_root = True
+        except ValueError:
+            source_within_root = False
+        source_exists = source_within_root and source_path.is_file()
+        keyed_path = None
+        try:
+            relative_source = source_path.relative_to(imagegen_root)
+            keyed_path = keyed_root / relative_source
+        except ValueError:
+            pass
+        keyed_exists = keyed_path is not None and keyed_path.is_file()
+        byte_equal = None
+        if source_exists and keyed_exists and keyed_path is not None:
+            source_hash = hashlib.sha256(source_path.read_bytes()).digest()
+            keyed_hash = hashlib.sha256(keyed_path.read_bytes()).digest()
+            byte_equal = source_hash == keyed_hash
+        passed = source_exists and (not keyed_exists or byte_equal is True)
+        entries.append({
+            "line": line_number,
+            "asset_id": record.get("asset_id"),
+            "source_file": source_file,
+            "source_exists": source_exists,
+            "keyed_file": keyed_path.relative_to(root).as_posix() if keyed_path is not None else None,
+            "keyed_exists": keyed_exists,
+            "byte_equal": byte_equal,
+            "passed": passed,
+        })
+
+    failed = [entry for entry in entries if not entry["passed"]]
+    return {
+        "log": log_path.relative_to(root).as_posix(),
+        "count": len(entries),
+        "passed_count": sum(entry["passed"] for entry in entries),
+        "parse_errors": parse_errors,
+        "failed": failed,
+        "passed": not parse_errors and not failed,
+    }
+
+
 def runtime_png(path: Path, expected_size: tuple[int, int] | None = None, require_transparent_corners: bool = False) -> dict:
     source = Image.open(path)
     image = source.convert("RGBA")
@@ -356,6 +438,7 @@ def main() -> None:
     args = parser.parse_args()
     root = args.root.resolve()
     inventory = sheet_inventory(root)
+    generation_sources = generation_source_integrity(root)
 
     actor_dirs = []
     for parent in (root / "assets/public_runtime/enemies", root / "assets/public_runtime/bosses"):
@@ -401,6 +484,7 @@ def main() -> None:
 
     report = {
         "sheet_inventory": inventory,
+        "generation_sources": generation_sources,
         "actors": actors,
         "chroma_sources": chroma,
         "alpha_sources": alpha_sources,
@@ -413,6 +497,7 @@ def main() -> None:
     }
     report["passed"] = (
         inventory["passed"]
+        and generation_sources["passed"]
         and all(item["passed"] for item in actors)
         and all(item["passed"] for item in chroma)
         and all(item["passed"] for item in alpha_sources)
@@ -424,6 +509,8 @@ def main() -> None:
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="ascii")
     print(json.dumps({
         "sheet_inventory": inventory,
+        "generation_sources": generation_sources["count"],
+        "generation_sources_passed": generation_sources["passed_count"],
         "actors": len(actors),
         "actors_passed": sum(item["passed"] for item in actors),
         "chroma": len(chroma),

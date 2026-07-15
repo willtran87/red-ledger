@@ -9,6 +9,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from build_enemy_set_a import quantize_rgba
+from build_ember_impact import FAMILY as EMBER_IMPACT_FAMILY, build_frames as build_ember_impact
 from finalize_sheet_frames import fit_frame
 
 
@@ -156,14 +157,25 @@ def small_ink(records: list[dict]) -> None:
 
 
 def main() -> None:
+    metadata_path = ROOT / "manifests/effect-runtime-metadata.json"
+    existing = json.loads(metadata_path.read_text(encoding="ascii")) if metadata_path.exists() else []
     records: list[dict] = []
     projectile_families(records)
     impact_families(records)
     explosion(records)
     support_and_debris(records)
     small_ink(records)
-    (ROOT / "manifests/effect-runtime-metadata.json").write_text(json.dumps(records, indent=2) + "\n", encoding="ascii")
-    print(f"Built {len(records)} effect frames")
+    generated_count = len(records)
+    owned_families = {record["family"] for record in records}
+    preserved = [
+        record for record in existing
+        if record.get("family") not in owned_families and record.get("family") != EMBER_IMPACT_FAMILY
+    ]
+    records.extend(preserved)
+    ember_records = build_ember_impact()
+    records.extend(ember_records)
+    metadata_path.write_text(json.dumps(records, indent=2) + "\n", encoding="ascii")
+    print(f"Built {generated_count + len(ember_records)} effect frames; wrote {len(records)} metadata records")
 
 
 if __name__ == "__main__":

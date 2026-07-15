@@ -22,9 +22,9 @@
       "top_level_families": 6
     },
     "effects": {
-      "png": 341,
+      "png": 387,
       "json": 0,
-      "top_level_families": 27
+      "top_level_families": 33
     },
     "textures": {
       "png": 453,
@@ -52,6 +52,6 @@
       "top_level_families": 0
     }
   },
-  "total_png": 3501,
+  "total_png": 3547,
   "validation_passed": true
 }

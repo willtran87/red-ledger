@@ -19,6 +19,33 @@ await page.click('#begin-episode');
 if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
+await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+const baselineDrawCalls = (await state()).runtime.drawCalls;
+await page.evaluate(() => window.__redLedger.particleGallery([
+  'ink', 'paper', 'spark', 'ember', 'energy', 'smoke', 'debris', 'fiber',
+]));
+await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+const batchedBurst = await state();
+assert(batchedBurst.combatEffects.particles.active >= 120, `Particle stress burst was not staged: ${batchedBurst.combatEffects.particles.active}`);
+assert(
+  batchedBurst.runtime.drawCalls - baselineDrawCalls <= 2,
+  `Particle batches added more than two draw calls: baseline=${baselineDrawCalls} burst=${batchedBurst.runtime.drawCalls}`,
+);
+
+await page.evaluate(() => window.__redLedger.loadMap('E1M1'));
+await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+const massEffectBaseline = (await state()).runtime.drawCalls;
+await page.evaluate(() => window.__redLedger.defeatAll());
+await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+const massEffects = await state();
+assert(massEffects.combatEffects.animated.length <= 10, `Authored effect concurrency exceeded its budget: ${massEffects.combatEffects.animated.length}`);
+assert(
+  massEffects.runtime.drawCalls - massEffectBaseline <= 12,
+  `Mass-close feedback exceeded the 10 authored + 2 pooled draw budget: ${massEffectBaseline} -> ${massEffects.runtime.drawCalls}`,
+);
+
+await page.evaluate(() => window.__redLedger.loadMap('E1M1'));
+
 assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 4)), 'Could not stage particle impact');
 await page.evaluate(() => window.__redLedger.fire());
 let particles = (await state()).combatEffects.particles;
@@ -29,6 +56,21 @@ assert(await page.evaluate(() => window.__redLedger.defeatActor('returned-mail')
 particles = (await state()).combatEffects.particles;
 assert(particles.byKind.ink > 0 && particles.byKind.paper > 0, 'Enemy death omitted ink or paper particles');
 await page.screenshot({ path: 'output/particles/enemy-death.png' });
+
+const tonerMap = await page.evaluate(() => {
+  const maps = Array.from({ length: 3 }, (_, episode) => Array.from({ length: 9 }, (_unused, map) => `E${episode + 1}M${map + 1}`)).flat();
+  for (const map of maps) {
+    window.__redLedger.loadMap(map);
+    window.__redLedger.setAmmo('toner-cells', 0);
+    if (!window.__redLedger.teleportToPickup('pickup', 'toner-cell')) continue;
+    window.advanceTime(35);
+    return map;
+  }
+  return '';
+});
+assert(tonerMap, 'No toner-cell pickup was available for particle mapping coverage');
+particles = (await state()).combatEffects.particles;
+assert(particles.byKind.toner > 0 && particles.byKind.paper === 0, `Toner pickup on ${tonerMap} used the wrong material cue`);
 
 await page.evaluate(() => {
   window.__redLedger.loadMap('E1M3');
@@ -46,20 +88,60 @@ await page.evaluate(() => {
   window.__redLedger.teleportToTrigger('reveal-secret');
   window.__redLedger.use();
 });
-particles = (await state()).combatEffects.particles;
-assert(particles.byKind.approval > 0, 'Secret reveal emitted no approval particles');
+const secretEffects = (await state()).combatEffects;
+assert(secretEffects.semanticCues.filter((cue) => cue.kind === 'secret').length === 1, 'Secret reveal emitted no single anchored semantic cue');
+assert(secretEffects.particles.byKind.approval === 0, 'Secret reveal retained a duplicate approval cloud');
 await page.screenshot({ path: 'output/particles/secret-reveal.png' });
 
-await page.evaluate(() => {
-  window.dispatchEvent(new CustomEvent('accessibility-settings-change', { detail: { reducedEffects: true } }));
+const teleportMap = await page.evaluate(() => {
+  const maps = Array.from({ length: 3 }, (_, episode) => Array.from({ length: 9 }, (_unused, map) => `E${episode + 1}M${map + 1}`)).flat();
+  for (const map of maps) {
+    window.__redLedger.loadMap(map);
+    window.__redLedger.defeatAll();
+    if (!window.__redLedger.teleportToTrigger('teleport')) continue;
+    window.__redLedger.use();
+    return map;
+  }
+  return '';
+});
+assert(teleportMap, 'No authored teleport trigger was available for semantic feedback coverage');
+const teleportEffects = (await state()).combatEffects;
+assert(teleportEffects.semanticCues.filter((cue) => cue.kind === 'teleport').length === 1, `Teleport on ${teleportMap} omitted its anchored cue`);
+assert(teleportEffects.particles.byKind.approval === 0, `Teleport on ${teleportMap} retained duplicate approval particles`);
+
+const initialSemanticCue = await page.evaluate(() => {
   window.__redLedger.loadMap('E1M1');
-  window.dispatchEvent(new CustomEvent('input-action', { detail: { action: 'pause', source: 'keyboard', repeat: false } }));
-  window.__redLedger.fire();
+  window.__redLedger.particleBurst('deflection');
+  return JSON.parse(window.render_game_to_text()).combatEffects.semanticCues.find((cue) => cue.kind === 'deflection');
+});
+assert(initialSemanticCue?.opacity === 0, `Semantic cue skipped its transparent fade origin: ${JSON.stringify(initialSemanticCue)}`);
+
+await page.evaluate(() => {
+  window.dispatchEvent(new CustomEvent('accessibility-settings-change', { detail: { reducedEffects: true, flashEffects: true } }));
+  window.__redLedger.loadMap('E1M1');
+  window.__redLedger.particleBurst('paper');
 });
 particles = (await state()).combatEffects.particles;
-assert(particles.active > 0 && particles.active <= 4, `Reduced effects did not preserve a restrained cue: ${particles.active}`);
+assert(particles.active === 1 && particles.byKind.paper === 1, `Reduced effects did not preserve exactly one primary cue: ${particles.active}`);
+
+await page.evaluate(() => {
+  window.dispatchEvent(new CustomEvent('accessibility-settings-change', { detail: { reducedEffects: false, flashEffects: false } }));
+  window.__redLedger.loadMap('E1M1');
+  window.__redLedger.particleBurst('spark');
+  window.__redLedger.particleBurst('toner');
+  window.__redLedger.particleBurst('deflection');
+});
+const flashDisabledEffects = (await state()).combatEffects;
+particles = flashDisabledEffects.particles;
+assert(particles.byKind.spark === 0, 'Flash-disabled mode retained an additive spark burst');
+assert(particles.byKind.toner > 0, 'Flash-disabled mode incorrectly suppressed non-additive material feedback');
+assert(particles.byKind.deflection === 0, 'Anchored deflection feedback leaked into a ballistic cloud');
+assert(
+  flashDisabledEffects.semanticCues.some((cue) => cue.kind === 'deflection' && cue.blend === 'normal'),
+  'Flash-disabled mode omitted the non-additive anchored status cue',
+);
 assert(particles.capacity === 192, 'Particle pool capacity changed unexpectedly');
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 
-console.log('Generated particle feedback E2E passed');
+console.log(`Generated particle feedback E2E passed; stress draw calls ${baselineDrawCalls} -> ${batchedBurst.runtime.drawCalls}`);
 await browser.close();

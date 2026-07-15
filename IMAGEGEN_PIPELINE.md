@@ -116,7 +116,7 @@ python tools/normalize_chroma_sheets.py
 python tools/validate_art_library.py
 ```
 
-Normalization caps each subject at 80% of its cell width and 84% of source height, centers it in the cell, and places its baseline at 92% of source height. The validator fails on unregistered sheets, missing alpha/keyed pairs, nonuniform keyed borders, insufficient margins, horizontal drift, or baseline drift. Add the correct registry entry; never choose a false count merely to make validation pass.
+Normalization caps each subject at 76% of its cell width and 84% of source height, centers it in the cell, and places its baseline at 92% of source height. The validator fails on unregistered sheets, missing alpha/keyed pairs, nonuniform keyed borders, insufficient margins, horizontal drift, or baseline drift. Add the correct registry entry; never choose a false count merely to make validation pass.
 
 ### 5.4 Alpha extraction
 

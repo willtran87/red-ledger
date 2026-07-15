@@ -6,11 +6,14 @@ import {
   ENEMY_BEHAVIOR_PROFILES,
   EnemyBehaviorSystem,
   SeededRandom,
+  buildNavigationDistanceField,
+  navigationDirectionFromField,
   type BehaviorActor,
   type BehaviorEvent,
   type BehaviorStepInput,
   type BehaviorTarget,
   type HostileId,
+  type NavigationGridAdapter,
 } from './EnemyBehaviorSystem';
 
 const BOSS_IDS = new Set<HostileId>(['regional-director', 'aggregate', 'chief-actuary', 'uninsurable']);
@@ -62,6 +65,66 @@ describe('EnemyBehaviorSystem definitions', () => {
     expect(WEAPONS['plasma-copier'].ammo).toBe('toner-cells');
     expect(WEAPONS['binding-engine'].ammo).toBe('toner-cells');
     expect(DIFFICULTY['binding-authority']).toMatchObject({ reaction: .8, refire: .8, projectileSpeed: 1.2 });
+  });
+});
+
+describe('deterministic hostile navigation', () => {
+  const gridFor = (rows: readonly string[], openableDoors = true): NavigationGridAdapter => ({
+    width: rows[0].length,
+    height: rows.length,
+    cellSize: 1,
+    canTraverse: (_from, to) => {
+      const tile = rows[to.z]?.[to.x] ?? '#';
+      return tile !== '#' && (tile !== 'D' || openableDoors);
+    },
+  });
+
+  it('routes around an ordinary L-corridor corner instead of steering into the wall', () => {
+    const rows = ['#####', '#.#.#', '#...#', '#####'];
+    const grid = gridFor(rows);
+    const field = buildNavigationDistanceField({ x: 3, z: 1 }, grid);
+    const direction = navigationDirectionFromField(
+      'mail-corner',
+      { x: 1.5, y: 0, z: 1.5 },
+      { x: 3.5, y: 0, z: 1.5 },
+      field,
+      grid,
+    );
+    expect(direction).toEqual({ x: 0, y: 0, z: 1 });
+  });
+
+  it('plans through an openable door while treating the same cell as unreachable when locked', () => {
+    const rows = ['#####', '#.D.#', '#####'];
+    const start = { x: 1.5, y: 0, z: 1.5 };
+    const targetPosition = { x: 3.5, y: 0, z: 1.5 };
+    const openableGrid = gridFor(rows, true);
+    const openable = navigationDirectionFromField(
+      'mail-door', start, targetPosition, buildNavigationDistanceField({ x: 3, z: 1 }, openableGrid), openableGrid,
+    );
+    const lockedGrid = gridFor(rows, false);
+    const locked = navigationDirectionFromField(
+      'mail-door', start, targetPosition, buildNavigationDistanceField({ x: 3, z: 1 }, lockedGrid), lockedGrid,
+    );
+    expect(openable).toEqual({ x: 1, y: 0, z: 0 });
+    expect(locked).toBeUndefined();
+  });
+
+  it('uses a stable side step when another actor congests the preferred lane', () => {
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    const blockedLane = {
+      hasLineOfSight: () => false,
+      navigationDirection: () => ({ x: 1, y: 0, z: 0 }),
+      canOccupy: (_actor: BehaviorActor, position: { x: number; z: number }) => position.z > .01,
+    };
+    const events = runFor(system, {
+      actors: [actor('returned-mail')],
+      target: target(12, { position: { x: 12, y: 1, z: 0 } }),
+      world: blockedLane,
+    }, .8);
+    const moves = eventsOf(events, 'move');
+    expect(moves.length).toBeGreaterThan(2);
+    expect(moves.every((event) => event.velocity.x > 0 && event.velocity.z > 0)).toBe(true);
+    expect(new Set(moves.map((event) => `${event.velocity.x.toFixed(6)},${event.velocity.z.toFixed(6)}`)).size).toBe(1);
   });
 });
 
@@ -180,6 +243,30 @@ describe('EnemyBehaviorSystem role mechanics', () => {
     const expired = runFor(system, { actors: [], target: target(100, { alive: false }) }, 6);
     expect(eventsOf(expired, 'remove-projectile')).toContainEqual(expect.objectContaining({ reason: 'expired' }));
     expect(eventsOf(expired, 'spawn-hazard')).toHaveLength(0);
+  });
+
+  it('reports the authoritative projectile payload and resolved impact point', () => {
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    runFor(system, { actors: [actor('coverage-drone')], target: target(12) }, .8);
+    expect(system.serialize().projectiles.length).toBeGreaterThan(0);
+    const velocity = system.serialize().projectiles[0].velocity;
+    const resolved = { x: 2.25, y: .75, z: 4.5 };
+    const result = system.step({
+      dt: .05,
+      actors: [],
+      target: target(100),
+      world: { traceProjectile: () => ({ position: resolved, targetUid: 'player' }) },
+    });
+    expect(eventsOf(result.events, 'remove-projectile')[0]).toEqual({
+      type: 'remove-projectile',
+      projectileId: expect.any(String),
+      reason: 'impact',
+      kind: 'coverage-bolt',
+      damageKind: 'toner',
+      position: resolved,
+      velocity,
+      targetUid: 'player',
+    });
   });
 
   it('arms prediction hazards and resurrects corpses as redacted variants', () => {

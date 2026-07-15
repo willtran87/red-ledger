@@ -9,20 +9,20 @@
     "No generation timestamp is stored so identical inputs produce byte-identical output."
   ],
   "counts": {
-    "files": 3608,
-    "png": 3541,
+    "files": 3614,
+    "png": 3547,
     "enemies": 12,
     "bosses": 4,
     "weapons": 8,
     "pickups": 23,
     "props": 50,
-    "effects": 32,
+    "effects": 33,
     "skies": 3,
     "uiGroups": 6,
     "fonts": 3,
     "pngByCategory": {
       "bosses": 616,
-      "effects": 381,
+      "effects": 387,
       "enemies": 1548,
       "fonts": 3,
       "pickups": 115,
@@ -37,7 +37,7 @@
       "bosses": 616,
       "weapons": 98,
       "pickups": 115,
-      "effects": 381,
+      "effects": 387,
       "textures": 453,
       "props": 206,
       "skies": 3,
@@ -30255,6 +30255,83 @@
         }
       ]
     },
+    "ember-impact": {
+      "frameCount": 6,
+      "frames": [
+        {
+          "key": "effects.ember-impact.fx-ember-impact-F-01.png",
+          "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_01.png",
+          "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_01.png",
+          "size": [
+            64,
+            64
+          ],
+          "state": "active",
+          "angle": "F",
+          "frame": 1
+        },
+        {
+          "key": "effects.ember-impact.fx-ember-impact-F-02.png",
+          "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_02.png",
+          "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_02.png",
+          "size": [
+            64,
+            64
+          ],
+          "state": "active",
+          "angle": "F",
+          "frame": 2
+        },
+        {
+          "key": "effects.ember-impact.fx-ember-impact-F-03.png",
+          "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_03.png",
+          "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_03.png",
+          "size": [
+            64,
+            64
+          ],
+          "state": "active",
+          "angle": "F",
+          "frame": 3
+        },
+        {
+          "key": "effects.ember-impact.fx-ember-impact-F-04.png",
+          "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_04.png",
+          "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_04.png",
+          "size": [
+            64,
+            64
+          ],
+          "state": "active",
+          "angle": "F",
+          "frame": 4
+        },
+        {
+          "key": "effects.ember-impact.fx-ember-impact-F-05.png",
+          "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_05.png",
+          "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_05.png",
+          "size": [
+            64,
+            64
+          ],
+          "state": "active",
+          "angle": "F",
+          "frame": 5
+        },
+        {
+          "key": "effects.ember-impact.fx-ember-impact-F-06.png",
+          "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_06.png",
+          "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_06.png",
+          "size": [
+            64,
+            64
+          ],
+          "state": "active",
+          "angle": "F",
+          "frame": 6
+        }
+      ]
+    },
     "fastener-impact": {
       "frameCount": 4,
       "frames": [
@@ -39906,6 +39983,72 @@
       "size": [
         32,
         32
+      ]
+    },
+    {
+      "key": "effects.ember-impact.fx-ember-impact-F-01.png",
+      "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_01.png",
+      "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_01.png",
+      "type": "png",
+      "bytes": 419,
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "key": "effects.ember-impact.fx-ember-impact-F-02.png",
+      "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_02.png",
+      "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_02.png",
+      "type": "png",
+      "bytes": 1140,
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "key": "effects.ember-impact.fx-ember-impact-F-03.png",
+      "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_03.png",
+      "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_03.png",
+      "type": "png",
+      "bytes": 2645,
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "key": "effects.ember-impact.fx-ember-impact-F-04.png",
+      "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_04.png",
+      "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_04.png",
+      "type": "png",
+      "bytes": 3528,
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "key": "effects.ember-impact.fx-ember-impact-F-05.png",
+      "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_05.png",
+      "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_05.png",
+      "type": "png",
+      "bytes": 1978,
+      "size": [
+        64,
+        64
+      ]
+    },
+    {
+      "key": "effects.ember-impact.fx-ember-impact-F-06.png",
+      "url": "/public_runtime/effects/ember-impact/fx_ember-impact_F_06.png",
+      "sourcePath": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_06.png",
+      "type": "png",
+      "bytes": 552,
+      "size": [
+        64,
+        64
       ]
     },
     {

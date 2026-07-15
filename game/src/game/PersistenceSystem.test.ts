@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AUTOSAVE_SLOT_COUNT,
   DEMO_SCHEMA_VERSION,
+  DEMO_STORAGE_BUDGET_BYTES,
   DemoPlayback,
   DemoRecorder,
   MANUAL_SLOT_COUNT,
@@ -412,6 +413,80 @@ describe('deterministic demos', () => {
     expect(playback.finished).toBe(true);
     playback.reset();
     expect([playback.next(), playback.next()]).toEqual([[], [{ action: 'move', value: 1 }]]);
+  });
+
+  it('run-length encodes full-map command streams and seeks inside repeated spans', () => {
+    const recorder = new DemoRecorder<TestState, Command>({ seed: 12, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 4 });
+    const twentyMinutes = 35 * 60 * 20;
+    for (let tick = 0; tick < twentyMinutes; tick += 1) recorder.record(tick, { action: 'move', value: 1 });
+    const demo = recorder.finish(twentyMinutes);
+
+    expect(demo.frames).toEqual([{ tick: 0, commands: [{ action: 'move', value: 1 }], duration: twentyMinutes }]);
+    expect(JSON.stringify(demo).length).toBeLessThan(1_000);
+    expect(validateDemo(demo, { validateInitialState: isTestState, validateCommand: isCommand })).toMatchObject({ valid: true });
+
+    const playback = new DemoPlayback(demo);
+    playback.seek(twentyMinutes - 1);
+    expect(playback.next()).toEqual([{ action: 'move', value: 1 }]);
+    expect(playback.finished).toBe(true);
+  });
+
+  it('stops a 45-minute noisy command stream before its UTF-16 storage budget', () => {
+    interface NoisyCommand {
+      forward: number; strafe: number; turn: number; look: number; lookVertical: number;
+      fire: boolean; use: boolean; walkToggle: boolean; weaponSlot: number; weaponCycle: number;
+    }
+    const recorder = new DemoRecorder<TestState, NoisyCommand>({
+      seed: 19,
+      mapId: 'E1M1',
+      initialState: state('E1M1'),
+      createdAt: 6,
+      maxSerializedBytes: DEMO_STORAGE_BUDGET_BYTES,
+    });
+    const maximumTicks = 35 * 60 * 45;
+    let acceptedTicks = 0;
+    for (let tick = 0; tick < maximumTicks; tick += 1) {
+      const direction = tick % 2 ? -1 : 1;
+      const accepted = recorder.record(tick, {
+        forward: direction,
+        strafe: -direction,
+        turn: tick / maximumTicks,
+        look: -tick / maximumTicks,
+        lookVertical: direction * .5,
+        fire: tick % 3 === 0,
+        use: tick % 5 === 0,
+        walkToggle: tick % 7 === 0,
+        weaponSlot: tick % 8,
+        weaponCycle: direction,
+      });
+      if (!accepted) break;
+      acceptedTicks += 1;
+    }
+    const demo = recorder.finish(acceptedTicks);
+    const actualBytes = JSON.stringify(demo).length * 2;
+
+    expect(acceptedTicks).toBeGreaterThan(1_000);
+    expect(acceptedTicks).toBeLessThan(maximumTicks);
+    expect(actualBytes).toBeLessThanOrEqual(DEMO_STORAGE_BUDGET_BYTES);
+    expect(recorder.estimatedSerializedBytes(demo.totalTicks)).toBe(actualBytes);
+    expect(demo.version).toBe(3);
+    expect(validateDemo(demo)).toMatchObject({ valid: true });
+  });
+
+  it('preserves a second command added after a repeated single-command tick', () => {
+    const recorder = new DemoRecorder<TestState, Command>({ seed: 13, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 5 });
+    recorder.record(0, { action: 'move', value: 1 });
+    recorder.record(1, { action: 'move', value: 1 });
+    recorder.record(1, { action: 'fire', value: 1 });
+    const demo = recorder.finish(2);
+
+    expect(demo.frames).toEqual([
+      { tick: 0, commands: [{ action: 'move', value: 1 }] },
+      { tick: 1, commands: [{ action: 'move', value: 1 }, { action: 'fire', value: 1 }] },
+    ]);
+    const playback = new DemoPlayback(demo);
+    expect(playback.next()).toEqual([{ action: 'move', value: 1 }]);
+    expect(playback.next()).toEqual([{ action: 'move', value: 1 }, { action: 'fire', value: 1 }]);
   });
 
   it('rejects out-of-order recording and checksum-tampered playback documents', () => {

@@ -11,7 +11,14 @@ interface AudioSettings {
 const STORAGE_KEY = 'red-ledger-audio-v1';
 const ACTIVE_VOICE_BUDGET = 32;
 const NOISE_BUFFER_SECONDS = 1;
+const SPATIAL_CUE_HISTORY_LIMIT = 16;
 const clamp = (value: number): number => Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+
+interface SpatialCueDiagnostic {
+  kind: string;
+  pan: number;
+  gain: number;
+}
 
 interface ActiveVoice {
   source: AudioScheduledSourceNode;
@@ -36,7 +43,8 @@ export class AudioSystem {
   private step = 0;
   private musicPattern: Array<number | null> = [];
   private combatIntensity = 0;
-  private lastSpatialCue?: { kind: string; pan: number; gain: number };
+  private lastSpatialCue?: SpatialCueDiagnostic;
+  private readonly spatialCueHistory: SpatialCueDiagnostic[] = [];
   private settings: AudioSettings = { master: .8, music: .65, sfx: .8, muted: false };
 
   constructor() { this.restoreSettings(); }
@@ -189,7 +197,7 @@ export class AudioSystem {
 
   enemyCue(id: string, event: EnemyCueEvent, pan = 0, gain = 1): void {
     const spatialGain = clamp(gain);
-    this.lastSpatialCue = { kind: `enemy:${id}:${event}`, pan, gain: spatialGain };
+    this.recordSpatialCue({ kind: `enemy:${id}:${event}`, pan, gain: spatialGain });
     let hash = 2166136261;
     for (const char of id) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
     const base = 72 + (hash >>> 0) % 210;
@@ -205,7 +213,7 @@ export class AudioSystem {
 
   hazardCue(event: 'placed' | 'armed', pan = 0, gain = 1): void {
     const spatialGain = clamp(gain);
-    this.lastSpatialCue = { kind: `hazard:${event}`, pan, gain: spatialGain };
+    this.recordSpatialCue({ kind: `hazard:${event}`, pan, gain: spatialGain });
     if (event === 'placed') {
       this.tone(176, .13, 'triangle', .018 * spatialGain, 'sfx', pan);
       this.noise(.055, .01 * spatialGain, 'sfx', pan);
@@ -220,7 +228,8 @@ export class AudioSystem {
     contextState?: AudioContextState;
     activeVoices: number;
     musicActive?: boolean;
-    lastSpatialCue?: { kind: string; pan: number; gain: number };
+    lastSpatialCue?: SpatialCueDiagnostic;
+    recentSpatialCues: readonly SpatialCueDiagnostic[];
   } {
     return {
       lifecycleSuspended: this.lifecycleSuspended,
@@ -228,13 +237,25 @@ export class AudioSystem {
       ...(this.context ? { contextState: this.context.state } : {}),
       ...(this.musicTimer !== undefined ? { musicActive: true } : {}),
       ...(this.lastSpatialCue ? { lastSpatialCue: { ...this.lastSpatialCue } } : {}),
+      recentSpatialCues: this.spatialCueHistory.map((cue) => ({ ...cue })),
     };
+  }
+
+  clearSpatialDiagnostics(): void {
+    this.lastSpatialCue = undefined;
+    this.spatialCueHistory.length = 0;
   }
 
   stopMusic(): void {
     if (this.musicTimer !== undefined) window.clearInterval(this.musicTimer);
     this.musicTimer = undefined;
     this.combatIntensity = 0;
+  }
+
+  private recordSpatialCue(cue: SpatialCueDiagnostic): void {
+    this.lastSpatialCue = cue;
+    this.spatialCueHistory.push(cue);
+    if (this.spatialCueHistory.length > SPATIAL_CUE_HISTORY_LIMIT) this.spatialCueHistory.shift();
   }
 
   private connectToBus(node: AudioNode, bus: AudioBus, pan: number): AudioNode[] {

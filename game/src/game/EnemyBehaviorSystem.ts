@@ -41,12 +41,101 @@ export interface ProjectileTraceHit {
 export interface BehaviorWorldAdapter {
   hasLineOfSight?(from: BehaviorVector, to: BehaviorVector): boolean;
   canOccupy?(actor: BehaviorActor, position: BehaviorVector): boolean;
+  navigationDirection?(actor: BehaviorActor, target: BehaviorTarget): BehaviorVector | undefined;
   canPlaceHazard?(position: BehaviorVector, radius: number): boolean;
   traceProjectile?(
     projectile: Readonly<ProjectileState>,
     from: BehaviorVector,
     to: BehaviorVector,
   ): ProjectileTraceHit | undefined;
+}
+
+export interface NavigationCell {
+  x: number;
+  z: number;
+}
+
+export interface NavigationGridAdapter {
+  width: number;
+  height: number;
+  cellSize: number;
+  canTraverse(from: NavigationCell, to: NavigationCell): boolean;
+}
+
+export interface NavigationDistanceField {
+  goal: NavigationCell;
+  distances: ReadonlyMap<string, number>;
+}
+
+const NAVIGATION_STEPS: readonly NavigationCell[] = [
+  { x: 0, z: -1 },
+  { x: 1, z: 0 },
+  { x: 0, z: 1 },
+  { x: -1, z: 0 },
+];
+
+const navigationCellKey = (cell: NavigationCell): string => `${cell.x},${cell.z}`;
+
+const navigationCellFor = (position: BehaviorVector, cellSize: number): NavigationCell => ({
+  x: Math.floor(position.x / cellSize),
+  z: Math.floor(position.z / cellSize),
+});
+
+const navigationTieOffset = (uid: string): number => {
+  let hash = 2166136261;
+  for (let index = 0; index < uid.length; index += 1) hash = Math.imul(hash ^ uid.charCodeAt(index), 16777619);
+  return (hash >>> 0) % NAVIGATION_STEPS.length;
+};
+
+export function buildNavigationDistanceField(goal: NavigationCell, grid: NavigationGridAdapter): NavigationDistanceField {
+  const distances = new Map<string, number>();
+  if (goal.x < 0 || goal.z < 0 || goal.x >= grid.width || goal.z >= grid.height) return { goal, distances };
+  const queue: NavigationCell[] = [goal];
+  distances.set(navigationCellKey(goal), 0);
+  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+    const current = queue[cursor];
+    const distance = distances.get(navigationCellKey(current)) ?? 0;
+    for (const step of NAVIGATION_STEPS) {
+      const neighbor = { x: current.x + step.x, z: current.z + step.z };
+      if (neighbor.x < 0 || neighbor.z < 0 || neighbor.x >= grid.width || neighbor.z >= grid.height) continue;
+      const key = navigationCellKey(neighbor);
+      if (distances.has(key) || !grid.canTraverse(neighbor, current)) continue;
+      distances.set(key, distance + 1);
+      queue.push(neighbor);
+    }
+  }
+  return { goal, distances };
+}
+
+export function navigationDirectionFromField(
+  actorUid: string,
+  position: BehaviorVector,
+  target: BehaviorVector,
+  field: NavigationDistanceField,
+  grid: NavigationGridAdapter,
+): BehaviorVector | undefined {
+  const current = navigationCellFor(position, grid.cellSize);
+  const currentDistance = field.distances.get(navigationCellKey(current));
+  if (currentDistance === undefined) return undefined;
+  if (current.x === field.goal.x && current.z === field.goal.z) {
+    const direct = normalize({ x: target.x - position.x, y: 0, z: target.z - position.z });
+    return length(direct) > 1e-6 ? direct : undefined;
+  }
+
+  const tieOffset = navigationTieOffset(actorUid);
+  const candidates = NAVIGATION_STEPS.map((step, index) => {
+    const cell = { x: current.x + step.x, z: current.z + step.z };
+    return { cell, distance: field.distances.get(navigationCellKey(cell)), rank: (index - tieOffset + NAVIGATION_STEPS.length) % NAVIGATION_STEPS.length };
+  }).filter((candidate): candidate is { cell: NavigationCell; distance: number; rank: number } =>
+    candidate.distance !== undefined && candidate.distance < currentDistance && grid.canTraverse(current, candidate.cell));
+  candidates.sort((a, b) => a.distance - b.distance || a.rank - b.rank);
+  const next = candidates[0]?.cell;
+  if (!next) return undefined;
+  return normalize({
+    x: (next.x + .5) * grid.cellSize - position.x,
+    y: 0,
+    z: (next.z + .5) * grid.cellSize - position.z,
+  });
 }
 
 export interface StatefulRandomSource {
@@ -284,7 +373,16 @@ export type BehaviorEvent =
   | { type: 'pain'; actorUid: string; sourceUid: string; interruptedAttack?: string }
   | { type: 'damage'; sourceUid: string; targetUid: string; amount: number; damageKind: DamageKind }
   | { type: 'spawn-projectile'; projectile: ProjectileState }
-  | { type: 'remove-projectile'; projectileId: string; reason: 'impact' | 'expired' }
+  | {
+    type: 'remove-projectile';
+    projectileId: string;
+    reason: 'impact' | 'expired';
+    kind: string;
+    damageKind: DamageKind;
+    position: BehaviorVector;
+    velocity: BehaviorVector;
+    targetUid?: string;
+  }
   | { type: 'spawn-hazard'; hazard: HazardState }
   | { type: 'hazard-armed'; hazardId: string }
   | { type: 'remove-hazard'; hazardId: string }
@@ -866,12 +964,16 @@ export class EnemyBehaviorSystem {
     const speed = movement.speed * (phase?.movementMultiplier ?? 1);
     if (speed <= 0 || movement.kind === 'stationary') return;
 
-    const toward = normalize({ x: target.position.x - actor.position.x, y: 0, z: target.position.z - actor.position.z });
+    const navigationDirection = world.navigationDirection?.(actor, target);
+    const followingRoute = Boolean(navigationDirection && length(navigationDirection) > 1e-6);
+    const toward = followingRoute
+      ? normalize(navigationDirection!)
+      : normalize({ x: target.position.x - actor.position.x, y: 0, z: target.position.z - actor.position.z });
     const perpendicular = { x: -toward.z * state.strafeSign, y: 0, z: toward.x * state.strafeSign };
-    let forwardWeight = distance > movement.preferredRange ? 1 : distance < (movement.retreatRange ?? 0) ? -1 : 0;
-    let strafeWeight = movement.strafeWeight ?? 0;
-    if (movement.kind === 'zigzag') strafeWeight = Math.sin(this.elapsed * (movement.zigzagFrequency ?? 4) + state.bobClock) * .62;
-    if (movement.kind === 'stalk') {
+    let forwardWeight = followingRoute ? 1 : distance > movement.preferredRange ? 1 : distance < (movement.retreatRange ?? 0) ? -1 : 0;
+    let strafeWeight = followingRoute ? 0 : movement.strafeWeight ?? 0;
+    if (!followingRoute && movement.kind === 'zigzag') strafeWeight = Math.sin(this.elapsed * (movement.zigzagFrequency ?? 4) + state.bobClock) * .62;
+    if (!followingRoute && movement.kind === 'stalk') {
       forwardWeight = distance > movement.preferredRange ? .72 : distance < (movement.retreatRange ?? 0) ? -.45 : .16;
       strafeWeight = (movement.strafeWeight ?? .6) * Math.sin(this.elapsed * 2.1 + state.bobClock);
     }
@@ -881,10 +983,16 @@ export class EnemyBehaviorSystem {
     let velocity = scale(direction, speed);
     const proposed = add(actor.position, scale(velocity, .12));
     if (world.canOccupy && !world.canOccupy(actor, proposed)) {
-      state.strafeSign = state.strafeSign === 1 ? -1 : 1;
-      velocity = scale({ x: toward.z * state.strafeSign, y: 0, z: -toward.x * state.strafeSign }, speed);
+      const angles = [state.strafeSign * Math.PI / 4, -state.strafeSign * Math.PI / 4, state.strafeSign * Math.PI / 2, -state.strafeSign * Math.PI / 2];
+      const alternate = angles.map((angle) => ({
+        x: direction.x * Math.cos(angle) - direction.z * Math.sin(angle),
+        y: 0,
+        z: direction.x * Math.sin(angle) + direction.z * Math.cos(angle),
+      })).find((candidate) => world.canOccupy!(actor, add(actor.position, scale(candidate, speed * .12))));
+      if (!alternate) velocity = { x: 0, y: 0, z: 0 };
+      else velocity = scale(alternate, speed);
     }
-    events.push({ type: 'move', actorUid: actor.uid, velocity, mode: movement.kind });
+    if (length(velocity) > 1e-6) events.push({ type: 'move', actorUid: actor.uid, velocity, mode: movement.kind });
     if (movement.kind === 'hover') {
       events.push({
         type: 'elevation',
@@ -1098,13 +1206,13 @@ export class EnemyBehaviorSystem {
       if (targetHit && targetContact.fraction <= worldFraction) {
         item.position = add(from, scale(subtract(to, from), targetContact.fraction));
         events.push({ type: 'damage', sourceUid: item.ownerUid, targetUid: target!.uid, amount: item.damage, damageKind: item.damageKind });
-        this.finishProjectile(item, 'impact', events);
+        this.finishProjectile(item, 'impact', events, target!.uid);
         continue;
       }
       if (worldHit) {
         item.position = copyVector(worldHit.position);
         if (worldHit.targetUid) events.push({ type: 'damage', sourceUid: item.ownerUid, targetUid: worldHit.targetUid, amount: item.damage, damageKind: item.damageKind });
-        this.finishProjectile(item, 'impact', events);
+        this.finishProjectile(item, 'impact', events, worldHit.targetUid);
         continue;
       }
       item.position = to;
@@ -1119,9 +1227,23 @@ export class EnemyBehaviorSystem {
     this.projectiles = survivors;
   }
 
-  private finishProjectile(item: ProjectileState, reason: 'impact' | 'expired', events: BehaviorEvent[]): void {
+  private finishProjectile(
+    item: ProjectileState,
+    reason: 'impact' | 'expired',
+    events: BehaviorEvent[],
+    targetUid?: string,
+  ): void {
     if (reason === 'impact' && item.impactHazard) this.spawnHazard(item.ownerUid, item.ownerId, item.position, item.impactHazard, events);
-    events.push({ type: 'remove-projectile', projectileId: item.id, reason });
+    events.push({
+      type: 'remove-projectile',
+      projectileId: item.id,
+      reason,
+      kind: item.kind,
+      damageKind: item.damageKind,
+      position: copyVector(item.position),
+      velocity: copyVector(item.velocity),
+      ...(targetUid ? { targetUid } : {}),
+    });
   }
 
   private spawnHazard(

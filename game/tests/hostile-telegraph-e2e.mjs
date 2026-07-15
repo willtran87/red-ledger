@@ -39,11 +39,18 @@ for (let attempt = 0; attempt < 30; attempt += 1) {
 assert(nearCue?.gain > .7, `Nearby hostile audio was not full and readable: ${JSON.stringify(nearCue)}`);
 
 assert((await state()).visibleActors.some((candidate) => candidate.id === 'denial-officer'), 'Nearby Denial Officer was not represented in text state');
-await page.evaluate((mapId) => {
-  window.__redLedger.loadMap(mapId);
-  if (!window.__redLedger.activateActor('denial-officer')) throw new Error('Denial Officer missing after reload');
-  if (!window.__redLedger.teleportNearActor('denial-officer', 20)) throw new Error('No distant Denial Officer sightline');
-}, denialMap);
+const distantDenial = await page.evaluate((ids) => {
+  for (const mapId of ids) {
+    window.__redLedger.loadMap(mapId);
+    if (!window.__redLedger.activateActor('denial-officer')) continue;
+    if (!window.__redLedger.teleportNearActor('denial-officer', 20)) continue;
+    const snapshot = JSON.parse(window.render_game_to_text());
+    const actor = snapshot.visibleActors.find((candidate) => candidate.id === 'denial-officer');
+    if (actor?.distance >= 18) return { mapId, distance: actor.distance };
+  }
+  return undefined;
+}, maps);
+assert(distantDenial, 'No genuinely distant Denial Officer sightline was available');
 let farCue;
 for (let attempt = 0; attempt < 40; attempt += 1) {
   await page.evaluate(() => window.advanceTime(35));
@@ -64,8 +71,8 @@ for (let attempt = 0; attempt < 100; attempt += 1) {
   if (beamState.combatEffects.hostileBeams.length) break;
 }
 assert(beamState?.combatEffects.hostileBeams[0]?.length > 1, 'Denial hitscan resolved without its authored beam');
-assert(beamState.combatEffects.particles.byKind.rejection > 0, 'Denial impact omitted rejection particles');
-assert(beamState.audio.lastSpatialCue?.kind.endsWith(':attack'), 'Denial resolution omitted its attack cue');
+assert(beamState.combatEffects.semanticCues.some((cue) => cue.kind === 'rejection'), 'Denial impact omitted its anchored rejection cue');
+assert(beamState.audio.recentSpatialCues.some((cue) => cue.kind === 'enemy:denial-officer:attack'), 'Denial resolution omitted its attack cue');
 await page.evaluate(() => {
   window.__redLedger.pause();
   document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
@@ -90,7 +97,7 @@ for (let attempt = 0; attempt < 120; attempt += 1) {
   if (hazardState.combatEffects.hazards.some((hazard) => hazard.armed)) break;
 }
 assert(hazardState?.combatEffects.hazards.some((hazard) => hazard.armed), 'Prediction hazard never reached its armed state');
-assert(hazardState.audio.lastSpatialCue?.kind === 'hazard:armed', 'Armed hazard emitted no distinct spatial cue');
+assert(hazardState.audio.recentSpatialCues.some((cue) => cue.kind === 'hazard:armed'), 'Armed hazard emitted no distinct spatial cue');
 const armedHazard = hazardState.combatEffects.hazards.find((hazard) => hazard.armed);
 const catModel = hazardState.visibleActors.find((candidate) => candidate.id === 'cat-model');
 assert(armedHazard && catModel, 'Hazard inspection geometry was unavailable');

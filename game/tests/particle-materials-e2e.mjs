@@ -32,8 +32,9 @@ await page.evaluate(() => { window.__redLedger.resume(); window.__redLedger.load
 const status = ['deflection', 'neutralize', 'authority', 'scan', 'momentum', 'rejection', 'confetti'];
 await page.evaluate((kinds) => window.__redLedger.particleGallery(kinds), status);
 await page.evaluate(() => { window.advanceTime(28); window.__redLedger.pause(); document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active')); });
-counts = (await state()).combatEffects.particles.byKind;
-status.forEach((kind) => assert(counts[kind] > 0, `Missing status particle kind ${kind}`));
+const semantic = (await state()).combatEffects.semanticCues.map((cue) => cue.kind);
+['deflection', 'neutralize', 'authority', 'scan', 'momentum', 'rejection', 'map-clear']
+  .forEach((kind) => assert(semantic.includes(kind), `Missing anchored status cue ${kind}`));
 await page.screenshot({ path: fileURLToPath(new URL('status-feedback.png', output)) });
 
 await page.evaluate(() => {
@@ -44,7 +45,8 @@ await page.evaluate(() => {
   window.__redLedger.use();
 });
 await page.waitForTimeout(160);
-assert(await page.locator('.completion-particle').count() > 0, 'Map completion omitted generated confetti feedback');
+const completionParticles = await page.locator('.completion-particle').count();
+assert(completionParticles > 0 && completionParticles <= 10, `Map completion feedback was missing or excessive: ${completionParticles}`);
 await page.screenshot({ path: fileURLToPath(new URL('map-completion.png', output)) });
 
 assert((await state()).combatEffects.particles.capacity === 192, 'Particle pool capacity changed');
