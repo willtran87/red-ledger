@@ -5,9 +5,12 @@ import { DIFFICULTY, WEAPONS } from './definitions';
 import {
   ENEMY_BEHAVIOR_PROFILES,
   EnemyBehaviorSystem,
+  REGIONAL_DIRECTOR_SUMMON_CAPS,
+  planLegacyRegionalDirectorSummonRestore,
   SeededRandom,
   buildNavigationDistanceField,
   navigationDirectionFromField,
+  reconcileEnemyBehaviorSnapshot,
   type BehaviorActor,
   type BehaviorEvent,
   type BehaviorStepInput,
@@ -53,6 +56,8 @@ describe('EnemyBehaviorSystem definitions', () => {
     expect(ENEMY_BEHAVIOR_PROFILES.subrogator.attacks[0]).toMatchObject({ kind: 'projectile', pattern: { count: 3 } });
     expect(ENEMIES['desk-warden'].drop).toEqual({ kind: 'ammo', id: 'staples', amount: 1, chance: .15 });
     bossIds.forEach((id) => expect(ENEMY_BEHAVIOR_PROFILES[id].phases).toHaveLength(3));
+    expect(ENEMY_BEHAVIOR_PROFILES['regional-director'].attacks.find((attack) => attack.kind === 'summon'))
+      .toMatchObject({ liveCap: 4, totalCap: 8 });
   });
 
   it('locks weapon cadence, damage ranges, ammo IDs, and hardest aggression', () => {
@@ -516,6 +521,108 @@ describe('EnemyBehaviorSystem role mechanics', () => {
     expect(eventsOf(result.events, 'boss-phase')[0]).toMatchObject({ bossId: id, phaseIndex: 2 });
     expect(eventsOf(result.events, 'boss-mechanism')[0]).toMatchObject({ bossId: id, mechanism });
   });
+
+  it('bounds Regional Director summons across a long fight and preserves both caps through restore', () => {
+    const boss = actor('regional-director', { health: ENEMIES['regional-director'].health * .5 });
+    const actors: BehaviorActor[] = [boss];
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    const spawned: BehaviorActor[] = [];
+
+    const soak = (subject: EnemyBehaviorSystem, seconds: number, retireAdds: boolean): string[] => {
+      const emitted: string[] = [];
+      for (let elapsed = 0; elapsed < seconds; elapsed += .05) {
+        const result = subject.step({ dt: .05, actors, target: target(12) });
+        eventsOf(result.events, 'summon').forEach((event) => event.positions.forEach((position, index) => {
+          const add = actor(event.enemyId, { uid: event.actorUids[index], position });
+          if (retireAdds) add.dead = true;
+          actors.push(add);
+          spawned.push(add);
+          emitted.push(add.uid);
+        }));
+      }
+      return emitted;
+    };
+
+    const liveLimited = soak(system, 120, false);
+    expect(liveLimited).toHaveLength(REGIONAL_DIRECTOR_SUMMON_CAPS.live);
+    expect(spawned.filter((add) => !add.dead)).toHaveLength(REGIONAL_DIRECTOR_SUMMON_CAPS.live);
+
+    const snapshot = JSON.parse(JSON.stringify(system.serialize()));
+    const restored = new EnemyBehaviorSystem({ rng: () => 0 });
+    restored.restore(snapshot);
+    expect(restored.serialize()).toEqual(system.serialize());
+
+    spawned.forEach((add) => { add.dead = true; });
+    const afterRestore = soak(restored, 240, true);
+    expect(liveLimited.length + afterRestore.length).toBe(REGIONAL_DIRECTOR_SUMMON_CAPS.total);
+    expect(restored.serialize().summonOwners).toEqual([expect.objectContaining({
+      ownerUid: boss.uid,
+      total: REGIONAL_DIRECTOR_SUMMON_CAPS.total,
+    })]);
+    expect(soak(restored, 120, true)).toHaveLength(0);
+  });
+
+  it('infers legacy summon ownership before applying live and lifetime caps', () => {
+    const boss = actor('regional-director', { health: ENEMIES['regional-director'].health * .5 });
+    const adds = Array.from({ length: REGIONAL_DIRECTOR_SUMMON_CAPS.live }, (_, index) => actor('desk-warden', {
+      uid: `summoned-desk-warden-${index}`,
+      position: { x: index + 1, y: 0, z: 0 },
+    }));
+    const actors: BehaviorActor[] = [boss, ...adds];
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    system.restore({ version: 1, elapsed: 0, nextEntityId: 20, actors: [], projectiles: [], hazards: [] });
+
+    const soak = (seconds: number, retireAdds: boolean): string[] => {
+      const emitted: string[] = [];
+      for (let elapsed = 0; elapsed < seconds; elapsed += .05) {
+        const result = system.step({ dt: .05, actors, target: target(12) });
+        eventsOf(result.events, 'summon').forEach((event) => event.positions.forEach((position, index) => {
+          const add = actor(event.enemyId, { uid: event.actorUids[index], position, dead: retireAdds });
+          actors.push(add);
+          emitted.push(add.uid);
+        }));
+      }
+      return emitted;
+    };
+
+    expect(soak(120, false)).toHaveLength(0);
+    adds.forEach((add) => { add.dead = true; });
+    expect(soak(240, true)).toHaveLength(REGIONAL_DIRECTOR_SUMMON_CAPS.total - adds.length);
+    expect(system.serialize().summonOwners).toEqual([expect.objectContaining({
+      ownerUid: boss.uid,
+      total: REGIONAL_DIRECTOR_SUMMON_CAPS.total,
+    })]);
+    expect(soak(120, true)).toHaveLength(0);
+  });
+
+  it('plans an over-cap legacy restore with four live actors and the original lifetime count', () => {
+    const boss = actor('regional-director');
+    const live = Array.from({ length: 6 }, (_, index) => actor('desk-warden', {
+      uid: `summoned-desk-warden-${index}`,
+    }));
+    const dead = Array.from({ length: 5 }, (_, index) => actor('desk-warden', {
+      uid: `summoned-desk-warden-${index + live.length}`,
+      dead: true,
+    }));
+
+    const plan = planLegacyRegionalDirectorSummonRestore([boss, ...live, ...dead], undefined);
+    expect(plan).toEqual({
+      ownerUid: boss.uid,
+      actorUids: [
+        'summoned-desk-warden-0',
+        'summoned-desk-warden-1',
+        'summoned-desk-warden-2',
+        'summoned-desk-warden-3',
+        'summoned-desk-warden-10',
+        'summoned-desk-warden-6',
+        'summoned-desk-warden-7',
+        'summoned-desk-warden-8',
+      ],
+      total: 11,
+    });
+    expect(plan!.actorUids.filter((uid) => Number(uid.split('-').at(-1)) < live.length)).toHaveLength(4);
+    expect(planLegacyRegionalDirectorSummonRestore([boss, ...live], [])).toBeUndefined();
+  });
 });
 
 describe('EnemyBehaviorSystem persistence', () => {
@@ -551,5 +658,26 @@ describe('EnemyBehaviorSystem persistence', () => {
     expect(restored.serialize()).toEqual(source.serialize());
     const next = { dt: .02, actors: [hound], target: target(1.3) };
     expect(restored.step(next)).toEqual(source.step(next));
+  });
+
+  it('remaps summon ownership only through accepted restored actor identities', () => {
+    const boss = actor('regional-director', { health: ENEMIES['regional-director'].health * .5 });
+    const source = new EnemyBehaviorSystem({ rng: () => 0 });
+    for (let tick = 0; tick < 400 && !source.serialize().summonOwners?.length; tick += 1) {
+      source.step({ dt: .05, actors: [boss], target: target(12) });
+    }
+    const snapshot = source.serialize();
+    const owner = snapshot.summonOwners?.[0];
+    expect(owner?.actorUids).toHaveLength(2);
+
+    const reconciled = reconcileEnemyBehaviorSnapshot(snapshot, [
+      { savedUid: boss.uid, runtimeUid: 'regional-director-current', id: boss.id },
+      { savedUid: owner!.actorUids[0], runtimeUid: 'summoned-desk-warden-current-1', id: 'desk-warden' },
+    ]);
+    expect(reconciled.summonOwners).toEqual([{
+      ownerUid: 'regional-director-current',
+      actorUids: ['summoned-desk-warden-current-1'],
+      total: 2,
+    }]);
   });
 });

@@ -37,6 +37,7 @@ const runtimeActor = (
   authoredDormant: !awake,
   dead: false,
   scoreEligible: true,
+  tallyEligible: true,
   attackFlash: 0,
   facing: 0,
   animationTime: 0,
@@ -205,13 +206,17 @@ describe('published runtime-state compatibility', () => {
     const published = PRE_PROFILE_E1M1_RUNTIME_FIXTURE;
     expect(reconcileRestoredTally(
       published.tally,
-      [{ dead: false }],
+      [
+        { dead: true, tallyEligible: true },
+        { dead: true, tallyEligible: false },
+        { dead: false, tallyEligible: true },
+      ],
       [{ counted: true, collected: false }],
       0,
       2,
     )).toEqual({
-      kills: 0,
-      totalKills: 1,
+      kills: 1,
+      totalKills: 2,
       items: 0,
       totalItems: 1,
       secrets: 0,

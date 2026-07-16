@@ -52,6 +52,7 @@ const waitForServer = async (url, child, timeoutMs = 15_000) => {
 
 await run('unit and data audits', ['node_modules/vitest/vitest.mjs', 'run', 'src', 'tests']);
 await run('nested production package', ['tests/production-portability-e2e.mjs']);
+await run('production local playtest report', ['tests/playtest-report-e2e.mjs']);
 
 console.log(`\n[release] starting isolated Vite server at ${gameUrl}`);
 const server = spawn(node, [
@@ -79,6 +80,7 @@ const browserTests = [
   ['player replay library', 'tests/replay-library-e2e.mjs'],
   ['navigation and session continuity', 'tests/navigation-continuity-e2e.mjs'],
   ['startup and storage resilience', 'tests/resilience-e2e.mjs'],
+  ['critical map texture readiness', 'tests/asset-readiness-e2e.mjs'],
   ['hostile telegraphs', 'tests/hostile-telegraph-e2e.mjs'],
   ['input remapping', 'tests/controls-e2e.mjs'],
   ['weapon selection and fallback', 'tests/weapon-selection-e2e.mjs'],

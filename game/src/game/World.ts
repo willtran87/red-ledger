@@ -52,6 +52,7 @@ export interface RuntimeActor {
   readonly authoredDormant: boolean;
   dead: boolean;
   scoreEligible: boolean;
+  tallyEligible: boolean;
   attackFlash: number;
   facing: number;
   animationTime: number;
@@ -182,6 +183,11 @@ export interface SectorMoverState {
   targetHeight: number;
 }
 
+export interface HazardSectorState {
+  key: string;
+  enabled: boolean;
+}
+
 export interface MoverCompletion {
   readonly kind: 'door' | 'sector';
   readonly key: string;
@@ -301,6 +307,7 @@ export class World {
   private readonly bossMechanismActions = new Set<BossMechanismAction>();
   private readonly secretClues = new Map<string, Sprite>();
   private readonly hazardCells: Array<{ x: number; z: number }> = [];
+  private readonly disabledHazardCells = new Set<string>();
   private hazardBatch?: InstancedMesh;
   private readonly lineOfSightProbe = new Vector3();
   private readonly moverCompletions: MoverCompletion[] = [];
@@ -550,7 +557,7 @@ export class World {
         this.actors.push({
           uid: `${kind}-${index}`, kind, id, authoredKey, sprite, position, health: definition.health, maxHealth: definition.health,
           cooldown: 0, awake: !phaseLocked && !authoredDormant, authoredDormant, dead: false,
-          scoreEligible: true, attackFlash: 0, facing, animationTime: 0, moving: false, visualKey: '', visualState: 'idle', phaseLocked,
+          scoreEligible: true, tallyEligible: true, attackFlash: 0, facing, animationTime: 0, moving: false, visualKey: '', visualState: 'idle', phaseLocked,
           encounter: placement.encounter,
           mandatory: placement.type === 'enemy' ? Boolean(placement.mandatory) : true,
           route: placement.type === 'enemy' ? placement.route : placement.encounter,
@@ -610,7 +617,8 @@ export class World {
       awake: true,
       authoredDormant: false,
       dead: false,
-      scoreEligible: true,
+      scoreEligible: false,
+      tallyEligible: false,
       attackFlash: 0,
       facing: 0,
       animationTime: 0,
@@ -807,8 +815,14 @@ export class World {
   }
 
   hazardDamageAt(position: Vector3): number {
-    if (!this.hazardsEnabled) return 0;
+    const x = Math.floor(position.x / this.map.cellSize);
+    const z = Math.floor(position.z / this.map.cellSize);
+    if (!this.isHazardSectorEnabled(`${x},${z}`)) return 0;
     return this.map.legend[this.tileAt(position)]?.damagePerSecond ?? 0;
+  }
+
+  isHazardSectorEnabled(key: string): boolean {
+    return this.hazardsEnabled && !this.disabledHazardCells.has(key);
   }
 
   applyMechanism(id: string): boolean {
@@ -885,8 +899,10 @@ export class World {
       ? this.map.mechanisms.find((candidate) => candidate.id === mechanismId)
       : this.map.mechanisms.find((candidate) => candidate.action === action);
     if (['toggle-sectors', 'drain-liquid', 'flood-liquid'].includes(action)) {
-      this.hazardsEnabled = action === 'flood-liquid' ? true : action === 'drain-liquid' ? false : !this.hazardsEnabled;
-      this.hazardMeshes.forEach((mesh) => { mesh.visible = this.hazardsEnabled; });
+      const targetedHazards = mechanismId && mechanism?.independent && mechanism.hazardTags.length > 0
+        ? mechanism.hazardTags
+        : undefined;
+      this.applyHazardTransformation(action, targetedHazards);
     }
     if (['move-walls', 'lower-floor', 'raise-floor', 'open-door', 'open-exit'].includes(action)) {
       const targetedDoors = mechanism?.doorTags.length
@@ -938,6 +954,63 @@ export class World {
     if (navigationChanged) this.bumpNavigationTopology();
   }
 
+  serializeHazardSectors(): HazardSectorState[] {
+    return this.hazardCells
+      .map((cell) => `${cell.x},${cell.z}`)
+      .filter((key) => this.disabledHazardCells.has(key))
+      .map((key) => ({ key, enabled: false }));
+  }
+
+  restoreHazardState(
+    globalEnabled: boolean,
+    states?: readonly HazardSectorState[],
+    activatedMechanismIds: readonly string[] = [],
+  ): void {
+    this.disabledHazardCells.clear();
+    if (states !== undefined) {
+      this.hazardsEnabled = globalEnabled;
+      const hazardKeys = new Set(this.hazardCells.map((cell) => `${cell.x},${cell.z}`));
+      states.forEach((state) => {
+        if (hazardKeys.has(state.key) && !state.enabled) this.disabledHazardCells.add(state.key);
+      });
+      this.syncHazardInstances();
+      return;
+    }
+
+    const legacyTargetedMechanisms = this.map.mechanisms.filter((mechanism) =>
+      activatedMechanismIds.includes(mechanism.id) && mechanism.independent && mechanism.hazardTags.length > 0);
+    if (legacyTargetedMechanisms.length === 0) {
+      this.hazardsEnabled = globalEnabled;
+    } else {
+      // Older E2M6 saves only stored the globally toggled flag. The activated
+      // pump IDs are authoritative enough to recover the intended subsets.
+      this.hazardsEnabled = true;
+      legacyTargetedMechanisms.forEach((mechanism) => {
+        this.updateHazardCells(mechanism.action, mechanism.hazardTags);
+      });
+    }
+    this.syncHazardInstances();
+  }
+
+  private applyHazardTransformation(action: TriggerAction, targetedHazards?: readonly string[]): void {
+    if (targetedHazards) {
+      this.updateHazardCells(action, targetedHazards);
+    } else {
+      this.hazardsEnabled = action === 'flood-liquid' ? true : action === 'drain-liquid' ? false : !this.hazardsEnabled;
+      this.disabledHazardCells.clear();
+    }
+    this.syncHazardInstances();
+  }
+
+  private updateHazardCells(action: TriggerAction, keys: readonly string[]): void {
+    keys.forEach((key) => {
+      if (action === 'flood-liquid') this.disabledHazardCells.delete(key);
+      else if (action === 'drain-liquid') this.disabledHazardCells.add(key);
+      else if (this.disabledHazardCells.has(key)) this.disabledHazardCells.delete(key);
+      else this.disabledHazardCells.add(key);
+    });
+  }
+
   private syncSectorFloor(sector: RuntimeSector): void {
     sector.floorMesh.position.y = sector.height;
     const matrix = new Matrix4().makeRotationX(-Math.PI / 2).setPosition(
@@ -952,14 +1025,24 @@ export class World {
   private syncHazardInstances(): void {
     if (!this.hazardBatch) return;
     const cellSize = this.map.cellSize;
-    const matrix = new Matrix4().makeRotationX(-Math.PI / 2);
+    const matrix = new Matrix4();
+    let activeCount = 0;
     this.hazardCells.forEach((cell, index) => {
+      const key = `${cell.x},${cell.z}`;
+      const enabled = this.isHazardSectorEnabled(key);
       const height = this.sectors.get(`${cell.x},${cell.z}`)?.height
         ?? this.map.legend[this.map.grid[cell.z]?.[cell.x]]?.floorHeight
         ?? 0;
+      if (enabled) {
+        matrix.makeRotationX(-Math.PI / 2);
+        activeCount += 1;
+      } else {
+        matrix.makeScale(0, 0, 0);
+      }
       matrix.setPosition((cell.x + .5) * cellSize, height + .015, (cell.z + .5) * cellSize);
       this.hazardBatch!.setMatrixAt(index, matrix);
     });
+    this.hazardBatch.visible = activeCount > 0;
     this.hazardBatch.instanceMatrix.needsUpdate = true;
   }
 
@@ -1140,6 +1223,7 @@ export class World {
     this.visitedTiles.clear();
     this.hazardMeshes.length = 0;
     this.hazardCells.length = 0;
+    this.disabledHazardCells.clear();
     this.hazardBatch = undefined;
     this.moverCompletions.length = 0;
     this.sectors.clear();

@@ -236,9 +236,14 @@ const validateMap = (map: CampaignMap): CampaignValidationIssue[] => {
   map.mechanisms.forEach((mechanism) => {
     if (!mechanism.persistState || !mechanism.restoresRoute) report(`mechanism ${mechanism.id} is not recoverable after restore`);
     const landmarkTarget = map.landmarks.some((landmark) => mechanism.landmarkTags.includes(landmark.tag));
-    if (mechanism.action !== 'teleport' && mechanism.action !== 'blackout' && mechanism.sectorTags.length + mechanism.doorTags.length === 0 && !landmarkTarget) {
+    if (mechanism.action !== 'teleport' && mechanism.action !== 'blackout'
+      && mechanism.sectorTags.length + mechanism.hazardTags.length + mechanism.doorTags.length === 0 && !landmarkTarget) {
       report(`mechanism ${mechanism.id} has no concrete world targets`);
     }
+    mechanism.hazardTags.forEach((key) => {
+      const [x, z] = key.split(',').map(Number);
+      if (!map.legend[map.grid[z]?.[x]]?.damagePerSecond) report(`mechanism ${mechanism.id} targets non-hazard sector ${key}`);
+    });
     if (!map.triggers.some((trigger) => trigger.targets.includes(mechanism.id))) report(`mechanism ${mechanism.id} has no tagged switch`);
     mechanism.requires.forEach((required) => {
       if (!map.mechanisms.some((candidate) => candidate.id === required)) report(`mechanism ${mechanism.id} requires missing mechanism ${required}`);
@@ -249,8 +254,14 @@ const validateMap = (map: CampaignMap): CampaignValidationIssue[] => {
   });
   const mechanismOrders = map.mechanisms.map((mechanism) => mechanism.activationOrder);
   if (new Set(mechanismOrders).size !== mechanismOrders.length) report('mechanism activation orders are not unique');
+  const taggedPumpHazards = map.mechanisms.flatMap((mechanism) => mechanism.hazardTags);
+  const authoredHazards = map.grid.flatMap((row, z) => [...row].flatMap((char, x) =>
+    map.legend[char]?.damagePerSecond ? [`${x},${z}`] : []));
   if (map.id === 'E2M6' && (!map.mechanisms.every((mechanism) => mechanism.independent && mechanism.requires.length === 0)
-    || new Set(map.mechanisms.flatMap((mechanism) => mechanism.sectorTags)).size !== map.mechanisms.flatMap((mechanism) => mechanism.sectorTags).length)) {
+    || new Set(map.mechanisms.flatMap((mechanism) => mechanism.sectorTags)).size !== map.mechanisms.flatMap((mechanism) => mechanism.sectorTags).length
+    || new Set(taggedPumpHazards).size !== taggedPumpHazards.length
+    || taggedPumpHazards.length !== authoredHazards.length
+    || authoredHazards.some((key) => !taggedPumpHazards.includes(key)))) {
     report('E2M6 pumps are not three independent, disjoint states');
   }
   map.triggers.filter((trigger) => trigger.action === 'teleport').forEach((trigger) => {
@@ -295,7 +306,7 @@ const validateMap = (map: CampaignMap): CampaignValidationIssue[] => {
   const maxEnemies = map.index <= 3 ? 65 : map.index <= 6 || map.index === 9 ? 110 : 160;
   if (normalEnemies < minEnemies || normalEnemies > maxEnemies) report(`normal enemy budget ${normalEnemies} is outside ${minEnemies}-${maxEnemies}`);
   if (normalEnemies !== map.standardEnemyBudget) report(`normal enemy budget ${normalEnemies} does not realize declared ${map.standardEnemyBudget}`);
-  if (map.parSeconds < 900 || map.parSeconds > 2100) report(`experienced par ${map.parSeconds}s is outside 15-35 minutes`);
+  if (map.parSeconds < 7 * 60 || map.parSeconds > 22 * 60) report(`route-model par ${map.parSeconds}s is outside 7-22 minutes`);
   return issues;
 };
 
@@ -321,6 +332,6 @@ export const validateCampaign = (campaign: CampaignDefinition): readonly Campaig
   const secretMaps = ids.filter((id) => campaign.maps[id].secretMap);
   if (secretMaps.length !== 3) issues.push({ message: `campaign has ${secretMaps.length} secret maps, expected 3` });
   const totalPar = ids.reduce((total, id) => total + campaign.maps[id].parSeconds, 0);
-  if (totalPar < 6 * 3600 || totalPar > 9 * 3600) issues.push({ message: `campaign experienced par is ${(totalPar / 3600).toFixed(2)} hours, expected 6-9` });
+  if (totalPar < 5 * 3600 || totalPar > 7 * 3600) issues.push({ message: `campaign route-model par is ${(totalPar / 3600).toFixed(2)} hours, expected 5-7` });
   return issues;
 };

@@ -1,5 +1,5 @@
 export const SAVE_SCHEMA_VERSION = 1;
-export const CAMPAIGN_SCHEMA_VERSION = 2;
+export const CAMPAIGN_SCHEMA_VERSION = 3;
 export const OLDEST_SUPPORTED_SAVE_SCHEMA_VERSION = 1;
 export const OLDEST_SUPPORTED_CAMPAIGN_SCHEMA_VERSION = 1;
 export const DEMO_SCHEMA_VERSION = 4;
@@ -28,6 +28,11 @@ export interface MapPerformance {
   readonly grade: PerformanceGrade;
 }
 
+/** A checksum-covered snapshot proving every mastery condition was met in one run. */
+export interface MapMasteryProof extends MapPerformance {
+  readonly achievedAt: number;
+}
+
 export interface MapRecord {
   readonly mapId: string;
   readonly difficulty: string;
@@ -40,6 +45,7 @@ export interface MapRecord {
   readonly bestSecretsPercent: number;
   readonly bestGrade: PerformanceGrade;
   readonly parBeaten: boolean;
+  readonly masteryProof?: MapMasteryProof;
   readonly achievedAt: number;
 }
 
@@ -236,11 +242,11 @@ interface SaveShadowEnvelope<TState> {
  * Compatibility policy for durable player data.
  *
  * Save state is application-owned and therefore requires both schema 1 and the exact gameVersion.
- * Campaign schema 1 is the original public format; schema 2 adds mastery records and secret-map
- * discovery. Its migration only supplies empty defaults. Ordinary reads never rewrite storage;
- * validated mutation journals may be checkpointed after a stability window. Unknown fields in
- * supported envelopes are preserved. Corrupt, older, and future envelopes remain untouched so
- * another build or a recovery tool can inspect them.
+ * Campaign schema 1 is the original public format; schema 2 adds performance records and secret-map
+ * discovery; schema 3 adds single-run mastery proofs. Legacy records conservatively migrate without
+ * a proof. Ordinary reads never rewrite storage; validated mutation journals may be checkpointed
+ * after a stability window. Unknown fields in supported envelopes are preserved. Corrupt, older,
+ * and future envelopes remain untouched so another build or a recovery tool can inspect them.
  */
 export const PERSISTENCE_COMPATIBILITY_POLICY = Object.freeze({
   saves: Object.freeze({
@@ -251,7 +257,7 @@ export const PERSISTENCE_COMPATIBILITY_POLICY = Object.freeze({
   campaign: Object.freeze({
     currentVersion: CAMPAIGN_SCHEMA_VERSION,
     oldestSupportedVersion: OLDEST_SUPPORTED_CAMPAIGN_SCHEMA_VERSION,
-    legacyDefaults: Object.freeze({ discoveredSecretMaps: true, records: true }),
+    legacyDefaults: Object.freeze({ discoveredSecretMaps: true, records: true, masteryProofs: true }),
   }),
 });
 
@@ -355,14 +361,38 @@ const normalizeStringList = (values: readonly string[]): string[] =>
 
 const GRADES: readonly PerformanceGrade[] = ['S', 'A', 'B', 'C', 'D'];
 const isPerformanceGrade = (value: unknown): value is PerformanceGrade => GRADES.includes(value as PerformanceGrade);
-const isMapRecord = (value: unknown): value is MapRecord => isRecord(value)
+const isMapPerformance = (value: unknown): value is MapPerformance => isRecord(value)
+  && typeof value.mapId === 'string'
+  && typeof value.difficulty === 'string'
+  && ['elapsed', 'parSeconds', 'score', 'bestChain', 'killsPercent', 'itemsPercent', 'secretsPercent']
+    .every((key) => Number.isFinite(value[key]))
+  && isPerformanceGrade(value.grade);
+
+export const isSingleRunMastery = (performance: MapPerformance): boolean => performance.elapsed <= performance.parSeconds
+  && performance.grade === 'S'
+  && performance.killsPercent === 100
+  && performance.itemsPercent === 100
+  && performance.secretsPercent === 100;
+
+export const hasMasteryProof = (record: MapRecord | undefined): boolean => Boolean(record?.masteryProof);
+
+const isMapMasteryProof = (value: unknown, mapId: string, difficulty: string): value is MapMasteryProof =>
+  isMapPerformance(value)
+  && value.mapId === mapId
+  && value.difficulty === difficulty
+  && isSingleRunMastery(value)
+  && Number.isFinite((value as unknown as Record<string, unknown>).achievedAt);
+
+const isMapRecord = (value: unknown, validateMasteryProof: boolean): value is MapRecord => isRecord(value)
   && typeof value.mapId === 'string'
   && typeof value.difficulty === 'string'
   && Number.isSafeInteger(value.completions) && Number(value.completions) > 0
   && ['bestTime', 'highScore', 'bestChain', 'bestKillsPercent', 'bestItemsPercent', 'bestSecretsPercent', 'achievedAt']
     .every((key) => Number.isFinite(value[key]))
   && isPerformanceGrade(value.bestGrade)
-  && typeof value.parBeaten === 'boolean';
+  && typeof value.parBeaten === 'boolean'
+  && (!validateMasteryProof || value.masteryProof === undefined
+    || isMapMasteryProof(value.masteryProof, value.mapId, value.difficulty));
 
 const migrateCampaignEnvelope = (value: unknown): CampaignUnlocks | undefined => {
   if (!isRecord(value)
@@ -386,45 +416,60 @@ const migrateCampaignEnvelope = (value: unknown): CampaignUnlocks | undefined =>
     || !Array.isArray(progress.completedMaps)
     || !hasLegacyOrValidSecretMaps
     || !hasLegacyOrValidRecords
-    || (isRecord(progress.records) && !Object.values(progress.records).every(isMapRecord))
+    || (isRecord(progress.records) && !Object.values(progress.records)
+      .every((record) => isMapRecord(record, version >= 3)))
     || !Number.isFinite(progress.updatedAt)
     || [...progress.unlockedEpisodes, ...progress.completedEpisodes, ...progress.completedMaps,
       ...(progress.discoveredSecretMaps as unknown[] | undefined ?? [])]
       .some((entry) => typeof entry !== 'string')) return undefined;
 
+  const records = Object.fromEntries(Object.entries(progress.records as Record<string, MapRecord> | undefined ?? {})
+    .map(([key, record]) => {
+      if (version >= 3) return [key, { ...record }];
+      const { masteryProof: _untrustedLegacyProof, ...legacyRecord } = record;
+      return [key, legacyRecord];
+    }));
   return {
     unlockedEpisodes: normalizeStringList(progress.unlockedEpisodes as string[]),
     completedEpisodes: normalizeStringList(progress.completedEpisodes as string[]),
     completedMaps: normalizeStringList(progress.completedMaps as string[]),
     discoveredSecretMaps: normalizeStringList(progress.discoveredSecretMaps as string[] | undefined ?? []),
-    records: { ...(progress.records as Record<string, MapRecord> | undefined ?? {}) },
+    records,
     updatedAt: progress.updatedAt as number,
   };
 };
 
 export const mapRecordKey = (mapId: string, difficulty: string): string => `${mapId}:${difficulty}`;
 
-const mergeMapRecord = (previous: MapRecord | undefined, performance: MapPerformance, achievedAt: number): MapRecord => ({
-  mapId: performance.mapId,
-  difficulty: performance.difficulty,
-  completions: (previous?.completions ?? 0) + 1,
-  bestTime: previous ? Math.min(previous.bestTime, performance.elapsed) : performance.elapsed,
-  highScore: Math.max(previous?.highScore ?? 0, performance.score),
-  bestChain: Math.max(previous?.bestChain ?? 0, performance.bestChain),
-  bestKillsPercent: Math.max(previous?.bestKillsPercent ?? 0, performance.killsPercent),
-  bestItemsPercent: Math.max(previous?.bestItemsPercent ?? 0, performance.itemsPercent),
-  bestSecretsPercent: Math.max(previous?.bestSecretsPercent ?? 0, performance.secretsPercent),
-  bestGrade: !previous || GRADES.indexOf(performance.grade) < GRADES.indexOf(previous.bestGrade) ? performance.grade : previous.bestGrade,
-  parBeaten: Boolean(previous?.parBeaten || performance.elapsed <= performance.parSeconds),
-  achievedAt,
-});
+const selectMasteryProof = (
+  left: MapMasteryProof | undefined,
+  right: MapMasteryProof | undefined,
+): MapMasteryProof | undefined => {
+  if (!left) return right;
+  if (!right) return left;
+  if (left.achievedAt !== right.achievedAt) return left.achievedAt < right.achievedAt ? left : right;
+  return stableStringify(left) <= stableStringify(right) ? left : right;
+};
 
-const isMapPerformance = (value: unknown): value is MapPerformance => isRecord(value)
-  && typeof value.mapId === 'string'
-  && typeof value.difficulty === 'string'
-  && ['elapsed', 'parSeconds', 'score', 'bestChain', 'killsPercent', 'itemsPercent', 'secretsPercent']
-    .every((key) => Number.isFinite(value[key]))
-  && isPerformanceGrade(value.grade);
+const mergeMapRecord = (previous: MapRecord | undefined, performance: MapPerformance, achievedAt: number): MapRecord => {
+  const currentProof = isSingleRunMastery(performance) ? { ...performance, achievedAt } : undefined;
+  const masteryProof = selectMasteryProof(previous?.masteryProof, currentProof);
+  return {
+    mapId: performance.mapId,
+    difficulty: performance.difficulty,
+    completions: (previous?.completions ?? 0) + 1,
+    bestTime: previous ? Math.min(previous.bestTime, performance.elapsed) : performance.elapsed,
+    highScore: Math.max(previous?.highScore ?? 0, performance.score),
+    bestChain: Math.max(previous?.bestChain ?? 0, performance.bestChain),
+    bestKillsPercent: Math.max(previous?.bestKillsPercent ?? 0, performance.killsPercent),
+    bestItemsPercent: Math.max(previous?.bestItemsPercent ?? 0, performance.itemsPercent),
+    bestSecretsPercent: Math.max(previous?.bestSecretsPercent ?? 0, performance.secretsPercent),
+    bestGrade: !previous || GRADES.indexOf(performance.grade) < GRADES.indexOf(previous.bestGrade) ? performance.grade : previous.bestGrade,
+    parBeaten: Boolean(previous?.parBeaten || performance.elapsed <= performance.parSeconds),
+    ...(masteryProof ? { masteryProof } : {}),
+    achievedAt,
+  };
+};
 
 const isCampaignMutation = (value: unknown): value is CampaignMutation => {
   if (!isRecord(value)) return false;
@@ -514,6 +559,9 @@ const mergeCampaignRecords = (left: MapRecord, right: MapRecord): MapRecord => (
   bestSecretsPercent: Math.max(left.bestSecretsPercent, right.bestSecretsPercent),
   bestGrade: GRADES.indexOf(left.bestGrade) <= GRADES.indexOf(right.bestGrade) ? left.bestGrade : right.bestGrade,
   parBeaten: left.parBeaten || right.parBeaten,
+  ...(selectMasteryProof(left.masteryProof, right.masteryProof)
+    ? { masteryProof: selectMasteryProof(left.masteryProof, right.masteryProof) }
+    : {}),
   achievedAt: Math.max(left.achievedAt, right.achievedAt),
 });
 
@@ -790,7 +838,11 @@ export class PersistenceSystem<TState> {
 
   private reconciledCampaign(): ReconciledCampaign {
     const campaignKey = this.key('campaign');
-    const recoveryKeys = [this.key('campaign-recovery'), this.key(`campaign-recovery-v${CAMPAIGN_SCHEMA_VERSION}`)];
+    const recoveryKeys = this.campaignRecoveryKeys();
+    const preferredRecoveryKeys = new Set([
+      this.key('campaign-recovery'),
+      this.key(`campaign-recovery-v${CAMPAIGN_SCHEMA_VERSION}`),
+    ]);
     const canonical = this.campaignRecord(campaignKey);
     const recoveries = recoveryKeys.map((key) => this.campaignRecord(key));
     const validRecoveries = recoveries.filter((record) => record.validEnvelope);
@@ -814,7 +866,9 @@ export class PersistenceSystem<TState> {
         progress = mergeCampaignProgress(progress, record.progress);
         record.appliedMutations.forEach((id) => applied.add(id));
       });
-      target = validRecoveries.find((record) => record.writable)
+      target = validRecoveries.find((record) => record.writable && preferredRecoveryKeys.has(record.key))
+        ?? recoveries.find((record) => record.raw === null && record.writable && preferredRecoveryKeys.has(record.key))
+        ?? validRecoveries.find((record) => record.writable)
         ?? recoveries.find((record) => record.raw === null && record.writable)
         ?? recoveries.find((record) => record.writable)
         ?? recoveries[recoveries.length - 1];
@@ -1576,10 +1630,19 @@ export class PersistenceSystem<TState> {
     return this.key(`campaign-mutation:${encodeURIComponent(id)}`);
   }
 
+  private campaignRecoveryKeys(): readonly string[] {
+    return [
+      this.key('campaign-recovery'),
+      ...Array.from(
+        { length: Math.max(0, CAMPAIGN_SCHEMA_VERSION - 1) },
+        (_, index) => this.key(`campaign-recovery-v${index + 2}`),
+      ),
+    ];
+  }
+
   private isCampaignRecordKey(key: string): boolean {
     return key === this.key('campaign')
-      || key === this.key('campaign-recovery')
-      || key === this.key(`campaign-recovery-v${CAMPAIGN_SCHEMA_VERSION}`);
+      || this.campaignRecoveryKeys().includes(key);
   }
 
   private isCanonicalDataKey(key: string): boolean {

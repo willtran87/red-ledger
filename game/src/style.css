@@ -85,6 +85,29 @@ dialog:focus-visible { outline: 0; }
 }
 #runtime-warning { position: absolute; z-index: 60; top: 6px; left: 50%; width: min(680px, calc(100% - 20px)); padding: 5px 8px; transform: translateX(-50%); border: 1px solid #ffe17a; color: #fffdf7; background: rgba(8,9,10,.94); font-size: .625rem; line-height: 1.35; text-align: center; pointer-events: none; }
 #runtime-warning[hidden] { display: none; }
+#playtest-tools {
+  position: absolute;
+  z-index: 65;
+  right: 6px;
+  bottom: 6px;
+  max-width: calc(100% - 12px);
+  min-height: 36px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 4px 6px;
+  border: 1px solid #ffe17a;
+  background: rgba(8, 9, 10, .94);
+  font-size: .5625rem;
+}
+#playtest-tools[hidden] { display: none; }
+#playtest-tools strong { color: #ffe17a; }
+#playtest-tools label { display: flex; align-items: center; gap: 3px; }
+#playtest-tools select { min-height: 28px; color: #f4f1ea; border: 1px solid #646a70; background: #1d2023; }
+#playtest-tools button { min-width: 58px; min-height: 28px; padding: 3px 6px; font-size: .5625rem; }
+#playtest-status { min-width: 74px; color: #d4d2cb; text-align: right; }
 #bootstrap-status { position: absolute; z-index: 70; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; color: #b7b8b4; background: #08090a; }
 #bootstrap-status strong { color: #fffdf7; font-size: 1.75rem; text-shadow: 2px 2px #7a1018; }
 #bootstrap-status span { font-size: .625rem; }
@@ -414,6 +437,12 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #confirm-dialog { width: min(420px, calc(100vw - 28px)); padding: 20px; color: #f4f1ea; border: 2px solid #b7b8b4; border-radius: 2px; background: #111214; }
 #confirm-dialog::backdrop { background: rgba(8,9,10,.8); }
 #confirm-dialog h2 { margin: 0 0 10px; font-size: 1.375rem; }
+#playtest-report-dialog { width: min(820px, calc(100vw - 28px)); max-height: min(760px, calc(100vh - 28px)); padding: 12px; color: #f4f1ea; border: 2px solid #ffe17a; border-radius: 2px; background: #111214; }
+#playtest-report-dialog::backdrop { background: rgba(8, 9, 10, .8); }
+#playtest-report-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+#playtest-report-dialog h2 { margin: 0; font-size: 1rem; }
+#playtest-report-close { min-width: 72px; }
+#playtest-report-output { width: 100%; max-height: min(660px, calc(100vh - 120px)); margin: 0; padding: 8px; overflow: auto; color: #d4d2cb; border: 1px solid #4b5055; background: #08090a; font: .6875rem/1.4 "Courier New", monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 #confirm-dialog p { min-height: 44px; margin: 0 0 18px; color: #d4d2cb; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 

@@ -26,6 +26,7 @@
     "test:mobile-ux": "node tests/mobile-ux-e2e.mjs",
     "test:production": "node tests/production-portability-e2e.mjs",
     "test:lifecycle": "node tests/lifecycle-performance-e2e.mjs",
+    "test:playtest": "node tests/playtest-report-e2e.mjs",
     "test:release": "npm run build && node tests/release-runner.mjs"
   },
   "dependencies": {

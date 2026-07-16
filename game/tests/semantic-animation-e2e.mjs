@@ -31,6 +31,7 @@ if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-f
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
 await page.evaluate(() => window.__redLedger.loadMap('E1M3'));
+assert(await page.evaluate(() => window.__redLedger.activateActor('liability-mass')), 'Could not activate transformation-phase Liability Mass');
 assert(await page.evaluate(() => window.__redLedger.teleportNearActor('liability-mass', 8)), 'No Liability Mass available');
 assert(await waitForVisual('liability-mass', ['charge']) === 'charge', 'Liability Mass never used its authored charge state');
 await page.screenshot({ path: fileURLToPath(new URL('enemy-charge.png', output)) });

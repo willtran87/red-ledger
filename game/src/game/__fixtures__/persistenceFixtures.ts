@@ -33,6 +33,7 @@ export const LEGACY_CAMPAIGN_V1_FIXTURE = {
   checksum: '6a6ec4db',
 } as const;
 
+/** Published performance-record format before single-run mastery proofs were introduced. */
 export const CURRENT_CAMPAIGN_V2_FIXTURE = {
   schema: 'red-ledger-campaign',
   version: 2,
@@ -60,4 +61,46 @@ export const CURRENT_CAMPAIGN_V2_FIXTURE = {
     updatedAt: 1_710_000_000_200,
   },
   checksum: '59b62541',
+} as const;
+
+export const CURRENT_CAMPAIGN_V3_FIXTURE = {
+  schema: 'red-ledger-campaign',
+  version: 3,
+  progress: {
+    unlockedEpisodes: ['first-notice', 'exclusions-apply'],
+    completedEpisodes: ['first-notice'],
+    completedMaps: ['E1M1', 'E1M8'],
+    discoveredSecretMaps: ['E1M9'],
+    records: {
+      'E1M1:field-adjuster': {
+        mapId: 'E1M1',
+        difficulty: 'field-adjuster',
+        completions: 1,
+        bestTime: 120,
+        highScore: 5_000,
+        bestChain: 4,
+        bestKillsPercent: 100,
+        bestItemsPercent: 100,
+        bestSecretsPercent: 100,
+        bestGrade: 'S',
+        parBeaten: true,
+        masteryProof: {
+          mapId: 'E1M1',
+          difficulty: 'field-adjuster',
+          elapsed: 120,
+          parSeconds: 180,
+          score: 5_000,
+          bestChain: 4,
+          killsPercent: 100,
+          itemsPercent: 100,
+          secretsPercent: 100,
+          grade: 'S',
+          achievedAt: 1_710_000_000_200,
+        },
+        achievedAt: 1_710_000_000_200,
+      },
+    },
+    updatedAt: 1_710_000_000_200,
+  },
+  checksum: '028227ff',
 } as const;

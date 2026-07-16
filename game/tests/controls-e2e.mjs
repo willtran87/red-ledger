@@ -15,6 +15,7 @@ await page.click('#options-button');
 
 assert(await page.locator('#vertical-auto-aim').isChecked(), 'Vertical auto-aim did not default on');
 await page.locator('#vertical-auto-aim').uncheck();
+await page.locator('#classic-input').check();
 
 await page.locator('#sensitivity').evaluate((element) => { element.value = '1.2'; });
 await page.locator('#sensitivity').focus();
@@ -63,6 +64,39 @@ if (await page.locator('#ready-overlay').isVisible()) {
 }
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
+const classicLookBefore = JSON.parse(await page.evaluate(() => window.render_game_to_text())).player;
+await page.evaluate(() => {
+  window.dispatchEvent(new MouseEvent('mousemove', { movementX: 36, movementY: 36 }));
+  window.advanceTime(35);
+});
+const classicLookAfter = JSON.parse(await page.evaluate(() => window.render_game_to_text())).player;
+assert(Math.abs(classicLookAfter.yaw - classicLookBefore.yaw) > .02, '1993 preset discarded horizontal mouse turning');
+assert(classicLookAfter.pitch === classicLookBefore.pitch, '1993 preset retained vertical free-look');
+
+await page.keyboard.down('KeyW');
+const presentationSamples = await page.evaluate(async () => {
+  const samples = [];
+  await new Promise((resolve) => {
+    const sample = () => {
+      const snapshot = JSON.parse(window.render_game_to_text());
+      samples.push({ player: snapshot.player, presentation: snapshot.runtime.presentation });
+      if (samples.length >= 42) resolve();
+      else requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  return samples;
+});
+await page.keyboard.up('KeyW');
+assert(presentationSamples.every((sample) => sample.presentation.mode === 'bounded-predictive-interpolation'), 'Runtime did not expose the presentation interpolation contract');
+assert(presentationSamples.some((sample) => sample.presentation.alpha > .05 && sample.presentation.alpha < .95
+  && Math.hypot(sample.presentation.x - sample.player.x, sample.presentation.z - sample.player.z) > .001), 'Presentation never produced a between-tick movement pose');
+assert(presentationSamples.some((sample, index) => index > 0
+  && sample.player.x === presentationSamples[index - 1].player.x
+  && sample.player.z === presentationSamples[index - 1].player.z
+  && (sample.presentation.x !== presentationSamples[index - 1].presentation.x
+    || sample.presentation.z !== presentationSamples[index - 1].presentation.z)), 'Visible movement remained quantized to simulation ticks');
+
 await page.evaluate(() => window.__redLedger.radial(0, -1, true));
 assert(await page.locator('#weapon-radial').isVisible(), 'Controller radial selector did not open');
 assert((await page.locator('#weapon-radial button.selected').textContent()) === '1', 'Right-stick radial selection did not select the claim stamp');
@@ -107,6 +141,7 @@ assert(await page.locator('#touch-sensitivity').inputValue() === '0.7', 'Touch s
 assert(await page.locator('#controller-deadzone').inputValue() === '0.22', 'Controller deadzone did not persist');
 assert(await page.locator('#invert-y').isChecked(), 'Y inversion did not persist');
 assert(!(await page.locator('#vertical-auto-aim').isChecked()), 'Vertical auto-aim preference did not persist');
+assert(await page.locator('#classic-input').isChecked(), '1993 input preference did not persist');
 assert(await page.locator('#text-scale').inputValue() === 'largest', 'Text size did not persist');
 await page.click('#controls-button');
 const restoredRow = page.locator('.control-row', { has: page.getByText('Automap', { exact: true }) }).first();

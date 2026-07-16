@@ -20,9 +20,13 @@ if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-f
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 await page.waitForTimeout(250);
 
-assert(await page.evaluate(() => window.__redLedger.teleportNearActor('ember-clerk', 8)), 'Could not stage ember projectile encounter');
+assert(
+  await page.evaluate(() => window.__redLedger.activateActor('ember-clerk')),
+  'Could not activate the authored transformation-phase Ember Clerk',
+);
+assert(await page.evaluate(() => window.__redLedger.teleportNearActor('ember-clerk', 12)), 'Could not stage ember projectile encounter');
 let volley;
-for (let index = 0; index < 12; index += 1) {
+for (let index = 0; index < 90; index += 1) {
   await page.evaluate(() => window.advanceTime(35));
   volley = await state();
   if (volley.combatEffects.projectiles.length > 0) break;

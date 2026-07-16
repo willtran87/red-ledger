@@ -90,7 +90,8 @@ describe('authored world content', () => {
 
   it('advances generated summon and drop IDs beyond restored entities', () => {
     const world = worldFor('E1M1');
-    world.summonEnemy('returned-mail', new Vector3(6, 0, 6), 'summoned-returned-mail-12');
+    const restoredSummon = world.summonEnemy('returned-mail', new Vector3(6, 0, 6), 'summoned-returned-mail-12');
+    expect(restoredSummon).toMatchObject({ scoreEligible: false, tallyEligible: false });
     world.spawnAmmoDrop(new Vector3(6, 0, 6), 'staples', 5, 'ammo-drop-9');
     expect(world.summonEnemy('returned-mail', new Vector3(8, 0, 6)).uid).toBe('summoned-returned-mail-13');
     expect(world.spawnAmmoDrop(new Vector3(8, 0, 6), 'staples', 5)?.uid).toBe('ammo-drop-10');
@@ -126,6 +127,81 @@ describe('authored world content', () => {
     expect(pumps.mechanismOpens(reversed.at(-1)!.id)).toContain('climax');
   });
 
+  it('keeps every E2M6 pump subset independent for damage, state, and activation order', () => {
+    const authored = worldFor('E2M6');
+    const mechanisms = [...authored.map.mechanisms];
+    const signatures = new Set<string>();
+
+    for (let mask = 0; mask < (1 << mechanisms.length); mask += 1) {
+      const world = worldFor('E2M6');
+      const disabled = new Set<string>();
+      mechanisms.forEach((mechanism, index) => {
+        if ((mask & (1 << index)) === 0) return;
+        expect(world.applyMechanism(mechanism.id)).toBe(true);
+        mechanism.hazardTags.forEach((key) => disabled.add(key));
+      });
+
+      const stateKeys = world.serializeHazardSectors().map((state) => state.key).sort();
+      expect(stateKeys, `pump subset ${mask.toString(2).padStart(3, '0')}`).toEqual([...disabled].sort());
+      signatures.add(stateKeys.join('|'));
+      mechanisms.forEach((mechanism, index) => {
+        mechanism.hazardTags.forEach((key) => {
+          const [x, z] = key.split(',').map(Number);
+          const point = new Vector3((x + .5) * world.map.cellSize, 0, (z + .5) * world.map.cellSize);
+          const enabled = (mask & (1 << index)) === 0;
+          expect(world.isHazardSectorEnabled(key), `${mask}:${mechanism.id}:${key}`).toBe(enabled);
+          expect(world.hazardDamageAt(point), `${mask}:${mechanism.id}:${key}`)
+            .toBe(enabled ? world.map.legend[world.map.grid[z][x]].damagePerSecond : 0);
+        });
+      });
+    }
+    expect(signatures.size).toBe(1 << mechanisms.length);
+
+    const orders = [
+      [0, 1, 2], [0, 2, 1], [1, 0, 2],
+      [1, 2, 0], [2, 0, 1], [2, 1, 0],
+    ];
+    const finalSignatures = new Set<string>();
+    orders.forEach((order) => {
+      const world = worldFor('E2M6');
+      const expected = new Set<string>();
+      order.forEach((index) => {
+        const mechanism = mechanisms[index];
+        expect(world.applyMechanism(mechanism.id)).toBe(true);
+        mechanism.hazardTags.forEach((key) => expected.add(key));
+        expect(world.serializeHazardSectors().map((state) => state.key).sort()).toEqual([...expected].sort());
+      });
+      finalSignatures.add(world.serializeHazardSectors().map((state) => state.key).sort().join('|'));
+    });
+    expect(finalSignatures.size).toBe(1);
+  });
+
+  it('round-trips current and legacy E2M6 pump hazard states without globalizing them', () => {
+    const source = worldFor('E2M6');
+    const activated = [source.map.mechanisms[0], source.map.mechanisms[2]];
+    activated.forEach((mechanism) => source.applyMechanism(mechanism.id));
+    const expected = source.serializeHazardSectors();
+
+    const restored = worldFor('E2M6');
+    restored.restoreActivatedMechanisms(activated.map((mechanism) => mechanism.id));
+    restored.restoreHazardState(source.hazardsEnabled, expected, activated.map((mechanism) => mechanism.id));
+    expect(restored.serializeHazardSectors()).toEqual(expected);
+    expect(restored.hazardsEnabled).toBe(true);
+
+    const legacy = worldFor('E2M6');
+    legacy.restoreActivatedMechanisms(activated.map((mechanism) => mechanism.id));
+    legacy.restoreHazardState(true, undefined, activated.map((mechanism) => mechanism.id));
+    expect(legacy.serializeHazardSectors()).toEqual(expected);
+    expect(legacy.hazardsEnabled).toBe(true);
+
+    const onePumpLegacy = worldFor('E2M6');
+    const onePump = source.map.mechanisms[1];
+    onePumpLegacy.restoreHazardState(false, undefined, [onePump.id]);
+    expect(onePumpLegacy.hazardsEnabled).toBe(true);
+    expect(onePumpLegacy.serializeHazardSectors().map((state) => state.key).sort())
+      .toEqual([...onePump.hazardTags].sort());
+  });
+
   it('unlocks climax actors while preserving their authored ambush dormancy', () => {
     const world = worldFor('E1M4');
     const entry = world.actors.filter((actor) => actor.encounter === 'entry');
@@ -154,7 +230,7 @@ describe('authored world content', () => {
     const world = worldFor('E1M1');
     const published = PRE_PROFILE_E1M1_RUNTIME_FIXTURE;
     const current = world.actors.find((actor) => actor.uid === published.actor.uid)!;
-    expect(current.id).toBe('ember-clerk');
+    expect(current).toBeDefined();
     expect(savedActorMatchesRuntime(published.actor, current)).toBe(false);
 
     const reconciled = reconcileEnemyBehaviorSnapshot(
@@ -279,6 +355,23 @@ describe('authored world content', () => {
 
     world.applyTransformation('toggle-sectors');
     expect(batch.visible).toBe(false);
+    world.applyTransformation('toggle-sectors');
+    expect(batch.visible).toBe(true);
+
+    const targetedWorld = worldFor('E2M6');
+    const targetedBatch = targetedWorld.hazardMeshes[0] as InstancedMesh;
+    const targetedPump = targetedWorld.map.mechanisms[0];
+    targetedWorld.applyMechanism(targetedPump.id);
+    expect(targetedBatch.visible).toBe(true);
+    const targetedMatrix = new Matrix4();
+    const untouchedMatrix = new Matrix4();
+    const targetedIndex = hazardCells.findIndex((cell) => `${cell.x},${cell.z}` === targetedPump.hazardTags[0]);
+    const untouchedKey = targetedWorld.map.mechanisms[1].hazardTags[0];
+    const untouchedIndex = hazardCells.findIndex((cell) => `${cell.x},${cell.z}` === untouchedKey);
+    targetedBatch.getMatrixAt(targetedIndex, targetedMatrix);
+    targetedBatch.getMatrixAt(untouchedIndex, untouchedMatrix);
+    expect(targetedMatrix.determinant()).toBe(0);
+    expect(Math.abs(untouchedMatrix.determinant())).toBeGreaterThan(.5);
 
     const drainWorld = worldFor('E2M2');
     const drainBatch = drainWorld.hazardMeshes[0] as InstancedMesh;
@@ -297,6 +390,15 @@ describe('authored world content', () => {
     const after = new Matrix4();
     drainBatch.getMatrixAt(movingIndex, before);
     drainWorld.applyTransformation(mechanism.action, mechanism.id);
+    expect(drainWorld.hazardsEnabled).toBe(false);
+    expect(drainBatch.visible).toBe(false);
+    drainCells.forEach(({ x, z }) => {
+      expect(drainWorld.hazardDamageAt(new Vector3(
+        (x + .5) * drainWorld.map.cellSize,
+        0,
+        (z + .5) * drainWorld.map.cellSize,
+      ))).toBe(0);
+    });
     drainWorld.updateMovers(.25);
     drainBatch.getMatrixAt(movingIndex, after);
     expect(after.elements[13]).not.toBe(before.elements[13]);

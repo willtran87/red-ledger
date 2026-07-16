@@ -16,6 +16,7 @@ import {
 } from './PersistenceSystem';
 import {
   CURRENT_CAMPAIGN_V2_FIXTURE,
+  CURRENT_CAMPAIGN_V3_FIXTURE,
   CURRENT_SAVE_V1_FIXTURE,
   LEGACY_CAMPAIGN_V1_FIXTURE,
 } from './__fixtures__/persistenceFixtures';
@@ -673,6 +674,69 @@ describe('PersistenceSystem campaign unlocks', () => {
     expect(system.campaignUnlocks().records['E1M1:orientation']).toMatchObject({ completions: 1, bestTime: 140, bestGrade: 'C' });
   });
 
+  it('requires every mastery condition in one run instead of combining complementary personal bests', () => {
+    const storage = new MemoryStorage();
+    const system = makeSystem(storage, [100, 200, 300]);
+    system.completeMap('E1M1', {
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 150, parSeconds: 200, score: 6_000, bestChain: 6,
+      killsPercent: 100, itemsPercent: 60, secretsPercent: 100, grade: 'S',
+    });
+    system.completeMap('E1M1', {
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 160, parSeconds: 200, score: 5_500, bestChain: 5,
+      killsPercent: 80, itemsPercent: 100, secretsPercent: 100, grade: 'S',
+    });
+
+    const synthesized = system.campaignUnlocks().records['E1M1:field-adjuster'];
+    expect(synthesized).toMatchObject({
+      bestKillsPercent: 100,
+      bestItemsPercent: 100,
+      bestSecretsPercent: 100,
+      bestGrade: 'S',
+      parBeaten: true,
+    });
+    expect(synthesized).not.toHaveProperty('masteryProof');
+
+    system.completeMap('E1M1', {
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 140, parSeconds: 200, score: 7_000, bestChain: 8,
+      killsPercent: 100, itemsPercent: 100, secretsPercent: 100, grade: 'S',
+    });
+    const mastered = makeSystem(storage, [400], 'fresh-tab').campaignUnlocks().records['E1M1:field-adjuster'];
+    expect(mastered.masteryProof).toEqual({
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 140, parSeconds: 200, score: 7_000, bestChain: 8,
+      killsPercent: 100, itemsPercent: 100, secretsPercent: 100, grade: 'S', achievedAt: 300,
+    });
+  });
+
+  it('does not synthesize a mastery proof while reconciling complementary cross-tab records', () => {
+    const firstBranch = new MemoryStorage();
+    const secondBranch = new MemoryStorage();
+    makeSystem(firstBranch, [100], 'tab-a').completeMap('E1M1', {
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 150, parSeconds: 200, score: 6_000, bestChain: 6,
+      killsPercent: 100, itemsPercent: 60, secretsPercent: 100, grade: 'S',
+    });
+    makeSystem(secondBranch, [110], 'tab-b').completeMap('E1M1', {
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 160, parSeconds: 200, score: 5_500, bestChain: 5,
+      killsPercent: 80, itemsPercent: 100, secretsPercent: 100, grade: 'S',
+    });
+
+    const mergedStorage = new MemoryStorage();
+    mergedStorage.setItem('test:campaign', secondBranch.getItem('test:campaign')!);
+    mergedStorage.setItem('test:campaign-recovery', firstBranch.getItem('test:campaign')!);
+    const merged = makeSystem(mergedStorage, [200], 'tab-c').campaignUnlocks().records['E1M1:field-adjuster'];
+
+    expect(merged).toMatchObject({ bestKillsPercent: 100, bestItemsPercent: 100, bestSecretsPercent: 100 });
+    expect(merged).not.toHaveProperty('masteryProof');
+
+    const masteredBranch = new MemoryStorage();
+    makeSystem(masteredBranch, [120], 'tab-mastered').completeMap('E1M1', {
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 140, parSeconds: 200, score: 7_000, bestChain: 8,
+      killsPercent: 100, itemsPercent: 100, secretsPercent: 100, grade: 'S',
+    });
+    mergedStorage.setItem('test:campaign-recovery', masteredBranch.getItem('test:campaign')!);
+    expect(makeSystem(mergedStorage, [300], 'tab-d').campaignUnlocks().records['E1M1:field-adjuster'].masteryProof)
+      .toMatchObject({ achievedAt: 120, elapsed: 140, grade: 'S' });
+  });
+
   it('records secret-map discovery separately from ordinary map order', () => {
     const system = makeSystem(new MemoryStorage(), [100, 200]);
     system.completeMap('E1M8');
@@ -693,18 +757,42 @@ describe('PersistenceSystem campaign unlocks', () => {
     expect(storage.getItem('test:campaign')).toBe(original);
   });
 
-  it('loads the frozen current campaign schema and writes version 2 after legacy progress changes', () => {
+  it('loads the frozen current campaign schema and writes version 3 after legacy progress changes', () => {
     const currentStorage = new MemoryStorage();
-    currentStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V2_FIXTURE));
+    currentStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V3_FIXTURE));
     expect(PERSISTENCE_COMPATIBILITY_POLICY.campaign).toMatchObject({
-      currentVersion: 2,
+      currentVersion: 3,
       oldestSupportedVersion: 1,
     });
     expect(makeSystem(currentStorage).campaignUnlocks()).toMatchObject({
       completedEpisodes: ['first-notice'],
       discoveredSecretMaps: ['E1M9'],
-      records: { 'E1M1:field-adjuster': { bestGrade: 'A', highScore: 5_000 } },
+      records: { 'E1M1:field-adjuster': { bestGrade: 'S', highScore: 5_000, masteryProof: { achievedAt: 1_710_000_000_200 } } },
     });
+
+    const schemaTwoStorage = new MemoryStorage();
+    schemaTwoStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V2_FIXTURE));
+    expect(makeSystem(schemaTwoStorage).campaignUnlocks().records['E1M1:field-adjuster']).not.toHaveProperty('masteryProof');
+
+    const { checksum: _schemaTwoChecksum, ...schemaTwoUnsigned } = CURRENT_CAMPAIGN_V2_FIXTURE;
+    const schemaTwoWithUntrustedProof = {
+      ...schemaTwoUnsigned,
+      progress: {
+        ...schemaTwoUnsigned.progress,
+        records: {
+          ...schemaTwoUnsigned.progress.records,
+          'E1M1:field-adjuster': {
+            ...schemaTwoUnsigned.progress.records['E1M1:field-adjuster'],
+            masteryProof: CURRENT_CAMPAIGN_V3_FIXTURE.progress.records['E1M1:field-adjuster'].masteryProof,
+          },
+        },
+      },
+    };
+    schemaTwoStorage.setItem('test:campaign', JSON.stringify({
+      ...schemaTwoWithUntrustedProof,
+      checksum: checksum(schemaTwoWithUntrustedProof),
+    }));
+    expect(makeSystem(schemaTwoStorage).campaignUnlocks().records['E1M1:field-adjuster']).not.toHaveProperty('masteryProof');
 
     const legacyStorage = new MemoryStorage();
     legacyStorage.setItem('test:campaign', JSON.stringify(LEGACY_CAMPAIGN_V1_FIXTURE));
@@ -712,9 +800,23 @@ describe('PersistenceSystem campaign unlocks', () => {
     expect(JSON.parse(legacyStorage.getItem('test:campaign')!).version).toBe(CAMPAIGN_SCHEMA_VERSION);
   });
 
+  it('adopts a schema-2 versioned recovery without inventing a mastery proof', () => {
+    const storage = new MemoryStorage();
+    storage.setItem('test:campaign', '{protected-future-campaign');
+    storage.setItem('test:campaign-recovery', '{protected-future-recovery');
+    storage.setItem('test:campaign-recovery-v2', JSON.stringify(CURRENT_CAMPAIGN_V2_FIXTURE));
+
+    const restored = makeSystem(storage).campaignUnlocks();
+
+    expect(restored.completedMaps).toEqual(CURRENT_CAMPAIGN_V2_FIXTURE.progress.completedMaps);
+    expect(restored.records['E1M1:field-adjuster']).not.toHaveProperty('masteryProof');
+    expect(storage.getItem('test:campaign-recovery-v2')).toBeNull();
+    expect(JSON.parse(storage.getItem('test:campaign-recovery-v3')!)).toMatchObject({ version: 3 });
+  });
+
   it('accepts unknown current campaign fields and preserves future or corrupt documents untouched', () => {
     const compatibleStorage = new MemoryStorage();
-    const { checksum: _fixtureChecksum, ...fixtureUnsigned } = CURRENT_CAMPAIGN_V2_FIXTURE;
+    const { checksum: _fixtureChecksum, ...fixtureUnsigned } = CURRENT_CAMPAIGN_V3_FIXTURE;
     const compatibleUnsigned = {
       ...fixtureUnsigned,
       extension: { source: 'later-compatible-build' },
@@ -752,10 +854,10 @@ describe('PersistenceSystem campaign unlocks', () => {
 
   it('checkpoints campaign mutations in a bounded recovery record when the canonical is protected', () => {
     vi.useFakeTimers();
-    const { checksum: _checksum, ...currentUnsigned } = CURRENT_CAMPAIGN_V2_FIXTURE;
+    const { checksum: _checksum, ...currentUnsigned } = CURRENT_CAMPAIGN_V3_FIXTURE;
     const futureUnsigned = { ...currentUnsigned, version: CAMPAIGN_SCHEMA_VERSION + 1 };
     const futureRaw = JSON.stringify({ ...futureUnsigned, checksum: checksum(futureUnsigned) });
-    const invalidChecksumRaw = JSON.stringify({ ...CURRENT_CAMPAIGN_V2_FIXTURE, checksum: '00000000' });
+    const invalidChecksumRaw = JSON.stringify({ ...CURRENT_CAMPAIGN_V3_FIXTURE, checksum: '00000000' });
 
     try {
       for (const raw of ['{broken', invalidChecksumRaw, futureRaw]) {
@@ -802,12 +904,12 @@ describe('PersistenceSystem campaign unlocks', () => {
       expect(system.storageStatus().mode).toBe('persistent');
       expect(storage.getItem('test:campaign')).toBe(futureRaw);
       expect(storage.getItem('test:campaign-recovery')).toBe(damagedRecoveryRaw);
-      expect(storage.getItem('test:campaign-recovery-v2')).not.toBeNull();
+      expect(storage.getItem('test:campaign-recovery-v3')).not.toBeNull();
 
       vi.advanceTimersByTime(5_000);
 
       expect(storageKeys(storage, 'test:campaign-mutation:')).toEqual([]);
-      expect(JSON.parse(storage.getItem('test:campaign-recovery-v2')!).appliedMutations).toEqual([]);
+      expect(JSON.parse(storage.getItem('test:campaign-recovery-v3')!).appliedMutations).toEqual([]);
       expect(makeSystem(storage, [400], 'fresh-tab').campaignUnlocks().completedMaps).toEqual(['E1M2', 'E1M3']);
       expect(storage.getItem('test:campaign')).toBe(futureRaw);
       expect(storage.getItem('test:campaign-recovery')).toBe(damagedRecoveryRaw);
@@ -829,13 +931,13 @@ describe('PersistenceSystem campaign unlocks', () => {
       if (transition === 'removed') {
         storage.removeItem('test:campaign');
       } else {
-        storage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V2_FIXTURE));
+        storage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V3_FIXTURE));
       }
 
       const adopted = makeSystem(storage, [200], 'adopting-tab').campaignUnlocks();
       expect(adopted.completedMaps).toContain('E1M2');
       if (transition === 'repaired') {
-        expect(adopted.completedMaps).toEqual(expect.arrayContaining([...CURRENT_CAMPAIGN_V2_FIXTURE.progress.completedMaps]));
+        expect(adopted.completedMaps).toEqual(expect.arrayContaining([...CURRENT_CAMPAIGN_V3_FIXTURE.progress.completedMaps]));
       }
       expect(storage.getItem('test:campaign-recovery')).toBeNull();
       expect(JSON.parse(storage.getItem('test:campaign')!).progress.completedMaps).toContain('E1M2');
@@ -933,7 +1035,7 @@ describe('PersistenceSystem campaign unlocks', () => {
   it.each([
     { target: 'test:campaign', expectedCheckpoint: 'test:campaign-recovery', externalRaw: '{"schema":"red-ledger-campaign","version":999,"primary":"retained"}' },
     { target: 'test:campaign', expectedCheckpoint: 'test:campaign-recovery', externalRaw: '' },
-    { target: 'test:campaign-recovery', expectedCheckpoint: 'test:campaign-recovery-v2', externalRaw: '{"schema":"red-ledger-campaign","version":999,"recovery":"retained"}' },
+    { target: 'test:campaign-recovery', expectedCheckpoint: 'test:campaign-recovery-v3', externalRaw: '{"schema":"red-ledger-campaign","version":999,"recovery":"retained"}' },
   ])('relocates a volatile $target overlay before external bytes can be overwritten', ({ target, expectedCheckpoint, externalRaw }) => {
     vi.useFakeTimers();
     try {
@@ -1017,7 +1119,7 @@ describe('PersistenceSystem campaign unlocks', () => {
       makeSystem(abandonedStorage, [100], 'closed-tab').completeMap('E1M1');
       const journalKey = storageKeys(abandonedStorage, 'test:campaign-mutation:')[0];
       const sharedStorage = new MemoryStorage();
-      sharedStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V2_FIXTURE));
+      sharedStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V3_FIXTURE));
       sharedStorage.setItem(journalKey, abandonedStorage.getItem(journalKey)!);
 
       const reader = makeSystem(sharedStorage, [200], 'reader-tab');

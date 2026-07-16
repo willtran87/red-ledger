@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CAMPAIGN } from '../src/data/campaign';
+import { CAMPAIGN, SECRET_CLUE_PROPS } from '../src/data/campaign';
 import type { MapId, PickupId, SecretRewardCategory, WeaponId } from '../src/data/types';
 import { WEAPONS, type AmmoType } from '../src/game/definitions';
 
@@ -64,6 +64,8 @@ describe('campaign authored-content contracts', () => {
     const clueProps = maps.flatMap((map) => map.secrets.map((secret) => secret.clueProp));
     expect(new Set(clueProps).size).toBeGreaterThanOrEqual(24);
     maps.forEach((map) => {
+      expect(map.secrets.map((secret) => secret.clueProp), `${map.id} explicit clue props`)
+        .toEqual(SECRET_CLUE_PROPS[map.id]);
       expect(new Set(map.secrets.map((secret) => secret.clueProp)).size)
         .toBeGreaterThanOrEqual(Math.min(3, map.secrets.length));
     });
@@ -95,6 +97,47 @@ describe('campaign authored-content contracts', () => {
       });
       if (!rewardActor) failures.push(`${map.id}:${secret.id} is missing its ${rewardId} actor`);
     }));
+    expect(failures).toEqual([]);
+  });
+
+  it('keeps secret weapons concealed and never duplicates a standard-route weapon', () => {
+    const failures: string[] = [];
+    for (const map of Object.values(CAMPAIGN.maps)) {
+      const standardWeapons = new Set(map.actors
+        .filter((actor) => actor.type === 'weapon' && !actor.secret)
+        .map((actor) => actor.weapon));
+      const weaponSecrets = map.secrets.filter((secret) => secret.rewardPlacement.type === 'weapon');
+      for (const secret of weaponSecrets) {
+        if (secret.rewardPlacement.type !== 'weapon') continue;
+        if (standardWeapons.has(secret.rewardPlacement.weapon)) {
+          failures.push(`${map.id}:${secret.id} duplicates standard ${secret.rewardPlacement.weapon}`);
+        }
+      }
+
+      const orphanedSecretWeapons = map.actors
+        .filter((actor) => actor.type === 'weapon' && actor.secret)
+        .filter((actor) => !weaponSecrets.some((secret) => secret.rewardPlacement.type === 'weapon'
+          && secret.rewardPlacement.weapon === actor.weapon
+          && Math.floor(secret.at.x) === Math.floor(actor.x)
+          && Math.floor(secret.at.z) === Math.floor(actor.z)));
+      if (orphanedSecretWeapons.length) failures.push(`${map.id} has ${orphanedSecretWeapons.length} route-placed secret weapons`);
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it('replaces duplicate weapon slots with ammo usable by that map starter route', () => {
+    const failures: string[] = [];
+    for (const map of Object.values(CAMPAIGN.maps)) {
+      const standardWeapons = new Set<WeaponId>(['claim-stamp', 'staple-driver']);
+      map.actors.filter((actor) => actor.type === 'weapon' && !actor.secret)
+        .forEach((actor) => standardWeapons.add(actor.weapon));
+      const usableAmmo = new Set([...standardWeapons].map((weapon) => WEAPONS[weapon].ammo));
+      for (const secret of map.secrets) {
+        if (secret.rewardCategory !== 'ammo' || secret.rewardPlacement.type !== 'pickup') continue;
+        const ammo = ammoForPickup(secret.rewardPlacement.pickup);
+        if (!ammo || !usableAmmo.has(ammo)) failures.push(`${map.id}:${secret.id} offers unusable ${secret.rewardPlacement.pickup}`);
+      }
+    }
     expect(failures).toEqual([]);
   });
 

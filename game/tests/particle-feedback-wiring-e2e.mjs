@@ -99,12 +99,12 @@ const secret = await state();
 assert(secret.message.startsWith('Anomaly confirmed: ') && secret.message !== 'Reveal Secret', `Secret clue prose was overwritten: ${secret.message}`);
 
 await page.evaluate(() => {
-  window.__redLedger.loadMap('E1M2');
-  if (window.__redLedger.teleportToSecretReward('e1m2-secret-3')) throw new Error('Concealed weapon secret was collectible before reveal');
-  if (!window.__redLedger.teleportToTrigger('reveal-secret', 'e1m2-secret-3')) throw new Error('Weapon-secret clue trigger missing');
+  window.__redLedger.loadMap('E2M1');
+  if (window.__redLedger.teleportToSecretReward('e2m1-secret-3')) throw new Error('Concealed weapon secret was collectible before reveal');
+  if (!window.__redLedger.teleportToTrigger('reveal-secret', 'e2m1-secret-3')) throw new Error('Weapon-secret clue trigger missing');
   window.__redLedger.use();
   window.advanceTime(35);
-  if (!window.__redLedger.teleportToSecretReward('e1m2-secret-3')) throw new Error('Revealed Audit Repeater secret was not spawned at its concealed cell');
+  if (!window.__redLedger.teleportToSecretReward('e2m1-secret-3')) throw new Error('Revealed Audit Repeater secret was not spawned at its concealed cell');
   window.advanceTime(250);
   window.advanceTime(250);
   window.advanceTime(250);
@@ -118,6 +118,7 @@ await page.evaluate(() => {
   if (!window.__redLedger.activateActor('regional-director')) throw new Error('Regional Director could not be activated');
   if (!window.__redLedger.teleportNearActor('regional-director', 20)) throw new Error('Regional Director sightline missing');
 });
+const summonBaseline = await state();
 let summon;
 for (let index = 0; index < 180; index += 1) {
   await page.evaluate(() => window.advanceTime(40));
@@ -127,6 +128,8 @@ for (let index = 0; index < 180; index += 1) {
   break;
 }
 assert(summon, 'Enemy summon never produced its threat-semantic arrival cue');
+assert(summon.tally.totalKills === summonBaseline.tally.totalKills,
+  `Dynamic summons changed the authored kill denominator (${summonBaseline.tally.totalKills} -> ${summon.tally.totalKills})`);
 assert(summon.combatEffects.particles.byKind.toner > 0, 'Enemy summon omitted toner threat material');
 assert(summon.combatEffects.particles.byKind.approval === 0, 'Enemy summon retained reward-like approval particles');
 

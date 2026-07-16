@@ -14,6 +14,7 @@ import {
   DEMO_SCHEMA_VERSION,
   PERSISTENCE_CONFLICT_EVENT,
   PERSISTENCE_DEGRADED_EVENT,
+  hasMasteryProof,
   type CampaignUnlocks,
   type MapPerformance,
   type MapRecord,
@@ -121,14 +122,16 @@ export const masteryPresentation = (mapId: MapId, record?: MapRecord, current?: 
   ].filter(({ value }) => value < 100).sort((left, right) =>
     (100 - right.value) * right.weight - (100 - left.value) * left.weight);
   const missedPar = !record.parBeaten;
-  const complete = !gaps.length && record.parBeaten && record.bestGrade === 'S';
+  const complete = hasMasteryProof(record);
   const target = missedPar
     ? `Retry goal: Beat par ${formatTime(map.parSeconds)}`
     : gaps.length
       ? `Retry goal: ${gaps[0].label} (${gaps[0].value}%)`
       : record.bestGrade !== 'S'
         ? `Retry goal: Raise grade ${record.bestGrade}`
-        : 'Full mastery achieved';
+        : complete
+          ? 'Full mastery achieved'
+          : 'Retry goal: Complete every goal in one run';
   const comparison = current
     ? current.elapsed <= record.bestTime
       ? `Current ${formatTime(current.elapsed)} | PB matched | ${current.score} pts`
@@ -277,6 +280,7 @@ export class UIController {
   private lastInteractionSignature?: string;
   private lastPortraitFile = '';
   private audioReadyRequested = false;
+  private entryPreparationToken = 0;
 
   constructor(readonly game: GameEngine) {
     window.addEventListener(PERSISTENCE_DEGRADED_EVENT, () => this.showRuntimeWarning(
@@ -515,7 +519,7 @@ export class UIController {
     });
     $('#intermission-menu').addEventListener('click', () => {
       this.game.audio.stopMusic();
-      this.game.mode = 'menu';
+      this.game.returnToMenu();
       this.updateEpisodeLocks();
       this.updateContinue();
       this.showScreen('menu');
@@ -534,7 +538,7 @@ export class UIController {
     $('#enter-file').addEventListener('click', () => this.enterReadyState());
     $('#epilogue-menu').addEventListener('click', () => {
       this.game.audio.stopMusic();
-      this.game.mode = 'menu';
+      this.game.returnToMenu();
       this.updateEpisodeLocks();
       this.updateContinue();
       this.showScreen('menu');
@@ -912,8 +916,7 @@ export class UIController {
     });
     const pars = records.filter((record) => record.parBeaten).length;
     const elite = records.filter((record) => record.bestGrade === 'S' || record.bestGrade === 'A').length;
-    const mastered = records.filter((record) => record.parBeaten
-      && record.bestKillsPercent === 100 && record.bestItemsPercent === 100 && record.bestSecretsPercent === 100).length;
+    const mastered = records.filter(hasMasteryProof).length;
     if (episodeIndex === undefined) {
       return `Campaign ${records.length}/${maps.length} clear | ${progress.completedEpisodes.length}/${CAMPAIGN.episodes.length} episodes | ${pars} par | ${elite} A+ | ${mastered} mastered`;
     }
@@ -1214,16 +1217,35 @@ export class UIController {
   }
 
   private prepareGameEntry(onEntered?: () => void): void {
+    const preparationToken = ++this.entryPreparationToken;
     this.buildEntryBriefing();
     this.game.pause();
     this.entryContinuation = onEntered;
     this.hideScreens();
-    $('#ready-overlay').toggleAttribute('hidden', false);
-    $<HTMLButtonElement>('#enter-file').textContent = 'Enter File';
-    $<HTMLButtonElement>('#enter-file').focus();
+    const overlay = $('#ready-overlay');
+    const enter = $<HTMLButtonElement>('#enter-file');
+    overlay.toggleAttribute('hidden', false);
+    overlay.setAttribute('aria-busy', 'true');
+    enter.disabled = true;
+    enter.textContent = 'Preparing File...';
+    void (async () => {
+      try {
+        await this.game.assets.waitForTextures();
+      } catch {
+        this.showRuntimeWarning('Visual preparation failed. Safe placeholder art is in use; reload when the connection is stable.');
+      } finally {
+        if (preparationToken === this.entryPreparationToken && !overlay.hasAttribute('hidden')) {
+          overlay.removeAttribute('aria-busy');
+          enter.disabled = false;
+          enter.textContent = 'Enter File';
+          enter.focus();
+        }
+      }
+    })();
   }
 
   private enterReadyState(): void {
+    if ($<HTMLButtonElement>('#enter-file').disabled) return;
     this.resumeGameplay(this.entryContinuation);
   }
 
@@ -1232,6 +1254,7 @@ export class UIController {
     const resume = () => {
       const continuation = this.entryContinuation;
       this.entryContinuation = undefined;
+      this.entryPreparationToken += 1;
       $('#ready-overlay').toggleAttribute('hidden', true);
       this.hideScreens();
       this.game.resume();
@@ -1248,8 +1271,11 @@ export class UIController {
         this.buildEntryBriefing();
         this.hideScreens();
         $('#ready-overlay').toggleAttribute('hidden', false);
-        $<HTMLButtonElement>('#enter-file').textContent = 'Resume File';
-        $<HTMLButtonElement>('#enter-file').focus();
+        const enter = $<HTMLButtonElement>('#enter-file');
+        $('#ready-overlay').removeAttribute('aria-busy');
+        enter.disabled = false;
+        enter.textContent = 'Resume File';
+        enter.focus();
       }
     };
     let settled = false;
@@ -2193,14 +2219,14 @@ export class UIController {
   private confirmMainMenu(): void {
     this.confirm('Return to main menu?', 'Unsaved progress since the last save will be lost.', 'Main Menu', () => {
       this.game.audio.stopMusic();
-      this.game.mode = 'menu';
+      this.game.returnToMenu();
       this.showScreen('menu');
     });
   }
 
   private endSession(): void {
     this.game.audio.stopMusic();
-    this.game.mode = 'menu';
+    this.game.returnToMenu();
     this.showScreen('session-ended');
     window.close();
   }

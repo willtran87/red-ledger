@@ -1,9 +1,12 @@
 import './style.css';
 import { GameEngine } from './game/GameEngine';
+import { isPlaytestFragment } from './game/PlaytestRecorder';
+import { installPlaytestTools } from './game/PlaytestTools';
 import { UIController } from './game/UIController';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
 if (!canvas) throw new Error('Game canvas is missing');
+const playtestEnabled = isPlaytestFragment(location.hash);
 
 type FatalContext = 'startup' | 'runtime' | 'graphics';
 
@@ -57,7 +60,7 @@ canvas.addEventListener('webglcontextlost', (event) => {
 });
 
 try {
-  game = await GameEngine.create(canvas);
+  game = await GameEngine.create(canvas, { playtestReadOnly: playtestEnabled });
 } catch (error) {
   showFatalError(error);
 }
@@ -65,6 +68,14 @@ if (game) initializeGame(game);
 
 function initializeGame(activeGame: GameEngine): void {
   new UIController(activeGame);
+  if (playtestEnabled) {
+    const playtest = installPlaytestTools(activeGame, activeGame.renderer.domElement);
+    const updateInterface = activeGame.onChange;
+    activeGame.onChange = (snapshot) => {
+      updateInterface?.(snapshot);
+      playtest.observeSnapshot(snapshot);
+    };
+  }
   document.querySelector<HTMLElement>('#bootstrap-status')?.toggleAttribute('hidden', true);
   document.querySelector<HTMLElement>('#game-shell')?.setAttribute('aria-busy', 'false');
   window.render_game_to_text = () => activeGame.renderText();

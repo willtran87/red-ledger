@@ -14,6 +14,19 @@ const record = (mapId: string, overrides: Partial<MapRecord> = {}): MapRecord =>
   bestSecretsPercent: 100,
   bestGrade: 'S',
   parBeaten: true,
+  masteryProof: {
+    mapId,
+    difficulty: 'field-adjuster',
+    elapsed: 90,
+    parSeconds: 120,
+    score: 8000,
+    bestChain: 6,
+    killsPercent: 100,
+    itemsPercent: 100,
+    secretsPercent: 100,
+    grade: 'S',
+    achievedAt: 1,
+  },
   achievedAt: 1,
   ...overrides,
 });
@@ -55,10 +68,23 @@ describe('derived campaign milestones', () => {
     expect(milestones.find((milestone) => milestone.id === 'chain-ten')?.progress).toBe('x10/x10');
   });
 
+  it('does not award file or episode mastery from complementary personal bests without a single-run proof', () => {
+    const records = Object.fromEntries(
+      Array.from({ length: 8 }, (_, index) => {
+        const mapId = `E1M${index + 1}`;
+        return [`${mapId}:field-adjuster`, record(mapId, { masteryProof: undefined })];
+      }),
+    );
+    const milestones = deriveMilestones(campaign({ records }));
+
+    expect(milestones.find((milestone) => milestone.id === 'first-mastery')).toMatchObject({ earned: false, current: 0 });
+    expect(milestones.find((milestone) => milestone.id === 'episode-mastery')).toMatchObject({ earned: false, current: 0 });
+  });
+
   it('features milestones relevant to the just-completed file and chooses the closest honest next target', () => {
     const progress = campaign({
       completedMaps: ['E1M1'],
-      records: { 'E1M1:field-adjuster': record('E1M1', { completions: 2, bestChain: 6, bestGrade: 'A' }) },
+      records: { 'E1M1:field-adjuster': record('E1M1', { completions: 2, bestChain: 6, bestGrade: 'A', masteryProof: undefined }) },
     });
     const highlights = milestoneHighlights(deriveMilestones(progress), progress, 'field-adjuster', 'E1M1');
 

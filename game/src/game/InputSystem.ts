@@ -112,6 +112,16 @@ export function composeLookInput(sample: LookInputSample, preferences: InputPref
   };
 }
 
+export function applyClassicLookRestrictions(
+  look: Readonly<{ deltaX: number; deltaY: number }>,
+  classicInput: boolean,
+): { deltaX: number; deltaY: number } {
+  return {
+    deltaX: look.deltaX,
+    deltaY: classicInput ? 0 : look.deltaY,
+  };
+}
+
 export function touchStickVector(
   clientX: number,
   clientY: number,

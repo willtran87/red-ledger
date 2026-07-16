@@ -26,6 +26,19 @@ const mapRecord = (overrides: Partial<MapRecord> = {}): MapRecord => ({
   bestSecretsPercent: 100,
   bestGrade: 'S',
   parBeaten: true,
+  masteryProof: {
+    mapId: 'E1M1',
+    difficulty: 'field-adjuster',
+    elapsed: 120,
+    parSeconds: 180,
+    score: 9000,
+    bestChain: 8,
+    killsPercent: 100,
+    itemsPercent: 100,
+    secretsPercent: 100,
+    grade: 'S',
+    achievedAt: 1,
+  },
   achievedAt: 1,
   ...overrides,
 });
@@ -95,13 +108,20 @@ describe('persistent mastery presentation', () => {
   it('does not hide a persistent record gap behind a perfect current tally', () => {
     const presentation = masteryPresentation(
       'E1M1',
-      mapRecord({ bestKillsPercent: 55, bestGrade: 'A' }),
+      mapRecord({ bestKillsPercent: 55, bestGrade: 'A', masteryProof: undefined }),
       mapPerformance({ killsPercent: 100, itemsPercent: 100, secretsPercent: 100, grade: 'S' }),
     );
 
     expect(presentation.complete).toBe(false);
     expect(presentation.target).toBe('Retry goal: Close every threat (55%)');
     expect(presentation.metrics[0]).toBe('Threats 100% / PB 55%');
+  });
+
+  it('asks for one complete run when personal bests cover every goal without a mastery proof', () => {
+    const presentation = masteryPresentation('E1M1', mapRecord({ masteryProof: undefined }));
+
+    expect(presentation.complete).toBe(false);
+    expect(presentation.target).toBe('Retry goal: Complete every goal in one run');
   });
 });
 

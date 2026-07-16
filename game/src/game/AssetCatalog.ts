@@ -13,10 +13,22 @@ interface ActorEntry { states: Record<string, ActorState> }
 
 export const ASSET_DEGRADED_EVENT = 'red-ledger-asset-degraded';
 export const ASSET_CATALOG_TIMEOUT_MS = 12_000;
+export const ASSET_TEXTURE_TIMEOUT_MS = 8_000;
 
 export interface AssetCatalogStatus {
   readonly mode: 'complete' | 'placeholder-fallback';
   readonly failedUrls: readonly string[];
+  readonly pendingCount: number;
+}
+
+interface PendingTexture {
+  readonly key: string;
+  readonly url: string;
+  readonly texture: Texture;
+  readonly repeat: boolean;
+  readonly promise: Promise<void>;
+  resolve(): void;
+  settled: boolean;
 }
 
 export function runtimeUrl(path: string): string {
@@ -38,6 +50,7 @@ export class AssetCatalog {
   readonly loader = new TextureLoader();
   readonly textures = new Map<string, Texture>();
   private readonly failedUrls = new Set<string>();
+  private readonly pendingTextures = new Map<string, PendingTexture>();
   private fallbackImage?: HTMLCanvasElement;
 
   constructor(readonly data: RuntimeCatalog) {}
@@ -68,31 +81,77 @@ export class AssetCatalog {
     const key = `${url}|${repeat}`;
     const cached = this.textures.get(key);
     if (cached) return cached;
-    let texture: Texture;
-    texture = this.loader.load(runtimeUrl(url), undefined, undefined, () => {
-      texture.image = this.placeholderImage();
-      this.configureTexture(texture, repeat);
-      texture.needsUpdate = true;
-      this.failedUrls.add(url);
-      if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
-        window.dispatchEvent(new CustomEvent(ASSET_DEGRADED_EVENT, { detail: { url } }));
+    let resolve!: () => void;
+    const promise = new Promise<void>((complete) => { resolve = complete; });
+    let texture!: Texture;
+    let completedBeforeRegistration: boolean | undefined;
+    const settle = (failed: boolean): void => {
+      const pending = this.pendingTextures.get(key);
+      if (!pending) {
+        completedBeforeRegistration = failed;
+        return;
       }
-    });
+      if (pending.settled) return;
+      pending.settled = true;
+      if (failed) this.degradeTexture(pending);
+      this.pendingTextures.delete(key);
+      pending.resolve();
+    };
+    texture = this.loader.load(runtimeUrl(url), () => settle(false), undefined, () => settle(true));
     this.configureTexture(texture, repeat);
     this.textures.set(key, texture);
+    this.pendingTextures.set(key, { key, url, texture, repeat, promise, resolve, settled: false });
+    if (completedBeforeRegistration !== undefined) settle(completedBeforeRegistration);
     return texture;
+  }
+
+  async waitForTextures(timeoutMs = ASSET_TEXTURE_TIMEOUT_MS): Promise<AssetCatalogStatus> {
+    const pending = [...this.pendingTextures.values()];
+    if (!pending.length) return this.status();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      Promise.all(pending.map((entry) => entry.promise)),
+      new Promise<void>((resolve) => {
+        timeout = setTimeout(resolve, Math.max(0, timeoutMs));
+      }),
+    ]);
+    if (timeout !== undefined) clearTimeout(timeout);
+    pending.filter((entry) => !entry.settled).forEach((entry) => {
+      entry.settled = true;
+      this.degradeTexture(entry);
+      this.pendingTextures.delete(entry.key);
+      entry.resolve();
+    });
+    return this.status();
   }
 
   status(): AssetCatalogStatus {
     return {
       mode: this.failedUrls.size ? 'placeholder-fallback' : 'complete',
       failedUrls: [...this.failedUrls],
+      pendingCount: this.pendingTextures.size,
     };
   }
 
   disposeTextures(): void {
+    this.pendingTextures.forEach((entry) => {
+      entry.settled = true;
+      entry.resolve();
+    });
+    this.pendingTextures.clear();
     this.textures.forEach((texture) => texture.dispose());
     this.textures.clear();
+  }
+
+  private degradeTexture(entry: PendingTexture): void {
+    entry.texture.image = this.placeholderImage();
+    this.configureTexture(entry.texture, entry.repeat);
+    entry.texture.needsUpdate = true;
+    const firstFailure = !this.failedUrls.has(entry.url);
+    this.failedUrls.add(entry.url);
+    if (firstFailure && typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(ASSET_DEGRADED_EVENT, { detail: { url: entry.url } }));
+    }
   }
 
   private configureTexture(texture: Texture, repeat: boolean): void {

@@ -7,14 +7,29 @@
     <meta name="description" content="A retro first-person action campaign through a surreal claims facility." />
     <link rel="icon" type="image/png" href="./public_runtime/ui/title-screen.png" />
     <title>Red Ledger</title>
-    <script type="module" crossorigin src="./assets/index-CaElIiws.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DhOn4lwA.css">
+    <script type="module" crossorigin src="./assets/index-DpTO4A4_.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Dm5icapR.css">
   </head>
   <body>
     <main id="game-shell" aria-busy="true">
       <canvas id="game-canvas" aria-label="Red Ledger game view"></canvas>
       <div id="bootstrap-status" role="status"><strong>RED LEDGER</strong><span>Opening records...</span></div>
       <div id="runtime-warning" role="status" aria-live="polite" hidden></div>
+      <aside id="playtest-tools" aria-label="Local playtest tools" hidden>
+        <strong>QA</strong>
+        <label>Map
+          <select id="playtest-map">
+            <option value="E1M1">E1M1</option>
+            <option value="E2M8">E2M8</option>
+            <option value="E3M8">E3M8</option>
+          </select>
+        </label>
+        <button id="playtest-stage">Stage</button>
+        <button id="playtest-preview">Preview</button>
+        <button id="playtest-export">Export</button>
+        <button id="playtest-clear">Clear</button>
+        <span id="playtest-status" role="status" aria-live="polite"></span>
+      </aside>
       <section id="menu" class="screen active" aria-label="Main menu">
         <h1 class="game-title">RED LEDGER</h1>
         <img class="title-art" src="./public_runtime/ui/title-screen.png" alt="Figure entering a damaged records facility" />
@@ -251,6 +266,13 @@
           <button id="confirm-cancel">Cancel</button>
           <button id="confirm-accept">Confirm</button>
         </div>
+      </dialog>
+      <dialog id="playtest-report-dialog" aria-labelledby="playtest-report-title">
+        <header>
+          <h2 id="playtest-report-title">Session Report</h2>
+          <button id="playtest-report-close" aria-label="Close session report">Close</button>
+        </header>
+        <pre id="playtest-report-output" tabindex="0"></pre>
       </dialog>
       <section id="fatal-error" class="screen compact" role="alert" aria-label="Game could not start">
         <h1>Unable to Start</h1>

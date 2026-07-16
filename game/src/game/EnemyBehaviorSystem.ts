@@ -97,6 +97,8 @@ const FORENSIC_RETARGET_PERIOD = 2.4;
 const FORENSIC_RETARGET_DELAY = .32;
 const FORENSIC_CLOSE_REVEAL_RANGE = 2.5;
 
+export const REGIONAL_DIRECTOR_SUMMON_CAPS = { live: 4, total: 8 } as const;
+
 const stableHashUnit = (value: string): number => {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
@@ -303,6 +305,8 @@ export interface SummonAttack extends AttackBase {
   enemyId: EnemyId;
   count: number;
   radius: number;
+  liveCap: number;
+  totalCap: number;
 }
 
 export type AttackSpec = HitscanAttack | MeleeAttack | ProjectileAttack | HazardAttack | ResurrectAttack | SummonAttack;
@@ -393,6 +397,39 @@ export interface HazardState {
   armed: boolean;
 }
 
+export interface SummonOwnerState {
+  ownerUid: string;
+  actorUids: string[];
+  total: number;
+}
+
+export const planLegacyRegionalDirectorSummonRestore = (
+  actors: readonly {
+    readonly uid: string;
+    readonly kind?: 'enemy' | 'boss';
+    readonly id?: HostileId;
+    readonly dead: boolean;
+  }[],
+  persistedOwners: readonly SummonOwnerState[] | undefined,
+): SummonOwnerState | undefined => {
+  if (persistedOwners !== undefined) return undefined;
+  const owner = actors.find((actor) => actor.kind === 'boss' && actor.id === 'regional-director');
+  if (!owner) return undefined;
+  const candidates = actors
+    .filter((actor) => actor.kind === 'enemy'
+      && actor.id === 'desk-warden'
+      && actor.uid.startsWith('summoned-desk-warden-'))
+    .sort((left, right) => left.uid.localeCompare(right.uid));
+  if (candidates.length === 0) return undefined;
+  const live = candidates.filter((actor) => !actor.dead).slice(0, REGIONAL_DIRECTOR_SUMMON_CAPS.live);
+  const dead = candidates.filter((actor) => actor.dead).slice(0, REGIONAL_DIRECTOR_SUMMON_CAPS.total - live.length);
+  return {
+    ownerUid: owner.uid,
+    actorUids: [...live, ...dead].map((actor) => actor.uid),
+    total: candidates.length,
+  };
+};
+
 export interface EnemyBehaviorSnapshot {
   version: 1;
   elapsed: number;
@@ -400,6 +437,7 @@ export interface EnemyBehaviorSnapshot {
   actors: ActorBehaviorState[];
   projectiles: ProjectileState[];
   hazards: HazardState[];
+  summonOwners?: SummonOwnerState[];
   pendingSounds?: PendingSound[];
   pendingDamage?: Array<{ targetUid: string; sourceUid: string; amount: number }>;
   rngState?: number;
@@ -454,12 +492,25 @@ export const reconcileEnemyBehaviorSnapshot = (
     const targetUid = remapReference(pending.targetUid);
     return sourceUid && targetUid ? [{ ...pending, sourceUid, targetUid }] : [];
   });
+  const summonOwners = snapshot.summonOwners?.flatMap((owner) => {
+    const ownerUid = remapReference(owner.ownerUid);
+    if (!ownerUid || ownerUid === 'player') return [];
+    return [{
+      ownerUid,
+      actorUids: owner.actorUids.flatMap((uid) => {
+        const runtimeUid = remapReference(uid);
+        return runtimeUid && runtimeUid !== 'player' ? [runtimeUid] : [];
+      }),
+      total: owner.total,
+    }];
+  });
 
   return {
     ...snapshot,
     actors: compatibleStates,
     projectiles,
     hazards,
+    summonOwners,
     pendingSounds,
     pendingDamage,
   };
@@ -489,7 +540,7 @@ export type BehaviorEvent =
   | { type: 'hazard-armed'; hazardId: string }
   | { type: 'remove-hazard'; hazardId: string }
   | { type: 'resurrect'; actorUid: string; targetUid: string; health: number; redacted: true }
-  | { type: 'summon'; actorUid: string; enemyId: EnemyId; positions: BehaviorVector[] }
+  | { type: 'summon'; actorUid: string; enemyId: EnemyId; positions: BehaviorVector[]; actorUids: string[] }
   | { type: 'boss-phase'; actorUid: string; bossId: BossId; phaseIndex: number; phaseId: string }
   | { type: 'boss-mechanism'; actorUid: string; bossId: BossId; mechanism: 'open-add-shutters' | 'disable-left-emitter' | 'disable-right-emitter' | 'sink-cover' | 'arena-switch-window' | 'open-binding-gate' | 'expose-core' | 'spawn-wave'; index?: number };
 
@@ -633,7 +684,10 @@ const regionalDirector = baseProfile('regional-director',
   { kind: 'strafe', speed: 1.4, preferredRange: 18, retreatRange: 8, strafeWeight: .32 },
   [
     { id: 'response-canister', kind: 'projectile', range: 28, cooldown: .72, requiresLineOfSight: true, projectile: projectile('response-canister', 11, 28, 'impact', { radius: .34, impactHazard: hazard('canister-fire', 1.8, 7, 'fire', 3.5, .1, .7) }), pattern: { kind: 'spread', count: 2, spread: .12 } },
-    { id: 'authority-summons', kind: 'summon', range: 30, cooldown: 4.5, enemyId: 'desk-warden', count: 2, radius: 3.2 },
+    {
+      id: 'authority-summons', kind: 'summon', range: 30, cooldown: 4.5, enemyId: 'desk-warden', count: 2, radius: 3.2,
+      liveCap: REGIONAL_DIRECTOR_SUMMON_CAPS.live, totalCap: REGIONAL_DIRECTOR_SUMMON_CAPS.total,
+    },
     { id: 'executive-volley', kind: 'projectile', range: 30, cooldown: .62, projectile: projectile('response-canister', 13, 30, 'impact', { impactHazard: hazard('canister-fire', 2, 8, 'fire', 4, .1, .6) }), pattern: { kind: 'radial', count: 8 } },
   ],
   { phases: [
@@ -759,6 +813,7 @@ export class EnemyBehaviorSystem {
   private readonly profiles: Readonly<Record<HostileId, BehaviorProfile>>;
   private pendingSounds: PendingSound[] = [];
   private readonly pendingDamage = new Map<string, { sourceUid: string; amount: number }>();
+  private readonly summonOwners = new Map<string, SummonOwnerState>();
 
   constructor(options: {
     rng?: RandomSource;
@@ -868,6 +923,11 @@ export class EnemyBehaviorSystem {
       actors: [...this.actorStates.values()].sort((a, b) => a.uid.localeCompare(b.uid)).map(cloneActorState),
       projectiles: this.projectiles.map(cloneProjectile),
       hazards: this.hazards.map(cloneHazard),
+      summonOwners: [...this.summonOwners.values()].sort((a, b) => a.ownerUid.localeCompare(b.ownerUid)).map((owner) => ({
+        ownerUid: owner.ownerUid,
+        actorUids: [...owner.actorUids].sort(),
+        total: owner.total,
+      })),
       pendingSounds: this.pendingSounds.map((sound) => ({ ...sound, position: copyVector(sound.position) })),
       pendingDamage: [...this.pendingDamage.entries()].sort(([a], [b]) => a.localeCompare(b))
         .map(([targetUid, pending]) => ({ targetUid, ...pending })),
@@ -890,6 +950,12 @@ export class EnemyBehaviorSystem {
     })));
     this.projectiles = snapshot.projectiles.map(cloneProjectile);
     this.hazards = snapshot.hazards.map(cloneHazard);
+    this.summonOwners.clear();
+    (snapshot.summonOwners ?? []).forEach((owner) => this.summonOwners.set(owner.ownerUid, {
+      ownerUid: owner.ownerUid,
+      actorUids: [...new Set(owner.actorUids)],
+      total: Math.max(owner.total, owner.actorUids.length),
+    }));
     this.pendingSounds = (snapshot.pendingSounds ?? []).map((sound) => ({ ...sound, position: copyVector(sound.position) }));
     this.pendingDamage.clear();
     (snapshot.pendingDamage ?? []).forEach(({ targetUid, sourceUid, amount }) => this.pendingDamage.set(targetUid, { sourceUid, amount }));
@@ -902,6 +968,7 @@ export class EnemyBehaviorSystem {
     this.actorStates.clear();
     this.projectiles = [];
     this.hazards = [];
+    this.summonOwners.clear();
     this.pendingSounds = [];
     this.pendingDamage.clear();
   }
@@ -1160,6 +1227,7 @@ export class EnemyBehaviorSystem {
       if (distance > attack.range || distance < (attack.minRange ?? 0)) return false;
       if (attack.requiresLineOfSight && !lineOfSight) return false;
       if (attack.kind === 'resurrect') return this.findResurrectionTarget(actor, actors, attack) !== undefined;
+      if (attack.kind === 'summon') return this.remainingSummonCapacity(actor.uid, attack, actors) > 0;
       return true;
     });
     if (!eligible.length) return;
@@ -1209,7 +1277,7 @@ export class EnemyBehaviorSystem {
       case 'hazard':
       case 'prediction': attackEvent.resolved = this.executeHazard(actor, target, state, attack, world, events); break;
       case 'resurrect': this.executeResurrection(actor, actors, attack, events); break;
-      case 'summon': this.executeSummon(actor, attack, events); break;
+      case 'summon': attackEvent.resolved = this.executeSummon(actor, actors, attack, events); break;
     }
   }
 
@@ -1356,17 +1424,59 @@ export class EnemyBehaviorSystem {
     events.push({ type: 'resurrect', actorUid: actor.uid, targetUid: target.uid, health: Math.max(1, Math.round(target.maxHealth * attack.healthFraction)), redacted: true });
   }
 
-  private executeSummon(actor: BehaviorActor, attack: SummonAttack, events: BehaviorEvent[]): void {
+  private remainingSummonCapacity(ownerUid: string, attack: SummonAttack, actors: readonly BehaviorActor[]): number {
+    const owner = this.summonOwners.get(ownerUid) ?? this.inferLegacySummonOwner(ownerUid, attack, actors);
+    if (!owner) return Math.min(attack.liveCap, attack.totalCap);
+    const liveActorUids = new Set(actors.filter((candidate) => !candidate.dead).map((candidate) => candidate.uid));
+    const live = owner.actorUids.filter((uid) => liveActorUids.has(uid)).length;
+    return Math.max(0, Math.min(attack.liveCap - live, attack.totalCap - owner.total));
+  }
+
+  private inferLegacySummonOwner(
+    ownerUid: string,
+    attack: SummonAttack,
+    actors: readonly BehaviorActor[],
+  ): SummonOwnerState | undefined {
+    const claimed = new Set([...this.summonOwners.values()].flatMap((owner) => owner.actorUids));
+    const actorUids = actors
+      .filter((candidate) => candidate.kind === 'enemy'
+        && candidate.id === attack.enemyId
+        && candidate.uid.startsWith(`summoned-${attack.enemyId}-`)
+        && !claimed.has(candidate.uid))
+      .map((candidate) => candidate.uid);
+    if (actorUids.length === 0) return undefined;
+    const owner = { ownerUid, actorUids, total: actorUids.length };
+    this.summonOwners.set(ownerUid, owner);
+    return owner;
+  }
+
+  private executeSummon(
+    actor: BehaviorActor,
+    actors: readonly BehaviorActor[],
+    attack: SummonAttack,
+    events: BehaviorEvent[],
+  ): boolean {
+    const count = Math.min(attack.count, this.remainingSummonCapacity(actor.uid, attack, actors));
+    if (count <= 0) return false;
+    let owner = this.summonOwners.get(actor.uid);
+    if (!owner) {
+      owner = { ownerUid: actor.uid, actorUids: [], total: 0 };
+      this.summonOwners.set(actor.uid, owner);
+    }
     const startAngle = this.random() * Math.PI * 2;
-    const positions = Array.from({ length: attack.count }, (_, index) => {
-      const angle = startAngle + (Math.PI * 2 * index) / attack.count;
+    const positions = Array.from({ length: count }, (_, index) => {
+      const angle = startAngle + (Math.PI * 2 * index) / count;
       return {
         x: actor.position.x + Math.cos(angle) * attack.radius,
         y: actor.position.y,
         z: actor.position.z + Math.sin(angle) * attack.radius,
       };
     });
-    events.push({ type: 'summon', actorUid: actor.uid, enemyId: attack.enemyId, positions });
+    const actorUids = positions.map(() => `summoned-${attack.enemyId}-behavior-${this.nextEntityId++}`);
+    owner.actorUids.push(...actorUids);
+    owner.total += actorUids.length;
+    events.push({ type: 'summon', actorUid: actor.uid, enemyId: attack.enemyId, positions, actorUids });
+    return true;
   }
 
   private updateProjectiles(

@@ -43,6 +43,7 @@ import {
   EnemyBehaviorSystem,
   buildNavigationDistanceField,
   navigationDirectionFromField,
+  planLegacyRegionalDirectorSummonRestore,
   reconcileEnemyBehaviorSnapshot,
   type ActorBehaviorState,
   type BehaviorActor,
@@ -61,11 +62,19 @@ import {
 import {
   DEFAULT_INPUT_PREFERENCES,
   InputSystem,
+  applyClassicLookRestrictions,
   composeLookInput,
   normalizeInputPreferences,
   type InputPreferences,
 } from './InputSystem';
 import { ParticleSystem, type ParticleKind, type ParticlePriority } from './ParticleSystem';
+import {
+  predictiveAngle,
+  predictiveScalar,
+  presentationAlpha,
+  shortestAngleDelta,
+  shouldSnapPresentation,
+} from './PresentationInterpolation';
 import {
   DemoPlayback,
   DemoRecorder,
@@ -90,6 +99,7 @@ import {
   type AmmoDropState,
   type BossMechanismState,
   type BreakableState,
+  type HazardSectorState,
   type LandmarkState,
   type MoverCompletion,
   type RuntimeActor,
@@ -199,13 +209,13 @@ export const resolveLegacyCompletedEncounters = (
 
 export const reconcileRestoredTally = (
   saved: MapTally,
-  actors: readonly Pick<RuntimeActor, 'dead'>[],
+  actors: readonly Pick<RuntimeActor, 'dead' | 'tallyEligible'>[],
   pickups: readonly Pick<RuntimePickup, 'collected' | 'counted'>[],
   discoveredSecrets: number,
   totalSecrets: number,
 ): MapTally => ({
-  kills: actors.filter((actor) => actor.dead).length,
-  totalKills: actors.length,
+  kills: actors.filter((actor) => actor.tallyEligible && actor.dead).length,
+  totalKills: actors.filter((actor) => actor.tallyEligible).length,
   items: pickups.filter((pickup) => pickup.counted && pickup.collected).length,
   totalItems: pickups.filter((pickup) => pickup.counted).length,
   secrets: Math.min(discoveredSecrets, totalSecrets),
@@ -257,7 +267,7 @@ interface SaveData {
     ammo: PlayerState['ammo']; weapons: WeaponId[]; weapon: WeaponId; credentials: Credential[]; floorPlan: boolean; powerups: PlayerState['powerups'];
   };
   actors: Array<{
-    uid: string; kind?: 'enemy' | 'boss'; id?: RuntimeActor['id']; authoredKey?: string; health: number; dead: boolean; scoreEligible?: boolean; phaseLocked: boolean;
+    uid: string; kind?: 'enemy' | 'boss'; id?: RuntimeActor['id']; authoredKey?: string; health: number; dead: boolean; scoreEligible?: boolean; tallyEligible?: boolean; phaseLocked: boolean;
     position: [number, number, number]; awake?: boolean; facing?: number; animationTime?: number; attackFlash?: number; redacted?: boolean;
   }>;
   pickups: Array<{
@@ -271,6 +281,7 @@ interface SaveData {
   mechanisms?: string[];
   unlockedEncounters?: string[];
   hazardsEnabled: boolean;
+  hazardSectors?: HazardSectorState[];
   tally: MapTally;
   momentum?: CombatMomentum;
   rng: number;
@@ -300,6 +311,15 @@ interface PlayerProjectile {
   damage: number;
   radius: number;
   remaining: number;
+}
+
+interface PresentationSnapshot {
+  readonly playerPosition: Vector3;
+  readonly playerYaw: number;
+  readonly playerPitch: number;
+  readonly actorPositions: ReadonlyMap<string, Vector3>;
+  readonly enemyProjectilePositions: ReadonlyMap<string, Vector3>;
+  readonly playerProjectilePositions: ReadonlyMap<string, Vector3>;
 }
 
 interface AnimatedEffect {
@@ -539,6 +559,21 @@ const performanceGrade = (kills: number, items: number, secrets: number, elapsed
   return 'D';
 };
 
+const transientPlaytestRecord = (performance: MapPerformance): MapRecord => ({
+  mapId: performance.mapId,
+  difficulty: performance.difficulty,
+  completions: 1,
+  bestTime: performance.elapsed,
+  highScore: performance.score,
+  bestChain: performance.bestChain,
+  bestKillsPercent: performance.killsPercent,
+  bestItemsPercent: performance.itemsPercent,
+  bestSecretsPercent: performance.secretsPercent,
+  bestGrade: performance.grade,
+  parBeaten: performance.elapsed <= performance.parSeconds,
+  achievedAt: 0,
+});
+
 const WINDUP_VISUALS: Readonly<Record<string, string>> = {
   'staple-burst': 'aim',
   'ember-claims': 'charge',
@@ -613,7 +648,9 @@ const isEnemyBehaviorSnapshot = (value: unknown): value is EnemyBehaviorSnapshot
     && vectors(entry.position) && isFiniteNumber(entry.radius) && typeof entry.sourceUid === 'string'));
   const damage = value.pendingDamage === undefined || (Array.isArray(value.pendingDamage) && value.pendingDamage.every((entry) => isRecord(entry)
     && typeof entry.targetUid === 'string' && typeof entry.sourceUid === 'string' && isFiniteNumber(entry.amount)));
-  return actors && projectiles && hazards && sounds && damage && (value.rngState === undefined || isFiniteNumber(value.rngState));
+  const summonOwners = value.summonOwners === undefined || (Array.isArray(value.summonOwners) && value.summonOwners.every((entry) => isRecord(entry)
+    && typeof entry.ownerUid === 'string' && isStringArray(entry.actorUids) && Number.isSafeInteger(entry.total) && Number(entry.total) >= 0));
+  return actors && projectiles && hazards && sounds && damage && summonOwners && (value.rngState === undefined || isFiniteNumber(value.rngState));
 };
 
 const isSaveData = (value: unknown): value is SaveData => {
@@ -628,6 +665,7 @@ const isSaveData = (value: unknown): value is SaveData => {
   if (!Array.isArray(value.actors) || !value.actors.every((entry) => isRecord(entry) && typeof entry.uid === 'string'
     && isFiniteRecord(entry, ['health']) && typeof entry.dead === 'boolean' && typeof entry.phaseLocked === 'boolean' && isVector3(entry.position)
     && (entry.id === undefined || (typeof entry.id === 'string' && entry.id in ENEMIES))
+    && (entry.tallyEligible === undefined || typeof entry.tallyEligible === 'boolean')
     && (entry.authoredKey === undefined || typeof entry.authoredKey === 'string'))) return false;
   if (!Array.isArray(value.pickups) || !value.pickups.every((entry) => isRecord(entry)
     && typeof entry.uid === 'string'
@@ -642,6 +680,8 @@ const isSaveData = (value: unknown): value is SaveData => {
     || (value.mechanisms !== undefined && !isStringArray(value.mechanisms)) || typeof value.hazardsEnabled !== 'boolean'
     || (value.unlockedEncounters !== undefined && !isStringArray(value.unlockedEncounters))
     || !isFiniteRecord(value.tally, ['kills', 'totalKills', 'items', 'totalItems', 'secrets', 'totalSecrets', 'elapsed']) || !isFiniteNumber(value.rng)) return false;
+  if (value.hazardSectors !== undefined && (!Array.isArray(value.hazardSectors) || !value.hazardSectors.every((entry) =>
+    isRecord(entry) && typeof entry.key === 'string' && typeof entry.enabled === 'boolean'))) return false;
   if (value.momentum !== undefined && !isFiniteRecord(value.momentum, ['chain', 'best', 'score', 'timer'])) return false;
   if (value.enemyBehavior !== undefined && !isEnemyBehaviorSnapshot(value.enemyBehavior)) return false;
   if (value.playerProjectiles !== undefined && (!Array.isArray(value.playerProjectiles) || !value.playerProjectiles.every((entry) => isRecord(entry)
@@ -737,6 +777,7 @@ export class GameEngine {
   private demoTick = 0;
   private activeDemo?: ActiveDemoPlayback;
   private demoReadOnly = false;
+  private playtestReadOnly = false;
   private radialSelecting = false;
   private weaponState: 'ready' | 'lowering' | 'raising' = 'ready';
   private weaponTransition = 0;
@@ -754,8 +795,19 @@ export class GameEngine {
   private lastMapResult?: MapResult;
   private readonly animatedEffects: AnimatedEffect[] = [];
   private readonly semanticCues: SemanticCue[] = [];
+  private previousPresentation?: PresentationSnapshot;
+  private currentPresentation?: PresentationSnapshot;
+  private presentationBlend = 0;
+  private readonly presentedPlayerPosition = new Vector3();
+  private presentedPlayerYaw = 0;
+  private presentedPlayerPitch = 0;
 
-  private constructor(private readonly canvas: HTMLCanvasElement, readonly assets: AssetCatalog) {
+  private constructor(
+    private readonly canvas: HTMLCanvasElement,
+    readonly assets: AssetCatalog,
+    playtestReadOnly = false,
+  ) {
+    this.playtestReadOnly = playtestReadOnly;
     this.renderer = new WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(1);
     this.setRenderScale(1);
@@ -785,8 +837,11 @@ export class GameEngine {
     this.animationFrame = requestAnimationFrame(this.loop);
   }
 
-  static async create(canvas: HTMLCanvasElement): Promise<GameEngine> {
-    return new GameEngine(canvas, await AssetCatalog.load());
+  static async create(
+    canvas: HTMLCanvasElement,
+    options: { readonly playtestReadOnly?: boolean } = {},
+  ): Promise<GameEngine> {
+    return new GameEngine(canvas, await AssetCatalog.load(), options.playtestReadOnly ?? false);
   }
 
   setRenderScale(scale: number): void {
@@ -864,7 +919,7 @@ export class GameEngine {
     this.player.credentials.clear();
     this.tally = {
       kills: 0,
-      totalKills: this.world.actors.length,
+      totalKills: this.world.actors.filter((actor) => actor.tallyEligible).length,
       items: 0,
       totalItems: this.world.pickups.filter((pickup) => pickup.counted).length,
       secrets: 0,
@@ -886,6 +941,8 @@ export class GameEngine {
     ]);
     this.showMessage(`${map.id}: ${map.title}`, 2.8);
     this.updateCamera();
+    this.accumulator = 0;
+    this.resetPresentationHistory();
     this.visibilityRefreshTimer = 0;
     this.world.actors.forEach((actor) => this.updateActorVisual(actor, true));
     this.refreshPickupVisibility();
@@ -925,8 +982,10 @@ export class GameEngine {
     if (this.halted || this.mode !== 'playing') return;
     const ticks = Math.round(Math.min(.25, Math.max(0, seconds)) / STEP);
     for (let tick = 0; tick < ticks; tick += 1) {
+      this.beginPresentationTick();
       if (this.activeDemo) this.advanceDemoPlayback();
       else this.simulate(STEP);
+      this.finishPresentationTick();
     }
     this.render();
   }
@@ -939,13 +998,15 @@ export class GameEngine {
     if (this.mode === 'playing') {
       this.accumulator += elapsed;
       while (this.accumulator >= STEP) {
+        this.beginPresentationTick();
         if (this.activeDemo) this.advanceDemoPlayback();
         else this.simulate(STEP);
+        this.finishPresentationTick();
         this.accumulator -= STEP;
         simulated = true;
       }
     }
-    if (this.mode === 'playing' || simulated) this.render();
+    if (this.mode === 'playing' || simulated) this.render(presentationAlpha(this.accumulator, STEP));
     this.animationFrame = requestAnimationFrame(this.loop);
   }
 
@@ -1036,13 +1097,14 @@ export class GameEngine {
       invertY: this.invertLookY,
       controllerDeadzone: this.controllerDeadzone,
     });
+    const constrainedLook = applyClassicLookRestrictions(lookInput, this.classicInput);
     return {
       forward: (this.input.keys.has('KeyW') || this.input.keys.has('ArrowUp') ? 1 : 0)
         - (this.input.keys.has('KeyS') || this.input.keys.has('ArrowDown') ? 1 : 0) - this.input.touchMove.y - this.input.gamepadMove.y,
       strafe: (this.input.keys.has('KeyD') ? 1 : 0) - (this.input.keys.has('KeyA') ? 1 : 0) + this.input.touchMove.x + this.input.gamepadMove.x,
       turn: this.radialSelecting ? 0 : lookInput.turn,
-      look: this.classicInput ? 0 : lookInput.deltaX,
-      lookVertical: this.classicInput ? 0 : lookInput.deltaY,
+      look: constrainedLook.deltaX,
+      lookVertical: constrainedLook.deltaY,
       fire: this.radialSelecting ? false : this.input.fire,
       use: this.input.consumeUse(),
       walkToggle: this.input.consumeWalkToggle(),
@@ -1807,7 +1869,7 @@ export class GameEngine {
     if (actor.health > 0) return;
     actor.dead = true;
     actor.health = 0;
-    this.tally.kills += 1;
+    if (actor.tallyEligible) this.tally.kills += 1;
     const awardsScore = sourceUid === 'player' && actor.scoreEligible;
     actor.scoreEligible = false;
     if (awardsScore) {
@@ -2109,7 +2171,7 @@ export class GameEngine {
         this.enemyBehavior.markResurrected(target.uid, event.redacted);
         target.sprite.material.color.set(event.redacted ? 0xc93434 : 0xffffff);
         target.sprite.scale.set(ENEMIES[target.id].height, ENEMIES[target.id].height, 1);
-        this.tally.kills = Math.max(0, this.tally.kills - 1);
+        if (target.tallyEligible) this.tally.kills = Math.max(0, this.tally.kills - 1);
         this.showMessage('Closed exposure reopened', 1.2);
         this.emitParticles('smoke', target.position.clone().add(new Vector3(0, .4, 0)), 10);
         this.emitParticles('toner', target.position.clone().add(new Vector3(0, .6, 0)), 8);
@@ -2120,14 +2182,13 @@ export class GameEngine {
         break;
       }
       case 'summon':
-        event.positions.forEach((position) => {
+        event.positions.forEach((position, index) => {
           const point = new Vector3(position.x, 0, position.z);
           if (this.world.isSolid(point, ENEMIES[event.enemyId].radius)) return;
-          this.world.summonEnemy(event.enemyId, point);
+          this.world.summonEnemy(event.enemyId, point, event.actorUids[index]);
           const arrival = point.clone().add(new Vector3(0, .3, 0));
           this.emitParticles('toner', arrival, 5);
           this.playSemanticCue('rejection', arrival);
-          this.tally.totalKills += 1;
         });
         break;
       case 'boss-phase':
@@ -2174,7 +2235,6 @@ export class GameEngine {
             if (!this.world.isSolid(point, ENEMIES[enemyId].radius)) {
               const summoned = this.world.summonEnemy(enemyId, point);
               summoned.awake = true;
-              this.tally.totalKills += 1;
             }
           });
         }
@@ -2881,20 +2941,27 @@ export class GameEngine {
       secretsPercent,
       grade: performanceGrade(killsPercent, itemsPercent, secretsPercent, this.tally.elapsed, this.world.map.parSeconds),
     };
-    const before = this.persistence.campaignUnlocks().records[`${performance.mapId}:${performance.difficulty}`];
-    const progress = this.persistence.completeMap(this.world.map.id, performance, secretRoute ? nextMap : undefined);
-    const record = progress.records[`${performance.mapId}:${performance.difficulty}`];
-    const newBests = before ? [
-      ...(performance.elapsed < before.bestTime ? ['Best time'] : []),
-      ...(performance.score > before.highScore ? ['High score'] : []),
-      ...(performance.bestChain > before.bestChain ? ['Best chain'] : []),
-      ...(performance.killsPercent > before.bestKillsPercent ? ['Threat mastery'] : []),
-      ...(performance.itemsPercent > before.bestItemsPercent ? ['Item mastery'] : []),
-      ...(performance.secretsPercent > before.bestSecretsPercent ? ['Secret mastery'] : []),
-      ...(performance.grade !== before.bestGrade && record.bestGrade === performance.grade ? ['Grade'] : []),
-    ] : ['First clear'];
+    let record: MapRecord;
+    let newBests: string[];
+    if (this.playtestReadOnly) {
+      record = transientPlaytestRecord(performance);
+      newBests = ['Playtest only'];
+    } else {
+      const before = this.persistence.campaignUnlocks().records[`${performance.mapId}:${performance.difficulty}`];
+      const progress = this.persistence.completeMap(this.world.map.id, performance, secretRoute ? nextMap : undefined);
+      record = progress.records[`${performance.mapId}:${performance.difficulty}`];
+      newBests = before ? [
+        ...(performance.elapsed < before.bestTime ? ['Best time'] : []),
+        ...(performance.score > before.highScore ? ['High score'] : []),
+        ...(performance.bestChain > before.bestChain ? ['Best chain'] : []),
+        ...(performance.killsPercent > before.bestKillsPercent ? ['Threat mastery'] : []),
+        ...(performance.itemsPercent > before.bestItemsPercent ? ['Item mastery'] : []),
+        ...(performance.secretsPercent > before.bestSecretsPercent ? ['Secret mastery'] : []),
+        ...(performance.grade !== before.bestGrade && record.bestGrade === performance.grade ? ['Grade'] : []),
+      ] : ['First clear'];
+    }
     this.lastMapResult = { performance, record, completionBonus, newBests, secretRoute };
-    if (this.world.map.index === 8) {
+    if (!this.playtestReadOnly && this.world.map.index === 8) {
       const episode = CAMPAIGN.episodes.find((candidate) => candidate.id === this.world.map.episode);
       const nextEpisode = episode && CAMPAIGN.episodes[episode.number];
       this.persistence.completeEpisode(this.world.map.episode, nextEpisode?.id);
@@ -2952,6 +3019,10 @@ export class GameEngine {
   }
 
   restartFromCheckpoint(): boolean {
+    if (this.playtestReadOnly) {
+      this.loadMap(this.world.map.id, false, false);
+      return true;
+    }
     const checkpoint = this.persistence.listAutosaves()
       .filter((entry) => entry.status === 'valid' && entry.state.mapId === this.world.map.id)
       .sort((left, right) => {
@@ -3031,7 +3102,7 @@ export class GameEngine {
         credentials: [...this.player.credentials], floorPlan: this.player.floorPlan, powerups: { ...this.player.powerups },
       },
       actors: this.world.actors.map((actor) => ({
-        uid: actor.uid, kind: actor.kind, id: actor.id, health: actor.health, dead: actor.dead, scoreEligible: actor.scoreEligible, phaseLocked: actor.phaseLocked,
+        uid: actor.uid, kind: actor.kind, id: actor.id, health: actor.health, dead: actor.dead, scoreEligible: actor.scoreEligible, tallyEligible: actor.tallyEligible, phaseLocked: actor.phaseLocked,
         ...(actor.authoredKey ? { authoredKey: actor.authoredKey } : {}),
         position: actor.position.toArray(), awake: actor.awake, facing: actor.facing, animationTime: actor.animationTime, attackFlash: actor.attackFlash,
         ...((actor as RuntimeActor & { redacted?: boolean }).redacted ? { redacted: true } : {}),
@@ -3055,6 +3126,7 @@ export class GameEngine {
           || this.world.pickups.some((pickup) => pickup.route === encounter.id && !pickup.phaseLocked))
         .map((encounter) => encounter.id),
       hazardsEnabled: this.world.hazardsEnabled,
+      hazardSectors: this.world.serializeHazardSectors(),
       tally: { ...this.tally },
       momentum: { ...this.momentum },
       rng: this.rngState,
@@ -3118,7 +3190,7 @@ export class GameEngine {
   }
 
   private checkpoint(): void {
-    if (this.activeDemo || this.demoReadOnly) return;
+    if (this.activeDemo || this.demoReadOnly || this.playtestReadOnly) return;
     const state = this.createSaveData();
     const metadata = this.saveMetadata();
     this.persistence.autosave(state, metadata);
@@ -3127,13 +3199,13 @@ export class GameEngine {
   }
 
   save(): void {
-    if (!this.world.map || this.activeDemo || this.demoReadOnly) return;
+    if (!this.world.map || this.activeDemo || this.demoReadOnly || this.playtestReadOnly) return;
     this.persistence.quicksave(this.createSaveData(), this.saveMetadata(undefined, true));
     this.audio.uiCue('save');
   }
 
   saveManual(slot: number, name?: string): void {
-    if (!this.world.map || this.activeDemo || this.demoReadOnly) return;
+    if (!this.world.map || this.activeDemo || this.demoReadOnly || this.playtestReadOnly) return;
     this.persistence.saveManual(slot, this.createSaveData(), this.saveMetadata(name, true));
     this.audio.uiCue('save');
   }
@@ -3174,6 +3246,7 @@ export class GameEngine {
   }
 
   deleteManual(slot: number): void {
+    if (this.playtestReadOnly) return;
     this.persistence.clearManual(slot);
   }
 
@@ -3242,9 +3315,18 @@ export class GameEngine {
       this.rngState = save.rng;
       this.world.restoreAmmoDrops(save.ammoDrops ?? []);
       resolveRestoredUnlockedEncounters(this.world.map, save).forEach((id) => this.world.unlockEncounter(id));
+      const legacySummonPlan = planLegacyRegionalDirectorSummonRestore(
+        save.actors,
+        save.enemyBehavior?.summonOwners,
+      );
+      const restoredLegacySummons = new Set(legacySummonPlan?.actorUids ?? []);
       const restoredActorUids = new Set<string>();
       const restoredBehaviorActors: RestoredBehaviorActorIdentity[] = [];
       for (const saved of save.actors) {
+        if (legacySummonPlan
+          && saved.id === 'desk-warden'
+          && isDynamicSummonUid(saved.uid)
+          && !restoredLegacySummons.has(saved.uid)) continue;
         const uidActor = this.world.actors.find((candidate) => candidate.uid === saved.uid);
         let actor = findMatchingRuntimeActorIdentity(saved, this.world.actors);
         if (!actor && saved.kind === 'boss') actor = findUniqueRuntimeActorIdentity(saved, this.world.actors);
@@ -3256,7 +3338,8 @@ export class GameEngine {
         restoredBehaviorActors.push({ savedUid: saved.uid, runtimeUid: actor.uid, id: actor.id });
         actor.health = saved.health;
         actor.dead = saved.dead;
-        actor.scoreEligible = saved.scoreEligible ?? !saved.dead;
+        actor.tallyEligible = !isDynamicSummonUid(actor.uid) && (saved.tallyEligible ?? actor.tallyEligible);
+        actor.scoreEligible = actor.tallyEligible && (saved.scoreEligible ?? !saved.dead);
         actor.phaseLocked = saved.phaseLocked ?? false;
         actor.awake = resolveRestoredActorAwake(saved.awake, actor.phaseLocked);
         actor.facing = saved.facing ?? actor.facing;
@@ -3309,9 +3392,27 @@ export class GameEngine {
       save.visited?.forEach((key) => this.world.visitedTiles.add(key));
       save.triggered?.forEach((key) => this.triggered.add(key));
       this.world.restoreActivatedMechanisms(save.mechanisms ?? []);
-      if (save.hazardsEnabled === false && this.world.hazardsEnabled) this.world.applyTransformation('drain-liquid');
-      if (save.enemyBehavior) {
-        this.enemyBehavior.restore(reconcileEnemyBehaviorSnapshot(save.enemyBehavior, restoredBehaviorActors));
+      this.world.restoreHazardState(save.hazardsEnabled, save.hazardSectors, save.mechanisms ?? []);
+      if (save.enemyBehavior || legacySummonPlan) {
+        let behavior = save.enemyBehavior
+          ? reconcileEnemyBehaviorSnapshot(save.enemyBehavior, restoredBehaviorActors)
+          : this.enemyBehavior.serialize();
+        if (legacySummonPlan) {
+          const restoredIdentities = new Map(restoredBehaviorActors.map((actor) => [actor.savedUid, actor.runtimeUid]));
+          const ownerUid = restoredIdentities.get(legacySummonPlan.ownerUid);
+          behavior = {
+            ...behavior,
+            summonOwners: ownerUid ? [{
+              ownerUid,
+              actorUids: legacySummonPlan.actorUids.flatMap((uid) => {
+                const runtimeUid = restoredIdentities.get(uid);
+                return runtimeUid ? [runtimeUid] : [];
+              }),
+              total: legacySummonPlan.total,
+            }] : [],
+          };
+        }
+        this.enemyBehavior.restore(behavior);
       }
       for (const actor of this.world.actors) {
         const state = this.enemyBehavior.getActorState(actor.uid);
@@ -3361,6 +3462,7 @@ export class GameEngine {
       this.mode = resume ? 'playing' : 'paused';
       this.updateVisionEffects();
       this.updateCamera();
+      this.resetPresentationHistory();
       this.emit();
       return true;
     } catch {
@@ -3571,6 +3673,13 @@ export class GameEngine {
     return { ...progress, completedMaps: progress.completedMaps, completedEpisodes: progress.completedEpisodes };
   }
 
+  setPlaytestReadOnly(enabled: boolean): void { this.playtestReadOnly = enabled; }
+
+  returnToMenu(): void {
+    this.mode = 'menu';
+    this.emit();
+  }
+
   setRadialSelecting(active: boolean): void { this.radialSelecting = active; }
 
   selectWeapon(id: WeaponId): boolean {
@@ -3593,6 +3702,7 @@ export class GameEngine {
   }
 
   private migrateLegacySave(storage: Storage): void {
+    if (this.playtestReadOnly) return;
     if (this.persistence.newestValidContinue()) return;
     let raw: string | null;
     try { raw = storage.getItem(LEGACY_SAVE_KEY); } catch { return; }
@@ -3619,6 +3729,7 @@ export class GameEngine {
     this.player.position.y = this.world.floorHeightAt(this.player.position) + 1.35;
     this.movementParticleDistance = 0;
     this.updateCamera();
+    this.resetPresentationHistory();
     this.world.actors.forEach((actor) => this.updateActorVisual(actor, true));
     this.refreshPickupVisibility();
     this.visibilityRefreshTimer = .1;
@@ -3809,6 +3920,7 @@ export class GameEngine {
     if (!actor.dead) actor.awake = true;
     this.movementParticleDistance = 0;
     this.updateCamera();
+    this.resetPresentationHistory();
     this.world.actors.forEach((candidate) => this.updateActorVisual(candidate, true));
     this.refreshPickupVisibility();
     this.visibilityRefreshTimer = .1;
@@ -3824,6 +3936,7 @@ export class GameEngine {
     this.debugTeleport(point.x, point.z);
     this.player.yaw = Math.atan2(landmark.sprite.position.x - point.x, landmark.sprite.position.z - point.z) + Math.PI + .12;
     this.updateCamera();
+    this.resetPresentationHistory();
     return true;
   }
 
@@ -3909,13 +4022,122 @@ export class GameEngine {
         renderCount: this.renderCount,
         navigationFields: this.hostileNavigationFields.size,
         lineOfSightQueries: this.world.lineOfSightQueryCount,
+        assets: this.assets.status(),
+        presentation: {
+          mode: 'bounded-predictive-interpolation',
+          alpha: +this.presentationBlend.toFixed(3),
+          x: +this.presentedPlayerPosition.x.toFixed(3),
+          y: +this.presentedPlayerPosition.y.toFixed(3),
+          z: +this.presentedPlayerPosition.z.toFixed(3),
+          yaw: +this.presentedPlayerYaw.toFixed(4),
+          pitch: +this.presentedPlayerPitch.toFixed(4),
+        },
       },
     });
   }
 
-  private render(): void {
+  private capturePresentationSnapshot(): PresentationSnapshot {
+    return {
+      playerPosition: this.player.position.clone(),
+      playerYaw: this.player.yaw,
+      playerPitch: this.player.pitch,
+      actorPositions: new Map(this.world.actors
+        .filter((actor) => actor.sprite.visible)
+        .map((actor) => [actor.uid, actor.sprite.position.clone()])),
+      enemyProjectilePositions: new Map([...this.projectileSprites].map(([id, sprite]) => [id, sprite.position.clone()])),
+      playerProjectilePositions: new Map([...this.playerProjectileSprites].map(([id, sprite]) => [id, sprite.position.clone()])),
+    };
+  }
+
+  private resetPresentationHistory(): void {
+    const current = this.capturePresentationSnapshot();
+    this.previousPresentation = current;
+    this.currentPresentation = current;
+    this.presentationBlend = 0;
+    this.presentedPlayerPosition.copy(current.playerPosition);
+    this.presentedPlayerYaw = current.playerYaw;
+    this.presentedPlayerPitch = current.playerPitch;
+  }
+
+  private beginPresentationTick(): void {
+    this.previousPresentation = this.currentPresentation ?? this.capturePresentationSnapshot();
+  }
+
+  private finishPresentationTick(): void {
+    this.currentPresentation = this.capturePresentationSnapshot();
+  }
+
+  private applyPredictedPosition(
+    target: Vector3,
+    previous: Vector3 | undefined,
+    current: Vector3,
+    alpha: number,
+    maximumTickDistance: number,
+  ): void {
+    if (!previous || shouldSnapPresentation(previous, current, maximumTickDistance)) {
+      target.copy(current);
+      return;
+    }
+    target.set(
+      predictiveScalar(previous.x, current.x, alpha),
+      predictiveScalar(previous.y, current.y, alpha),
+      predictiveScalar(previous.z, current.z, alpha),
+    );
+  }
+
+  private render(alpha = 0): void {
+    const current = this.currentPresentation;
+    const previous = this.previousPresentation;
+    const blend = current && previous ? Math.max(0, Math.min(1, alpha)) : 0;
+    this.presentationBlend = blend;
+    if (current) {
+      this.applyPredictedPosition(this.camera.position, previous?.playerPosition, current.playerPosition, blend, 1.1);
+      if (this.world.isSolid(this.camera.position)) this.camera.position.copy(current.playerPosition);
+      const yawDelta = previous ? shortestAngleDelta(previous.playerYaw, current.playerYaw) : 0;
+      const pitchDelta = previous ? current.playerPitch - previous.playerPitch : 0;
+      const yaw = previous && Math.abs(yawDelta) <= Math.PI / 2
+        ? predictiveAngle(previous.playerYaw, current.playerYaw, blend)
+        : current.playerYaw;
+      const pitch = previous && Math.abs(pitchDelta) <= Math.PI / 3
+        ? predictiveScalar(previous.playerPitch, current.playerPitch, blend)
+        : current.playerPitch;
+      this.camera.rotation.set(pitch, yaw, 0);
+
+      for (const actor of this.world.actors) {
+        const position = current.actorPositions.get(actor.uid);
+        if (position) this.applyPredictedPosition(actor.sprite.position, previous?.actorPositions.get(actor.uid), position, blend, 1.5);
+      }
+      for (const [id, sprite] of this.projectileSprites) {
+        const position = current.enemyProjectilePositions.get(id);
+        if (position) this.applyPredictedPosition(sprite.position, previous?.enemyProjectilePositions.get(id), position, blend, 4);
+      }
+      for (const [id, sprite] of this.playerProjectileSprites) {
+        const position = current.playerProjectilePositions.get(id);
+        if (position) this.applyPredictedPosition(sprite.position, previous?.playerProjectilePositions.get(id), position, blend, 4);
+      }
+    }
+
+    this.presentedPlayerPosition.copy(this.camera.position);
+    this.presentedPlayerYaw = this.camera.rotation.y;
+    this.presentedPlayerPitch = this.camera.rotation.x;
     this.renderCount += 1;
     this.renderer.render(this.scene, this.camera);
+
+    if (!current) return;
+    this.camera.position.copy(current.playerPosition);
+    this.camera.rotation.set(current.playerPitch, current.playerYaw, 0);
+    for (const actor of this.world.actors) {
+      const position = current.actorPositions.get(actor.uid);
+      if (position) actor.sprite.position.copy(position);
+    }
+    for (const [id, sprite] of this.projectileSprites) {
+      const position = current.enemyProjectilePositions.get(id);
+      if (position) sprite.position.copy(position);
+    }
+    for (const [id, sprite] of this.playerProjectileSprites) {
+      const position = current.playerProjectilePositions.get(id);
+      if (position) sprite.position.copy(position);
+    }
   }
 
   private refreshPickupVisibility(): void {

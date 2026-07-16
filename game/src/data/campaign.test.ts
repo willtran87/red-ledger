@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CAMPAIGN } from './campaign';
+import { CAMPAIGN, campaignRouteParSeconds, standardRouteCellCount } from './campaign';
 import { statefulReachableCells, validateCampaign } from './validation';
 
 describe('campaign data', () => {
@@ -31,7 +31,7 @@ describe('campaign data', () => {
     expect(Object.values(CAMPAIGN.maps).filter((map) => map.secretExitTo)).toHaveLength(3);
   });
 
-  it('meets phase enemy budgets and the six-to-nine-hour experienced par target', () => {
+  it('meets phase enemy budgets and derives varied pars from route load', () => {
     const maps = Object.values(CAMPAIGN.maps);
     maps.forEach((map) => {
       const normalEnemies = map.actors.filter((actor) => actor.type === 'enemy'
@@ -40,12 +40,20 @@ describe('campaign data', () => {
       expect(normalEnemies, map.id).toBe(map.standardEnemyBudget);
       expect(normalEnemies, map.id).toBeGreaterThanOrEqual(minimum);
       expect(normalEnemies, map.id).toBeLessThanOrEqual(maximum);
-      expect(map.parSeconds, map.id).toBeGreaterThanOrEqual(15 * 60);
-      expect(map.parSeconds, map.id).toBeLessThanOrEqual(35 * 60);
+      expect(map.parSeconds, map.id).toBe(campaignRouteParSeconds({
+        routeCells: standardRouteCellCount(map.grid),
+        normalEnemies: map.standardEnemyBudget,
+        mechanisms: map.mechanisms.length,
+        credentials: map.actors.filter((actor) => actor.type === 'credential').length,
+        bossPhases: map.actors.filter((actor) => actor.type === 'boss').length,
+      }));
+      expect(map.parSeconds, map.id).toBeGreaterThanOrEqual(7 * 60);
+      expect(map.parSeconds, map.id).toBeLessThanOrEqual(22 * 60);
     });
     const total = maps.reduce((seconds, map) => seconds + map.parSeconds, 0);
-    expect(total).toBeGreaterThanOrEqual(6 * 3600);
-    expect(total).toBeLessThanOrEqual(9 * 3600);
+    expect(total).toBeGreaterThanOrEqual(5 * 3600);
+    expect(total).toBeLessThanOrEqual(7 * 3600);
+    expect(new Set(maps.map((map) => map.parSeconds)).size).toBeGreaterThanOrEqual(16);
   });
 
   it('authors phase-scaled landmarks, persistent mechanisms, visible secrets, and explicit teleports', () => {
@@ -58,6 +66,7 @@ describe('campaign data', () => {
       expect(new Set(map.mechanisms.flatMap((mechanism) => mechanism.landmarkTags)).size, map.id)
         .toBe(map.mechanisms.flatMap((mechanism) => mechanism.landmarkTags).length);
       expect(map.mechanisms.every((mechanism) => mechanism.persistState && mechanism.restoresRoute)).toBe(true);
+      expect(map.mechanisms.every((mechanism) => Array.isArray(mechanism.hazardTags))).toBe(true);
       expect(map.mechanisms.every((mechanism) => map.triggers.some((trigger) => trigger.targets.includes(mechanism.id)))).toBe(true);
       const authoredTriggerOrder = map.triggers
         .filter((trigger) => map.mechanisms.some((mechanism) => trigger.targets.includes(mechanism.id)))
@@ -86,6 +95,14 @@ describe('campaign data', () => {
       expect(map.mechanisms.every((mechanism) => mechanism.independent && mechanism.requires.length === 0)).toBe(true);
       expect(new Set(map.mechanisms.flatMap((mechanism) => mechanism.sectorTags)).size)
         .toBe(map.mechanisms.flatMap((mechanism) => mechanism.sectorTags).length);
+      if (id === 'E2M6') {
+        const authoredHazards = map.grid.flatMap((row, z) => [...row].flatMap((char, x) =>
+          map.legend[char]?.damagePerSecond ? [`${x},${z}`] : []));
+        const taggedHazards = map.mechanisms.flatMap((mechanism) => mechanism.hazardTags);
+        expect(map.mechanisms.every((mechanism) => mechanism.hazardTags.length > 0)).toBe(true);
+        expect(new Set(taggedHazards).size).toBe(taggedHazards.length);
+        expect([...taggedHazards].sort()).toEqual([...authoredHazards].sort());
+      }
     }
     Object.values(CAMPAIGN.maps).forEach((map) => {
       const encounterIds = new Set(map.encounters.map((encounter) => encounter.id));

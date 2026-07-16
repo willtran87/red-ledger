@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_INPUT_PREFERENCES,
+  applyClassicLookRestrictions,
   applyControllerDeadzone,
   composeLookInput,
   menuAxisEngaged,
@@ -82,6 +83,17 @@ describe('input preferences', () => {
     expect(result.deltaX).toBe(20);
     expect(result.turn).toBeCloseTo(1.95);
     expect(result.deltaY).toBeCloseTo(-4.4);
+  });
+
+  it('keeps horizontal mouse turning while the 1993 preset removes vertical free-look', () => {
+    expect(applyClassicLookRestrictions({ deltaX: 18, deltaY: -7 }, false)).toEqual({
+      deltaX: 18,
+      deltaY: -7,
+    });
+    expect(applyClassicLookRestrictions({ deltaX: 18, deltaY: -7 }, true)).toEqual({
+      deltaX: 18,
+      deltaY: 0,
+    });
   });
 
   it('applies configured controller deadzone to menu axes with stable hysteresis', () => {

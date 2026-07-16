@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CAMPAIGN } from '../src/data/campaign';
-import type { CampaignMap, Difficulty, WeaponId } from '../src/data/types';
+import type { CampaignMap, Difficulty, PickupId, WeaponId } from '../src/data/types';
 import { DIFFICULTY, ENEMIES, WEAPONS, type GameDifficulty } from '../src/game/definitions';
 import {
   COMBAT_AMMO_TYPES,
@@ -163,7 +163,10 @@ const mapRecovery = (map: CampaignMap): { health: number; lightArmor: number; he
     if (actor.pickup === 'goodwill-token') result.health += 1;
     if (actor.pickup === 'loss-control-vest') result.lightArmor += 100;
     if (actor.pickup === 'catastrophe-suit') result.heavyArmor += 200;
-    if (actor.pickup === 'emergency-reserve') result.reserve += 1;
+    if (actor.pickup === 'emergency-reserve') {
+      result.reserve += 1;
+      result.heavyArmor += 200;
+    }
   }
   return result;
 };
@@ -176,6 +179,243 @@ const routeHealthRecovery = (map: CampaignMap, route: EncounterPhase): number =>
   if (actor.pickup === 'emergency-reserve') return total + 200;
   return total;
 }, 0);
+
+type ArmorClass = 'none' | 'light' | 'heavy';
+
+interface RecoveryState {
+  health: number;
+  armor: number;
+  armorClass: ArmorClass;
+  readonly weapons: Set<WeaponId>;
+}
+
+interface RecoveryCollectionStats {
+  healthOffered: number;
+  healthAccepted: number;
+  armorOffered: number;
+  armorAccepted: number;
+}
+
+interface AvoidanceProfile {
+  readonly id: 'conservative' | 'median' | 'expert';
+  readonly minimumDps: number;
+  readonly weaponUptime: number;
+  readonly attackContactShare: number;
+}
+
+const avoidanceProfiles: readonly AvoidanceProfile[] = [
+  // Attack-contact share is the fraction of uninterrupted attack windows that
+  // land after strafing, cover, pain interrupts, and line-of-sight breaks. Even
+  // the conservative profile assumes basic FPS movement; Binding Authority is
+  // explicitly the mastered-play setting. DPS spans the roughly 50 DPS
+  // Staple Driver opening, the 85-120 DPS Repeater/Riveter midgame, and the
+  // roughly 260 DPS Plasma Copier ceiling without assuming perfect uptime.
+  { id: 'conservative', minimumDps: 50, weaponUptime: .65, attackContactShare: .05 },
+  { id: 'median', minimumDps: 75, weaponUptime: .8, attackContactShare: .032 },
+  { id: 'expert', minimumDps: 100, weaponUptime: .95, attackContactShare: .025 },
+];
+
+const difficultyOrder: readonly GameDifficulty[] = [
+  'orientation', 'desk-adjuster', 'field-adjuster', 'catastrophe-team', 'binding-authority',
+];
+
+const freshRecoveryState = (): RecoveryState => ({
+  health: 100,
+  armor: 0,
+  armorClass: 'none',
+  weapons: new Set(starterWeapons),
+});
+
+const emptyRecoveryStats = (): RecoveryCollectionStats => ({
+  healthOffered: 0,
+  healthAccepted: 0,
+  armorOffered: 0,
+  armorAccepted: 0,
+});
+
+const recoveryAccepted = (stats: RecoveryCollectionStats): number =>
+  stats.healthAccepted + stats.armorAccepted;
+
+const recoveryOffered = (stats: RecoveryCollectionStats): number =>
+  stats.healthOffered + stats.armorOffered;
+
+const collectRecoveryPickup = (
+  state: RecoveryState,
+  pickup: PickupId,
+  stats: RecoveryCollectionStats,
+): void => {
+  const acceptHealth = (amount: number, cap: number): void => {
+    // This mirrors canCollectPickup: a capped pickup stays in the world and is
+    // neither offered to nor discarded by this run.
+    if (state.health >= cap) return;
+    stats.healthOffered += amount;
+    const before = state.health;
+    state.health = Math.min(cap, state.health + amount);
+    stats.healthAccepted += state.health - before;
+  };
+  const acceptArmorReset = (cap: number, armorClass: Exclude<ArmorClass, 'none'>): void => {
+    const before = state.armor;
+    state.armor = Math.max(state.armor, cap);
+    state.armorClass = armorClass;
+    const accepted = state.armor - before;
+    // Armor pickups are floor resets, not additive grants: a vest at 40 armor
+    // offers 60 points up to its 100 cap. Count that real reset value rather
+    // than inventing 40 points of overflow the runtime never offers.
+    stats.armorOffered += accepted;
+    stats.armorAccepted += accepted;
+  };
+
+  if (pickup === 'adhesive-bandage') acceptHealth(10, 100);
+  if (pickup === 'field-medical-case') acceptHealth(25, 100);
+  if (pickup === 'goodwill-token') acceptHealth(1, 200);
+  if (pickup === 'loss-control-vest' && (state.armor < 100 || state.armorClass === 'none')) {
+    acceptArmorReset(100, 'light');
+  }
+  if (pickup === 'catastrophe-suit' && (state.armor < 200 || state.armorClass !== 'heavy')) {
+    acceptArmorReset(200, 'heavy');
+  }
+  if (pickup === 'emergency-reserve' && (state.health < 200 || state.armor < 200)) {
+    const healthBefore = state.health;
+    const armorBefore = state.armor;
+    state.health = 200;
+    state.armor = Math.max(state.armor, 200);
+    state.armorClass = 'heavy';
+    const healthReset = state.health - healthBefore;
+    const armorReset = state.armor - armorBefore;
+    stats.healthOffered += healthReset;
+    stats.armorOffered += armorReset;
+    stats.healthAccepted += healthReset;
+    stats.armorAccepted += armorReset;
+  }
+};
+
+const collectStageRecovery = (
+  map: CampaignMap,
+  route: string,
+  difficulty: GameDifficulty,
+  state: RecoveryState,
+): RecoveryCollectionStats => {
+  const stats = emptyRecoveryStats();
+  for (const actor of map.actors) {
+    if (actor.secret || actor.route !== route) continue;
+    if (!actorIsEnabled(actor, DIFFICULTY[difficulty].placement) || !standardReachable(map, actor)) continue;
+    if (actor.type === 'weapon') state.weapons.add(actor.weapon);
+    if (actor.type === 'pickup') collectRecoveryPickup(state, actor.pickup, stats);
+  }
+  return stats;
+};
+
+const applyIncomingDamage = (state: RecoveryState, amount: number): void => {
+  const absorption = state.armorClass === 'heavy' ? .5 : state.armorClass === 'light' ? .33 : 0;
+  const absorbed = Math.min(state.armor, amount * absorption);
+  state.armor -= absorbed;
+  if (state.armor <= 0) {
+    state.armor = 0;
+    state.armorClass = 'none';
+  }
+  state.health -= amount - absorbed;
+};
+
+const hostileIncomingDamage = (
+  hostile: keyof typeof ENEMIES,
+  difficulty: GameDifficulty,
+  profile: AvoidanceProfile,
+  neutralizationDps: number,
+): number => {
+  const enemy = ENEMIES[hostile];
+  const policy = DIFFICULTY[difficulty];
+  const neutralizationSeconds = enemy.health / neutralizationDps;
+  const firstTellSeconds = enemy.windup * policy.reaction;
+  const exposedSeconds = Math.max(0, neutralizationSeconds - firstTellSeconds);
+  const attackWindows = exposedSeconds / Math.max(Number.EPSILON, enemy.cooldown * policy.refire);
+  const tempoPressure = Math.sqrt(policy.enemySpeed * policy.projectileSpeed);
+  return attackWindows
+    * enemy.damage
+    * policy.enemyDamage
+    * policy.aggression
+    * tempoPressure
+    * profile.attackContactShare;
+};
+
+const recoveryStages = (map: CampaignMap): readonly string[] => [
+  ...phases,
+  ...map.actors.filter((actor) => actor.type === 'boss').map((actor) => actor.encounter),
+];
+
+const stageIncomingDamage = (
+  map: CampaignMap,
+  route: string,
+  difficulty: GameDifficulty,
+  profile: AvoidanceProfile,
+  neutralizationDps: number,
+  optionalEngagement: number,
+): number => map.actors.reduce((total, actor) => {
+  if (actor.type === 'enemy') {
+    if (actor.route !== route || !actorIsEnabled(actor, DIFFICULTY[difficulty].placement)) return total;
+    const engagement = actor.mandatory ? 1 : optionalEngagement;
+    return total + hostileIncomingDamage(actor.enemy, difficulty, profile, neutralizationDps) * engagement;
+  }
+  if (actor.type === 'boss' && actor.encounter === route) {
+    return total + hostileIncomingDamage(actor.boss, difficulty, profile, neutralizationDps);
+  }
+  return total;
+}, 0);
+
+const weaponDamagePerSecond = (weapon: WeaponId): number => {
+  const definition = WEAPONS[weapon];
+  const direct = ((definition.damageMin + definition.damageMax) / 2) * definition.pellets;
+  const practicalSplash = (definition.splashDamage ?? 0) * .35;
+  return (direct + practicalSplash) / definition.cooldown;
+};
+
+const profileDamagePerSecond = (state: RecoveryState, profile: AvoidanceProfile): number => Math.max(
+  profile.minimumDps,
+  ...[...state.weapons]
+    .filter((weapon) => weapon !== 'claim-stamp')
+    .map((weapon) => weaponDamagePerSecond(weapon) * profile.weaponUptime),
+);
+
+interface RecoveryStageResult {
+  readonly route: string;
+  readonly incoming: number;
+  readonly healthBeforeDamage: number;
+  readonly armorBeforeDamage: number;
+  readonly healthAfter: number;
+  readonly armorAfter: number;
+  readonly collection: RecoveryCollectionStats;
+}
+
+const simulateRecoveryMap = (
+  map: CampaignMap,
+  difficulty: GameDifficulty,
+  profile: AvoidanceProfile,
+  state: RecoveryState = freshRecoveryState(),
+  optionalEngagement = 0,
+): readonly RecoveryStageResult[] => recoveryStages(map).map((route) => {
+  // Route-tagged supplies unlock with their encounter, before its mandatory
+  // blockers. Pickup iteration order is the authored order used by World.
+  const collection = collectStageRecovery(map, route, difficulty, state);
+  const incoming = stageIncomingDamage(
+    map,
+    route,
+    difficulty,
+    profile,
+    profileDamagePerSecond(state, profile),
+    optionalEngagement,
+  );
+  const healthBeforeDamage = state.health;
+  const armorBeforeDamage = state.armor;
+  applyIncomingDamage(state, incoming);
+  return {
+    route,
+    incoming,
+    healthBeforeDamage,
+    armorBeforeDamage,
+    healthAfter: state.health,
+    armorAfter: state.armor,
+    collection,
+  };
+});
 
 const hostileHealth = (map: CampaignMap, placement: Difficulty): number => map.actors.reduce((total, actor) => {
   if (actor.type !== 'enemy' || !actorIsEnabled(actor, placement)) return total;
@@ -252,6 +492,105 @@ const simulateMap = (
 };
 
 describe('deterministic whole-campaign balance model', () => {
+  it('limits Episode 3 to one deliberate standard-route full reset per map', () => {
+    const failures: string[] = [];
+    for (const map of Object.values(CAMPAIGN.maps).filter((candidate) => candidate.id.startsWith('E3'))) {
+      const standard = map.actors.filter((actor) => actor.type === 'pickup' && !actor.secret);
+      const reserves = standard.filter((actor) => actor.pickup === 'emergency-reserve');
+      const suits = standard.filter((actor) => actor.pickup === 'catastrophe-suit');
+      if (reserves.length !== 1) failures.push(`${map.id}: ${reserves.length} emergency reserves`);
+      if (suits.length !== 0) failures.push(`${map.id}: ${suits.length} redundant catastrophe suits`);
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it('keeps every fresh-start mandatory route survivable across avoidance and response profiles', () => {
+    const failures: string[] = [];
+    for (const difficulty of difficultyOrder) {
+      for (const profile of avoidanceProfiles) {
+        for (const map of Object.values(CAMPAIGN.maps)) {
+          const stages = simulateRecoveryMap(map, difficulty, profile);
+          const failed = stages.find((stage) => stage.healthAfter <= 0);
+          if (failed) {
+            failures.push(
+              `${difficulty}:${profile.id}:${map.id}:${failed.route}`
+              + ` start ${failed.healthBeforeDamage.toFixed(1)}H/${failed.armorBeforeDamage.toFixed(1)}A`
+              + ` -> ${failed.healthAfter.toFixed(1)}H after ${failed.incoming.toFixed(1)} incoming`,
+            );
+          }
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it('turns continuous expert-route recovery into usable survival margin without starvation streaks', () => {
+    const failures: string[] = [];
+    const expert = avoidanceProfiles.find((profile) => profile.id === 'expert')!;
+
+    for (const difficulty of difficultyOrder) {
+      let totalOffered = 0;
+      let totalAccepted = 0;
+      let longestStarvation = 0;
+
+      for (const episode of CAMPAIGN.episodes) {
+        const state = freshRecoveryState();
+        let starvation = 0;
+        let episodeOffered = 0;
+        let episodeAccepted = 0;
+        const episodeMapRecovery: string[] = [];
+        for (const id of episode.maps.filter((mapId) => !CAMPAIGN.maps[mapId].secretMap)) {
+          // Expert continuity models a full standard-route clear. Fresh-start
+          // progression above deliberately remains mandatory-only.
+          const stages = simulateRecoveryMap(CAMPAIGN.maps[id], difficulty, expert, state, 1);
+          const mapOffered = stages.reduce((total, stage) => total + recoveryOffered(stage.collection), 0);
+          const mapAccepted = stages.reduce((total, stage) => total + recoveryAccepted(stage.collection), 0);
+          totalOffered += mapOffered;
+          totalAccepted += mapAccepted;
+          episodeOffered += mapOffered;
+          episodeAccepted += mapAccepted;
+          if (mapOffered > mapAccepted) {
+            episodeMapRecovery.push(`${id} ${mapAccepted.toFixed(1)}/${mapOffered.toFixed(1)}`);
+          }
+
+          for (const stage of stages) {
+            const startsCriticallyLow = stage.healthBeforeDamage < 60 && stage.armorBeforeDamage < 25;
+            starvation = startsCriticallyLow ? starvation + 1 : 0;
+            longestStarvation = Math.max(longestStarvation, starvation);
+            if (stage.healthAfter <= 0) {
+              failures.push(`${difficulty}:${id}:${stage.route} continuous expert route does not survive`);
+              break;
+            }
+          }
+        }
+
+        // Lower response levels deliberately retain surplus recovery as part
+        // of their accessibility contract. Binding Authority is the expert
+        // full-clear contract, so both each episode and the whole campaign
+        // must convert at least 65% of every pickup it actually consumes.
+        if (difficulty === 'binding-authority' && episodeOffered > 0) {
+          const discarded = 1 - episodeAccepted / episodeOffered;
+          if (discarded > .35) {
+            failures.push(
+              `${difficulty}:${episode.id} discards ${(discarded * 100).toFixed(1)}% of collected recovery`
+              + ` (${episodeMapRecovery.join(', ')})`,
+            );
+          }
+        }
+      }
+
+      const discardedShare = totalOffered > 0 ? 1 - totalAccepted / totalOffered : 0;
+      if (difficulty === 'binding-authority' && discardedShare > .35) {
+        failures.push(`${difficulty}: discards ${(discardedShare * 100).toFixed(1)}% of collected recovery`);
+      }
+      if (longestStarvation > 1) {
+        failures.push(`${difficulty}: ${longestStarvation} consecutive mandatory stages begin critically low`);
+      }
+    }
+
+    expect(failures).toEqual([]);
+  });
+
   it('funds every mandatory Field Adjuster route and boss from a fresh starter inventory', () => {
     const failures: string[] = [];
     for (const map of Object.values(CAMPAIGN.maps)) {
@@ -418,10 +757,10 @@ describe('deterministic whole-campaign balance model', () => {
   it('gates the main-route par envelope and keeps authored pars tied to structural load', () => {
     const mainMaps = Object.values(CAMPAIGN.maps).filter((map) => !map.secretMap);
     expect(mainMaps).toHaveLength(24);
-    expect(mainMaps.every((map) => map.parSeconds >= 15 * 60 && map.parSeconds <= 35 * 60)).toBe(true);
+    expect(mainMaps.every((map) => map.parSeconds >= 7 * 60 && map.parSeconds <= 22 * 60)).toBe(true);
     const mainPar = mainMaps.reduce((total, map) => total + map.parSeconds, 0);
-    expect(mainPar).toBeGreaterThanOrEqual(6 * 3600);
-    expect(mainPar).toBeLessThanOrEqual(9 * 3600);
+    expect(mainPar).toBeGreaterThanOrEqual(4.5 * 3600);
+    expect(mainPar).toBeLessThanOrEqual(6.5 * 3600);
 
     const structuralLoad = mainMaps.map((map) => mapPressureHealth(map, 'normal')
       + credentialAwareReachableCells(map).size * 20

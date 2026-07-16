@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CAMPAIGN, CAMPAIGN_ENCOUNTER_PROFILES, scaleEncounterPhaseBudgets } from '../src/data/campaign';
+import {
+  CAMPAIGN,
+  CAMPAIGN_ENCOUNTER_PROFILES,
+  CAMPAIGN_PHASE_ENEMY_PALETTES,
+  scaleEncounterPhaseBudgets,
+} from '../src/data/campaign';
 import type { CampaignMap, Difficulty, EncounterRole, MapId } from '../src/data/types';
 import { ENEMIES } from '../src/game/definitions';
 import { actorIsEnabled, cellKey } from './audit-helpers';
@@ -20,6 +25,49 @@ const pressureFor = (map: CampaignMap, placement: Difficulty): number => map.act
 }, 0);
 
 describe('authored campaign pressure profiles', () => {
+  it('keeps each phase cast focused and makes adjacent phases visibly distinct', () => {
+    const failures: string[] = [];
+    const signatures = {
+      E2: new Set(['denial-officer', 'subrogator', 'reserve-eater', 'fraud-apparition']),
+      E3: new Set(['cat-model', 'bad-faith-counsel']),
+    } as const;
+
+    for (const map of Object.values(CAMPAIGN.maps)) {
+      const palettes = CAMPAIGN_PHASE_ENEMY_PALETTES[map.id];
+      const realizedByPhase = {} as Record<typeof phases[number], Set<string>>;
+      for (const phase of phases) {
+        const palette = palettes[phase];
+        const realized = new Set(map.actors
+          .filter((actor) => actor.type === 'enemy' && actor.route === phase && actorIsEnabled(actor, 'normal'))
+          .map((actor) => actor.enemy));
+        realizedByPhase[phase] = realized;
+        if (new Set(palette).size !== palette.length) failures.push(`${map.id}:${phase} repeats an authored archetype`);
+        if (palette.length > 6) failures.push(`${map.id}:${phase} exposes ${palette.length} archetypes`);
+        if ([...realized].some((enemy) => !palette.includes(enemy))) failures.push(`${map.id}:${phase} escapes its palette`);
+        if (realized.size > 6) failures.push(`${map.id}:${phase} realizes ${realized.size} archetypes`);
+        const episodeSignatures = map.id.startsWith('E2') ? signatures.E2 : map.id.startsWith('E3') ? signatures.E3 : undefined;
+        if (episodeSignatures && !palette.some((enemy) => episodeSignatures.has(enemy))) {
+          failures.push(`${map.id}:${phase} drops its episode signature cast`);
+        }
+      }
+
+      for (let index = 1; index < phases.length; index += 1) {
+        const previous = new Set(palettes[phases[index - 1]]);
+        const current = new Set(palettes[phases[index]]);
+        const changed = [...previous].filter((enemy) => !current.has(enemy)).length
+          + [...current].filter((enemy) => !previous.has(enemy)).length;
+        if (changed < 2) failures.push(`${map.id}:${phases[index - 1]}->${phases[index]} changes only ${changed} archetypes`);
+        const previousRealized = realizedByPhase[phases[index - 1]];
+        const currentRealized = realizedByPhase[phases[index]];
+        const realizedChange = [...previousRealized].filter((enemy) => !currentRealized.has(enemy)).length
+          + [...currentRealized].filter((enemy) => !previousRealized.has(enemy)).length;
+        if (realizedChange < 2) failures.push(`${map.id}:${phases[index - 1]}->${phases[index]} realizes only ${realizedChange} archetype changes`);
+      }
+    }
+
+    expect(failures).toEqual([]);
+  });
+
   it('stages a readable first threat in E1M1 without crowding the spawn', () => {
     const map = CAMPAIGN.maps.E1M1;
     const opening = map.actors.find((actor) => actor.type === 'enemy' && actor.route === 'entry');

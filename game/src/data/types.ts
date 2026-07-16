@@ -145,6 +145,8 @@ export interface MapMechanism {
   readonly label: string;
   readonly action: TriggerAction;
   readonly sectorTags: readonly string[];
+  /** Hazard cells controlled independently from moving floor sectors. */
+  readonly hazardTags: readonly string[];
   readonly landmarkTags: readonly string[];
   readonly doorTags: readonly string[];
   readonly motion: MechanismMotion;

@@ -1,6 +1,6 @@
 import { CAMPAIGN, type MapId } from '../data';
 import type { GameDifficulty } from './definitions';
-import type { CampaignUnlocks, MapRecord } from './PersistenceSystem';
+import { hasMasteryProof, type CampaignUnlocks, type MapRecord } from './PersistenceSystem';
 
 export interface MilestoneStatus {
   readonly id: string;
@@ -21,11 +21,7 @@ export interface MilestoneHighlights {
 
 const secretMaps = Object.values(CAMPAIGN.maps).filter((map) => map.secretMap).map((map) => map.id);
 
-const mastered = (record: MapRecord): boolean => record.parBeaten
-  && record.bestGrade === 'S'
-  && record.bestKillsPercent === 100
-  && record.bestItemsPercent === 100
-  && record.bestSecretsPercent === 100;
+const mastered = (record: MapRecord): boolean => hasMasteryProof(record);
 
 const bounded = (current: number, target: number): number => Math.min(target, Math.max(0, current));
 
@@ -62,7 +58,7 @@ const episodeMasteryDepth = (records: readonly MapRecord[]): number => {
   return depth;
 };
 
-/** Milestones are projections of campaign records, so they require no additional save data. */
+/** Milestones are projections of campaign records, including their single-run mastery proofs. */
 export const deriveMilestones = (progress: CampaignUnlocks): readonly MilestoneStatus[] => {
   const records = Object.values(progress.records).filter((record) => record.mapId in CAMPAIGN.maps);
   const maximumCompletions = Math.max(0, ...records.map((record) => record.completions));

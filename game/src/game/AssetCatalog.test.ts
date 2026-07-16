@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Texture } from 'three';
 import { AssetCatalog, type RuntimeCatalog } from './AssetCatalog';
 
 const file = (url: string) => ({ url });
@@ -40,6 +41,49 @@ describe('AssetCatalog loading resilience', () => {
 
     await rejected;
     expect(signal?.aborted).toBe(true);
+  });
+
+  it('waits for textures already requested by the current map', async () => {
+    vi.useFakeTimers();
+    const assets = new AssetCatalog(catalog);
+    vi.spyOn(assets.loader, 'load').mockImplementation((_url, onLoad) => {
+      const texture = new Texture<HTMLImageElement>();
+      setTimeout(() => onLoad?.(texture), 40);
+      return texture;
+    });
+
+    assets.texture('delayed-texture');
+    const readiness = assets.waitForTextures(200);
+    expect(assets.status().pendingCount).toBe(1);
+    await vi.advanceTimersByTimeAsync(39);
+    expect(assets.status().pendingCount).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+
+    await expect(readiness).resolves.toEqual({ mode: 'complete', failedUrls: [], pendingCount: 0 });
+  });
+
+  it('degrades stalled textures at the deadline instead of deadlocking entry', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('document', {
+      createElement: () => ({
+        width: 0,
+        height: 0,
+        getContext: () => ({ fillStyle: '', fillRect: vi.fn() }),
+      }),
+    });
+    const assets = new AssetCatalog(catalog);
+    vi.spyOn(assets.loader, 'load').mockImplementation(() => new Texture<HTMLImageElement>());
+
+    const texture = assets.texture('stalled-texture');
+    const readiness = assets.waitForTextures(25);
+    await vi.advanceTimersByTimeAsync(25);
+
+    await expect(readiness).resolves.toEqual({
+      mode: 'placeholder-fallback',
+      failedUrls: ['stalled-texture'],
+      pendingCount: 0,
+    });
+    expect(texture.image).toBeDefined();
   });
 });
 

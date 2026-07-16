@@ -46,6 +46,39 @@ const LANDMARK_PROPS: Readonly<Record<MapId, readonly string[]>> = {
   E3M9: ['desk-lamp-paper-stack', 'office-phone-stamp', 'queue-barrier'],
 };
 
+// Secret clues use an explicitly authored visual tell rather than borrowing a
+// random landmark from the map. Every id is a shipped prop family and the
+// ordering matches the clue copy in the corresponding map spec.
+export const SECRET_CLUE_PROPS: Readonly<Record<MapId, readonly string[]>> = {
+  E1M1: ['filing-cabinet', 'desk-lamp-paper-stack'],
+  E1M2: ['office-phone-stamp', 'claim-terminal', 'roof-hvac-damaged'],
+  E1M3: ['damaged-vehicle-cluster', 'flood-pump', 'vehicle-lift-control'],
+  E1M4: ['pneumatic-tube', 'queue-barrier', 'flood-pump'],
+  E1M5: ['rolling-shelf-closed', 'vehicle-lift-control', 'claim-terminal', 'archive-crate-pallet'],
+  E1M6: ['evidence-locker', 'office-phone-stamp', 'desk-lamp-paper-stack', 'roof-hvac-damaged'],
+  E1M7: ['office-chair', 'claim-terminal', 'witness-lectern', 'roof-exhaust-turbine'],
+  E1M8: ['evidence-locker', 'litigation-chair', 'archive-crate-pallet'],
+  E1M9: ['desk-lamp-paper-stack', 'roof-exhaust-turbine', 'breakroom-microwave', 'hotel-lobby-armchair'],
+  E2M1: ['archive-crate-pallet', 'generator', 'train-relay-cabinet'],
+  E2M2: ['office-phone-stamp', 'hotel-lobby-armchair', 'hotel-luggage-bench', 'hotel-service-trolley'],
+  E2M3: ['data-rack-power', 'data-rack-open', 'roof-exhaust-turbine', 'data-rack-sealed'],
+  E2M4: ['train-relay-cabinet', 'train-coupler-cluster', 'train-relay-cabinet', 'train-tool-trolley'],
+  E2M5: ['damaged-vehicle-cluster', 'salvage-compactor', 'salvage-sorting-drum', 'damaged-vehicle-cluster'],
+  E2M6: ['flood-pump', 'records-step-cart', 'pneumatic-tube', 'flood-pump', 'claim-terminal'],
+  E2M7: ['actuarial-calculator', 'desk-lamp-paper-stack', 'evidence-locker', 'litigation-chair', 'witness-lectern'],
+  E2M8: ['data-rack-power', 'probability-engine', 'paper-arch'],
+  E2M9: ['paper-boulder', 'queue-barrier', 'claim-terminal', 'paper-arch'],
+  E3M1: ['ledger-integrator', 'actuarial-calculator', 'calculation-tower'],
+  E3M2: ['calculation-tower', 'ledger-integrator', 'records-step-cart', 'probability-engine'],
+  E3M3: ['evidence-locker', 'pneumatic-tube', 'paper-stalagmite', 'paper-arch'],
+  E3M4: ['probability-engine', 'witness-lectern', 'witness-lectern', 'calculation-tower', 'actuarial-calculator'],
+  E3M5: ['vehicle-lift-control', 'evidence-case-cart', 'paper-arch', 'train-coupler-cluster', 'floating-drawer-cluster'],
+  E3M6: ['desk-lamp-paper-stack', 'evidence-locker', 'witness-lectern', 'evidence-case-cart', 'claim-terminal'],
+  E3M7: ['office-phone-stamp', 'hotel-lobby-armchair', 'breakroom-microwave', 'train-relay-cabinet', 'ledger-integrator', 'desk-lamp-paper-stack'],
+  E3M8: ['probability-engine', 'evidence-locker', 'paper-arch', 'pneumatic-tube'],
+  E3M9: ['queue-barrier', 'desk-lamp-paper-stack', 'paper-arch', 'claim-terminal', 'actuarial-calculator'],
+};
+
 const MECHANISM_LABELS: Readonly<Record<MapId, string>> = {
   E1M1: 'Credential return loop', E1M2: 'Cubicle shutter maze', E1M3: 'Vehicle lift bridges',
   E1M4: 'Restoration channel pumps', E1M5: 'Rolling archive shelves', E1M6: 'Balcony access lifts',
@@ -88,7 +121,6 @@ interface MapSpec {
   readonly title: string;
   readonly location: string;
   readonly layout: LayoutId;
-  readonly parSeconds: number;
   readonly normalEnemies: number;
   readonly enemies: readonly EnemyId[];
   readonly weapons: readonly WeaponId[];
@@ -112,116 +144,265 @@ const E2_FULL: readonly EnemyId[] = [...E2_HEAVY, 'fraud-apparition'];
 const E3_OPEN: readonly EnemyId[] = [...E2_FULL, 'cat-model'];
 const E3_FULL: readonly EnemyId[] = [...E3_OPEN, 'bad-faith-counsel'];
 
+export type CampaignEncounterPhaseId = 'entry' | 'transformation' | 'climax';
+export type CampaignPhaseEnemyPalettes = Readonly<Record<CampaignEncounterPhaseId, readonly EnemyId[]>>;
+
+const enemies = (...ids: readonly EnemyId[]): readonly EnemyId[] => ids;
+
+// Each phase owns a deliberately narrow cast. The map-level roster above still
+// controls introductions, while these palettes keep a fight readable and make
+// the next phase change its silhouette instead of sampling the full campaign.
+export const CAMPAIGN_PHASE_ENEMY_PALETTES = {
+  E1M1: {
+    entry: enemies('returned-mail', 'desk-warden'),
+    transformation: enemies('desk-warden', 'ember-clerk'),
+    climax: enemies('returned-mail', 'ember-clerk'),
+  },
+  E1M2: {
+    entry: enemies('returned-mail', 'exposure-hound', 'coverage-drone'),
+    transformation: enemies('desk-warden', 'ember-clerk', 'exposure-hound'),
+    climax: enemies('returned-mail', 'ember-clerk', 'coverage-drone'),
+  },
+  E1M3: {
+    entry: enemies('returned-mail', 'exposure-hound', 'desk-warden', 'coverage-drone'),
+    transformation: enemies('ember-clerk', 'coverage-drone', 'liability-mass', 'exposure-hound'),
+    climax: enemies('returned-mail', 'desk-warden', 'coverage-drone', 'liability-mass'),
+  },
+  E1M4: {
+    entry: enemies('ember-clerk', 'exposure-hound', 'desk-warden', 'coverage-drone'),
+    transformation: enemies('returned-mail', 'liability-mass', 'coverage-drone', 'desk-warden'),
+    climax: enemies('ember-clerk', 'liability-mass', 'exposure-hound', 'coverage-drone'),
+  },
+  E1M5: {
+    entry: enemies('returned-mail', 'ember-clerk', 'exposure-hound', 'liability-mass'),
+    transformation: enemies('desk-warden', 'coverage-drone', 'liability-mass', 'ember-clerk'),
+    climax: enemies('returned-mail', 'desk-warden', 'coverage-drone', 'exposure-hound'),
+  },
+  E1M6: {
+    entry: enemies('returned-mail', 'exposure-hound', 'desk-warden', 'liability-mass'),
+    transformation: enemies('ember-clerk', 'coverage-drone', 'liability-mass', 'exposure-hound'),
+    climax: enemies('returned-mail', 'desk-warden', 'coverage-drone', 'liability-mass'),
+  },
+  E1M7: {
+    entry: enemies('ember-clerk', 'exposure-hound', 'desk-warden', 'coverage-drone'),
+    transformation: enemies('returned-mail', 'liability-mass', 'coverage-drone', 'desk-warden'),
+    climax: enemies('ember-clerk', 'liability-mass', 'exposure-hound', 'coverage-drone'),
+  },
+  E1M8: {
+    entry: enemies('returned-mail', 'ember-clerk', 'exposure-hound', 'liability-mass'),
+    transformation: enemies('desk-warden', 'coverage-drone', 'liability-mass', 'ember-clerk'),
+    climax: enemies('returned-mail', 'liability-mass', 'coverage-drone', 'exposure-hound'),
+  },
+  E1M9: {
+    entry: enemies('returned-mail', 'exposure-hound', 'desk-warden', 'liability-mass'),
+    transformation: enemies('ember-clerk', 'coverage-drone', 'liability-mass', 'exposure-hound'),
+    climax: enemies('returned-mail', 'desk-warden', 'coverage-drone', 'liability-mass'),
+  },
+  E2M1: {
+    entry: enemies('returned-mail', 'exposure-hound', 'coverage-drone', 'denial-officer'),
+    transformation: enemies('desk-warden', 'ember-clerk', 'liability-mass', 'subrogator'),
+    climax: enemies('returned-mail', 'coverage-drone', 'denial-officer', 'subrogator', 'liability-mass'),
+  },
+  E2M2: {
+    entry: enemies('returned-mail', 'exposure-hound', 'denial-officer', 'subrogator'),
+    transformation: enemies('desk-warden', 'coverage-drone', 'liability-mass', 'reserve-eater', 'denial-officer'),
+    climax: enemies('ember-clerk', 'subrogator', 'reserve-eater', 'liability-mass', 'coverage-drone'),
+  },
+  E2M3: {
+    entry: enemies('returned-mail', 'exposure-hound', 'denial-officer', 'subrogator', 'fraud-apparition'),
+    transformation: enemies('desk-warden', 'coverage-drone', 'liability-mass', 'reserve-eater', 'denial-officer'),
+    climax: enemies('ember-clerk', 'subrogator', 'reserve-eater', 'fraud-apparition', 'liability-mass', 'coverage-drone'),
+  },
+  E2M4: {
+    entry: enemies('ember-clerk', 'exposure-hound', 'denial-officer', 'reserve-eater', 'fraud-apparition'),
+    transformation: enemies('returned-mail', 'desk-warden', 'coverage-drone', 'subrogator', 'liability-mass'),
+    climax: enemies('exposure-hound', 'denial-officer', 'subrogator', 'reserve-eater', 'fraud-apparition', 'coverage-drone'),
+  },
+  E2M5: {
+    entry: enemies('returned-mail', 'coverage-drone', 'denial-officer', 'subrogator', 'reserve-eater'),
+    transformation: enemies('desk-warden', 'ember-clerk', 'liability-mass', 'fraud-apparition', 'denial-officer'),
+    climax: enemies('exposure-hound', 'coverage-drone', 'subrogator', 'reserve-eater', 'fraud-apparition', 'liability-mass'),
+  },
+  E2M6: {
+    entry: enemies('returned-mail', 'exposure-hound', 'denial-officer', 'subrogator', 'fraud-apparition'),
+    transformation: enemies('desk-warden', 'coverage-drone', 'liability-mass', 'reserve-eater', 'denial-officer'),
+    climax: enemies('ember-clerk', 'subrogator', 'reserve-eater', 'fraud-apparition', 'liability-mass', 'coverage-drone'),
+  },
+  E2M7: {
+    entry: enemies('ember-clerk', 'exposure-hound', 'denial-officer', 'reserve-eater', 'fraud-apparition'),
+    transformation: enemies('returned-mail', 'desk-warden', 'coverage-drone', 'subrogator', 'liability-mass'),
+    climax: enemies('exposure-hound', 'denial-officer', 'subrogator', 'reserve-eater', 'fraud-apparition', 'coverage-drone'),
+  },
+  E2M8: {
+    entry: enemies('returned-mail', 'coverage-drone', 'denial-officer', 'subrogator', 'reserve-eater'),
+    transformation: enemies('desk-warden', 'ember-clerk', 'liability-mass', 'fraud-apparition', 'denial-officer'),
+    climax: enemies('exposure-hound', 'coverage-drone', 'subrogator', 'reserve-eater', 'fraud-apparition', 'liability-mass'),
+  },
+  E2M9: {
+    entry: enemies('returned-mail', 'exposure-hound', 'denial-officer', 'subrogator', 'fraud-apparition'),
+    transformation: enemies('desk-warden', 'coverage-drone', 'liability-mass', 'reserve-eater', 'denial-officer'),
+    climax: enemies('ember-clerk', 'subrogator', 'reserve-eater', 'fraud-apparition', 'liability-mass', 'coverage-drone'),
+  },
+  E3M1: {
+    entry: enemies('returned-mail', 'exposure-hound', 'fraud-apparition', 'subrogator', 'cat-model'),
+    transformation: enemies('subrogator', 'liability-mass', 'reserve-eater', 'denial-officer', 'cat-model', 'coverage-drone'),
+    climax: enemies('ember-clerk', 'coverage-drone', 'subrogator', 'reserve-eater', 'fraud-apparition', 'cat-model'),
+  },
+  E3M2: {
+    entry: enemies('returned-mail', 'exposure-hound', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+    transformation: enemies('subrogator', 'coverage-drone', 'liability-mass', 'reserve-eater', 'denial-officer', 'cat-model'),
+    climax: enemies('ember-clerk', 'subrogator', 'reserve-eater', 'fraud-apparition', 'returned-mail', 'cat-model'),
+  },
+  E3M3: {
+    entry: enemies('subrogator', 'exposure-hound', 'denial-officer', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+    transformation: enemies('returned-mail', 'subrogator', 'coverage-drone', 'liability-mass', 'reserve-eater', 'cat-model'),
+    climax: enemies('exposure-hound', 'subrogator', 'denial-officer', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+  },
+  E3M4: {
+    entry: enemies('returned-mail', 'coverage-drone', 'subrogator', 'reserve-eater', 'bad-faith-counsel', 'cat-model'),
+    transformation: enemies('subrogator', 'ember-clerk', 'liability-mass', 'denial-officer', 'fraud-apparition', 'cat-model'),
+    climax: enemies('exposure-hound', 'coverage-drone', 'reserve-eater', 'subrogator', 'bad-faith-counsel', 'cat-model'),
+  },
+  E3M5: {
+    entry: enemies('returned-mail', 'exposure-hound', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+    transformation: enemies('subrogator', 'coverage-drone', 'liability-mass', 'reserve-eater', 'denial-officer', 'cat-model'),
+    climax: enemies('ember-clerk', 'subrogator', 'reserve-eater', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+  },
+  E3M6: {
+    entry: enemies('ember-clerk', 'exposure-hound', 'denial-officer', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+    transformation: enemies('returned-mail', 'subrogator', 'coverage-drone', 'liability-mass', 'reserve-eater', 'cat-model'),
+    climax: enemies('exposure-hound', 'subrogator', 'denial-officer', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+  },
+  E3M7: {
+    entry: enemies('returned-mail', 'coverage-drone', 'subrogator', 'reserve-eater', 'bad-faith-counsel', 'cat-model'),
+    transformation: enemies('subrogator', 'ember-clerk', 'liability-mass', 'denial-officer', 'fraud-apparition', 'cat-model'),
+    climax: enemies('exposure-hound', 'coverage-drone', 'reserve-eater', 'subrogator', 'bad-faith-counsel', 'cat-model'),
+  },
+  E3M8: {
+    entry: enemies('returned-mail', 'exposure-hound', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+    transformation: enemies('subrogator', 'coverage-drone', 'liability-mass', 'reserve-eater', 'denial-officer', 'cat-model'),
+    climax: enemies('ember-clerk', 'subrogator', 'reserve-eater', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+  },
+  E3M9: {
+    entry: enemies('ember-clerk', 'exposure-hound', 'denial-officer', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+    transformation: enemies('returned-mail', 'subrogator', 'coverage-drone', 'liability-mass', 'reserve-eater', 'cat-model'),
+    climax: enemies('exposure-hound', 'subrogator', 'denial-officer', 'fraud-apparition', 'bad-faith-counsel', 'cat-model'),
+  },
+} as const satisfies Readonly<Record<MapId, CampaignPhaseEnemyPalettes>>;
+
 const specs: readonly MapSpec[] = [
   {
     id: 'E1M1', title: 'First Notice', location: 'Branch office and parking deck', layout: 'loop',
-    parSeconds: 105, normalEnemies: 38, enemies: E1, weapons: ['twin-bore-riveter'], credentials: ['red'],
+    normalEnemies: 38, enemies: E1, weapons: ['twin-bore-riveter'], credentials: ['red'],
     transformation: 'open-door', nextMap: 'E1M2',
     signatureBeat: 'The red credential is visible through glass from the starting room, then opens the parking return loop.',
     secretClues: ['A misaligned reception baseboard', 'A red lamp flickering behind parking mesh'],
   },
   {
     id: 'E1M2', title: 'Intake', location: 'Call center and mail-routing floor', layout: 'lanes',
-    parSeconds: 170, normalEnemies: 52, enemies: E1_FAST, weapons: ['audit-repeater'], credentials: ['red'],
+    normalEnemies: 52, enemies: E1_FAST, weapons: ['audit-repeater'], credentials: ['red'],
     transformation: 'move-walls', nextMap: 'E1M3',
     signatureBeat: 'Cubicle shutters drop and turn long sightlines into a reactive ambush maze.',
     secretClues: ['A ringing phone with no desk', 'An intake diagram matching the west lanes', 'A displaced ceiling tile'],
   },
   {
     id: 'E1M3', title: 'Total Loss', location: 'Vehicle inspection warehouse and flooded bays', layout: 'bays',
-    parSeconds: 240, normalEnemies: 62, enemies: E1_FULL, weapons: ['catastrophe-launcher'], credentials: ['yellow'],
+    normalEnemies: 62, enemies: E1_FULL, weapons: ['catastrophe-launcher'], credentials: ['yellow'],
     transformation: 'raise-floor', nextMap: 'E1M4', secretExitTo: 'E1M9',
     signatureBeat: 'Inspection lifts raise damaged cars into temporary cover and bridge the flooded bays.',
     secretClues: ['A vehicle silhouette behind frosted glass', 'A dry trail crossing the flooded floor', 'A crooked inspection placard'],
   },
   {
     id: 'E1M4', title: 'Mitigation', location: 'Water and fire restoration plant', layout: 'channels',
-    parSeconds: 300, normalEnemies: 72, enemies: E1_FULL, weapons: ['catastrophe-launcher'], credentials: ['red', 'yellow'],
+    normalEnemies: 72, enemies: E1_FULL, weapons: ['catastrophe-launcher'], credentials: ['red', 'yellow'],
     transformation: 'toggle-sectors', nextMap: 'E1M5',
     signatureBeat: 'Pump controls exchange safe walkways and hazardous restoration channels.',
     secretClues: ['A dry pipe that carries combat sound', 'A hazard stripe that breaks its pattern', 'A dark service alcove above the pumps'],
   },
   {
     id: 'E1M5', title: 'Records Retention', location: 'Archive stacks around a central lift', layout: 'hub',
-    parSeconds: 360, normalEnemies: 84, enemies: E1_FULL, weapons: ['plasma-copier'], credentials: ['red', 'cyan'],
+    normalEnemies: 84, enemies: E1_FULL, weapons: ['plasma-copier'], credentials: ['red', 'cyan'],
     transformation: 'move-walls', nextMap: 'E1M6',
     signatureBeat: 'Rolling shelves expose crossfire lanes, shortcuts, and an early Plasma Copier.',
     secretClues: ['A shelf label missing its sequence number', 'A humming wall beside the lift', 'A map-shaped patch of carpet', 'A single backward archive box'],
   },
   {
     id: 'E1M6', title: 'Tower Annex', location: 'Corporate offices wrapping a tall atrium', layout: 'rings',
-    parSeconds: 420, normalEnemies: 92, enemies: E1_FULL, weapons: ['plasma-copier'], credentials: ['red', 'yellow', 'cyan'],
-    transformation: 'raise-floor', nextMap: 'E1M7',
+    normalEnemies: 92, enemies: E1_FULL, weapons: ['plasma-copier'], credentials: ['red', 'yellow', 'cyan'],
+    transformation: 'raise-floor', nextMap: 'E1M7', recoverySupplies: [{ pickup: 'toner-pack', route: 'climax' }],
     signatureBeat: 'Credentials reopen familiar lower floors from newly reached balconies and lifts.',
     secretClues: ['An unreachable vest visible across the atrium', 'A conference phone ringing below', 'A red ceiling light reflected in glass', 'A narrow exterior maintenance ledge'],
   },
   {
     id: 'E1M7', title: 'The Underwriting Floor', location: 'Executive zone descending into machinery', layout: 'descent',
-    parSeconds: 480, normalEnemies: 108, enemies: E1_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
-    transformation: 'lower-floor', nextMap: 'E1M8',
+    normalEnemies: 108, enemies: E1_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
+    transformation: 'lower-floor', nextMap: 'E1M8', recoverySupplies: [{ pickup: 'toner-pack', route: 'entry' }],
     signatureBeat: 'A boardroom table splits apart and reveals the risk machinery below.',
     secretClues: ['A chair facing away from the boardroom', 'A policy diagram aligned to the floor', 'A voice behind a sealed deposition wall', 'An executive washroom with a false ceiling'],
   },
   {
     id: 'E1M8', title: 'Regional Authority', location: 'Fortress atrium and binding arena', layout: 'arena',
-    parSeconds: 390, normalEnemies: 90, enemies: E1_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
+    normalEnemies: 90, enemies: E1_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
     transformation: 'spawn-wave', nextMap: 'E2M1', bosses: ['regional-director'],
-    recoverySupplies: [{ pickup: 'toner-pack', route: 'boss-1' }],
+    recoverySupplies: [
+      { pickup: 'toner-pack', route: 'boss-1' },
+      { pickup: 'toner-cell', route: 'boss-1' }, { pickup: 'toner-cell', route: 'boss-1' },
+    ],
     signatureBeat: 'Meeting-room shutters feed adds into the Regional Director canister barrage.',
     secretClues: ['A cracked authority seal beneath the entry stairs', 'A dark meeting room overlooking the arena', 'A maintenance hatch behind a canister rack'],
   },
   {
     id: 'E1M9', title: 'Unscheduled Inspection', location: 'Perfect model home and showroom', layout: 'showroom',
-    parSeconds: 330, normalEnemies: 86, enemies: E1_FULL, weapons: ['umbra-saw', 'plasma-copier'], credentials: ['red', 'yellow'],
+    normalEnemies: 86, enemies: E1_FULL, weapons: ['umbra-saw', 'plasma-copier'], credentials: ['red', 'yellow'],
     transformation: 'move-walls', nextMap: 'E1M4', secretMap: true,
     signatureBeat: 'Each immaculate room opens onto a more absurd covered peril.',
     secretClues: ['A family portrait with one blank face', 'A smoke alarm chirping in an empty room', 'A refrigerator containing only a credential', 'A showroom window facing another interior'],
   },
   {
     id: 'E2M1', title: 'Catastrophe Staging', location: 'Storm logistics yard and response hangar', layout: 'loop',
-    parSeconds: 270, normalEnemies: 52, enemies: E2_OPEN, weapons: ['catastrophe-launcher', 'twin-bore-riveter', 'audit-repeater'], credentials: ['yellow'],
+    normalEnemies: 52, enemies: E2_OPEN, weapons: ['catastrophe-launcher', 'twin-bore-riveter', 'audit-repeater'], credentials: ['yellow'],
     transformation: 'move-walls', nextMap: 'E2M2',
     signatureBeat: 'Lightning silhouettes long-range threats between shifting container lanes.',
     secretClues: ['A container with inward-facing locks', 'A warning beacon blinking out of sequence', 'A painted loading number visible only in lightning'],
   },
   {
     id: 'E2M2', title: 'Waterline', location: 'Flood-damaged hotel around a submerged lobby', layout: 'bays',
-    parSeconds: 390, normalEnemies: 58, enemies: E2_HEAVY, weapons: ['plasma-copier'], credentials: ['red', 'cyan'],
+    normalEnemies: 58, enemies: E2_HEAVY, weapons: ['plasma-copier'], credentials: ['red', 'cyan'],
     transformation: 'drain-liquid', nextMap: 'E2M3',
     signatureBeat: 'Changing water levels reconnect guest-room loops and reveal the drowned lobby route.',
     secretClues: ['A room-service bell ringing underwater', 'A dry carpet seam above the waterline', 'A guest-room number repeated twice', 'A luggage cart blocking a narrow stair'],
   },
   {
     id: 'E2M3', title: 'Server Farm', location: 'Claims data center and redundant power halls', layout: 'lanes',
-    parSeconds: 430, normalEnemies: 65, enemies: E2_FULL, weapons: ['plasma-copier'], credentials: ['cyan', 'yellow'],
+    normalEnemies: 65, enemies: E2_FULL, weapons: ['plasma-copier'], credentials: ['cyan', 'yellow'],
     transformation: 'blackout', nextMap: 'E2M4',
     signatureBeat: 'Power routing wakes one enemy-filled wing while blacking out the other.',
     secretClues: ['A cyan status light on a dead rack', 'A cable run disappearing through the floor', 'A fan noise behind an unvented wall', 'A mirrored server label'],
   },
   {
     id: 'E2M4', title: 'Claims Express', location: 'Armored records train and switching depot', layout: 'descent',
-    parSeconds: 450, normalEnemies: 90, enemies: E2_FULL, weapons: ['twin-bore-riveter', 'umbra-saw'], credentials: ['red', 'yellow'],
+    normalEnemies: 90, enemies: E2_FULL, weapons: ['twin-bore-riveter', 'umbra-saw'], credentials: ['red', 'yellow'],
     transformation: 'move-walls', nextMap: 'E2M5', recoverySupplies: [{ pickup: 'fasteners-large', route: 'climax' }],
     signatureBeat: 'Train cars shift between platforms and create new cross-car routes during combat.',
     secretClues: ['A timetable with an impossible platform', 'A silent carriage with warm lights', 'A switch lever pointing between labels', 'A maintenance crawlspace beneath the consist'],
   },
   {
     id: 'E2M5', title: 'Salvage Rights', location: 'Vehicle and equipment salvage district', layout: 'showroom',
-    parSeconds: 500, normalEnemies: 100, enemies: E2_FULL, weapons: ['catastrophe-launcher'], credentials: ['red', 'yellow', 'cyan'],
+    normalEnemies: 100, enemies: E2_FULL, weapons: ['catastrophe-launcher'], credentials: ['red', 'yellow', 'cyan'],
     transformation: 'move-walls', nextMap: 'E2M6', secretExitTo: 'E2M9',
     signatureBeat: 'Crushers reshape sightlines and reveal buried routes through the salvage blocks.',
     secretClues: ['A pristine door on a flattened vehicle', 'A crusher control with a second detent', 'A salvage tag matching the automap outline', 'An engine still ticking in a silent yard'],
   },
   {
     id: 'E2M6', title: 'Pump Station', location: 'Municipal flood-control plant', layout: 'channels',
-    parSeconds: 530, normalEnemies: 110, enemies: E2_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
+    normalEnemies: 110, enemies: E2_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
     transformation: 'toggle-sectors', nextMap: 'E2M7', recoverySupplies: [{ pickup: 'toner-cell', route: 'climax' }],
     signatureBeat: 'Three pumps redirect liquid, enemy access, and the player return route.',
     secretClues: ['A pressure gauge with a fourth mark', 'A ladder shadow with no ladder', 'A dry culvert carrying enemy sound', 'A red valve among yellow controls', 'A flood map with one raised contour'],
   },
   {
     id: 'E2M7', title: 'Discovery', location: 'Litigation tower and evidence repository', layout: 'rings',
-    parSeconds: 560, normalEnemies: 128, enemies: E2_FULL, weapons: ['binding-engine'], credentials: ['red', 'cyan'],
+    normalEnemies: 128, enemies: E2_FULL, weapons: ['binding-engine'], credentials: ['red', 'cyan'],
     transformation: 'teleport', nextMap: 'E2M8', recoverySupplies: [
       { pickup: 'toner-pack', route: 'transformation' }, { pickup: 'canister', route: 'climax' },
       { pickup: 'toner-cell', route: 'climax' }, { pickup: 'canister', route: 'climax' },
@@ -232,7 +413,7 @@ const specs: readonly MapSpec[] = [
   },
   {
     id: 'E2M8', title: 'The Aggregate', location: 'Flooded data hall and joined-loss arena', layout: 'arena',
-    parSeconds: 480, normalEnemies: 130, enemies: E2_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
+    normalEnemies: 130, enemies: E2_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
     transformation: 'lower-floor', nextMap: 'E3M1', bosses: ['aggregate'],
     recoverySupplies: [{ pickup: 'toner-pack', route: 'boss-1' }, { pickup: 'toner-cell', route: 'boss-1' }],
     signatureBeat: 'Cover islands sink while the Aggregate alternates independent attack emitters.',
@@ -240,7 +421,7 @@ const specs: readonly MapSpec[] = [
   },
   {
     id: 'E2M9', title: 'Tabletop Exercise', location: 'Cheerful catastrophe training simulation', layout: 'hub',
-    parSeconds: 420, normalEnemies: 108, enemies: E2_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'cyan'],
+    normalEnemies: 108, enemies: E2_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'cyan'],
     transformation: 'move-walls', nextMap: 'E2M6', secretMap: true,
     recoverySupplies: [{ pickup: 'toner-cell', route: 'climax' }],
     signatureBeat: 'Bright modular scenery collapses and exposes the observers and machinery behind it.',
@@ -248,56 +429,56 @@ const specs: readonly MapSpec[] = [
   },
   {
     id: 'E3M1', title: 'Earned Premium', location: 'Brass premium foundry at the underworld edge', layout: 'loop',
-    parSeconds: 420, normalEnemies: 52, enemies: E3_OPEN, weapons: ['plasma-copier', 'twin-bore-riveter', 'catastrophe-launcher'], credentials: ['yellow'],
+    normalEnemies: 52, enemies: E3_OPEN, weapons: ['plasma-copier', 'twin-bore-riveter', 'catastrophe-launcher'], credentials: ['yellow'],
     transformation: 'open-door', nextMap: 'E3M2',
     signatureBeat: 'Currency channels power the foundry doors and release Reserve Eaters in return.',
     secretClues: ['A coin channel flowing uphill', 'A silent calculator wheel', 'A brass tile colder than the surrounding floor'],
   },
   {
     id: 'E3M2', title: 'Mortality Table', location: 'Sliding calculation-table labyrinth', layout: 'lanes',
-    parSeconds: 500, normalEnemies: 58, enemies: E3_FULL, weapons: ['umbra-saw'], credentials: ['red', 'cyan'],
+    normalEnemies: 58, enemies: E3_FULL, weapons: ['umbra-saw', 'plasma-copier'], credentials: ['red', 'cyan'],
     transformation: 'move-walls', nextMap: 'E3M3',
     signatureBeat: 'Row and column switches realign combat lanes around fixed brass landmarks.',
     secretClues: ['A column total that does not balance', 'A movable row with no switch', 'A zero embossed beneath a stair', 'A probability grid with one red square'],
   },
   {
     id: 'E3M3', title: 'Treaty Vault', location: 'Layered reinsurance vaults and transfer machinery', layout: 'hub',
-    parSeconds: 540, normalEnemies: 65, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
+    normalEnemies: 65, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
     transformation: 'teleport', nextMap: 'E3M4',
     signatureBeat: 'Opening one vault transfers its monsters and resources into another layer.',
     secretClues: ['A vault dial with an ultraviolet number', 'A transfer tube carrying an item silhouette', 'A contract stack arranged as a stair', 'A locked room visible in two layers'],
   },
   {
     id: 'E3M4', title: 'Probability Chapel', location: 'Ritual calculation chamber over a white void', layout: 'rings',
-    parSeconds: 570, normalEnemies: 100, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['cyan', 'yellow'],
+    normalEnemies: 100, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['cyan', 'yellow'],
     transformation: 'toggle-sectors', nextMap: 'E3M5',
     signatureBeat: 'Prediction zones mark future impacts across rotating floor sectors.',
     secretClues: ['A prediction circle that never activates', 'A chant audible only beside the void', 'A brass lectern facing away from the altar', 'A white tile casting a black reflection', 'A broken probability sequence'],
   },
   {
     id: 'E3M5', title: 'Reserve Pits', location: 'Deep storage wells filled with wax and toner', layout: 'descent',
-    parSeconds: 610, normalEnemies: 90, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow'],
+    normalEnemies: 90, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow'],
     transformation: 'lower-floor', nextMap: 'E3M6',
     signatureBeat: 'Lifts descend past optional ledges while enemies fire across the central shaft.',
     secretClues: ['A lift call light below the lowest floor', 'A wax spill shaped like a credential', 'A ledge visible only during descent', 'A chain moving without a counterweight', 'A toner ripple against the current'],
   },
   {
     id: 'E3M6', title: 'Redaction Court', location: 'Abstract courtrooms and sealed evidence halls', layout: 'showroom',
-    parSeconds: 640, normalEnemies: 110, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'cyan'],
+    normalEnemies: 110, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'cyan'],
     transformation: 'move-walls', nextMap: 'E3M7', secretExitTo: 'E3M9',
     signatureBeat: 'Black redaction walls erase and restore routes in a readable courtroom sequence.',
     secretClues: ['An objection light beneath the defense table', 'A redaction bar with a visible hinge', 'A witness microphone carrying distant combat', 'A sealed exhibit casting no shadow', 'A verdict form matching the map shape'],
   },
   {
     id: 'E3M7', title: 'Infinite Ledger', location: 'Compressed-paper machine feeding the final model', layout: 'channels',
-    parSeconds: 690, normalEnemies: 154, enemies: E3_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'yellow', 'cyan'],
+    normalEnemies: 154, enemies: E3_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'yellow', 'cyan'],
     transformation: 'toggle-sectors', nextMap: 'E3M8', recoverySupplies: [{ pickup: 'toner-pack', route: 'climax' }],
     signatureBeat: 'Distorted versions of earlier landmarks return as connected combat modules.',
     secretClues: ['A reception bell fused into black stone', 'A drowned hotel door above a dry pit', 'A model-home window overlooking the machine', 'A train switch embedded in an archive shelf', 'A brass page numbered zero', 'A familiar red lamp at impossible height'],
   },
   {
     id: 'E3M8', title: 'The Uninsurable', location: 'Chief Actuary arena and reserve-core engine', layout: 'arena',
-    parSeconds: 600, normalEnemies: 112, enemies: E3_FULL, weapons: ['plasma-copier', 'catastrophe-launcher', 'binding-engine'], credentials: [],
+    normalEnemies: 112, enemies: E3_FULL, weapons: ['plasma-copier', 'catastrophe-launcher', 'binding-engine'], credentials: [],
     transformation: 'open-door', bosses: ['chief-actuary', 'uninsurable'],
     recoverySupplies: [
       { pickup: 'toner-pack', route: 'boss-1' }, { pickup: 'toner-pack', route: 'boss-1' },
@@ -309,7 +490,7 @@ const specs: readonly MapSpec[] = [
   },
   {
     id: 'E3M9', title: 'Orientation Day', location: 'Cheerful onboarding-video soundstage', layout: 'bays',
-    parSeconds: 480, normalEnemies: 110, enemies: E3_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'yellow', 'cyan'],
+    normalEnemies: 110, enemies: E3_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'yellow', 'cyan'],
     transformation: 'move-walls', nextMap: 'E3M7', secretMap: true,
     signatureBeat: 'Painted smiles and perfect offices peel away to reveal a hostile soundstage.',
     secretClues: ['An applause sign that responds to gunfire', 'A camera filming an empty mark', 'A painted window with depth behind it', 'A teleprompter displaying a switch sequence', 'A break-room clock running backward'],
@@ -551,9 +732,11 @@ const makeMechanisms = (spec: MapSpec, grid: readonly string[], landmarks: reado
   const phaseCount = mechanismPhaseCount(spec);
   const desiredChars = sectorTags[spec.transformation];
   const sectorKeys: string[] = [];
+  const hazardKeys: string[] = [];
   const doorKeys: string[] = [];
   grid.forEach((row, z) => [...row].forEach((char, x) => {
     if (desiredChars.includes(char)) sectorKeys.push(`${x},${z}`);
+    if (['h', 'w'].includes(char)) hazardKeys.push(`${x},${z}`);
     if ((spec.transformation === 'open-door' || spec.transformation === 'spawn-wave') && char === 'D') doorKeys.push(`${x},${z}`);
   }));
   const specialLabels: Partial<Record<MapId, readonly string[]>> = {
@@ -568,6 +751,9 @@ const makeMechanisms = (spec: MapSpec, grid: readonly string[], landmarks: reado
       label: specialLabels[spec.id]?.[index] ?? `${MECHANISM_LABELS[spec.id]} ${index + 1}`,
       action: spec.transformation,
       sectorTags: sectorKeys.filter((_key, targetIndex) => targetIndex % phaseCount === index),
+      hazardTags: spec.id === 'E2M6'
+        ? hazardKeys.filter((_key, targetIndex) => targetIndex % phaseCount === index)
+        : [],
       landmarkTags: landmarks.filter((landmark) => landmark.mechanism === id).map((landmark) => landmark.tag),
       doorTags: doorKeys.filter((_key, targetIndex) => targetIndex % phaseCount === index),
       motion: spec.id === 'E3M2' ? (index === 0 ? 'slide-x' : 'slide-z') : motion,
@@ -583,10 +769,6 @@ const makeMechanisms = (spec: MapSpec, grid: readonly string[], landmarks: reado
 };
 
 const distance = (a: GridPoint, b: GridPoint): number => Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
-
-// Preserve the authored relative pars while scaling the classic-speed estimates
-// to the campaign's deliberate exploration and combat target.
-const experiencedPar = (spec: MapSpec): number => Math.max(900, Math.min(2100, spec.parSeconds * 2));
 
 const baseRoutePoints = (grid: readonly string[], blocked = 's'): readonly GridPoint[] => {
   const start = pointsFor(grid, '.,a')[0];
@@ -608,6 +790,28 @@ const baseRoutePoints = (grid: readonly string[], blocked = 's'): readonly GridP
     return { x: x + .5, z: z + .5 };
   });
 };
+
+export interface CampaignRouteParInputs {
+  readonly routeCells: number;
+  readonly normalEnemies: number;
+  readonly mechanisms: number;
+  readonly credentials: number;
+  readonly bossPhases: number;
+}
+
+export const standardRouteCellCount = (grid: readonly string[]): number => baseRoutePoints(grid).length;
+
+// Experienced-route model: navigation/line reading, average normal-placement
+// combat, mechanism operation, credential backtracking, and boss phases. Pars
+// are rounded to classic 15-second intermission increments without a floor.
+export const campaignRouteParSeconds = (inputs: CampaignRouteParInputs): number => Math.round((
+  60
+  + inputs.routeCells * 1.35
+  + inputs.normalEnemies * 4
+  + inputs.mechanisms * 45
+  + inputs.credentials * 30
+  + inputs.bossPhases * 180
+) / 15) * 15;
 
 const DOOR_CELLS = 'DRYC';
 const actorRoutePoints = (grid: readonly string[], blocked = 's'): readonly GridPoint[] =>
@@ -681,8 +885,15 @@ const ENEMY_ROLE_ORDER: Readonly<Record<EnemyEncounterRole, readonly EnemyId[]>>
   punish: ['reserve-eater', 'cat-model', 'bad-faith-counsel', 'liability-mass', 'denial-officer', 'fraud-apparition', 'exposure-hound', 'subrogator', 'ember-clerk', 'coverage-drone', 'returned-mail', 'desk-warden'],
 };
 
-const enemyForRole = (spec: MapSpec, role: EnemyEncounterRole, occurrence: number): EnemyId => {
-  const candidates = ENEMY_ROLE_ORDER[role].filter((enemy) => spec.enemies.includes(enemy));
+const enemyForRole = (
+  spec: MapSpec,
+  encounter: CampaignEncounterPhaseId,
+  role: EnemyEncounterRole,
+  occurrence: number,
+): EnemyId => {
+  const phasePalette = CAMPAIGN_PHASE_ENEMY_PALETTES[spec.id][encounter];
+  const candidates = ENEMY_ROLE_ORDER[role]
+    .filter((enemy) => spec.enemies.includes(enemy) && phasePalette.includes(enemy));
   if (candidates.length === 0) throw new Error(`${spec.id} has no enemy candidate for ${role}`);
   return candidates[occurrence % candidates.length];
 };
@@ -708,7 +919,12 @@ const supplyFor = (episode: 1 | 2 | 3): readonly PickupId[] => episode === 1
   ? ['staples-small', 'fasteners-small', 'adhesive-bandage', 'goodwill-token', 'staples-large', 'field-medical-case', 'loss-control-vest', 'canister', 'night-inspection-goggles']
   : episode === 2
     ? ['fasteners-large', 'fasteners-large', 'canister', 'canister-crate', 'adhesive-bandage', 'field-medical-case', 'loss-control-vest', 'hazard-endorsement', 'forensic-lens']
-    : ['toner-cell', 'fasteners-large', 'canister-crate', 'toner-cell', 'toner-pack', 'field-medical-case', 'catastrophe-suit', 'rapid-authority', 'emergency-reserve', 'temporary-binder'];
+    : ['toner-cell', 'fasteners-large', 'canister-crate', 'toner-cell', 'toner-pack', 'field-medical-case', 'rapid-authority', 'temporary-binder', 'adhesive-bandage', 'goodwill-token'];
+
+const LATE_CAMPAIGN_RECOVERY_ROUTE: Readonly<Partial<Record<MapId, string>>> = {
+  E3M1: 'entry', E3M2: 'transformation', E3M3: 'climax', E3M4: 'transformation', E3M5: 'entry',
+  E3M6: 'climax', E3M7: 'transformation', E3M8: 'boss-1', E3M9: 'climax',
+};
 
 type PickupSecretRewardCategory = Exclude<SecretRewardCategory, 'weapon'>;
 
@@ -740,20 +956,49 @@ const rewardLabel = (placement: SecretRewardPlacement): string => {
   return id.split('-').map((word) => `${word[0].toUpperCase()}${word.slice(1)}`).join(' ');
 };
 
+const standardWeaponCountFor = (spec: MapSpec, episode: 1 | 2 | 3): number =>
+  spec.bosses?.length || spec.id === 'E3M2' ? spec.weapons.length : spec.id.endsWith('M1') ? episode : 1;
+
+const SECRET_WEAPON_REWARDS: Readonly<Partial<Record<MapId, { readonly secretIndex: number; readonly weapon: WeaponId }>>> = {
+  E1M9: { secretIndex: 0, weapon: 'plasma-copier' },
+  E2M1: { secretIndex: 2, weapon: 'audit-repeater' },
+  E2M4: { secretIndex: 0, weapon: 'umbra-saw' },
+  E2M9: { secretIndex: 0, weapon: 'umbra-saw' },
+  E3M7: { secretIndex: 2, weapon: 'umbra-saw' },
+  E3M9: { secretIndex: 0, weapon: 'umbra-saw' },
+};
+
+const meaningfulSecretAmmo = (spec: MapSpec, episode: 1 | 2 | 3, secretIndex: number): PickupId => {
+  const standardWeapons = spec.weapons.slice(0, standardWeaponCountFor(spec, episode));
+  const candidates: PickupId[] = ['staples-large'];
+  if (standardWeapons.some((weapon) => weapon === 'twin-bore-riveter' || weapon === 'audit-repeater')) candidates.push('fasteners-large');
+  if (standardWeapons.includes('catastrophe-launcher')) candidates.push('canister-crate');
+  if (standardWeapons.some((weapon) => weapon === 'plasma-copier' || weapon === 'binding-engine')) candidates.push('toner-pack');
+  return candidates[(Number(spec.id[3]) + secretIndex) % candidates.length];
+};
+
 const secretRewardFor = (
   spec: MapSpec,
   episode: 1 | 2 | 3,
   secretIndex: number,
 ): Pick<SecretDefinition, 'rewardCategory' | 'reward' | 'rewardPlacement'> => {
   const mapIndex = Number(spec.id[3]) - 1;
-  const rewardCategory = SECRET_REWARD_CATEGORIES[(mapIndex + secretIndex) % SECRET_REWARD_CATEGORIES.length];
+  const authoredWeapon = SECRET_WEAPON_REWARDS[spec.id];
+  const scheduledCategory = SECRET_REWARD_CATEGORIES[(mapIndex + secretIndex) % SECRET_REWARD_CATEGORIES.length];
+  const rewardCategory: SecretRewardCategory = authoredWeapon?.secretIndex === secretIndex
+    ? 'weapon'
+    : scheduledCategory === 'weapon'
+      ? (mapIndex + secretIndex) % 2 === 0 ? 'ammo' : 'powerup'
+      : scheduledCategory;
   const rewardPlacement: SecretRewardPlacement = rewardCategory === 'weapon'
-    ? { type: 'weapon', weapon: spec.weapons[(mapIndex + secretIndex) % spec.weapons.length] }
+    ? { type: 'weapon', weapon: authoredWeapon!.weapon }
     : {
       type: 'pickup',
-      pickup: SECRET_PICKUP_REWARDS[episode][rewardCategory][
-        (mapIndex + secretIndex) % SECRET_PICKUP_REWARDS[episode][rewardCategory].length
-      ],
+      pickup: rewardCategory === 'ammo'
+        ? meaningfulSecretAmmo(spec, episode, secretIndex)
+        : SECRET_PICKUP_REWARDS[episode][rewardCategory][
+          (mapIndex + secretIndex) % SECRET_PICKUP_REWARDS[episode][rewardCategory].length
+        ],
     };
   return { rewardCategory, reward: rewardLabel(rewardPlacement), rewardPlacement };
 };
@@ -865,7 +1110,7 @@ const makeActors = (
           : undefined;
       const roleDepth = { anchor: 0, pressure: .24, shape: .52, punish: .76 }[role];
       const point = reserveHostile(zone, Math.floor(zone.length * roleDepth) + phaseIndex * 7, preferred);
-      const enemy = enemyForRole(spec, role, roleOccurrence);
+      const enemy = enemyForRole(spec, encounter, role, roleOccurrence);
       actors.push({
         ...point,
         type: 'enemy',
@@ -882,7 +1127,14 @@ const makeActors = (
     }
   }
 
-  const supply = supplyFor(episode);
+  // The first episode's arena uses small, recoverable increments so a player
+  // can route through the boss floor without consuming oversized health items
+  // for only a few missing points. Its guaranteed phase bandages remain intact.
+  const supply = episode === 1 && spec.bosses?.length
+    ? supplyFor(episode).map((pickup) => (
+      pickup === 'field-medical-case' || pickup === 'adhesive-bandage' ? 'goodwill-token' : pickup
+    ))
+    : supplyFor(episode);
   const routeBundles: Readonly<Record<1 | 2 | 3, readonly PickupId[]>> = {
     1: ['staples-large', 'adhesive-bandage', 'staples-large', 'staples-large', 'staples-large'],
     2: ['fasteners-large', 'field-medical-case', 'fasteners-large', 'canister-crate', 'fasteners-large'],
@@ -920,6 +1172,15 @@ const makeActors = (
     }
   }
 
+  const lateRecoveryRoute = LATE_CAMPAIGN_RECOVERY_ROUTE[spec.id];
+  if (lateRecoveryRoute) {
+    const route = lateRecoveryRoute in authoredZones
+      ? authoredZones[lateRecoveryRoute as EncounterPhase]
+      : authoredZones.climax;
+    const point = route[(hardCount + pickupCount + 17) % route.length];
+    actors.push({ ...occupy(point), type: 'pickup', pickup: 'emergency-reserve', route: lateRecoveryRoute });
+  }
+
   spec.recoverySupplies?.forEach(({ pickup, route: routeId }, index) => {
     const route = routeId in authoredZones ? authoredZones[routeId as EncounterPhase] : authoredZones.climax;
     const point = index === 0 ? blueprint.rewardPocket : route[(hardCount + pickupCount + index * 13) % route.length];
@@ -928,11 +1189,12 @@ const makeActors = (
 
   // Fresh-start boss routes need both a sustainable workhorse and the authored
   // set-piece weapon; hiding either behind a secret makes the arena depend on
-  // carried inventory despite the per-map starter-equivalent contract.
-  const standardWeaponCount = spec.bosses?.length ? spec.weapons.length : spec.id.endsWith('M1') ? episode : 1;
-  spec.weapons.forEach((weapon, index) => {
+  // carried inventory despite the per-map starter-equivalent contract. Other
+  // weapons are materialized only by their concealed SecretDefinition.
+  const standardWeaponCount = standardWeaponCountFor(spec, episode);
+  spec.weapons.slice(0, standardWeaponCount).forEach((weapon, index) => {
     const point = available[(hardCount + pickupCount + index * 11) % available.length];
-    actors.push({ ...occupy(point), type: 'weapon', weapon, secret: index >= standardWeaponCount, route: index === 0 ? 'entry' : 'transformation' });
+    actors.push({ ...occupy(point), type: 'weapon', weapon, route: index === 0 ? 'entry' : 'transformation' });
   });
 
   let previousCredentialReach = new Set<string>();
@@ -985,12 +1247,11 @@ const makeSecrets = (spec: MapSpec, grid: readonly string[], start: GridPoint): 
   };
   return secretPoints.slice(0, spec.secretClues.length).map((at, index) => {
     const clue = spec.secretClues[index];
-    const clueProps = LANDMARK_PROPS[spec.id];
     return {
       id: `${spec.id.toLowerCase()}-secret-${index + 1}`,
       clue,
       ...secretRewardFor(spec, episode, index),
-      clueProp: clueProps[(hash(`${spec.id}:secret-props`) + index) % clueProps.length],
+      clueProp: SECRET_CLUE_PROPS[spec.id][index],
       at,
       revealAt: revealPoint(at, index),
       concealedCells: [`${Math.floor(at.x)},${Math.floor(at.z)}`],
@@ -1127,7 +1388,13 @@ const buildMap = (spec: MapSpec): CampaignMap => {
     location: spec.location,
     music: spec.id,
     sky: skies[episode.number],
-    parSeconds: experiencedPar(spec),
+    parSeconds: campaignRouteParSeconds({
+      routeCells: standardRouteCellCount(grid),
+      normalEnemies: spec.normalEnemies,
+      mechanisms: mechanisms.length,
+      credentials: spec.credentials.length,
+      bossPhases: spec.bosses?.length ?? 0,
+    }),
     standardEnemyBudget: spec.normalEnemies,
     secretMap: spec.secretMap,
     secretExitTo: spec.secretExitTo,
