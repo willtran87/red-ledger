@@ -124,6 +124,15 @@ describe('authored world content', () => {
     expect(climax.every((actor) => !actor.phaseLocked && actor.sprite.visible && actor.awake)).toBe(true);
   });
 
+  it('holds route recovery and weapons until their encounter begins', () => {
+    const world = worldFor('E3M8');
+    const bossTwoRecovery = world.pickups.filter((pickup) => pickup.route === 'boss-2');
+    expect(bossTwoRecovery.length).toBeGreaterThan(0);
+    expect(bossTwoRecovery.every((pickup) => pickup.phaseLocked && !pickup.sprite.visible)).toBe(true);
+    world.unlockEncounter('boss-2');
+    expect(bossTwoRecovery.every((pickup) => !pickup.phaseLocked && pickup.sprite.visible)).toBe(true);
+  });
+
   it('batches hazard surfaces and keeps their mover height and visibility synchronized', () => {
     const world = worldFor('E2M6');
     const hazardCells = world.map.grid.flatMap((row, z) => [...row].flatMap((tile, x) => ['h', 'w'].includes(tile) ? [{ x, z }] : []));

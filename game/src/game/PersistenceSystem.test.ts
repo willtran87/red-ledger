@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   AUTOSAVE_SLOT_COUNT,
   CAMPAIGN_SCHEMA_VERSION,
@@ -37,6 +37,7 @@ class FaultingStorage implements Storage {
   denyWrites = false;
   denyRemoves = false;
   quotaKey?: string;
+  quotaExactKey?: string;
 
   get length(): number { return this.backing.length; }
   clear(): void { this.backing.clear(); }
@@ -51,6 +52,7 @@ class FaultingStorage implements Storage {
   }
   setItem(key: string, value: string): void {
     if (this.denyWrites) throw new DOMException('Storage access denied', 'SecurityError');
+    if (this.quotaExactKey === key) throw new DOMException('Quota exceeded', 'QuotaExceededError');
     if (this.quotaKey && key.includes(this.quotaKey)) throw new DOMException('Quota exceeded', 'QuotaExceededError');
     this.backing.setItem(key, value);
   }
@@ -80,7 +82,7 @@ const metadata = (mapId: string, episodeId = 'first-notice'): SaveMetadataInput 
   playSeconds: 42,
 });
 
-const makeSystem = (storage: Storage, times: number[] = [1000]) => {
+const makeSystem = (storage: Storage, times: number[] = [1000], writerId = 'test-writer') => {
   let index = 0;
   return new PersistenceSystem<TestState>(storage, {
     namespace: 'test',
@@ -89,8 +91,13 @@ const makeSystem = (storage: Storage, times: number[] = [1000]) => {
     initialUnlockedEpisodes: ['first-notice'],
     validateState: isTestState,
     now: () => times[Math.min(index++, times.length - 1)],
+    writerId,
   });
 };
+
+const storageKeys = (storage: Storage, prefix = ''): string[] => Array.from({ length: storage.length }, (_, index) => storage.key(index))
+  .filter((key): key is string => Boolean(key?.startsWith(prefix)))
+  .sort();
 
 describe('PersistenceSystem save slots', () => {
   it('exposes exactly eight named manual slots with placeholder thumbnails', () => {
@@ -291,6 +298,236 @@ describe('PersistenceSystem save slots', () => {
     const original = storage.getItem('test:save:manual-1');
     expect(() => system.saveManual(1, { ...state('BAD'), health: Number.NaN }, metadata('E1M1'))).toThrow(TypeError);
     expect(storage.getItem('test:save:manual-1')).toBe(original);
+  });
+});
+
+describe('PersistenceSystem cross-tab slot safety', () => {
+  it('leaves ordinary manual, quick, and rotating autosaves free of conflict copies', () => {
+    const storage = new MemoryStorage();
+    const system = makeSystem(storage, [10, 20, 30, 40, 50, 60, 70, 80]);
+    system.loadManual(1);
+    system.saveManual(1, state('FIRST'), metadata('E1M1'));
+    system.saveManual(1, state('SECOND'), metadata('E1M2'));
+    system.quicksave(state('QUICK'), metadata('E1M2'));
+    for (let index = 1; index <= AUTOSAVE_SLOT_COUNT * 2; index += 1) {
+      system.autosave(state(`AUTO-${index}`), metadata(`E1M${index}`));
+    }
+
+    expect(storageKeys(storage, 'test:save-shadow:')).toEqual([]);
+    expect(system.inspectAllSlots().some((slot) => slot.kind === 'conflict')).toBe(false);
+  });
+
+  it('preserves an externally changed slot as a distinct bounded conflict copy', () => {
+    const storage = new MemoryStorage();
+    const staleTab = makeSystem(storage, [300, 310, 320, 330, 340, 350], 'stale-tab');
+    staleTab.loadManual(1);
+
+    for (let index = 1; index <= 5; index += 1) {
+      makeSystem(storage, [index * 10], `external-${index}`).saveManual(1, state(`EXTERNAL-${index}`), metadata(`E1M${index}`));
+      staleTab.saveManual(1, state(`LOCAL-${index}`), metadata(`E2M${index}`));
+    }
+
+    const shadows = storageKeys(storage, 'test:save-shadow:manual-1:');
+    const conflicts = staleTab.inspectAllSlots().filter((slot) => slot.kind === 'conflict');
+    expect(shadows).toHaveLength(2);
+    expect(conflicts).toHaveLength(2);
+    expect(conflicts.every((slot) => slot.status === 'valid' && slot.metadata.name.startsWith('Previous tab copy:'))).toBe(true);
+    expect(staleTab.loadManual(1)).toMatchObject({ status: 'valid', state: { map: 'LOCAL-5' } });
+    expect(staleTab.newestValidContinue()).toMatchObject({ kind: 'manual', state: { map: 'LOCAL-5' } });
+  });
+
+  it('caps retained conflict copies globally as well as per slot', () => {
+    const storage = new MemoryStorage();
+    for (let slot = 1; slot <= 5; slot += 1) {
+      const staleTab = makeSystem(storage, [1_000 + slot * 10, 2_000 + slot * 10], `stale-${slot}`);
+      staleTab.loadManual(slot);
+      for (let version = 1; version <= 2; version += 1) {
+        makeSystem(storage, [slot * 100 + version], `external-${slot}-${version}`)
+          .saveManual(slot, state(`EXTERNAL-${slot}-${version}`), metadata(`E${slot}M${version}`));
+        staleTab.saveManual(slot, state(`LOCAL-${slot}-${version}`), metadata(`E${slot}M${version + 2}`));
+      }
+    }
+    const shadows = storageKeys(storage, 'test:save-shadow:');
+    expect(shadows.length).toBeLessThanOrEqual(8);
+    for (let slot = 1; slot <= 5; slot += 1) {
+      expect(shadows.filter((key) => key.includes(`save-shadow:manual-${slot}:`)).length).toBeLessThanOrEqual(2);
+    }
+    expect(makeSystem(storage, [9_000], 'reader').inspectAllSlots().filter((slot) => slot.kind === 'conflict')).toHaveLength(shadows.length);
+  });
+
+  it('preserves a version displaced after two tabs both read the same canonical', () => {
+    const storage = new MemoryStorage();
+    makeSystem(storage, [10], 'base-tab').saveManual(1, state('BASE'), metadata('E1M1'));
+    const firstTab = makeSystem(storage, [20], 'first-tab');
+    firstTab.loadManual(1);
+    firstTab.saveManual(1, state('FIRST'), metadata('E1M2'));
+    const firstRaw = storage.getItem('test:save:manual-1')!;
+
+    const isolatedSecondStorage = new MemoryStorage();
+    isolatedSecondStorage.setItem('test:save:manual-1', firstRaw);
+    makeSystem(isolatedSecondStorage, [30], 'second-tab').saveManual(1, state('SECOND'), metadata('E1M3'));
+    const secondRaw = isolatedSecondStorage.getItem('test:save:manual-1')!;
+    storage.setItem('test:save:manual-1', secondRaw);
+    const storageHandler = (firstTab as unknown as { handleStorageEvent: (event: StorageEvent) => void }).handleStorageEvent;
+    storageHandler({ key: 'test:save:manual-1', oldValue: firstRaw, newValue: secondRaw, storageArea: storage } as unknown as StorageEvent);
+
+    expect(firstTab.loadManual(1)).toMatchObject({ state: { map: 'SECOND' } });
+    expect(firstTab.inspectAllSlots().find((slot) => slot.kind === 'conflict')).toMatchObject({ state: { map: 'FIRST' } });
+  });
+
+  it('preserves an external write that lands beneath a volatile tab-only canonical', () => {
+    const storage = new FaultingStorage();
+    makeSystem(storage, [10], 'base-tab').saveManual(1, state('BASE'), metadata('E1M1'));
+    const baseRaw = storage.backing.getItem('test:save:manual-1')!;
+    const firstTab = makeSystem(storage, [20, 40], 'first-tab');
+    firstTab.loadManual(1);
+    storage.quotaKey = 'save:manual-1';
+    expect(firstTab.saveManual(1, state('TAB-ONLY'), metadata('E1M2')).persistence).toBe('memory-only');
+
+    const externalStorage = new MemoryStorage();
+    externalStorage.setItem('test:save:manual-1', baseRaw);
+    makeSystem(externalStorage, [30], 'external-tab').saveManual(1, state('EXTERNAL'), metadata('E1M3'));
+    const externalRaw = externalStorage.getItem('test:save:manual-1')!;
+    storage.quotaKey = undefined;
+    storage.backing.setItem('test:save:manual-1', externalRaw);
+    const storageHandler = (firstTab as unknown as { handleStorageEvent: (event: StorageEvent) => void }).handleStorageEvent;
+    storageHandler({ key: 'test:save:manual-1', oldValue: baseRaw, newValue: externalRaw, storageArea: storage } as unknown as StorageEvent);
+
+    expect(firstTab.saveManual(1, state('RECOVERED'), metadata('E1M4')).persistence).toBe('persistent');
+    expect(makeSystem(storage.backing, [50], 'fresh-tab').loadManual(1)).toMatchObject({ state: { map: 'RECOVERED' } });
+    expect(makeSystem(storage.backing, [50], 'fresh-tab').inspectAllSlots().find((slot) => slot.kind === 'conflict')).toMatchObject({
+      state: { map: 'EXTERNAL' },
+    });
+  });
+
+  it('does not let invalid or future shadow documents evict valid recovery copies', () => {
+    const storage = new MemoryStorage();
+    const staleTab = makeSystem(storage, [100, 200, 300, 400], 'stale-tab');
+    staleTab.loadManual(1);
+    makeSystem(storage, [50], 'external-1').saveManual(1, state('EXTERNAL-1'), metadata('E1M1'));
+    staleTab.saveManual(1, state('LOCAL-1'), metadata('E1M2'));
+    for (let index = 0; index < 3; index += 1) {
+      storage.setItem(`test:save-shadow:manual-1:future-${index}`, JSON.stringify({
+        schema: 'red-ledger-save-shadow', version: 2, createdAt: 99_000 + index,
+        source: { id: 'manual-1', kind: 'manual', defaultName: 'Manual 1' },
+      }));
+    }
+    makeSystem(storage, [250], 'external-2').saveManual(1, state('EXTERNAL-2'), metadata('E1M3'));
+    staleTab.saveManual(1, state('LOCAL-2'), metadata('E1M4'));
+
+    expect(storageKeys(storage, 'test:save-shadow:manual-1:future-')).toHaveLength(3);
+    expect(staleTab.inspectAllSlots().filter((slot) => slot.kind === 'conflict')).toHaveLength(2);
+  });
+
+  it('keeps the new write memory-only when a conflict copy exceeds quota', () => {
+    const storage = new FaultingStorage();
+    const staleTab = makeSystem(storage, [100, 300, 500], 'stale-tab');
+    staleTab.loadManual(1);
+    makeSystem(storage, [200], 'external-tab').saveManual(1, state('EXTERNAL'), metadata('E1M2'));
+    const externalRaw = storage.backing.getItem('test:save:manual-1');
+    storage.quotaKey = 'save-shadow:';
+
+    expect(staleTab.saveManual(1, state('LOCAL'), metadata('E1M3'))).toMatchObject({ persistence: 'memory-only' });
+    expect(storage.backing.getItem('test:save:manual-1')).toBe(externalRaw);
+    expect(staleTab.loadManual(1)).toMatchObject({ persistence: 'memory-only', state: { map: 'LOCAL' } });
+    expect(staleTab.inspectAllSlots().find((slot) => slot.kind === 'conflict')).toMatchObject({
+      persistence: 'memory-only',
+      state: { map: 'EXTERNAL' },
+    });
+
+    storage.quotaKey = undefined;
+    expect(staleTab.saveManual(1, state('LOCAL-PERSISTED'), metadata('E1M4'))).toMatchObject({ persistence: 'persistent' });
+    expect(makeSystem(storage.backing, [600], 'fresh-tab').loadManual(1)).toMatchObject({ state: { map: 'LOCAL-PERSISTED' } });
+    expect(makeSystem(storage.backing, [600], 'fresh-tab').inspectAllSlots().find((slot) => slot.kind === 'conflict')).toMatchObject({
+      state: { map: 'EXTERNAL' },
+    });
+  });
+
+  it('does not overwrite a corrupt or future external canonical that cannot be recovered safely', () => {
+    const storage = new MemoryStorage();
+    const staleTab = makeSystem(storage, [100, 300], 'stale-tab');
+    staleTab.loadManual(1);
+    const unsigned = {
+      ...CURRENT_SAVE_V1_FIXTURE,
+      version: SAVE_SCHEMA_VERSION + 1,
+      metadata: { ...CURRENT_SAVE_V1_FIXTURE.metadata, slotId: 'manual-1' },
+    };
+    const { checksum: _fixtureChecksum, ...futureUnsigned } = unsigned;
+    const futureRaw = JSON.stringify({ ...futureUnsigned, checksum: checksum(futureUnsigned) });
+    storage.setItem('test:save:manual-1', futureRaw);
+
+    expect(staleTab.saveManual(1, state('LOCAL'), metadata('E1M3'))).toMatchObject({ persistence: 'memory-only' });
+    expect(storage.getItem('test:save:manual-1')).toBe(futureRaw);
+    expect(staleTab.loadManual(1)).toMatchObject({ persistence: 'memory-only', state: { map: 'LOCAL' } });
+    staleTab.clearManual(1);
+    expect(storage.getItem('test:save:manual-1')).toBe(futureRaw);
+    expect(staleTab.loadManual(1)).toMatchObject({ status: 'invalid', reason: 'Save version is newer than this build' });
+  });
+
+  it('preflights a volatile save retry before an external future record can be overwritten', () => {
+    const storage = new FaultingStorage();
+    makeSystem(storage, [10], 'base-tab').saveManual(1, state('BASE'), metadata('E1M1'));
+    const system = makeSystem(storage, [20, 30, 40], 'quota-tab');
+    system.loadManual(1);
+    storage.quotaExactKey = 'test:save:manual-1';
+    expect(system.saveManual(1, state('TAB-ONLY'), metadata('E1M2')).persistence).toBe('memory-only');
+
+    const { checksum: _fixtureChecksum, ...futureUnsigned } = {
+      ...CURRENT_SAVE_V1_FIXTURE,
+      version: SAVE_SCHEMA_VERSION + 1,
+      metadata: { ...CURRENT_SAVE_V1_FIXTURE.metadata, slotId: 'manual-1' },
+    };
+    const futureRaw = JSON.stringify({ ...futureUnsigned, checksum: checksum(futureUnsigned) });
+    storage.backing.setItem('test:save:manual-1', futureRaw);
+    storage.quotaExactKey = undefined;
+
+    expect(system.saveManual(1, state('RETRY'), metadata('E1M3')).persistence).toBe('memory-only');
+    expect(storage.backing.getItem('test:save:manual-1')).toBe(futureRaw);
+    system.clearManual(1);
+    expect(storage.backing.getItem('test:save:manual-1')).toBe(futureRaw);
+    expect(system.loadManual(1)).toMatchObject({ status: 'invalid', reason: 'Save version is newer than this build' });
+  });
+
+  it('preserves an empty corrupt save that appears beneath a volatile overlay', () => {
+    const storage = new FaultingStorage();
+    makeSystem(storage, [10], 'base-tab').saveManual(1, state('BASE'), metadata('E1M1'));
+    const system = makeSystem(storage, [20, 30], 'quota-tab');
+    system.loadManual(1);
+    storage.quotaExactKey = 'test:save:manual-1';
+    expect(system.saveManual(1, state('TAB-ONLY'), metadata('E1M2')).persistence).toBe('memory-only');
+    storage.backing.setItem('test:save:manual-1', '');
+    storage.quotaExactKey = undefined;
+
+    expect(system.saveManual(1, state('RETRY'), metadata('E1M3')).persistence).toBe('memory-only');
+    expect(storage.backing.getItem('test:save:manual-1')).toBe('');
+    system.clearManual(1);
+    expect(storage.backing.getItem('test:save:manual-1')).toBe('');
+    expect(system.loadManual(1)).toMatchObject({ status: 'invalid' });
+  });
+
+  it('clears a tab-only overlay without deleting a valid external save whose shadow exceeded quota', () => {
+    const storage = new FaultingStorage();
+    const staleTab = makeSystem(storage, [100, 300], 'stale-tab');
+    staleTab.loadManual(1);
+    makeSystem(storage, [200], 'external-tab').saveManual(1, state('EXTERNAL'), metadata('E1M2'));
+    const externalRaw = storage.backing.getItem('test:save:manual-1');
+    storage.quotaKey = 'save-shadow:';
+
+    expect(staleTab.saveManual(1, state('LOCAL'), metadata('E1M3'))).toMatchObject({ persistence: 'memory-only' });
+    staleTab.clearManual(1);
+    expect(storage.backing.getItem('test:save:manual-1')).toBe(externalRaw);
+    expect(staleTab.loadManual(1)).toMatchObject({ status: 'valid', state: { map: 'EXTERNAL' } });
+  });
+
+  it('refuses to delete a slot that changed after this tab displayed it', () => {
+    const storage = new MemoryStorage();
+    const staleTab = makeSystem(storage, [100], 'stale-tab');
+    makeSystem(storage, [50], 'first-tab').saveManual(1, state('FIRST'), metadata('E1M1'));
+    staleTab.loadManual(1);
+    makeSystem(storage, [75], 'newer-tab').saveManual(1, state('NEWER'), metadata('E1M2'));
+
+    staleTab.clearManual(1);
+    expect(makeSystem(storage, [200], 'fresh-tab').loadManual(1)).toMatchObject({ state: { map: 'NEWER' } });
   });
 });
 
@@ -513,6 +750,101 @@ describe('PersistenceSystem campaign unlocks', () => {
     }
   });
 
+  it('checkpoints campaign mutations in a bounded recovery record when the canonical is protected', () => {
+    vi.useFakeTimers();
+    const { checksum: _checksum, ...currentUnsigned } = CURRENT_CAMPAIGN_V2_FIXTURE;
+    const futureUnsigned = { ...currentUnsigned, version: CAMPAIGN_SCHEMA_VERSION + 1 };
+    const futureRaw = JSON.stringify({ ...futureUnsigned, checksum: checksum(futureUnsigned) });
+    const invalidChecksumRaw = JSON.stringify({ ...CURRENT_CAMPAIGN_V2_FIXTURE, checksum: '00000000' });
+
+    try {
+      for (const raw of ['{broken', invalidChecksumRaw, futureRaw]) {
+        const storage = new MemoryStorage();
+        storage.setItem('test:campaign', raw);
+        const system = makeSystem(storage, [100, 200, 300, 400], 'current-tab');
+        expect(system.completeMap('E1M2').completedMaps).toContain('E1M2');
+        expect(system.completeMap('E1M3').completedMaps).toEqual(['E1M2', 'E1M3']);
+        expect(system.completeEpisode('first-notice', 'exclusions-apply').completedEpisodes).toContain('first-notice');
+        expect(system.storageStatus().mode).toBe('persistent');
+        expect(storage.getItem('test:campaign')).toBe(raw);
+        expect(storageKeys(storage, 'test:campaign-mutation:')).toHaveLength(3);
+        expect(JSON.parse(storage.getItem('test:campaign-recovery')!).appliedMutations).toHaveLength(3);
+
+        vi.advanceTimersByTime(5_000);
+
+        expect(storage.getItem('test:campaign')).toBe(raw);
+        expect(storageKeys(storage, 'test:campaign-mutation:')).toEqual([]);
+        expect(JSON.parse(storage.getItem('test:campaign-recovery')!).appliedMutations).toEqual([]);
+        expect(makeSystem(storage, [500], 'fresh-tab').campaignUnlocks()).toMatchObject({
+          completedMaps: ['E1M2', 'E1M3'],
+          completedEpisodes: ['first-notice'],
+          unlockedEpisodes: ['exclusions-apply', 'first-notice'],
+        });
+        expect(system.conflicts()).toContainEqual(expect.objectContaining({ kind: 'campaign-recovery' }));
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rotates to a bounded current-version checkpoint when both primary records are protected', () => {
+    vi.useFakeTimers();
+    try {
+      const storage = new MemoryStorage();
+      const futureRaw = '{"schema":"red-ledger-campaign","version":999,"checksum":"future"}';
+      const damagedRecoveryRaw = '{damaged-recovery';
+      storage.setItem('test:campaign', futureRaw);
+      storage.setItem('test:campaign-recovery', damagedRecoveryRaw);
+
+      const system = makeSystem(storage, [100, 200, 300], 'current-tab');
+      expect(system.completeMap('E1M2').completedMaps).toContain('E1M2');
+      expect(system.completeMap('E1M3').completedMaps).toEqual(['E1M2', 'E1M3']);
+      expect(system.storageStatus().mode).toBe('persistent');
+      expect(storage.getItem('test:campaign')).toBe(futureRaw);
+      expect(storage.getItem('test:campaign-recovery')).toBe(damagedRecoveryRaw);
+      expect(storage.getItem('test:campaign-recovery-v2')).not.toBeNull();
+
+      vi.advanceTimersByTime(5_000);
+
+      expect(storageKeys(storage, 'test:campaign-mutation:')).toEqual([]);
+      expect(JSON.parse(storage.getItem('test:campaign-recovery-v2')!).appliedMutations).toEqual([]);
+      expect(makeSystem(storage, [400], 'fresh-tab').campaignUnlocks().completedMaps).toEqual(['E1M2', 'E1M3']);
+      expect(storage.getItem('test:campaign')).toBe(futureRaw);
+      expect(storage.getItem('test:campaign-recovery')).toBe(damagedRecoveryRaw);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each(['removed', 'repaired'] as const)('adopts compacted recovery progress when the canonical is %s', (transition) => {
+    vi.useFakeTimers();
+    try {
+      const storage = new MemoryStorage();
+      const protectedRaw = '{future-campaign';
+      storage.setItem('test:campaign', protectedRaw);
+      makeSystem(storage, [100], 'recovery-tab').completeMap('E1M2');
+      vi.advanceTimersByTime(5_000);
+      expect(storageKeys(storage, 'test:campaign-mutation:')).toEqual([]);
+
+      if (transition === 'removed') {
+        storage.removeItem('test:campaign');
+      } else {
+        storage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V2_FIXTURE));
+      }
+
+      const adopted = makeSystem(storage, [200], 'adopting-tab').campaignUnlocks();
+      expect(adopted.completedMaps).toContain('E1M2');
+      if (transition === 'repaired') {
+        expect(adopted.completedMaps).toEqual(expect.arrayContaining([...CURRENT_CAMPAIGN_V2_FIXTURE.progress.completedMaps]));
+      }
+      expect(storage.getItem('test:campaign-recovery')).toBeNull();
+      expect(JSON.parse(storage.getItem('test:campaign')!).progress.completedMaps).toContain('E1M2');
+      expect(makeSystem(storage, [300], 'fresh-tab').campaignUnlocks().completedMaps).toContain('E1M2');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not let damaged campaign progress affect save slots', () => {
     const storage = new MemoryStorage();
     const system = makeSystem(storage);
@@ -520,6 +852,226 @@ describe('PersistenceSystem campaign unlocks', () => {
     storage.setItem('test:campaign', '{bad');
     expect(system.campaignUnlocks().unlockedEpisodes).toEqual(['first-notice']);
     expect(system.loadManual(1)).toMatchObject({ status: 'valid', state: { map: 'SAFE' } });
+  });
+
+  it('reconciles checksum-valid mutation journals from simultaneous campaign branches exactly once', () => {
+    const firstBranch = new MemoryStorage();
+    const secondBranch = new MemoryStorage();
+    const performance = (score: number): Parameters<PersistenceSystem<TestState>['completeMap']>[1] => ({
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 180, parSeconds: 200, score, bestChain: 4,
+      killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B',
+    });
+    makeSystem(firstBranch, [100], 'tab-a').completeMap('E1M1', performance(4_000));
+    makeSystem(secondBranch, [110], 'tab-b').completeMap('E1M1', performance(5_000), 'E1M9');
+
+    const mergedStorage = new MemoryStorage();
+    storageKeys(secondBranch).forEach((key) => mergedStorage.setItem(key, secondBranch.getItem(key)!));
+    storageKeys(firstBranch, 'test:campaign-mutation:').forEach((key) => mergedStorage.setItem(key, firstBranch.getItem(key)!));
+    const system = makeSystem(mergedStorage, [200], 'tab-c');
+
+    expect(system.campaignUnlocks()).toMatchObject({
+      completedMaps: ['E1M1'],
+      discoveredSecretMaps: ['E1M9'],
+      records: { 'E1M1:field-adjuster': { completions: 2, highScore: 5_000 } },
+    });
+    expect(system.campaignUnlocks().records['E1M1:field-adjuster'].completions).toBe(2);
+    system.unlockEpisode('exclusions-apply');
+    const persisted = makeSystem(mergedStorage, [300], 'tab-d').campaignUnlocks();
+    expect(persisted.records['E1M1:field-adjuster'].completions).toBe(2);
+    expect(persisted.unlockedEpisodes).toContain('exclusions-apply');
+  });
+
+  it('uses the external commit ledger when an older writer drops applied mutation ids', () => {
+    const storage = new MemoryStorage();
+    const performance = {
+      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 180, parSeconds: 200, score: 4_000, bestChain: 4,
+      killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B' as const,
+    };
+    makeSystem(storage, [100], 'new-tab').completeMap('E1M1', performance);
+    const parsed = JSON.parse(storage.getItem('test:campaign')!);
+    const { checksum: _oldChecksum, appliedMutations: _oldApplied, ...olderUnsigned } = parsed;
+    storage.setItem('test:campaign', JSON.stringify({ ...olderUnsigned, checksum: checksum(olderUnsigned) }));
+
+    const restored = makeSystem(storage, [200], 'later-tab').campaignUnlocks();
+    expect(restored.records['E1M1:field-adjuster'].completions).toBe(1);
+    expect(restored.completedMaps).toEqual(['E1M1']);
+  });
+
+  it('replays committed journals when the campaign canonical alone is missing', () => {
+    vi.useFakeTimers();
+    try {
+      const storage = new MemoryStorage();
+      makeSystem(storage, [100], 'tab-a').completeMap('E1M1');
+      storage.removeItem('test:campaign');
+      const reader = makeSystem(storage, [200], 'tab-b');
+      expect(reader.campaignUnlocks().completedMaps).toContain('E1M1');
+      vi.advanceTimersByTime(5_000);
+      expect(makeSystem(storage, [300], 'tab-c').campaignUnlocks().completedMaps).toContain('E1M1');
+      expect(storageKeys(storage, 'test:campaign-mutation:')).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps a quota-failed campaign mutation in session without replacing the durable canonical', () => {
+    const storage = new FaultingStorage();
+    const system = makeSystem(storage, [100, 200, 300], 'tab-a');
+    system.completeMap('E1M1');
+    const durableBefore = storage.backing.getItem('test:campaign');
+    storage.quotaKey = 'campaign-mutation:';
+
+    expect(system.completeMap('E1M2').completedMaps).toEqual(['E1M1', 'E1M2']);
+    expect(storage.backing.getItem('test:campaign')).toBe(durableBefore);
+    expect(system.storageStatus()).toMatchObject({ mode: 'memory-fallback' });
+
+    storage.quotaKey = undefined;
+    expect(system.completeMap('E1M3').completedMaps).toEqual(['E1M1', 'E1M2', 'E1M3']);
+    expect(makeSystem(storage.backing, [400], 'tab-b').campaignUnlocks().completedMaps).toEqual(['E1M1', 'E1M2', 'E1M3']);
+    expect(system.storageStatus()).toMatchObject({ mode: 'persistent', volatileKeyCount: 0 });
+  });
+
+  it.each([
+    { target: 'test:campaign', expectedCheckpoint: 'test:campaign-recovery', externalRaw: '{"schema":"red-ledger-campaign","version":999,"primary":"retained"}' },
+    { target: 'test:campaign', expectedCheckpoint: 'test:campaign-recovery', externalRaw: '' },
+    { target: 'test:campaign-recovery', expectedCheckpoint: 'test:campaign-recovery-v2', externalRaw: '{"schema":"red-ledger-campaign","version":999,"recovery":"retained"}' },
+  ])('relocates a volatile $target overlay before external bytes can be overwritten', ({ target, expectedCheckpoint, externalRaw }) => {
+    vi.useFakeTimers();
+    try {
+      const storage = new FaultingStorage();
+      const primaryFutureRaw = '{"schema":"red-ledger-campaign","version":999,"primary":"retained"}';
+      if (target !== 'test:campaign') storage.backing.setItem('test:campaign', primaryFutureRaw);
+      storage.quotaExactKey = target;
+      const system = makeSystem(storage, [100, 200, 300], 'quota-tab');
+      expect(system.completeMap('E1M1').completedMaps).toContain('E1M1');
+      expect(system.storageStatus().mode).toBe('memory-fallback');
+
+      storage.backing.setItem(target, externalRaw);
+      storage.quotaExactKey = undefined;
+
+      expect(system.completeMap('E1M2').completedMaps).toEqual(['E1M1', 'E1M2']);
+      expect(storage.backing.getItem(target)).toBe(externalRaw);
+      expect(system.campaignUnlocks().completedMaps).toEqual(['E1M1', 'E1M2']);
+      expect(storage.backing.getItem(expectedCheckpoint)).not.toBeNull();
+      expect(system.storageStatus()).toMatchObject({ mode: 'persistent', volatileKeyCount: 0 });
+
+      vi.advanceTimersByTime(5_000);
+
+      expect(storageKeys(storage.backing, 'test:campaign-mutation:')).toEqual([]);
+      expect(JSON.parse(storage.backing.getItem(expectedCheckpoint)!).appliedMutations).toEqual([]);
+      expect(storage.backing.getItem(target)).toBe(externalRaw);
+      expect(makeSystem(storage.backing, [400], 'fresh-tab').campaignUnlocks().completedMaps).toEqual(['E1M1', 'E1M2']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('compacts applied campaign journals and their canonical id list after the stability window', () => {
+    vi.useFakeTimers();
+    try {
+      const storage = new MemoryStorage();
+      const system = makeSystem(storage, [100, 200, 300, 400], 'tab-a');
+      system.completeMap('E1M1');
+      system.completeMap('E1M2');
+      system.completeEpisode('first-notice', 'exclusions-apply');
+      expect(storageKeys(storage, 'test:campaign-mutation:')).toHaveLength(3);
+
+      vi.advanceTimersByTime(5_000);
+      expect(storageKeys(storage, 'test:campaign-mutation:')).toEqual([]);
+      expect(JSON.parse(storage.getItem('test:campaign')!).appliedMutations).toEqual([]);
+      expect(system.campaignUnlocks()).toMatchObject({
+        completedMaps: ['E1M1', 'E1M2'],
+        completedEpisodes: ['first-notice'],
+        unlockedEpisodes: ['exclusions-apply', 'first-notice'],
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('adopts and compacts an abandoned foreign journal on the next durable campaign write', () => {
+    vi.useFakeTimers();
+    try {
+      const abandonedStorage = new MemoryStorage();
+      makeSystem(abandonedStorage, [100], 'closed-tab').completeMap('E1M1');
+      const sharedStorage = new MemoryStorage();
+      storageKeys(abandonedStorage).forEach((key) => sharedStorage.setItem(key, abandonedStorage.getItem(key)!));
+
+      const activeTab = makeSystem(sharedStorage, [200], 'active-tab');
+      activeTab.completeMap('E1M2');
+      expect(storageKeys(sharedStorage, 'test:campaign-mutation:')).toHaveLength(2);
+      expect(activeTab.campaignUnlocks().completedMaps).toEqual(['E1M1', 'E1M2']);
+
+      vi.advanceTimersByTime(5_000);
+      expect(storageKeys(sharedStorage, 'test:campaign-mutation:')).toEqual([]);
+      expect(JSON.parse(sharedStorage.getItem('test:campaign')!).appliedMutations).toEqual([]);
+      expect(makeSystem(sharedStorage, [300], 'later-tab').campaignUnlocks().completedMaps).toEqual(['E1M1', 'E1M2']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('adopts and compacts a crash-abandoned journal during a read-only session', () => {
+    vi.useFakeTimers();
+    try {
+      const abandonedStorage = new MemoryStorage();
+      makeSystem(abandonedStorage, [100], 'closed-tab').completeMap('E1M1');
+      const journalKey = storageKeys(abandonedStorage, 'test:campaign-mutation:')[0];
+      const sharedStorage = new MemoryStorage();
+      sharedStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V2_FIXTURE));
+      sharedStorage.setItem(journalKey, abandonedStorage.getItem(journalKey)!);
+
+      const reader = makeSystem(sharedStorage, [200], 'reader-tab');
+      expect(reader.campaignUnlocks().completedMaps).toContain('E1M1');
+      vi.advanceTimersByTime(5_000);
+      expect(storageKeys(sharedStorage, 'test:campaign-mutation:')).toEqual([]);
+      expect(makeSystem(sharedStorage, [300], 'later-tab').campaignUnlocks().completedMaps).toContain('E1M1');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('preserves compatible campaign extensions while compacting journals', () => {
+    vi.useFakeTimers();
+    try {
+      const storage = new MemoryStorage();
+      const system = makeSystem(storage, [100], 'tab-a');
+      system.completeMap('E1M1');
+      const parsed = JSON.parse(storage.getItem('test:campaign')!);
+      const { checksum: _storedChecksum, ...unsigned } = parsed;
+      const extended = {
+        ...unsigned,
+        vendorExtension: { retained: true },
+        progress: { ...unsigned.progress, futureMetric: 17 },
+      };
+      storage.setItem('test:campaign', JSON.stringify({ ...extended, checksum: checksum(extended) }));
+
+      vi.advanceTimersByTime(5_000);
+      const compacted = JSON.parse(storage.getItem('test:campaign')!);
+      expect(compacted.vendorExtension).toEqual({ retained: true });
+      expect(compacted.progress.futureMetric).toBe(17);
+      expect(compacted.appliedMutations).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('recovers from a failed maintenance removal on the next campaign mutation', () => {
+    vi.useFakeTimers();
+    try {
+      const storage = new FaultingStorage();
+      const system = makeSystem(storage, [100, 200], 'tab-a');
+      system.completeMap('E1M1');
+      storage.denyRemoves = true;
+      vi.advanceTimersByTime(5_000);
+      expect(system.storageStatus().mode).toBe('memory-fallback');
+
+      storage.denyRemoves = false;
+      expect(system.completeMap('E1M2').completedMaps).toEqual(['E1M1', 'E1M2']);
+      expect(system.storageStatus().mode).toBe('persistent');
+      expect(makeSystem(storage.backing, [300], 'fresh-tab').campaignUnlocks().completedMaps).toEqual(['E1M1', 'E1M2']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

@@ -33,15 +33,16 @@ assert(
 );
 
 await page.evaluate(() => window.__redLedger.loadMap('E1M1'));
-await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
-const massEffectBaseline = (await state()).runtime.drawCalls;
-await page.evaluate(() => window.__redLedger.defeatAll());
+await page.evaluate(() => { window.__redLedger.defeatAll(); window.advanceTime(35); });
 await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 const massEffects = await state();
 assert(massEffects.combatEffects.animated.length <= 10, `Authored effect concurrency exceeded its budget: ${massEffects.combatEffects.animated.length}`);
+await page.evaluate(() => { window.advanceTime(3_000); });
+await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+const settledMassClose = await state();
 assert(
-  massEffects.runtime.drawCalls - massEffectBaseline <= 12,
-  `Mass-close feedback exceeded the 10 authored + 2 pooled draw budget: ${massEffectBaseline} -> ${massEffects.runtime.drawCalls}`,
+  massEffects.runtime.drawCalls - settledMassClose.runtime.drawCalls <= 12,
+  `Mass-close feedback exceeded the 10 authored + 2 pooled draw budget: ${settledMassClose.runtime.drawCalls} settled -> ${massEffects.runtime.drawCalls} active`,
 );
 
 await page.evaluate(() => window.__redLedger.loadMap('E1M1'));

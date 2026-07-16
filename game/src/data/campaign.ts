@@ -93,6 +93,7 @@ interface MapSpec {
   readonly signatureBeat: string;
   readonly secretClues: readonly string[];
   readonly bosses?: readonly BossId[];
+  readonly recoverySupplies?: readonly { readonly pickup: PickupId; readonly route: string }[];
   readonly secretMap?: boolean;
   readonly secretExitTo?: MapId;
   readonly nextMap?: MapId;
@@ -159,7 +160,7 @@ const specs: readonly MapSpec[] = [
   },
   {
     id: 'E1M8', title: 'Regional Authority', location: 'Fortress atrium and binding arena', layout: 'arena',
-    parSeconds: 390, normalEnemies: 76, enemies: E1_FULL, weapons: ['binding-engine'], credentials: [],
+    parSeconds: 390, normalEnemies: 76, enemies: E1_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
     transformation: 'spawn-wave', nextMap: 'E2M1', bosses: ['regional-director'],
     signatureBeat: 'Meeting-room shutters feed adds into the Regional Director canister barrage.',
     secretClues: ['A cracked authority seal beneath the entry stairs', 'A dark meeting room overlooking the arena', 'A maintenance hatch behind a canister rack'],
@@ -216,14 +217,17 @@ const specs: readonly MapSpec[] = [
   {
     id: 'E2M7', title: 'Discovery', location: 'Litigation tower and evidence repository', layout: 'rings',
     parSeconds: 560, normalEnemies: 128, enemies: E2_FULL, weapons: ['binding-engine'], credentials: ['red', 'cyan'],
-    transformation: 'teleport', nextMap: 'E2M8',
+    transformation: 'teleport', nextMap: 'E2M8', recoverySupplies: [
+      { pickup: 'toner-pack', route: 'transformation' }, { pickup: 'canister', route: 'climax' },
+    ],
     signatureBeat: 'Deposition rooms teleport between contradictory versions of the same floor.',
     secretClues: ['Two clocks disagree by exactly one minute', 'A deposition lamp casting two shadows', 'An evidence seal applied backward', 'A window showing the room from outside', 'A court reporter key heard through stone'],
   },
   {
     id: 'E2M8', title: 'The Aggregate', location: 'Flooded data hall and joined-loss arena', layout: 'arena',
-    parSeconds: 480, normalEnemies: 90, enemies: E2_FULL, weapons: ['binding-engine'], credentials: [],
+    parSeconds: 480, normalEnemies: 90, enemies: E2_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
     transformation: 'lower-floor', nextMap: 'E3M1', bosses: ['aggregate'],
+    recoverySupplies: [{ pickup: 'toner-pack', route: 'boss-1' }, { pickup: 'toner-pack', route: 'boss-1' }],
     signatureBeat: 'Cover islands sink while the Aggregate alternates independent attack emitters.',
     secretClues: ['A submerged console still accepting input', 'A narrow dry ledge behind an emitter', 'A reflected doorway absent from the wall'],
   },
@@ -279,14 +283,20 @@ const specs: readonly MapSpec[] = [
   {
     id: 'E3M7', title: 'Infinite Ledger', location: 'Compressed-paper machine feeding the final model', layout: 'channels',
     parSeconds: 690, normalEnemies: 154, enemies: E3_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'yellow', 'cyan'],
-    transformation: 'toggle-sectors', nextMap: 'E3M8',
+    transformation: 'toggle-sectors', nextMap: 'E3M8', recoverySupplies: [{ pickup: 'toner-pack', route: 'climax' }],
     signatureBeat: 'Distorted versions of earlier landmarks return as connected combat modules.',
     secretClues: ['A reception bell fused into black stone', 'A drowned hotel door above a dry pit', 'A model-home window overlooking the machine', 'A train switch embedded in an archive shelf', 'A brass page numbered zero', 'A familiar red lamp at impossible height'],
   },
   {
     id: 'E3M8', title: 'The Uninsurable', location: 'Chief Actuary arena and reserve-core engine', layout: 'arena',
-    parSeconds: 600, normalEnemies: 112, enemies: E3_FULL, weapons: ['binding-engine'], credentials: [],
+    parSeconds: 600, normalEnemies: 112, enemies: E3_FULL, weapons: ['plasma-copier', 'catastrophe-launcher', 'binding-engine'], credentials: [],
     transformation: 'open-door', bosses: ['chief-actuary', 'uninsurable'],
+    recoverySupplies: [
+      { pickup: 'toner-pack', route: 'boss-1' }, { pickup: 'toner-pack', route: 'boss-1' },
+      { pickup: 'toner-cell', route: 'climax' },
+      { pickup: 'toner-pack', route: 'boss-2' }, { pickup: 'toner-pack', route: 'boss-2' },
+      { pickup: 'canister-crate', route: 'boss-2' }, { pickup: 'toner-cell', route: 'boss-2' },
+    ],
     signatureBeat: 'Defeat the mobile gatekeeper, open three binding gates, then fire into the exposed reserve core.',
     secretClues: ['A prediction terminal showing a safe sector', 'A binding gate with a fourth maintenance latch', 'A void ledge behind the reserve feed', 'A silent wave alcove beneath the arena'],
   },
@@ -529,6 +539,10 @@ const mandatoryAnchorCount = (spec: MapSpec, phase: EncounterPhase): number => {
     if (spec.transformation === 'spawn-wave' || spec.transformation === 'teleport') return 4;
     return mapIndex <= 2 ? 2 : 3;
   }
+  // Treaty Vault's first four climax placements are all high-health support or
+  // anchor roles. Keeping three mandatory preserves the mixed fight without
+  // turning the nominally optional pair into a required 92% of phase health.
+  if (spec.id === 'E3M3') return 3;
   return Math.min(5, 2 + Math.ceil(mapIndex / 3) + (episode === 3 ? 1 : 0));
 };
 
@@ -663,7 +677,16 @@ const makeActors = (
     actors.push({ ...occupy(point), type: 'pickup', pickup, route: routeId });
   }
 
-  const standardWeaponCount = spec.id.endsWith('M1') ? episode : 1;
+  spec.recoverySupplies?.forEach(({ pickup, route: routeId }, index) => {
+    const route = routeId in authoredZones ? authoredZones[routeId as EncounterPhase] : authoredZones.climax;
+    const point = index === 0 ? blueprint.rewardPocket : route[(hardCount + pickupCount + index * 13) % route.length];
+    actors.push({ ...occupy(point), type: 'pickup', pickup, route: routeId });
+  });
+
+  // Fresh-start boss routes need both a sustainable workhorse and the authored
+  // set-piece weapon; hiding either behind a secret makes the arena depend on
+  // carried inventory despite the per-map starter-equivalent contract.
+  const standardWeaponCount = spec.bosses?.length ? spec.weapons.length : spec.id.endsWith('M1') ? episode : 1;
   spec.weapons.forEach((weapon, index) => {
     const point = available[(hardCount + pickupCount + index * 11) % available.length];
     actors.push({ ...occupy(point), type: 'weapon', weapon, secret: index >= standardWeaponCount, route: index === 0 ? 'entry' : 'transformation' });

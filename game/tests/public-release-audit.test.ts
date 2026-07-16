@@ -8,6 +8,8 @@ const projectRoot = fileURLToPath(new URL('../../', import.meta.url));
 const dist = join(projectRoot, 'game/dist');
 const assetData = join(projectRoot, 'assets/data');
 const repositoryTextExtensions = new Set(['.css', '.html', '.js', '.json', '.md', '.mjs', '.ps1', '.py', '.sh', '.ts', '.txt', '.yaml', '.yml']);
+const restrictedInsurerName = String.fromCharCode(116, 114, 97, 118, 101, 108, 101, 114, 115);
+const restrictedInsurerPattern = new RegExp(`\\b${restrictedInsurerName}(?: insurance)?\\b`, 'i');
 const walk = (root: string): string[] => readdirSync(root).flatMap((name) => {
   const path = join(root, name);
   return statSync(path).isDirectory() ? walk(path) : [path];
@@ -41,7 +43,7 @@ describe('public release identity and notices', () => {
 
   it('contains no restricted reference identity in public filenames or text', () => {
     const restricted = [
-      { label: 'restricted insurer identity', pattern: /\btravelers(?: insurance)?\b/i },
+      { label: 'restricted insurer identity', pattern: restrictedInsurerPattern },
       { label: 'reference game title', pattern: /\bdoom\b/i },
       { label: 'reference studio identity', pattern: /\bid software\b/i },
       { label: 'restricted logo description', pattern: /\bumbrella logo\b/i },
@@ -55,6 +57,19 @@ describe('public release identity and notices', () => {
       const content = readFileSync(file, 'utf8');
       for (const entry of restricted) if (entry.pattern.test(content)) failures.push(`${name}: ${entry.label} in content`);
     }
+    expect(failures).toEqual([]);
+  });
+
+  it('keeps the restricted insurer identity out of the public source repository', () => {
+    const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: projectRoot, encoding: 'utf8' })
+      .split('\0')
+      .filter(Boolean);
+    const failures = tracked.filter((name) => {
+      if (restrictedInsurerPattern.test(name)) return true;
+      const file = join(projectRoot, name);
+      const textFile = repositoryTextExtensions.has(extname(file).toLowerCase()) || !extname(file);
+      return textFile && existsSync(file) && restrictedInsurerPattern.test(readFileSync(file, 'utf8'));
+    });
     expect(failures).toEqual([]);
   });
 });

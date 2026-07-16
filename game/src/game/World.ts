@@ -70,6 +70,8 @@ export interface RuntimePickup {
   position: Vector3;
   collected: boolean;
   counted: boolean;
+  phaseLocked: boolean;
+  route?: string;
   ammoDrop?: { ammoId: AmmoType; amount: number };
 }
 
@@ -495,6 +497,9 @@ export class World {
       sprite.center.set(.5, 0);
       sprite.scale.set(.85, .85, 1);
       sprite.position.copy(position);
+      const route = placement.type === 'credential' ? undefined : placement.route;
+      const phaseLocked = Boolean(route && route !== 'entry' && this.map.encounters.some((encounter) => encounter.id === route));
+      sprite.visible = !phaseLocked;
       this.root.add(sprite);
       this.pickups.push({
         uid: `${placement.type}-${index}`,
@@ -504,6 +509,8 @@ export class World {
         position,
         collected: false,
         counted: placement.type === 'pickup' && COUNTED_PICKUP_IDS.has(placement.pickup),
+        phaseLocked,
+        route,
       });
     });
   }
@@ -564,6 +571,7 @@ export class World {
     const pickup: RuntimePickup = {
       uid: pickupUid,
       kind: 'pickup', id: pickupId, sprite, position: dropPosition, collected: false, counted: false,
+      phaseLocked: false,
       ammoDrop: { ammoId, amount },
     };
     this.pickups.push(pickup);
@@ -793,6 +801,10 @@ export class World {
       actor.awake = true;
       actor.sprite.visible = true;
       unlocked += 1;
+    });
+    this.pickups.filter((pickup) => pickup.route === id && pickup.phaseLocked).forEach((pickup) => {
+      pickup.phaseLocked = false;
+      pickup.sprite.visible = !pickup.collected;
     });
     return unlocked;
   }

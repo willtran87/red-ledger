@@ -142,20 +142,112 @@ describe('AudioSystem production lifecycle', () => {
     expect([...contexts[1].buffers[0].getChannelData().slice(0, 8)]).toEqual(firstSamples);
   });
 
-  it('bounds active voices by stealing the quietest and then the oldest voice', () => {
+  it('bounds routine voices by stealing the quietest and then the oldest voice', () => {
     const audio = new AudioSystem();
     audio.unlock();
     const context = contexts[0];
-    for (let index = 0; index < 32; index += 1) audio.tone(220 + index, 2, 'square', index === 1 ? .005 : .1);
+    for (let index = 0; index < 24; index += 1) audio.tone(220 + index, 2, 'square', index === 1 ? .005 : .1);
     audio.tone(440, 2, 'square', .1);
 
-    expect(context.oscillators).toHaveLength(33);
+    expect(context.oscillators).toHaveLength(25);
     expect(context.oscillators[0].stopCalls).toHaveLength(1);
     expect(context.oscillators[1].stopCalls).toHaveLength(2);
     expect(context.oscillators[1].disconnected).toBe(true);
 
     audio.tone(550, 2, 'square', .1);
     expect(context.oscillators[0].stopCalls).toHaveLength(2);
+    expect(audio.diagnostics()).toMatchObject({
+      activeVoices: 24,
+      voicesByPriority: { ambient: 0, routine: 24, important: 0, critical: 0 },
+      rejectedVoices: 0,
+    });
+  });
+
+  it('preserves enemy and hazard tells under routine and ambient saturation', () => {
+    const audio = new AudioSystem();
+    audio.unlock();
+    const context = contexts[0];
+    for (let index = 0; index < 40; index += 1) audio.tone(180 + index, 2, 'square', .08);
+
+    const criticalStart = context.oscillators.length;
+    audio.enemyCue('denial-officer', 'windup');
+    audio.enemyCue('denial-officer', 'attack');
+    audio.enemyCue('final-adjuster', 'phase');
+    audio.hazardCue('armed');
+    const criticalVoices = context.oscillators.slice(criticalStart);
+    expect(criticalVoices.length).toBeGreaterThanOrEqual(6);
+
+    for (let index = 0; index < 48; index += 1) audio.tone(500 + index, 2, 'square', .2);
+    for (let index = 0; index < 24; index += 1) audio.tone(80 + index, 2, 'sine', .3, 'music', 0, 'ambient');
+
+    for (const voice of criticalVoices) {
+      expect(voice.stopCalls).toHaveLength(1);
+      expect(voice.disconnected).toBe(false);
+    }
+    const diagnostics = audio.diagnostics();
+    expect(diagnostics.activeVoices).toBe(32);
+    expect(diagnostics.voicesByPriority.critical).toBe(criticalVoices.length);
+    expect(diagnostics.voicesByPriority.routine).toBe(24);
+    expect(diagnostics.voicesByPriority.important).toBe(0);
+    expect(diagnostics.voicesByPriority.ambient).toBe(8 - criticalVoices.length);
+    expect(diagnostics.rejectedVoices).toBe(0);
+  });
+
+  it('keeps four critical slots reserved under layered weapon saturation', () => {
+    const audio = new AudioSystem();
+    audio.unlock();
+    const context = contexts[0];
+    for (let index = 0; index < 7; index += 1) audio.weaponCue('staple-driver');
+    expect(audio.diagnostics()).toMatchObject({
+      activeVoices: 28,
+      voicesByPriority: { ambient: 0, routine: 0, important: 28, critical: 0 },
+    });
+
+    const criticalStart = context.oscillators.length;
+    audio.enemyCue('denial-officer', 'windup');
+    audio.hazardCue('armed');
+    const criticalVoices = context.oscillators.slice(criticalStart);
+    expect(criticalVoices).toHaveLength(4);
+    expect(audio.diagnostics().activeVoices).toBe(32);
+
+    audio.weaponCue('catastrophe-launcher');
+    for (const voice of criticalVoices) {
+      expect(voice.stopCalls).toHaveLength(1);
+      expect(voice.disconnected).toBe(false);
+    }
+    expect(audio.diagnostics()).toMatchObject({
+      activeVoices: 32,
+      voicesByPriority: { ambient: 0, routine: 0, important: 28, critical: 4 },
+      rejectedVoices: 0,
+    });
+  });
+
+  it('rejects lower-priority arrivals when all 32 voices are critical', () => {
+    const audio = new AudioSystem();
+    audio.unlock();
+    const context = contexts[0];
+    for (let index = 0; index < 32; index += 1) {
+      audio.tone(220 + index, 2, 'square', .05, 'sfx', 0, 'critical');
+    }
+
+    audio.tone(90, 2, 'sine', .5, 'music', 0, 'ambient');
+    audio.tone(440, 2, 'square', .5);
+    const rejected = context.oscillators.slice(-2);
+    for (const voice of rejected) {
+      expect(voice.startCalls).toHaveLength(0);
+      expect(voice.stopCalls).toHaveLength(0);
+      expect(voice.disconnected).toBe(true);
+    }
+    expect(audio.diagnostics()).toMatchObject({
+      activeVoices: 32,
+      voicesByPriority: { ambient: 0, routine: 0, important: 0, critical: 32 },
+      rejectedVoices: 2,
+    });
+
+    audio.tone(880, 2, 'square', .06, 'sfx', 0, 'critical');
+    expect(context.oscillators[0].stopCalls).toHaveLength(2);
+    expect(context.oscillators[0].disconnected).toBe(true);
+    expect(context.oscillators.at(-1)?.startCalls).toHaveLength(1);
   });
 
   it('honors suspend and resume requests made before and after unlock', () => {
@@ -195,6 +287,8 @@ describe('AudioSystem production lifecycle', () => {
     expect(audio.diagnostics()).toEqual({
       lifecycleSuspended: false,
       activeVoices: 0,
+      voicesByPriority: { ambient: 0, routine: 0, important: 0, critical: 0 },
+      rejectedVoices: 0,
       lastSpatialCue: { kind: 'enemy:denial-officer:attack', pan: -.35, gain: .72 },
       recentSpatialCues: [{ kind: 'enemy:denial-officer:attack', pan: -.35, gain: .72 }],
     });
@@ -205,6 +299,8 @@ describe('AudioSystem production lifecycle', () => {
     expect(audio.diagnostics()).toEqual({
       lifecycleSuspended: false,
       activeVoices: 0,
+      voicesByPriority: { ambient: 0, routine: 0, important: 0, critical: 0 },
+      rejectedVoices: 0,
       recentSpatialCues: [],
     });
   });

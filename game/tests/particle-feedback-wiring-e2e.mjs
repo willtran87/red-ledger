@@ -53,6 +53,10 @@ await page.evaluate(() => {
   window.__expiredPowerups = [];
   window.addEventListener('powerup-expired', (event) => window.__expiredPowerups.push(event.detail), { once: true });
   window.__redLedger.loadMap('E3M1');
+  window.__redLedger.defeatEncounter('entry');
+  window.__redLedger.defeatEncounter('transformation');
+  if (!window.__redLedger.teleportToTrigger('open-door')) throw new Error('E3M1 route mechanism missing');
+  window.__redLedger.use();
   window.__redLedger.defeatAll();
   if (!window.__redLedger.teleportToPickup('pickup', 'rapid-authority')) throw new Error('Rapid Authority pickup missing');
   window.advanceTime(35);

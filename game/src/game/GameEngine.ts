@@ -21,6 +21,7 @@ import { AssetCatalog } from './AssetCatalog';
 import { AudioSystem } from './AudioSystem';
 import { directionFromView, rayVerticalCylinderDistance, sampleShotSpread } from './CombatMath';
 import { DIFFICULTY, ENEMIES, WEAPONS, type AmmoType, type GameDifficulty } from './definitions';
+import { addAmmoWithinCap, ammoCap, pickupAmmoGrant, weaponAcquisitionAmmoGrant } from './EconomyPolicy';
 import {
   actorDeathEffects,
   breakableDestructionEffects,
@@ -58,6 +59,7 @@ import {
   type CampaignUnlocks,
   type MapPerformance,
   type MapRecord,
+  type PersistenceConflict,
   type SaveMetadataInput,
   type SaveThumbnail,
 } from './PersistenceSystem';
@@ -146,7 +148,7 @@ interface SaveData {
     uid: string; kind?: 'enemy' | 'boss'; id?: RuntimeActor['id']; health: number; dead: boolean; scoreEligible?: boolean; phaseLocked: boolean;
     position: [number, number, number]; awake?: boolean; facing?: number; animationTime?: number; attackFlash?: number; redacted?: boolean;
   }>;
-  pickups: Array<{ uid: string; collected: boolean }>;
+  pickups: Array<{ uid: string; collected: boolean; phaseLocked?: boolean }>;
   doors: Array<string | { key: string; open: boolean; progress: number }>;
   secrets: string[];
   visited: string[];
@@ -452,7 +454,7 @@ const ACTIVE_VISUALS: Readonly<Record<string, string>> = {
 export interface ManualSlotSummary {
   slot: number;
   slotId: string;
-  kind: 'manual' | 'quicksave' | 'autosave' | 'recovery';
+  kind: 'manual' | 'quicksave' | 'autosave' | 'recovery' | 'conflict';
   status: 'empty' | 'valid' | 'invalid';
   name: string;
   detail: string;
@@ -501,7 +503,10 @@ const isSaveData = (value: unknown): value is SaveData => {
   if (!Array.isArray(value.actors) || !value.actors.every((entry) => isRecord(entry) && typeof entry.uid === 'string'
     && isFiniteRecord(entry, ['health']) && typeof entry.dead === 'boolean' && typeof entry.phaseLocked === 'boolean' && isVector3(entry.position)
     && (entry.id === undefined || (typeof entry.id === 'string' && entry.id in ENEMIES)))) return false;
-  if (!Array.isArray(value.pickups) || !value.pickups.every((entry) => isRecord(entry) && typeof entry.uid === 'string' && typeof entry.collected === 'boolean')) return false;
+  if (!Array.isArray(value.pickups) || !value.pickups.every((entry) => isRecord(entry)
+    && typeof entry.uid === 'string'
+    && typeof entry.collected === 'boolean'
+    && (entry.phaseLocked === undefined || typeof entry.phaseLocked === 'boolean'))) return false;
   if (!Array.isArray(value.doors) || !value.doors.every((entry) => typeof entry === 'string' || (isRecord(entry) && typeof entry.key === 'string'
     && typeof entry.open === 'boolean' && isFiniteNumber(entry.progress)))) return false;
   if (!isStringArray(value.secrets) || !isStringArray(value.visited) || !isStringArray(value.triggered)
@@ -2318,7 +2323,7 @@ export class GameEngine {
 
   private updatePickups(): void {
     for (const pickup of this.world.pickups) {
-      if (pickup.collected || this.horizontalDistance(pickup.position, this.player.position) > 1.05) continue;
+      if (pickup.collected || pickup.phaseLocked || this.horizontalDistance(pickup.position, this.player.position) > 1.05) continue;
       if (!this.canCollectPickup(pickup)) continue;
       pickup.collected = true;
       pickup.sprite.visible = false;
@@ -2326,15 +2331,15 @@ export class GameEngine {
       if (pickup.ammoDrop) {
         const { ammoId, amount } = pickup.ammoDrop;
         if (ammoId === 'none') continue;
-        const cap = ammoId === 'staples' ? 200 : ammoId === 'toner-cells' ? 300 : 50;
-        this.player.ammo[ammoId] = Math.min(cap, this.player.ammo[ammoId] + amount);
+        this.player.ammo[ammoId] = addAmmoWithinCap(this.player.ammo[ammoId], { ammo: ammoId, amount });
         this.showMessage(`${this.pretty(ammoId)} recovered`);
       } else if (pickup.kind === 'weapon') {
         const acquired = pickup.id as WeaponId;
         this.player.weapons.add(acquired);
         this.requestWeapon(acquired);
         const weapon = WEAPONS[pickup.id as WeaponId];
-        if (weapon.ammo !== 'none') this.player.ammo[weapon.ammo] = Math.min(weapon.ammo === 'toner-cells' ? 300 : weapon.ammo === 'staples' ? 200 : 50, this.player.ammo[weapon.ammo] + Math.max(weapon.ammoCost * 2, weapon.ammo === 'toner-cells' ? 40 : 8));
+        const grant = weaponAcquisitionAmmoGrant(weapon);
+        if (grant) this.player.ammo[grant.ammo] = addAmmoWithinCap(this.player.ammo[grant.ammo], grant);
         this.showMessage(`${this.pretty(pickup.id)} acquired`);
         window.dispatchEvent(new CustomEvent('player-portrait', { detail: { state: 'weapon-acquired' } }));
       } else if (pickup.kind === 'credential') {
@@ -2356,7 +2361,6 @@ export class GameEngine {
   }
 
   private canCollectPickup(pickup: World['pickups'][number]): boolean {
-    const ammoCap = (ammo: Exclude<AmmoType, 'none'>) => ammo === 'staples' ? 200 : ammo === 'toner-cells' ? 300 : 50;
     if (pickup.ammoDrop) return pickup.ammoDrop.ammoId !== 'none'
       && this.player.ammo[pickup.ammoDrop.ammoId] < ammoCap(pickup.ammoDrop.ammoId);
     if (pickup.kind === 'credential') return !this.player.credentials.has(pickup.id as Credential);
@@ -2365,10 +2369,8 @@ export class GameEngine {
       return !this.player.weapons.has(weapon.id) || (weapon.ammo !== 'none' && this.player.ammo[weapon.ammo] < ammoCap(weapon.ammo));
     }
     const id = pickup.id as PickupId;
-    if (id.includes('staples')) return this.player.ammo.staples < 200;
-    if (id.includes('fasteners')) return this.player.ammo.fasteners < 50;
-    if (id === 'canister' || id === 'canister-crate') return this.player.ammo.canisters < 50;
-    if (id.includes('toner')) return this.player.ammo['toner-cells'] < 300;
+    const grant = pickupAmmoGrant(id);
+    if (grant) return this.player.ammo[grant.ammo] < ammoCap(grant.ammo);
     if (id === 'loss-control-vest') return this.player.armor < 100 || this.player.armorClass === 'none';
     if (id === 'catastrophe-suit') return this.player.armor < 200 || this.player.armorClass !== 'heavy';
     if (id === 'emergency-reserve') return this.player.health < 200 || this.player.armor < 200;
@@ -2379,10 +2381,8 @@ export class GameEngine {
 
   private applyPickup(id: PickupId): void {
     const supply = DIFFICULTY[this.difficulty].supply;
-    if (id.includes('staples')) this.player.ammo.staples = Math.min(200, this.player.ammo.staples + (id.endsWith('large') ? 40 : 16) * supply);
-    else if (id.includes('fasteners')) this.player.ammo.fasteners = Math.min(50, this.player.ammo.fasteners + (id.endsWith('large') ? 24 : 8) * supply);
-    else if (id === 'canister' || id === 'canister-crate') this.player.ammo.canisters = Math.min(50, this.player.ammo.canisters + (id === 'canister-crate' ? 5 : 1) * supply);
-    else if (id.includes('toner')) this.player.ammo['toner-cells'] = Math.min(300, this.player.ammo['toner-cells'] + (id === 'toner-pack' ? 80 : 30) * supply);
+    const ammoGrant = pickupAmmoGrant(id, supply);
+    if (ammoGrant) this.player.ammo[ammoGrant.ammo] = addAmmoWithinCap(this.player.ammo[ammoGrant.ammo], ammoGrant);
     else if (id === 'loss-control-vest') { this.player.armor = Math.max(this.player.armor, 100); this.player.armorClass = 'light'; }
     else if (id === 'catastrophe-suit') { this.player.armor = Math.max(this.player.armor, 200); this.player.armorClass = 'heavy'; }
     else if (id === 'emergency-reserve') { this.player.health = 200; this.player.armor = Math.max(this.player.armor, 200); this.player.armorClass = 'heavy'; }
@@ -2485,12 +2485,7 @@ export class GameEngine {
           outcomeDuration = 1.5;
           if (this.world.canExposeCore) {
             this.world.applyBossMechanism('expose-core');
-            const core = this.world.actors.find((actor) => actor.id === 'uninsurable');
-            if (core) {
-              core.phaseLocked = false;
-              core.awake = true;
-              core.sprite.visible = true;
-            }
+            this.world.unlockEncounter('boss-2');
           }
         } else if (mechanismId) {
           if (!this.world.applyMechanism(mechanismId)) {
@@ -2793,7 +2788,7 @@ export class GameEngine {
         position: actor.position.toArray(), awake: actor.awake, facing: actor.facing, animationTime: actor.animationTime, attackFlash: actor.attackFlash,
         ...((actor as RuntimeActor & { redacted?: boolean }).redacted ? { redacted: true } : {}),
       })),
-      pickups: this.world.pickups.map((pickup) => ({ uid: pickup.uid, collected: pickup.collected })),
+      pickups: this.world.pickups.map((pickup) => ({ uid: pickup.uid, collected: pickup.collected, phaseLocked: pickup.phaseLocked })),
       doors: [...this.world.doors.values()].map((door) => ({ key: door.key, open: door.open, progress: door.progress })),
       secrets: [...this.world.discoveredSecrets],
       visited: [...this.world.visitedTiles],
@@ -2995,7 +2990,13 @@ export class GameEngine {
       }
       for (const saved of save.pickups) {
         const pickup = this.world.pickups.find((candidate) => candidate.uid === saved.uid);
-        if (pickup) { pickup.collected = saved.collected; pickup.sprite.visible = !saved.collected; }
+        if (pickup) {
+          pickup.collected = saved.collected;
+          // Saves written before route-gated pickups existed omitted this field; preserving their
+          // original exposed behavior avoids permanently locking rewards after restored triggers.
+          pickup.phaseLocked = saved.phaseLocked ?? false;
+          pickup.sprite.visible = !pickup.collected && !pickup.phaseLocked;
+        }
       }
       this.world.restoreBossMechanisms(save.bossMechanisms);
       save.doors.forEach((saved) => {
@@ -3068,6 +3069,7 @@ export class GameEngine {
   }
 
   hasSave(): boolean { return Boolean(this.persistence.newestValidContinue()); }
+  persistenceConflicts(): readonly PersistenceConflict[] { return this.persistence.conflicts(); }
   continueSummary(): string | undefined {
     const result = this.persistence.newestValidContinue();
     if (!result) return undefined;
@@ -3076,6 +3078,7 @@ export class GameEngine {
       quicksave: 'Quicksave',
       autosave: 'Autosave',
       recovery: 'Episode recovery',
+      conflict: 'Previous tab copy',
     } as const)[result.kind];
     return `${kind} | ${result.metadata.mapId} ${result.metadata.mapTitle} | ${this.pretty(result.metadata.difficulty)} | Play ${this.saveTime(result.metadata.playSeconds)} | ${new Date(result.metadata.savedAt).toLocaleString()}`;
   }
@@ -3359,7 +3362,10 @@ export class GameEngine {
   }
 
   debugTeleportToPickup(kind: 'pickup' | 'weapon' | 'credential', id?: string): boolean {
-    const pickup = this.world.pickups.find((candidate) => !candidate.collected && candidate.kind === kind && (!id || candidate.id === id));
+    const pickup = this.world.pickups.find((candidate) => !candidate.collected
+      && !candidate.phaseLocked
+      && candidate.kind === kind
+      && (!id || candidate.id === id));
     if (!pickup) return false;
     this.debugTeleport(pickup.position.x, pickup.position.z);
     return true;
@@ -3494,7 +3500,7 @@ export class GameEngine {
       && this.horizontalDistance(actor.position, this.player.position) < 22
       && this.world.hasLineOfSight(this.player.position, actor.position)).slice(0, 16)
       .map((actor) => ({ id: actor.id, kind: actor.kind, visual: actor.visualState, frame: Math.floor(actor.animationTime * 10) }));
-    const nearbyPickups = this.world.pickups.filter((pickup) => !pickup.collected && this.horizontalDistance(pickup.position, this.player.position) < 14).map((pickup) => ({ id: pickup.id, kind: pickup.kind, x: +pickup.position.x.toFixed(2), z: +pickup.position.z.toFixed(2) }));
+    const nearbyPickups = this.world.pickups.filter((pickup) => !pickup.collected && !pickup.phaseLocked && this.horizontalDistance(pickup.position, this.player.position) < 14).map((pickup) => ({ id: pickup.id, kind: pickup.kind, x: +pickup.position.x.toFixed(2), z: +pickup.position.z.toFixed(2) }));
     return JSON.stringify({
       coordinateSystem: 'world units; x increases east/right on automap, z increases south/down; yaw 0 faces north (-z)',
       mode: this.mode,
@@ -3519,6 +3525,10 @@ export class GameEngine {
             mandatoryLive: actors.filter((actor) => actor.mandatory && !actor.dead).length,
             locked: actors.filter((actor) => actor.phaseLocked && !actor.dead).length,
           };
+        }),
+        pickupLocks: (this.world.map?.encounters ?? []).map((encounter) => {
+          const pickups = this.world.pickups.filter((pickup) => pickup.route === encounter.id && !pickup.collected);
+          return { id: encounter.id, available: pickups.length, locked: pickups.filter((pickup) => pickup.phaseLocked).length };
         }),
       },
       combatEffects: {
@@ -3575,6 +3585,7 @@ export class GameEngine {
   private refreshPickupVisibility(): void {
     for (const pickup of this.world.pickups) {
       pickup.sprite.visible = !pickup.collected
+        && !pickup.phaseLocked
         && !this.world.isConcealedAt(pickup.position)
         && this.horizontalDistance(pickup.position, this.player.position) <= 28
         && this.world.hasLineOfSight(this.player.position, pickup.position);

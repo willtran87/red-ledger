@@ -4,7 +4,15 @@ import type { InputActionEvent, MenuNavigationEvent } from './InputSystem';
 import { WEAPONS, type GameDifficulty } from './definitions';
 import { GameEngine, type GameSnapshot } from './GameEngine';
 import { ASSET_DEGRADED_EVENT, runtimeUrl } from './AssetCatalog';
-import { DEMO_SCHEMA_VERSION, PERSISTENCE_DEGRADED_EVENT, type CampaignUnlocks, type MapPerformance, type MapRecord } from './PersistenceSystem';
+import {
+  DEMO_SCHEMA_VERSION,
+  PERSISTENCE_CONFLICT_EVENT,
+  PERSISTENCE_DEGRADED_EVENT,
+  type CampaignUnlocks,
+  type MapPerformance,
+  type MapRecord,
+  type PersistenceConflict,
+} from './PersistenceSystem';
 import { deriveMilestones, milestoneHighlights } from './Milestones';
 
 type PortraitState = 'neutral' | 'pain-center' | 'pain-left' | 'pain-right' | 'glance-left' | 'glance-right' | 'weapon-acquired' | 'overcharge' | 'invulnerable' | 'dead';
@@ -213,6 +221,10 @@ export class UIController {
     window.addEventListener(PERSISTENCE_DEGRADED_EVENT, () => this.showRuntimeWarning(
       'Browser storage is unavailable. Progress is protected for this session, but it will be lost when this tab closes.',
     ));
+    window.addEventListener(PERSISTENCE_CONFLICT_EVENT, (event) => this.showRuntimeWarning(
+      (event as CustomEvent<PersistenceConflict>).detail.message,
+    ));
+    this.game.persistenceConflicts().forEach((conflict) => this.showRuntimeWarning(conflict.message));
     window.addEventListener(ASSET_DEGRADED_EVENT, () => this.showRuntimeWarning(
       'One or more visual assets could not load. Safe placeholder art is in use; reload when the connection is stable.',
     ));
@@ -699,7 +711,7 @@ export class UIController {
     context.strokeStyle = '#ffe17a'; context.lineWidth = 1.5; context.beginPath();
     context.moveTo(exit.x - 4, exit.y - 4); context.lineTo(exit.x + 4, exit.y + 4);
     context.moveTo(exit.x + 4, exit.y - 4); context.lineTo(exit.x - 4, exit.y + 4); context.stroke();
-    this.game.world.pickups.filter((pickup) => !pickup.collected).forEach((pickup) => {
+    this.game.world.pickups.filter((pickup) => !pickup.collected && !pickup.phaseLocked).forEach((pickup) => {
       const tile = `${Math.floor(pickup.position.x / snapshot.map.cellSize)},${Math.floor(pickup.position.z / snapshot.map.cellSize)}`;
       if (!snapshot.player.floorPlan && !this.game.world.visitedTiles.has(tile)) return;
       const point = mapPoint(pickup.position.x, pickup.position.z);
@@ -1251,8 +1263,16 @@ export class UIController {
             this.updateContinue();
             this.showScreen('pause-menu');
           };
-          if (slot.status === 'valid') this.confirm('Overwrite save?', `${slot.name} will be replaced and cannot be recovered.`, 'Overwrite', write);
-          else write();
+          if (slot.status === 'valid') {
+            this.confirm('Overwrite save?', `${slot.name} will be replaced and cannot be recovered.`, 'Overwrite', write);
+          } else if (slot.status === 'invalid') {
+            this.confirm(
+              'Replace unreadable save?',
+              'This slot contains data from a newer build or data that cannot be read. Replacing it cannot be undone.',
+              'Replace',
+              write,
+            );
+          } else write();
         } else if (this.game.loadManual(slot.slot)) {
           if (this.game.mode === 'paused') this.showScreen('pause-menu');
           else if (this.game.mode === 'playing') this.prepareGameEntry();
@@ -1293,7 +1313,10 @@ export class UIController {
       row.className = 'slot-row automatic-slot-row';
       const badge = document.createElement('strong');
       badge.className = 'automatic-kind';
-      badge.textContent = slot.kind === 'quicksave' ? 'Quick' : slot.kind === 'autosave' ? 'Auto' : 'Recovery';
+      badge.textContent = slot.kind === 'quicksave' ? 'Quick'
+        : slot.kind === 'autosave' ? 'Auto'
+          : slot.kind === 'conflict' ? 'Tab Copy'
+            : 'Recovery';
       const copy = document.createElement('span');
       copy.className = 'slot-copy';
       const name = document.createElement('strong');

@@ -52,6 +52,26 @@ await page.click('#confirm-accept');
 assert(await page.locator('#load-slot-list .slot-row').first().locator('.slot-delete').count() === 0, 'Deleted slot still exposes a delete action');
 assert(await page.locator('#load-slot-list .slot-action').first().isDisabled(), 'Deleted slot remains loadable');
 assert(await page.evaluate(() => localStorage.getItem('red-ledger-v2:save:manual-1') === null), 'Deleted manual save remains in storage');
+
+const protectedRaw = '{"schema":"red-ledger-save","version":999,"futureData":{"retained":true}}';
+await page.evaluate((raw) => localStorage.setItem('red-ledger-v2:save:manual-1', raw), protectedRaw);
+await page.locator('#load-slots .slot-back').click();
+await page.click('#save-game');
+assert((await page.locator('#save-slot-list .slot-row').first().locator('small').textContent()).includes('Unreadable'),
+  'A newer manual slot was not identified before replacement');
+await page.locator('#save-slot-list .slot-action').first().click();
+assert(await page.locator('#confirm-dialog').evaluate((dialog) => dialog.open), 'Unreadable-slot replacement did not request confirmation');
+assert((await page.locator('#confirm-title').textContent()) === 'Replace unreadable save?', 'Unreadable-slot warning used the generic overwrite prompt');
+assert((await page.locator('#confirm-copy').textContent()).includes('newer build'), 'Unreadable-slot warning did not explain the compatibility risk');
+await page.click('#confirm-cancel');
+assert(await page.evaluate((raw) => localStorage.getItem('red-ledger-v2:save:manual-1') === raw, protectedRaw),
+  'Canceling unreadable-slot replacement changed the protected bytes');
+await page.locator('#save-slot-list .slot-action').first().click();
+assert((await page.locator('#confirm-accept').textContent()) === 'Replace', 'Unreadable-slot confirmation has an ambiguous action label');
+await page.click('#confirm-accept');
+assert(await page.evaluate((raw) => localStorage.getItem('red-ledger-v2:save:manual-1') !== raw, protectedRaw),
+  'Confirming unreadable-slot replacement did not write the current save');
+assert(await page.locator('#pause-menu').isVisible(), 'Confirmed unreadable-slot replacement did not return to pause');
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 
 console.log('Save management and recovery E2E passed');

@@ -73,6 +73,7 @@ const browserTests = [
   ['mobile controls', 'tests/mobile-ux-e2e.mjs'],
   ['combat and save', 'tests/combat-save-visual-e2e.mjs'],
   ['save management and recovery', 'tests/save-management-e2e.mjs'],
+  ['multi-tab persistence safety', 'tests/multitab-persistence-e2e.mjs'],
   ['deterministic demos', 'tests/demo-runtime-e2e.mjs'],
   ['player replay library', 'tests/replay-library-e2e.mjs'],
   ['navigation and session continuity', 'tests/navigation-continuity-e2e.mjs'],
