@@ -12,12 +12,32 @@ class MockAudioParam {
 class MockAudioNode {
   readonly connections: MockAudioNode[] = [];
   disconnected = false;
+  channelCount = 2;
+  channelCountMode: ChannelCountMode = 'max';
   connect<T extends MockAudioNode>(destination: T): T { this.connections.push(destination); return destination; }
   disconnect(): void { this.disconnected = true; }
 }
 
 class MockGainNode extends MockAudioNode { readonly gain = new MockAudioParam(); }
 class MockStereoPannerNode extends MockAudioNode { readonly pan = new MockAudioParam(); }
+class MockMediaElementSourceNode extends MockAudioNode {}
+
+class MockAudioElement {
+  src = '';
+  preload = '';
+  crossOrigin: string | null = null;
+  currentTime = 0;
+  loop = false;
+  paused = true;
+  loadCalls = 0;
+  playCalls = 0;
+  pauseCalls = 0;
+  constructor() { mediaElements.push(this); }
+  load(): void { this.loadCalls += 1; }
+  play(): Promise<void> { this.playCalls += 1; this.paused = false; return mediaPlayFactory(); }
+  pause(): void { this.pauseCalls += 1; this.paused = true; }
+  removeAttribute(name: string): void { if (name === 'src') this.src = ''; }
+}
 
 class MockCompressorNode extends MockAudioNode {
   readonly threshold = new MockAudioParam();
@@ -59,6 +79,57 @@ class MockBufferSourceNode extends MockScheduledSourceNode {
 
 const contexts: MockAudioContext[] = [];
 const intervalCallbacks: Array<() => void> = [];
+const mediaElements: MockAudioElement[] = [];
+let mediaPlayFactory: () => Promise<void> = () => Promise.resolve();
+
+const authoredLibrary = {
+  schema: 2,
+  music: {
+    E1M1: { url: 'audio/music/e1m1.mp3', duration: 3, encodedDuration: 3, kind: 'map', title: 'Test Map' },
+    menu: { url: 'audio/music/menu.mp3', duration: 2, encodedDuration: 2, kind: 'ui', title: 'Test Menu' },
+  },
+  sfx: {
+    shardCount: 4,
+    groupCount: 5,
+    cueCount: 6,
+    shards: {
+      'player-ui': { url: 'audio/sfx/player-ui.mp3', duration: 8, groupCount: 2, cueCount: 3 },
+      weapons: { url: 'audio/sfx/weapons.mp3', duration: 8, groupCount: 1, cueCount: 1 },
+      attacks: { url: 'audio/sfx/attacks.mp3', duration: 8, groupCount: 1, cueCount: 1 },
+      world: { url: 'audio/sfx/world.mp3', duration: 8, groupCount: 1, cueCount: 1 },
+    },
+    groups: {
+      'pickup/health': { shard: 'player-ui', cues: [
+        { id: 'pickup/health/01', start: .5, duration: .1 },
+        { id: 'pickup/health/02', start: .8, duration: .12 },
+      ] },
+      'weapon/staple-driver/fire': { shard: 'weapons', cues: [
+        { id: 'weapon/staple-driver/fire/01', start: 1.2, duration: .2 },
+      ] },
+      'attack/denial-beam/windup': { shard: 'attacks', cues: [
+        { id: 'attack/denial-beam/windup/01', start: 1.6, duration: .3 },
+      ] },
+      'world/hazard-armed': { shard: 'world', cues: [
+        { id: 'world/hazard-armed/01', start: 2.1, duration: .18 },
+      ] },
+      'ui/menu-accept': { shard: 'player-ui', cues: [
+        { id: 'ui/menu-accept/01', start: 2.5, duration: .08 },
+      ] },
+    },
+  },
+};
+
+const useAuthoredFetch = (): ReturnType<typeof vi.fn> => {
+  const mock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith('audio/audio-library.json')) {
+      return { ok: true, status: 200, json: async () => structuredClone(authoredLibrary) };
+    }
+    return { ok: true, status: 200, arrayBuffer: async () => new ArrayBuffer(16) };
+  });
+  vi.stubGlobal('fetch', mock);
+  return mock;
+};
 
 class MockAudioContext {
   readonly sampleRate = 1_000;
@@ -71,6 +142,8 @@ class MockAudioContext {
   readonly sources: MockBufferSourceNode[] = [];
   readonly buffers: MockAudioBuffer[] = [];
   readonly panners: MockStereoPannerNode[] = [];
+  readonly decodedBuffers: MockAudioBuffer[] = [];
+  readonly mediaSources: MockMediaElementSourceNode[] = [];
   resumeCalls = 0;
   suspendCalls = 0;
 
@@ -85,6 +158,16 @@ class MockAudioContext {
     return buffer;
   }
   createStereoPanner(): MockStereoPannerNode { const node = new MockStereoPannerNode(); this.panners.push(node); return node; }
+  createMediaElementSource(_element: HTMLMediaElement): MockMediaElementSourceNode {
+    const node = new MockMediaElementSourceNode();
+    this.mediaSources.push(node);
+    return node;
+  }
+  decodeAudioData(_data: ArrayBuffer): Promise<MockAudioBuffer> {
+    const buffer = new MockAudioBuffer(200_000, this.sampleRate);
+    this.decodedBuffers.push(buffer);
+    return Promise.resolve(buffer);
+  }
   resume(): Promise<void> { this.resumeCalls += 1; this.state = 'running'; return Promise.resolve(); }
   suspend(): Promise<void> { this.suspendCalls += 1; this.state = 'suspended'; return Promise.resolve(); }
 }
@@ -92,6 +175,8 @@ class MockAudioContext {
 beforeEach(() => {
   contexts.length = 0;
   intervalCallbacks.length = 0;
+  mediaElements.length = 0;
+  mediaPlayFactory = () => Promise.resolve();
   const values = new Map<string, string>();
   vi.stubGlobal('localStorage', {
     getItem: (key: string) => values.get(key) ?? null,
@@ -103,9 +188,14 @@ beforeEach(() => {
     setInterval: vi.fn((callback: () => void) => { intervalCallbacks.push(callback); return intervalCallbacks.length; }),
     clearInterval: vi.fn(),
   });
+  vi.stubGlobal('Audio', MockAudioElement);
+  vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('authored audio unavailable'))));
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe('AudioSystem production lifecycle', () => {
   it('routes buses through a configured master compressor', () => {
@@ -284,7 +374,7 @@ describe('AudioSystem production lifecycle', () => {
   it('preserves deterministic spatial diagnostic metadata before unlock', () => {
     const audio = new AudioSystem();
     audio.enemyCue('denial-officer', 'attack', -.35, .72);
-    expect(audio.diagnostics()).toEqual({
+    expect(audio.diagnostics()).toMatchObject({
       lifecycleSuspended: false,
       activeVoices: 0,
       voicesByPriority: { ambient: 0, routine: 0, important: 0, critical: 0 },
@@ -296,12 +386,211 @@ describe('AudioSystem production lifecycle', () => {
     for (let index = 0; index < 20; index += 1) audio.hazardCue('placed', index / 20, .5);
     expect(audio.diagnostics().recentSpatialCues).toHaveLength(16);
     audio.clearSpatialDiagnostics();
-    expect(audio.diagnostics()).toEqual({
+    expect(audio.diagnostics()).toMatchObject({
       lifecycleSuspended: false,
       activeVoices: 0,
       voicesByPriority: { ambient: 0, routine: 0, important: 0, critical: 0 },
       rejectedVoices: 0,
       recentSpatialCues: [],
+    });
+  });
+
+  it('loads the authored library only after unlock and round-robins sprite variants deterministically', async () => {
+    const fetchMock = useAuthoredFetch();
+    const audio = new AudioSystem();
+    audio.pickupCue('health');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(audio.diagnostics()).toMatchObject({ libraryStatus: 'idle', spriteStatus: 'idle' });
+
+    expect(await audio.prepareAuthoredAudio()).toBe(true);
+    const context = contexts[0];
+    expect(fetchMock.mock.calls.map(([url]) => String(url).replace(/^\.\//, '/'))).toEqual([
+      '/audio/audio-library.json',
+      '/audio/sfx/player-ui.mp3',
+    ]);
+    expect(audio.diagnostics()).toMatchObject({
+      libraryStatus: 'ready',
+      spriteStatus: 'ready',
+      libraryReady: true,
+      spriteReady: true,
+      loadedSfxShards: 1,
+      sfxShardCount: 4,
+    });
+
+    audio.pickupCue('health');
+    audio.pickupCue('health');
+    audio.pickupCue('health');
+    expect(context.sources.map((source) => source.startCalls[0])).toEqual([
+      [4, .5, .1],
+      [4, .8, .12],
+      [4, .5, .1],
+    ]);
+    expect(context.sources.every((source) => source.buffer === context.decodedBuffers[0])).toBe(true);
+    expect(audio.diagnostics()).toMatchObject({
+      source: 'authored',
+      authoredPlays: 3,
+      fallbackPlays: 0,
+      voicesByPriority: { ambient: 0, routine: 0, important: 3, critical: 0 },
+    });
+  });
+
+  it('switches from fallback to bounded streaming authored music', async () => {
+    const fetchMock = useAuthoredFetch();
+    const audio = new AudioSystem();
+    expect(await audio.prepareAuthoredAudio()).toBe(true);
+
+    audio.playMusic('E1M1');
+    expect(audio.diagnostics()).toMatchObject({ track: 'E1M1', trackSource: 'fallback', fallbackPlays: 1 });
+    await vi.waitFor(() => expect(audio.diagnostics().trackSource).toBe('authored'));
+
+    const context = contexts[0];
+    const track = mediaElements[0];
+    expect(track.src.replace(/^\.\//, '/')).toBe('/audio/music/e1m1.mp3');
+    expect(track.loop).toBe(true);
+    expect(track.currentTime).toBe(0);
+    expect(track.playCalls).toBe(1);
+    expect(context.mediaSources).toHaveLength(1);
+    expect(context.decodedBuffers).toHaveLength(1);
+    expect(audio.diagnostics()).toMatchObject({
+      musicActive: true,
+      track: 'E1M1',
+      trackSource: 'authored',
+      source: 'authored',
+      authoredPlays: 1,
+      fallbackPlays: 1,
+      decodedTracks: 0,
+    });
+
+    audio.suspend();
+    expect(track.paused).toBe(true);
+    audio.resume();
+    await vi.waitFor(() => expect(track.playCalls).toBe(2));
+    expect(track.paused).toBe(false);
+
+    const callsAfterStart = fetchMock.mock.calls.length;
+    audio.playMusic('E1M1');
+    expect(track.playCalls).toBe(2);
+    audio.stopMusic();
+    audio.playMusic('E1M1');
+    await vi.waitFor(() => expect(audio.diagnostics().trackSource).toBe('authored'));
+    expect(track.playCalls).toBe(3);
+    expect(fetchMock).toHaveBeenCalledTimes(callsAfterStart);
+  });
+
+  it('recovers manifest and shard loading after the bounded retry delay', async () => {
+    let now = 10_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    let manifestAttempts = 0;
+    let shardAttempts = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('audio/audio-library.json')) {
+        manifestAttempts += 1;
+        if (manifestAttempts === 1) throw new Error('temporary manifest outage');
+        return { ok: true, status: 200, json: async () => structuredClone(authoredLibrary) };
+      }
+      if (url.endsWith('audio/sfx/player-ui.mp3')) {
+        shardAttempts += 1;
+        if (shardAttempts === 1) throw new Error('temporary shard outage');
+      }
+      return { ok: true, status: 200, arrayBuffer: async () => new ArrayBuffer(16) };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const audio = new AudioSystem();
+
+    expect(await audio.prepareAuthoredAudio()).toBe(false);
+    expect(audio.diagnostics()).toMatchObject({ libraryStatus: 'failed', spriteReady: false });
+    now += 3_001;
+    expect(await audio.prepareAuthoredAudio()).toBe(false);
+    expect(audio.diagnostics()).toMatchObject({ libraryStatus: 'ready', spriteStatus: 'failed', spriteReady: false });
+    now += 3_001;
+    expect(await audio.prepareAuthoredAudio()).toBe(true);
+    expect(audio.diagnostics()).toMatchObject({
+      libraryStatus: 'ready',
+      spriteStatus: 'ready',
+      spriteReady: true,
+      loadedSfxShards: 1,
+    });
+    expect(audio.diagnostics().error).toBeUndefined();
+    expect(manifestAttempts).toBe(2);
+    expect(shardAttempts).toBe(2);
+  });
+
+  it('lets the newest streamed track own the shared media element', async () => {
+    useAuthoredFetch();
+    const audio = new AudioSystem();
+    expect(await audio.prepareAuthoredAudio()).toBe(true);
+    const resolvers: Array<() => void> = [];
+    mediaPlayFactory = () => new Promise<void>((resolve) => resolvers.push(resolve));
+
+    audio.playMusic('E1M1');
+    await vi.waitFor(() => expect(mediaElements[0]?.playCalls).toBe(1));
+    audio.playMusic('menu');
+    await vi.waitFor(() => expect(mediaElements[0]?.playCalls).toBe(2));
+    resolvers[1]();
+    await vi.waitFor(() => expect(audio.diagnostics()).toMatchObject({ track: 'menu', trackSource: 'authored' }));
+    resolvers[0]();
+    await Promise.resolve();
+
+    expect(mediaElements[0].paused).toBe(false);
+    expect(mediaElements[0].src.replace(/^\.\//, '/')).toBe('/audio/music/menu.mp3');
+    expect(audio.diagnostics()).toMatchObject({ track: 'menu', trackSource: 'authored', decodedTracks: 0 });
+  });
+
+  it('reports authored loading failures and keeps explicit synthesized feedback available', async () => {
+    const audio = new AudioSystem();
+    audio.unlock();
+    audio.pickupCue('health');
+    await vi.waitFor(() => expect(audio.diagnostics().libraryStatus).toBe('failed'));
+
+    expect(contexts[0].oscillators).toHaveLength(1);
+    expect(audio.diagnostics()).toMatchObject({
+      libraryReady: false,
+      spriteReady: false,
+      spriteStatus: 'failed',
+      source: 'fallback',
+      authoredPlays: 0,
+      fallbackPlays: 1,
+      error: 'Library: authored audio unavailable',
+    });
+  });
+
+  it('persists playback profiles and applies mono and headphone routing', () => {
+    const audio = new AudioSystem();
+    audio.unlock();
+    const context = contexts[0];
+
+    audio.setPlaybackProfile('mono');
+    audio.tone(440, .1, 'square', .04, 'sfx', .8);
+    expect(context.panners).toHaveLength(0);
+    expect(context.gains[0].channelCount).toBe(1);
+    expect(context.gains[0].channelCountMode).toBe('explicit');
+    expect(context.compressors[0].threshold.value).toBe(-22);
+    expect(context.compressors[0].ratio.value).toBe(8);
+    expect(new AudioSystem().playbackProfile).toBe('mono');
+
+    audio.setPlaybackProfile('headphones');
+    audio.tone(550, .1, 'square', .04, 'sfx', .8);
+    expect(context.panners.at(-1)?.pan.value).toBe(.8);
+    expect(context.gains[0].channelCount).toBe(2);
+    expect(context.gains[0].channelCountMode).toBe('max');
+  });
+
+  it('plays authored attack tells as spatial critical voices', async () => {
+    useAuthoredFetch();
+    const audio = new AudioSystem();
+    expect(await audio.prepareAuthoredAudio()).toBe(true);
+    expect(await audio.prepareCueGroups(['attack/denial-beam/windup'])).toBe(true);
+    audio.enemyAttackCue('denial-beam', 'windup', .5, .75);
+
+    const context = contexts[0];
+    expect(context.sources.at(-1)?.startCalls[0]).toEqual([4, 1.6, .3]);
+    expect(context.panners.at(-1)?.pan.value).toBeCloseTo(.39);
+    expect(audio.diagnostics()).toMatchObject({
+      source: 'authored',
+      authoredPlays: 1,
+      voicesByPriority: { ambient: 0, routine: 0, important: 0, critical: 1 },
+      lastSpatialCue: { kind: 'attack:denial-beam:windup', pan: .5, gain: .75 },
     });
   });
 });

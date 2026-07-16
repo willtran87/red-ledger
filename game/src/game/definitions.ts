@@ -22,12 +22,17 @@ export interface WeaponDefinition {
   recoil: number;
   idle: string;
   fire: string;
+  audio: {
+    fire: string;
+    dry: string;
+    impact: string;
+  };
 }
 
 const weaponPath = (id: WeaponId, state: string) =>
   `/public_runtime/weapons/view/${id}/weapon_${id}_${state}.png`;
 
-export const WEAPONS: Record<WeaponId, WeaponDefinition> = {
+const weaponDefinitions: Record<WeaponId, Omit<WeaponDefinition, 'audio'>> = {
   'claim-stamp': { id: 'claim-stamp', slot: 1, damage: 40, damageMin: 20, damageMax: 60, pellets: 1, spread: .02, cooldown: 14 / 35, ammo: 'none', ammoCost: 0, range: 2.6, raiseTime: .14, lowerTime: .11, recoil: .025, idle: weaponPath('claim-stamp', 'idle_F_00'), fire: weaponPath('claim-stamp', 'fire_F_01') },
   'staple-driver': { id: 'staple-driver', slot: 2, damage: 10, damageMin: 5, damageMax: 15, pellets: 1, spread: .018, cooldown: 7 / 35, ammo: 'staples', ammoCost: 1, range: 36, raiseTime: .14, lowerTime: .1, recoil: .018, idle: weaponPath('staple-driver', 'idle_F_00'), fire: weaponPath('staple-driver', 'fire_F_01') },
   'twin-bore-riveter': { id: 'twin-bore-riveter', slot: 3, damage: 6, damageMin: 3, damageMax: 9, pellets: 14, spread: .11, cooldown: 24 / 35, ammo: 'fasteners', ammoCost: 2, range: 24, raiseTime: .18, lowerTime: .13, recoil: .055, idle: weaponPath('twin-bore-riveter', 'idle_F_00'), fire: weaponPath('twin-bore-riveter', 'fire_F_01') },
@@ -37,6 +42,15 @@ export const WEAPONS: Record<WeaponId, WeaponDefinition> = {
   'binding-engine': { id: 'binding-engine', slot: 7, damage: 400, damageMin: 10, damageMax: 30, pellets: 20, spread: .005, cooldown: 35 / 35, ammo: 'toner-cells', ammoCost: 40, range: 52, raiseTime: .24, lowerTime: .18, recoil: .04, idle: weaponPath('binding-engine', 'idle_F_01'), fire: weaponPath('binding-engine', 'fire_F_01') },
   'umbra-saw': { id: 'umbra-saw', slot: 8, damage: 16, damageMin: 8, damageMax: 24, pellets: 1, spread: .04, cooldown: 4 / 35, ammo: 'none', ammoCost: 0, range: 2.4, raiseTime: .16, lowerTime: .12, recoil: .02, idle: weaponPath('umbra-saw', 'idle_F_01'), fire: weaponPath('umbra-saw', 'fire_F_01') },
 };
+
+export const WEAPONS = Object.fromEntries(Object.entries(weaponDefinitions).map(([id, definition]) => [id, {
+  ...definition,
+  audio: {
+    fire: `weapon/${id}/fire`,
+    dry: `weapon/${id}/dry`,
+    impact: `weapon/${id}/impact`,
+  },
+}])) as Record<WeaponId, WeaponDefinition>;
 
 export interface EnemyDefinition {
   health: number;
@@ -52,9 +66,16 @@ export interface EnemyDefinition {
   windup: number;
   recovery: number;
   drop?: { kind: 'ammo'; id: AmmoType; amount: number; chance: number };
+  audio: {
+    idle: string;
+    alert: string;
+    pain: string;
+    death: string;
+    phase?: string;
+  };
 }
 
-export const ENEMIES: Record<EnemyId | BossId, EnemyDefinition> = {
+const enemyDefinitions: Record<EnemyId | BossId, Omit<EnemyDefinition, 'audio'>> = {
   'returned-mail': { health: 30, speed: 2.6, damage: 10, attackRange: 1.6, cooldown: .8, radius: .32, height: 1.25, faction: 'bureaucracy', painChance: .7, painDuration: .18, windup: .16, recovery: .32 },
   'desk-warden': { health: 50, speed: 1.7, damage: 7, attackRange: 20, cooldown: 1.15, radius: .38, height: 1.5, faction: 'bureaucracy', painChance: .5, painDuration: .2, windup: .3, recovery: .35, drop: { kind: 'ammo', id: 'staples', amount: 5, chance: 1 } },
   'ember-clerk': { health: 60, speed: 2, damage: 8, attackRange: 15, cooldown: .9, radius: .34, height: 1.35, faction: 'bureaucracy', painChance: .58, painDuration: .22, windup: .28, recovery: .35 },
@@ -72,6 +93,17 @@ export const ENEMIES: Record<EnemyId | BossId, EnemyDefinition> = {
   'chief-actuary': { health: 2500, speed: 1.25, damage: 36, attackRange: 32, cooldown: .58, radius: .92, height: 2.7, faction: 'executive', painChance: .06, painDuration: .1, windup: .24, recovery: .25 },
   uninsurable: { health: 4000, speed: 0, damage: 42, attackRange: 36, cooldown: .7, radius: 1.4, height: 3, faction: 'world-engine', painChance: 0, painDuration: 0, windup: .4, recovery: .3 },
 };
+
+export const ENEMIES = Object.fromEntries(Object.entries(enemyDefinitions).map(([id, definition]) => [id, {
+  ...definition,
+  audio: {
+    idle: `enemy/${id}/idle`,
+    alert: `enemy/${id}/alert`,
+    pain: `enemy/${id}/pain`,
+    death: `enemy/${id}/death`,
+    ...(definition.faction === 'bureaucracy' ? {} : { phase: `enemy/${id}/phase` }),
+  },
+}])) as Record<EnemyId | BossId, EnemyDefinition>;
 
 export const DIFFICULTY = {
   orientation: { enemyDamage: .5, enemySpeed: .85, aggression: .85, reaction: 1 / .85, refire: 1 / .85, projectileSpeed: .9, supply: 1.5, placement: 'easy' },

@@ -1,0 +1,3099 @@
+{
+  "schema": 2,
+  "revision": "2026-07-16",
+  "provenance": "Original offline-rendered synthesis authored for this project; no sampled third-party recordings.",
+  "music": {
+    "menu": {
+      "url": "audio/music/menu.mp3",
+      "title": "Open Ledger",
+      "kind": "ui",
+      "duration": 120,
+      "encodedDuration": 120.0,
+      "bpm": 92,
+      "style": "minimal",
+      "motifSha256": "d73e1f57f85430500cb74e844b8d4250bfeb123f7f80dc3ccd1d4f6910bb2545",
+      "sha256": "8484350320f6381b8e277280e0a5bdcc92bbc20bd8707530f2c30c92cab434f6"
+    },
+    "intermission": {
+      "url": "audio/music/intermission.mp3",
+      "title": "Filed Under Pressure",
+      "kind": "ui",
+      "duration": 84,
+      "encodedDuration": 84.0,
+      "bpm": 108,
+      "style": "minimal",
+      "motifSha256": "5e89077f67b65cf21539f13fb2b99704434f433220b30b42bdc5309982cf2c3f",
+      "sha256": "9d644a68e94a6b690954fc5cf39d48d2808d8e9d70d92dcc31d2ed2eb18003d0"
+    },
+    "episode-1-outro": {
+      "url": "audio/music/episode-1-outro.mp3",
+      "title": "Regional Close",
+      "kind": "ending",
+      "duration": 96,
+      "encodedDuration": 96.0,
+      "bpm": 112,
+      "style": "industrial",
+      "motifSha256": "fe908fbe0548bd5a7924c2cd2154446fbffe36e693ef5aef1acd2ca5c945caeb",
+      "sha256": "f3f28f49425d97040b158ce7b06c973563d6905fc1d0353a0f1fcd2d9b4aa272"
+    },
+    "episode-2-outro": {
+      "url": "audio/music/episode-2-outro.mp3",
+      "title": "Waterline Reserve",
+      "kind": "ending",
+      "duration": 104,
+      "encodedDuration": 104.0,
+      "bpm": 98,
+      "style": "ambient",
+      "motifSha256": "3b29027d5d18d44ab58abad6008abbd73b777c7057d39d3cf393d2ba8491c5e9",
+      "sha256": "143f184f57377fc97503647a714568fc144dd63f1273861105ed24ce5cac9790"
+    },
+    "episode-3-outro": {
+      "url": "audio/music/episode-3-outro.mp3",
+      "title": "Impossible Claim Closed",
+      "kind": "ending",
+      "duration": 128,
+      "encodedDuration": 128.0,
+      "bpm": 76,
+      "style": "ambient",
+      "motifSha256": "106676b3917bcf69db8fa7a9f5bcf579c858898f217a2e3de32e752a06514cdf",
+      "sha256": "624077744fd63e8b216855b825190f6b5f2adf450b30f8f7236b45f185dca0d3"
+    },
+    "credits": {
+      "url": "audio/music/credits.mp3",
+      "title": "Carbon Copies",
+      "kind": "ui",
+      "duration": 112,
+      "encodedDuration": 112.0,
+      "bpm": 100,
+      "style": "minimal",
+      "motifSha256": "53cada871a104ab5c3ab3682c5e9a4b5f0afcc084c3a308c707e8ac761399a69",
+      "sha256": "2b719cd5672e1935fab6d245db4c5390abd2afa48932842cc46e75ba24229c88"
+    },
+    "E1M1": {
+      "url": "audio/music/e1m1.mp3",
+      "title": "First Notice Pulse",
+      "kind": "map",
+      "duration": 154,
+      "encodedDuration": 154.0,
+      "bpm": 118,
+      "style": "industrial",
+      "motifSha256": "3ce650b61037fe9e7a3c96ef2b32c1a0da83a0e55a5170a9431663aa22499974",
+      "sha256": "e993aed53291562f17cb5f71b75a35876c447348399a606bb5baaa5015ea5737"
+    },
+    "E1M2": {
+      "url": "audio/music/e1m2.mp3",
+      "title": "Red Corridor Metrics",
+      "kind": "map",
+      "duration": 166,
+      "encodedDuration": 166.0,
+      "bpm": 104,
+      "style": "minimal",
+      "motifSha256": "02c8530dae8b1c854b13f0ebc59cab82232da6f6e4a7bb94594eff1d7306f5f3",
+      "sha256": "263065439f2e20f12ccd0fefc43dc117baabdbf47cd129842b8ae6f404db8338"
+    },
+    "E1M3": {
+      "url": "audio/music/e1m3.mp3",
+      "title": "Copy Pressure",
+      "kind": "map",
+      "duration": 178,
+      "encodedDuration": 178.000499,
+      "bpm": 126,
+      "style": "industrial",
+      "motifSha256": "e140d7191af01c2ffc53a4c72d84f224745763d226f3e965af92895e84baa284",
+      "sha256": "a4fef0431f7d68819d7200631bedc3784320e135b88da956b8a74d53cd364f90"
+    },
+    "E1M4": {
+      "url": "audio/music/e1m4.mp3",
+      "title": "Quiet Premium",
+      "kind": "map",
+      "duration": 190,
+      "encodedDuration": 190.0,
+      "bpm": 88,
+      "style": "ambient",
+      "motifSha256": "cc7fa1c481fbf706ebe453e01fae5f4f07e22cf3165f0d9b20a4bf821531bc4d",
+      "sha256": "ac7bd3635bb45ad263fbe6dcc54ec35600a5b93755f092b073fb8cc361bc78a1"
+    },
+    "E1M5": {
+      "url": "audio/music/e1m5.mp3",
+      "title": "After Hours Authority",
+      "kind": "map",
+      "duration": 202,
+      "encodedDuration": 202.0,
+      "bpm": 132,
+      "style": "industrial",
+      "motifSha256": "3ad154a77f63753c9f8a1681f41b29fbcbbe5204b94416d614941686b6aee9c5",
+      "sha256": "656809eeb9fbe0d722531884d6a0cc78751003a66d1337075c57fa0da67ddfa9"
+    },
+    "E1M6": {
+      "url": "audio/music/e1m6.mp3",
+      "title": "Archive Teeth",
+      "kind": "map",
+      "duration": 214,
+      "encodedDuration": 214.0,
+      "bpm": 110,
+      "style": "minimal",
+      "motifSha256": "931ee1ba3de7416b9979bb8264f94c65988b473cffacd84d80d581f15e5d3be0",
+      "sha256": "eafaa68072a91f8fa98b2b738948d6501accf2524bd5c5739789e98d0c87eae1"
+    },
+    "E1M7": {
+      "url": "audio/music/e1m7.mp3",
+      "title": "Escalation Desk",
+      "kind": "map",
+      "duration": 226,
+      "encodedDuration": 226.0,
+      "bpm": 138,
+      "style": "industrial",
+      "motifSha256": "9349197bb17b634248f4186b02ce75cb1a50ac1e874e0fd66804320bd6b33d5f",
+      "sha256": "df5abb139afec25b51bda1e976c002a121b97484aaaa599b619d4255738c91e1"
+    },
+    "E1M8": {
+      "url": "audio/music/e1m8.mp3",
+      "title": "Authority Floor",
+      "kind": "map",
+      "duration": 196,
+      "encodedDuration": 196.0,
+      "bpm": 144,
+      "style": "industrial",
+      "motifSha256": "02da74c724a93273fd32dff419a9322dc2dcb2bbd914b68fc99c177f62d706e8",
+      "sha256": "7b7e830eecbb45fd7a9466c2a708be9e929a3a17f062940bfa9d84b73551419b"
+    },
+    "E1M9": {
+      "url": "audio/music/e1m9.mp3",
+      "title": "Orientation Tape",
+      "kind": "map",
+      "duration": 172,
+      "encodedDuration": 172.0,
+      "bpm": 96,
+      "style": "minimal",
+      "motifSha256": "f15b03e389c90e78cae4fab9b6089e4a8e35285b93510eed6d6306d22e5cc106",
+      "sha256": "bc597b3099700cf8d8cf75889ce991963d97bf824568c455df33fd0a56f3f067"
+    },
+    "E2M1": {
+      "url": "audio/music/e2m1.mp3",
+      "title": "Flood Adjustment",
+      "kind": "map",
+      "duration": 160,
+      "encodedDuration": 160.0,
+      "bpm": 122,
+      "style": "industrial",
+      "motifSha256": "e75e336b657a8257c979072a3c38a7bededc4b2af8b5d7d6a46c9e990c43ffe8",
+      "sha256": "e96af67895bcfde50c8140c554182912186b08e9a1c9735e4c92719a52e2fb6b"
+    },
+    "E2M2": {
+      "url": "audio/music/e2m2.mp3",
+      "title": "Pump Annex",
+      "kind": "map",
+      "duration": 184,
+      "encodedDuration": 184.0,
+      "bpm": 116,
+      "style": "minimal",
+      "motifSha256": "0f9eac64c5ea3518437e16d21f15a0c03e15b1da199c05f1084c9c938bc86130",
+      "sha256": "c9c5cc373bfd08b83fe61e44de08970a4bd314e2040097c924012b2f36961e31"
+    },
+    "E2M3": {
+      "url": "audio/music/e2m3.mp3",
+      "title": "Glass Exclusion",
+      "kind": "map",
+      "duration": 208,
+      "encodedDuration": 208.0,
+      "bpm": 130,
+      "style": "industrial",
+      "motifSha256": "f50bab16bee2e2c5ff2b00ddd802063dddd7bb6d02d7bf0d11ba558ca44fcb10",
+      "sha256": "26e154903a7acd9a8abbbb302637744223ec74eab4fc8a8710983ceff62a477e"
+    },
+    "E2M4": {
+      "url": "audio/music/e2m4.mp3",
+      "title": "Rain on Carbon",
+      "kind": "map",
+      "duration": 220,
+      "encodedDuration": 220.0,
+      "bpm": 82,
+      "style": "ambient",
+      "motifSha256": "bf6697f741e52c58d58b83589d18092618163b0f4830667e6a0a93f274e2f5df",
+      "sha256": "144e5a4b71255cef3f158dfdb200984530251ca2cad14aee984ecb4c29695c8d"
+    },
+    "E2M5": {
+      "url": "audio/music/e2m5.mp3",
+      "title": "Catastrophe Queue",
+      "kind": "map",
+      "duration": 176,
+      "encodedDuration": 176.0,
+      "bpm": 136,
+      "style": "industrial",
+      "motifSha256": "25354dc2aebe50cc3d565e496113682394c9de80f77843dfa87e25b9b340d5bb",
+      "sha256": "4fec7f54d8cad5d7ab124c0eaff14a5e4ed3e5649739745eefd7ab7f307b8559"
+    },
+    "E2M6": {
+      "url": "audio/music/e2m6.mp3",
+      "title": "Rolling Shelves",
+      "kind": "map",
+      "duration": 200,
+      "encodedDuration": 200.0,
+      "bpm": 112,
+      "style": "minimal",
+      "motifSha256": "033ca39accd0e3a16b7bdc4bcbc0be250580b415342b9cbb7a48cb35c91b7cfb",
+      "sha256": "e07e038413d1d751b9d550bcb16df0fd258d7749969bb416028512c8604f37b8"
+    },
+    "E2M7": {
+      "url": "audio/music/e2m7.mp3",
+      "title": "Submerged Transfer",
+      "kind": "map",
+      "duration": 224,
+      "encodedDuration": 224.0,
+      "bpm": 124,
+      "style": "industrial",
+      "motifSha256": "179671a65abe32873f0857b578da09393715796385cdc3ba4cab991e07a8585f",
+      "sha256": "d43145d3365a5e5db995ad82d5247562cda49b96db5f1636a7e22f01fb1887d2"
+    },
+    "E2M8": {
+      "url": "audio/music/e2m8.mp3",
+      "title": "Aggregate Weather",
+      "kind": "map",
+      "duration": 188,
+      "encodedDuration": 188.0,
+      "bpm": 146,
+      "style": "industrial",
+      "motifSha256": "0592b3e1f4e738d0d0b15508aa517a460659208fad00199d6cf46fae04865ea7",
+      "sha256": "65d6c092c176081c0bbb20473aa7bade4dc04df73904b4a6e99d99b877f4d8ad"
+    },
+    "E2M9": {
+      "url": "audio/music/e2m9.mp3",
+      "title": "Claims Aquarium",
+      "kind": "map",
+      "duration": 168,
+      "encodedDuration": 168.0,
+      "bpm": 90,
+      "style": "ambient",
+      "motifSha256": "02a501b61858b2fc49f6b04478227f85b46bbc19b799d8865ab1daab73aeda8b",
+      "sha256": "5bd4aeaf4ae0937be6a55c08030cd7ac04e6155f3816a439498156b526fabf14"
+    },
+    "E3M1": {
+      "url": "audio/music/e3m1.mp3",
+      "title": "Model Intake",
+      "kind": "map",
+      "duration": 158,
+      "encodedDuration": 158.0,
+      "bpm": 120,
+      "style": "minimal",
+      "motifSha256": "769d1999a332cb1a5291bf39975a7eadc2820905a2f967fca7d4f43b9f0a705a",
+      "sha256": "235180cacf17df8a69078cfa8c5a7093c9a0b907a226e6bdfd3f33f3724e113f"
+    },
+    "E3M2": {
+      "url": "audio/music/e3m2.mp3",
+      "title": "Reserve Arithmetic",
+      "kind": "map",
+      "duration": 182,
+      "encodedDuration": 182.0,
+      "bpm": 128,
+      "style": "industrial",
+      "motifSha256": "cacc37114623addcca76a8df56b499a9645dab07c64980c1231252e63f1b0eb3",
+      "sha256": "77d8239fb43ec4615ebc76c1b36666d29d950d4c760b49f9352a214252edbb7e"
+    },
+    "E3M3": {
+      "url": "audio/music/e3m3.mp3",
+      "title": "Predictive Ceiling",
+      "kind": "map",
+      "duration": 206,
+      "encodedDuration": 206.0,
+      "bpm": 106,
+      "style": "ambient",
+      "motifSha256": "ddcab49c526e5d58a38e71d832f3bedc70e0bf24982f18e2ce4618838e13588f",
+      "sha256": "a5d0dfa97b7ce6ca118670a9c4be7a26d9f7a8ddf9820d7b1e03bb286aa1554b"
+    },
+    "E3M4": {
+      "url": "audio/music/e3m4.mp3",
+      "title": "Bad Faith Motion",
+      "kind": "map",
+      "duration": 230,
+      "encodedDuration": 230.0,
+      "bpm": 134,
+      "style": "industrial",
+      "motifSha256": "802b4a68c6ab5d17f79b4a3c8e5a1cb71832146d9cef7cf1448696ee3d3071de",
+      "sha256": "9d74b2406b259272ec4e63a934e9d9670bb12702747a98ae73323296aea8933e"
+    },
+    "E3M5": {
+      "url": "audio/music/e3m5.mp3",
+      "title": "Wax Adjudication",
+      "kind": "map",
+      "duration": 174,
+      "encodedDuration": 174.0,
+      "bpm": 114,
+      "style": "minimal",
+      "motifSha256": "dfbca73323c599844248491272caf222f76ea66a7dda41546ec3de28a3415d0f",
+      "sha256": "536d0770dbe660603b66c50b43dbb843bb976e684f1efc05dcb9ec3d8c2a0d4e"
+    },
+    "E3M6": {
+      "url": "audio/music/e3m6.mp3",
+      "title": "Litigation Engine",
+      "kind": "map",
+      "duration": 198,
+      "encodedDuration": 198.0,
+      "bpm": 140,
+      "style": "industrial",
+      "motifSha256": "f448f0d0b48a8b5e94994143b7f9cd1454f9c2e8bd38c63431cc20c4f0c8785e",
+      "sha256": "e67cedfcd99400928bdff166d04b7069cf29b537e4d0b6239509dab6746792ac"
+    },
+    "E3M7": {
+      "url": "audio/music/e3m7.mp3",
+      "title": "Adverse Development",
+      "kind": "map",
+      "duration": 222,
+      "encodedDuration": 222.0,
+      "bpm": 102,
+      "style": "ambient",
+      "motifSha256": "0be50b0522ee95c2794085544a8a10fcb0e5c72d36fed81afc083f5f51c1e625",
+      "sha256": "0284e070553472e275b12f1298e8e6e4206ff6586a852f571b7cb82ea1a5768b"
+    },
+    "E3M8": {
+      "url": "audio/music/e3m8.mp3",
+      "title": "Unbounded Reserve",
+      "kind": "map",
+      "duration": 236,
+      "encodedDuration": 236.0,
+      "bpm": 148,
+      "style": "industrial",
+      "motifSha256": "a5efb307d26e41b5699917790964c4ceab8f5e06579f2062f9f09d8da7c9bcaa",
+      "sha256": "8ef460923cf7247ef11e8dd448efbd7c25443e3096b834df3847495fd268d50e"
+    },
+    "E3M9": {
+      "url": "audio/music/e3m9.mp3",
+      "title": "Perfect Orientation",
+      "kind": "map",
+      "duration": 186,
+      "encodedDuration": 186.0,
+      "bpm": 94,
+      "style": "minimal",
+      "motifSha256": "d1ac0d853882d688d70b984e3f516c467b058312f111933835e790ed59e625c7",
+      "sha256": "34d8ec6d775c0c8126c9753e658491101e0848ae3914da382feb9a2d4db145b3"
+    }
+  },
+  "sfx": {
+    "shardCount": 5,
+    "groupCount": 189,
+    "cueCount": 347,
+    "shards": {
+      "actors": {
+        "url": "audio/sfx/red-ledger-actors.mp3",
+        "sha256": "e4a5021729f0761945f39ef06ed4257a2064f289bf8578418806eba4ac1907a9",
+        "duration": 80.16675,
+        "encodedDuration": 80.16675,
+        "groupCount": 68,
+        "cueCount": 156
+      },
+      "attacks": {
+        "url": "audio/sfx/red-ledger-attacks.mp3",
+        "sha256": "1ef475b948cae8f992f78f39d19100acaeb05d5fb6a588891a7a05292347ce71",
+        "duration": 20.006,
+        "encodedDuration": 20.006,
+        "groupCount": 54,
+        "cueCount": 54
+      },
+      "weapons": {
+        "url": "audio/sfx/red-ledger-weapons.mp3",
+        "sha256": "d256eb55e79683b94226d5530aa8382546f32ab414e4ec984025eea1930d7793",
+        "duration": 13.777313,
+        "encodedDuration": 13.777312,
+        "groupCount": 24,
+        "cueCount": 48
+      },
+      "world-environment": {
+        "url": "audio/sfx/red-ledger-world-environment.mp3",
+        "sha256": "6395106335d1ccde8f5d0720cf8b6e4fd0412083f94024082802f722ce7452dc",
+        "duration": 27.657062,
+        "encodedDuration": 27.657062,
+        "groupCount": 27,
+        "cueCount": 54
+      },
+      "player-ui": {
+        "url": "audio/sfx/red-ledger-player-ui.mp3",
+        "sha256": "f46ec95d86cb7a84ccafc5141df8ef11a6b2f53d14a9339974d413a23554a7a8",
+        "duration": 13.055312,
+        "encodedDuration": 13.055312,
+        "groupCount": 16,
+        "cueCount": 35
+      }
+    },
+    "groups": {
+      "enemy/returned-mail/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/returned-mail/idle/01",
+            "start": 0.08,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/returned-mail/idle/02",
+            "start": 0.552375,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/returned-mail/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/returned-mail/alert/01",
+            "start": 1.050062,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/returned-mail/alert/02",
+            "start": 1.409687,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/returned-mail/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/returned-mail/pain/01",
+            "start": 1.788,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/returned-mail/pain/02",
+            "start": 2.034813,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/returned-mail/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/returned-mail/death/01",
+            "start": 2.293687,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/returned-mail/death/02",
+            "start": 2.972875,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/returned-mail/death/03",
+            "start": 3.6895,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/desk-warden/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/desk-warden/idle/01",
+            "start": 4.4435,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/desk-warden/idle/02",
+            "start": 4.915875,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/desk-warden/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/desk-warden/alert/01",
+            "start": 5.413563,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/desk-warden/alert/02",
+            "start": 5.773187,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/desk-warden/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/desk-warden/pain/01",
+            "start": 6.1515,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/desk-warden/pain/02",
+            "start": 6.398313,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/desk-warden/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/desk-warden/death/01",
+            "start": 6.657188,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/desk-warden/death/02",
+            "start": 7.336375,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/desk-warden/death/03",
+            "start": 8.053,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/ember-clerk/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/ember-clerk/idle/01",
+            "start": 8.807,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/ember-clerk/idle/02",
+            "start": 9.279375,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/ember-clerk/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/ember-clerk/alert/01",
+            "start": 9.777062,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/ember-clerk/alert/02",
+            "start": 10.136688,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/ember-clerk/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/ember-clerk/pain/01",
+            "start": 10.515,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/ember-clerk/pain/02",
+            "start": 10.761812,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/ember-clerk/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/ember-clerk/death/01",
+            "start": 11.020687,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/ember-clerk/death/02",
+            "start": 11.699875,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/ember-clerk/death/03",
+            "start": 12.4165,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/exposure-hound/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/exposure-hound/idle/01",
+            "start": 13.1705,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/exposure-hound/idle/02",
+            "start": 13.642875,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/exposure-hound/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/exposure-hound/alert/01",
+            "start": 14.140562,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/exposure-hound/alert/02",
+            "start": 14.500187,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/exposure-hound/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/exposure-hound/pain/01",
+            "start": 14.8785,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/exposure-hound/pain/02",
+            "start": 15.125312,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/exposure-hound/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/exposure-hound/death/01",
+            "start": 15.384187,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/exposure-hound/death/02",
+            "start": 16.063375,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/exposure-hound/death/03",
+            "start": 16.78,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/coverage-drone/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/coverage-drone/idle/01",
+            "start": 17.534,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/coverage-drone/idle/02",
+            "start": 18.006375,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/coverage-drone/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/coverage-drone/alert/01",
+            "start": 18.504062,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/coverage-drone/alert/02",
+            "start": 18.863688,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/coverage-drone/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/coverage-drone/pain/01",
+            "start": 19.242,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/coverage-drone/pain/02",
+            "start": 19.488813,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/coverage-drone/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/coverage-drone/death/01",
+            "start": 19.747688,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/coverage-drone/death/02",
+            "start": 20.426875,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/coverage-drone/death/03",
+            "start": 21.1435,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/liability-mass/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/liability-mass/idle/01",
+            "start": 21.8975,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/liability-mass/idle/02",
+            "start": 22.369875,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/liability-mass/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/liability-mass/alert/01",
+            "start": 22.867562,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/liability-mass/alert/02",
+            "start": 23.227187,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/liability-mass/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/liability-mass/pain/01",
+            "start": 23.6055,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/liability-mass/pain/02",
+            "start": 23.852313,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/liability-mass/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/liability-mass/death/01",
+            "start": 24.111187,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/liability-mass/death/02",
+            "start": 24.790375,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/liability-mass/death/03",
+            "start": 25.507,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/denial-officer/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/denial-officer/idle/01",
+            "start": 26.261,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/denial-officer/idle/02",
+            "start": 26.733375,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/denial-officer/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/denial-officer/alert/01",
+            "start": 27.231063,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/denial-officer/alert/02",
+            "start": 27.590688,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/denial-officer/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/denial-officer/pain/01",
+            "start": 27.969,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/denial-officer/pain/02",
+            "start": 28.215812,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/denial-officer/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/denial-officer/death/01",
+            "start": 28.474688,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/denial-officer/death/02",
+            "start": 29.153875,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/denial-officer/death/03",
+            "start": 29.8705,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/subrogator/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/subrogator/idle/01",
+            "start": 30.6245,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/subrogator/idle/02",
+            "start": 31.096875,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/subrogator/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/subrogator/alert/01",
+            "start": 31.594562,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/subrogator/alert/02",
+            "start": 31.954187,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/subrogator/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/subrogator/pain/01",
+            "start": 32.3325,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/subrogator/pain/02",
+            "start": 32.579313,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/subrogator/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/subrogator/death/01",
+            "start": 32.838187,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/subrogator/death/02",
+            "start": 33.517375,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/subrogator/death/03",
+            "start": 34.234,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/reserve-eater/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/reserve-eater/idle/01",
+            "start": 34.988,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/reserve-eater/idle/02",
+            "start": 35.460375,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/reserve-eater/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/reserve-eater/alert/01",
+            "start": 35.958062,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/reserve-eater/alert/02",
+            "start": 36.317687,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/reserve-eater/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/reserve-eater/pain/01",
+            "start": 36.696,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/reserve-eater/pain/02",
+            "start": 36.942813,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/reserve-eater/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/reserve-eater/death/01",
+            "start": 37.201687,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/reserve-eater/death/02",
+            "start": 37.880875,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/reserve-eater/death/03",
+            "start": 38.5975,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/fraud-apparition/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/fraud-apparition/idle/01",
+            "start": 39.3515,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/fraud-apparition/idle/02",
+            "start": 39.823875,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/fraud-apparition/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/fraud-apparition/alert/01",
+            "start": 40.321562,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/fraud-apparition/alert/02",
+            "start": 40.681188,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/fraud-apparition/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/fraud-apparition/pain/01",
+            "start": 41.0595,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/fraud-apparition/pain/02",
+            "start": 41.306312,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/fraud-apparition/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/fraud-apparition/death/01",
+            "start": 41.565188,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/fraud-apparition/death/02",
+            "start": 42.244375,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/fraud-apparition/death/03",
+            "start": 42.961,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/cat-model/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/cat-model/idle/01",
+            "start": 43.715,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/cat-model/idle/02",
+            "start": 44.187375,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/cat-model/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/cat-model/alert/01",
+            "start": 44.685063,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/cat-model/alert/02",
+            "start": 45.044688,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/cat-model/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/cat-model/pain/01",
+            "start": 45.423,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/cat-model/pain/02",
+            "start": 45.669812,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/cat-model/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/cat-model/death/01",
+            "start": 45.928688,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/cat-model/death/02",
+            "start": 46.607875,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/cat-model/death/03",
+            "start": 47.3245,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/bad-faith-counsel/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/bad-faith-counsel/idle/01",
+            "start": 48.0785,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/bad-faith-counsel/idle/02",
+            "start": 48.550875,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/bad-faith-counsel/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/bad-faith-counsel/alert/01",
+            "start": 49.048563,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/bad-faith-counsel/alert/02",
+            "start": 49.408187,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/bad-faith-counsel/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/bad-faith-counsel/pain/01",
+            "start": 49.7865,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/bad-faith-counsel/pain/02",
+            "start": 50.033313,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/bad-faith-counsel/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/bad-faith-counsel/death/01",
+            "start": 50.292187,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/bad-faith-counsel/death/02",
+            "start": 50.971375,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/bad-faith-counsel/death/03",
+            "start": 51.688,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/regional-director/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/regional-director/idle/01",
+            "start": 52.442,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/regional-director/idle/02",
+            "start": 52.914375,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/regional-director/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/regional-director/alert/01",
+            "start": 53.412062,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/regional-director/alert/02",
+            "start": 53.771687,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/regional-director/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/regional-director/pain/01",
+            "start": 54.15,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/regional-director/pain/02",
+            "start": 54.396813,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/regional-director/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/regional-director/death/01",
+            "start": 54.655687,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/regional-director/death/02",
+            "start": 55.334875,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/regional-director/death/03",
+            "start": 56.0515,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/regional-director/phase": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/regional-director/phase/01",
+            "start": 56.8055,
+            "duration": 0.770813
+          },
+          {
+            "id": "enemy/regional-director/phase/02",
+            "start": 57.616312,
+            "duration": 0.815875
+          },
+          {
+            "id": "enemy/regional-director/phase/03",
+            "start": 58.472187,
+            "duration": 0.861
+          }
+        ]
+      },
+      "enemy/aggregate/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/aggregate/idle/01",
+            "start": 59.373188,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/aggregate/idle/02",
+            "start": 59.845562,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/aggregate/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/aggregate/alert/01",
+            "start": 60.34325,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/aggregate/alert/02",
+            "start": 60.702875,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/aggregate/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/aggregate/pain/01",
+            "start": 61.081187,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/aggregate/pain/02",
+            "start": 61.328,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/aggregate/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/aggregate/death/01",
+            "start": 61.586875,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/aggregate/death/02",
+            "start": 62.266062,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/aggregate/death/03",
+            "start": 62.982687,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/aggregate/phase": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/aggregate/phase/01",
+            "start": 63.736688,
+            "duration": 0.770813
+          },
+          {
+            "id": "enemy/aggregate/phase/02",
+            "start": 64.5475,
+            "duration": 0.815875
+          },
+          {
+            "id": "enemy/aggregate/phase/03",
+            "start": 65.403375,
+            "duration": 0.861
+          }
+        ]
+      },
+      "enemy/chief-actuary/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/chief-actuary/idle/01",
+            "start": 66.304375,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/chief-actuary/idle/02",
+            "start": 66.77675,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/chief-actuary/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/chief-actuary/alert/01",
+            "start": 67.274438,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/chief-actuary/alert/02",
+            "start": 67.634062,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/chief-actuary/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/chief-actuary/pain/01",
+            "start": 68.012375,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/chief-actuary/pain/02",
+            "start": 68.259187,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/chief-actuary/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/chief-actuary/death/01",
+            "start": 68.518062,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/chief-actuary/death/02",
+            "start": 69.19725,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/chief-actuary/death/03",
+            "start": 69.913875,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/chief-actuary/phase": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/chief-actuary/phase/01",
+            "start": 70.667875,
+            "duration": 0.770813
+          },
+          {
+            "id": "enemy/chief-actuary/phase/02",
+            "start": 71.478688,
+            "duration": 0.815875
+          },
+          {
+            "id": "enemy/chief-actuary/phase/03",
+            "start": 72.334563,
+            "duration": 0.861
+          }
+        ]
+      },
+      "enemy/uninsurable/idle": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/uninsurable/idle/01",
+            "start": 73.235563,
+            "duration": 0.432375
+          },
+          {
+            "id": "enemy/uninsurable/idle/02",
+            "start": 73.707937,
+            "duration": 0.457688
+          }
+        ]
+      },
+      "enemy/uninsurable/alert": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/uninsurable/alert/01",
+            "start": 74.205625,
+            "duration": 0.319625
+          },
+          {
+            "id": "enemy/uninsurable/alert/02",
+            "start": 74.56525,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "enemy/uninsurable/pain": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/uninsurable/pain/01",
+            "start": 74.943562,
+            "duration": 0.206813
+          },
+          {
+            "id": "enemy/uninsurable/pain/02",
+            "start": 75.190375,
+            "duration": 0.218875
+          }
+        ]
+      },
+      "enemy/uninsurable/death": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/uninsurable/death/01",
+            "start": 75.44925,
+            "duration": 0.639188
+          },
+          {
+            "id": "enemy/uninsurable/death/02",
+            "start": 76.128438,
+            "duration": 0.676625
+          },
+          {
+            "id": "enemy/uninsurable/death/03",
+            "start": 76.845062,
+            "duration": 0.714
+          }
+        ]
+      },
+      "enemy/uninsurable/phase": {
+        "shard": "actors",
+        "cues": [
+          {
+            "id": "enemy/uninsurable/phase/01",
+            "start": 77.599063,
+            "duration": 0.770813
+          },
+          {
+            "id": "enemy/uninsurable/phase/02",
+            "start": 78.409875,
+            "duration": 0.815875
+          },
+          {
+            "id": "enemy/uninsurable/phase/03",
+            "start": 79.26575,
+            "duration": 0.861
+          }
+        ]
+      },
+      "attack/rejection-rush/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/rejection-rush/windup/01",
+            "start": 0.08,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/rejection-rush/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/rejection-rush/resolve/01",
+            "start": 0.496,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/staple-burst/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/staple-burst/windup/01",
+            "start": 0.818,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/staple-burst/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/staple-burst/resolve/01",
+            "start": 1.234,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/ember-claims/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/ember-claims/windup/01",
+            "start": 1.556,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/ember-claims/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/ember-claims/resolve/01",
+            "start": 1.972,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/survey-lunge/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/survey-lunge/windup/01",
+            "start": 2.294,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/survey-lunge/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/survey-lunge/resolve/01",
+            "start": 2.71,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/coverage-fan/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/coverage-fan/windup/01",
+            "start": 3.032,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/coverage-fan/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/coverage-fan/resolve/01",
+            "start": 3.448,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/liability-orbs/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/liability-orbs/windup/01",
+            "start": 3.77,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/liability-orbs/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/liability-orbs/resolve/01",
+            "start": 4.186,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/denial-beam/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/denial-beam/windup/01",
+            "start": 4.508,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/denial-beam/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/denial-beam/resolve/01",
+            "start": 4.924,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/paired-recovery/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/paired-recovery/windup/01",
+            "start": 5.246,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/paired-recovery/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/paired-recovery/resolve/01",
+            "start": 5.662,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/vault-bite/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/vault-bite/windup/01",
+            "start": 5.984,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/vault-bite/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/vault-bite/resolve/01",
+            "start": 6.4,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/reserve-spill/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/reserve-spill/windup/01",
+            "start": 6.722,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/reserve-spill/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/reserve-spill/resolve/01",
+            "start": 7.138,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/contradiction-rend/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/contradiction-rend/windup/01",
+            "start": 7.46,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/contradiction-rend/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/contradiction-rend/resolve/01",
+            "start": 7.876,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/loss-prediction/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/loss-prediction/windup/01",
+            "start": 8.198,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/loss-prediction/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/loss-prediction/resolve/01",
+            "start": 8.614,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/adverse-opinion/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/adverse-opinion/windup/01",
+            "start": 8.936,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/adverse-opinion/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/adverse-opinion/resolve/01",
+            "start": 9.352,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/reopen-file/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/reopen-file/windup/01",
+            "start": 9.674,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/reopen-file/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/reopen-file/resolve/01",
+            "start": 10.09,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/response-canister/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/response-canister/windup/01",
+            "start": 10.412,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/response-canister/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/response-canister/resolve/01",
+            "start": 10.828,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/authority-summons/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/authority-summons/windup/01",
+            "start": 11.15,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/authority-summons/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/authority-summons/resolve/01",
+            "start": 11.566,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/executive-volley/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/executive-volley/windup/01",
+            "start": 11.888,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/executive-volley/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/executive-volley/resolve/01",
+            "start": 12.304,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/joined-loss-emitters/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/joined-loss-emitters/windup/01",
+            "start": 12.626,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/joined-loss-emitters/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/joined-loss-emitters/resolve/01",
+            "start": 13.042,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/joined-loss-right/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/joined-loss-right/windup/01",
+            "start": 13.364,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/joined-loss-right/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/joined-loss-right/resolve/01",
+            "start": 13.78,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/aggregate-pool/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/aggregate-pool/windup/01",
+            "start": 14.102,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/aggregate-pool/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/aggregate-pool/resolve/01",
+            "start": 14.518,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/total-loss-ring/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/total-loss-ring/windup/01",
+            "start": 14.84,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/total-loss-ring/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/total-loss-ring/resolve/01",
+            "start": 15.256,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/actuarial-prediction/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/actuarial-prediction/windup/01",
+            "start": 15.578,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/actuarial-prediction/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/actuarial-prediction/resolve/01",
+            "start": 15.994,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/probability-salvo/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/probability-salvo/windup/01",
+            "start": 16.316,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/probability-salvo/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/probability-salvo/resolve/01",
+            "start": 16.732,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/certainty-lunge/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/certainty-lunge/windup/01",
+            "start": 17.054,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/certainty-lunge/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/certainty-lunge/resolve/01",
+            "start": 17.47,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/reserve-core-pulse/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/reserve-core-pulse/windup/01",
+            "start": 17.792,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/reserve-core-pulse/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/reserve-core-pulse/resolve/01",
+            "start": 18.208,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/binding-failure/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/binding-failure/windup/01",
+            "start": 18.53,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/binding-failure/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/binding-failure/resolve/01",
+            "start": 18.946,
+            "duration": 0.282
+          }
+        ]
+      },
+      "attack/uninsurable-denial/windup": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/uninsurable-denial/windup/01",
+            "start": 19.268,
+            "duration": 0.376
+          }
+        ]
+      },
+      "attack/uninsurable-denial/resolve": {
+        "shard": "attacks",
+        "cues": [
+          {
+            "id": "attack/uninsurable-denial/resolve/01",
+            "start": 19.684,
+            "duration": 0.282
+          }
+        ]
+      },
+      "weapon/claim-stamp/fire": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/claim-stamp/fire/01",
+            "start": 0.08,
+            "duration": 0.225625
+          },
+          {
+            "id": "weapon/claim-stamp/fire/02",
+            "start": 0.345625,
+            "duration": 0.238813
+          },
+          {
+            "id": "weapon/claim-stamp/fire/03",
+            "start": 0.624437,
+            "duration": 0.252
+          }
+        ]
+      },
+      "weapon/claim-stamp/dry": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/claim-stamp/dry/01",
+            "start": 0.916438,
+            "duration": 0.094
+          }
+        ]
+      },
+      "weapon/claim-stamp/impact": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/claim-stamp/impact/01",
+            "start": 1.050437,
+            "duration": 0.169187
+          },
+          {
+            "id": "weapon/claim-stamp/impact/02",
+            "start": 1.259625,
+            "duration": 0.179125
+          }
+        ]
+      },
+      "weapon/staple-driver/fire": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/staple-driver/fire/01",
+            "start": 1.47875,
+            "duration": 0.225625
+          },
+          {
+            "id": "weapon/staple-driver/fire/02",
+            "start": 1.744375,
+            "duration": 0.238813
+          },
+          {
+            "id": "weapon/staple-driver/fire/03",
+            "start": 2.023188,
+            "duration": 0.252
+          }
+        ]
+      },
+      "weapon/staple-driver/dry": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/staple-driver/dry/01",
+            "start": 2.315187,
+            "duration": 0.094
+          }
+        ]
+      },
+      "weapon/staple-driver/impact": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/staple-driver/impact/01",
+            "start": 2.449187,
+            "duration": 0.169187
+          },
+          {
+            "id": "weapon/staple-driver/impact/02",
+            "start": 2.658375,
+            "duration": 0.179125
+          }
+        ]
+      },
+      "weapon/twin-bore-riveter/fire": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/twin-bore-riveter/fire/01",
+            "start": 2.8775,
+            "duration": 0.225625
+          },
+          {
+            "id": "weapon/twin-bore-riveter/fire/02",
+            "start": 3.143125,
+            "duration": 0.238813
+          },
+          {
+            "id": "weapon/twin-bore-riveter/fire/03",
+            "start": 3.421937,
+            "duration": 0.252
+          }
+        ]
+      },
+      "weapon/twin-bore-riveter/dry": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/twin-bore-riveter/dry/01",
+            "start": 3.713938,
+            "duration": 0.094
+          }
+        ]
+      },
+      "weapon/twin-bore-riveter/impact": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/twin-bore-riveter/impact/01",
+            "start": 3.847938,
+            "duration": 0.169187
+          },
+          {
+            "id": "weapon/twin-bore-riveter/impact/02",
+            "start": 4.057125,
+            "duration": 0.179125
+          }
+        ]
+      },
+      "weapon/audit-repeater/fire": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/audit-repeater/fire/01",
+            "start": 4.27625,
+            "duration": 0.225625
+          },
+          {
+            "id": "weapon/audit-repeater/fire/02",
+            "start": 4.541875,
+            "duration": 0.238813
+          },
+          {
+            "id": "weapon/audit-repeater/fire/03",
+            "start": 4.820688,
+            "duration": 0.252
+          }
+        ]
+      },
+      "weapon/audit-repeater/dry": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/audit-repeater/dry/01",
+            "start": 5.112687,
+            "duration": 0.094
+          }
+        ]
+      },
+      "weapon/audit-repeater/impact": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/audit-repeater/impact/01",
+            "start": 5.246688,
+            "duration": 0.169187
+          },
+          {
+            "id": "weapon/audit-repeater/impact/02",
+            "start": 5.455875,
+            "duration": 0.179125
+          }
+        ]
+      },
+      "weapon/catastrophe-launcher/fire": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/catastrophe-launcher/fire/01",
+            "start": 5.675,
+            "duration": 0.545188
+          },
+          {
+            "id": "weapon/catastrophe-launcher/fire/02",
+            "start": 6.260187,
+            "duration": 0.577125
+          },
+          {
+            "id": "weapon/catastrophe-launcher/fire/03",
+            "start": 6.877313,
+            "duration": 0.609
+          }
+        ]
+      },
+      "weapon/catastrophe-launcher/dry": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/catastrophe-launcher/dry/01",
+            "start": 7.526313,
+            "duration": 0.094
+          }
+        ]
+      },
+      "weapon/catastrophe-launcher/impact": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/catastrophe-launcher/impact/01",
+            "start": 7.660312,
+            "duration": 0.169187
+          },
+          {
+            "id": "weapon/catastrophe-launcher/impact/02",
+            "start": 7.8695,
+            "duration": 0.179125
+          }
+        ]
+      },
+      "weapon/plasma-copier/fire": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/plasma-copier/fire/01",
+            "start": 8.088625,
+            "duration": 0.225625
+          },
+          {
+            "id": "weapon/plasma-copier/fire/02",
+            "start": 8.35425,
+            "duration": 0.238813
+          },
+          {
+            "id": "weapon/plasma-copier/fire/03",
+            "start": 8.633062,
+            "duration": 0.252
+          }
+        ]
+      },
+      "weapon/plasma-copier/dry": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/plasma-copier/dry/01",
+            "start": 8.925062,
+            "duration": 0.094
+          }
+        ]
+      },
+      "weapon/plasma-copier/impact": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/plasma-copier/impact/01",
+            "start": 9.059062,
+            "duration": 0.169187
+          },
+          {
+            "id": "weapon/plasma-copier/impact/02",
+            "start": 9.26825,
+            "duration": 0.179125
+          }
+        ]
+      },
+      "weapon/binding-engine/fire": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/binding-engine/fire/01",
+            "start": 9.487375,
+            "duration": 0.545188
+          },
+          {
+            "id": "weapon/binding-engine/fire/02",
+            "start": 10.072563,
+            "duration": 0.577125
+          },
+          {
+            "id": "weapon/binding-engine/fire/03",
+            "start": 10.689687,
+            "duration": 0.609
+          }
+        ]
+      },
+      "weapon/binding-engine/dry": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/binding-engine/dry/01",
+            "start": 11.338688,
+            "duration": 0.094
+          }
+        ]
+      },
+      "weapon/binding-engine/impact": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/binding-engine/impact/01",
+            "start": 11.472687,
+            "duration": 0.169187
+          },
+          {
+            "id": "weapon/binding-engine/impact/02",
+            "start": 11.681875,
+            "duration": 0.179125
+          }
+        ]
+      },
+      "weapon/umbra-saw/fire": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/umbra-saw/fire/01",
+            "start": 11.901,
+            "duration": 0.376
+          },
+          {
+            "id": "weapon/umbra-saw/fire/02",
+            "start": 12.317,
+            "duration": 0.398
+          },
+          {
+            "id": "weapon/umbra-saw/fire/03",
+            "start": 12.755,
+            "duration": 0.42
+          }
+        ]
+      },
+      "weapon/umbra-saw/dry": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/umbra-saw/dry/01",
+            "start": 13.215,
+            "duration": 0.094
+          }
+        ]
+      },
+      "weapon/umbra-saw/impact": {
+        "shard": "weapons",
+        "cues": [
+          {
+            "id": "weapon/umbra-saw/impact/01",
+            "start": 13.349,
+            "duration": 0.169187
+          },
+          {
+            "id": "weapon/umbra-saw/impact/02",
+            "start": 13.558188,
+            "duration": 0.179125
+          }
+        ]
+      },
+      "world/door-open": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/door-open/01",
+            "start": 0.08,
+            "duration": 0.451188
+          },
+          {
+            "id": "world/door-open/02",
+            "start": 0.571187,
+            "duration": 0.477625
+          },
+          {
+            "id": "world/door-open/03",
+            "start": 1.088812,
+            "duration": 0.504
+          }
+        ]
+      },
+      "world/door-locked": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/door-locked/01",
+            "start": 1.632812,
+            "duration": 0.188
+          },
+          {
+            "id": "world/door-locked/02",
+            "start": 1.860812,
+            "duration": 0.199
+          }
+        ]
+      },
+      "world/switch": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/switch/01",
+            "start": 2.099813,
+            "duration": 0.282
+          },
+          {
+            "id": "world/switch/02",
+            "start": 2.421813,
+            "duration": 0.2985
+          },
+          {
+            "id": "world/switch/03",
+            "start": 2.760312,
+            "duration": 0.315
+          }
+        ]
+      },
+      "world/lift-start": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/lift-start/01",
+            "start": 3.115312,
+            "duration": 0.394813
+          },
+          {
+            "id": "world/lift-start/02",
+            "start": 3.550125,
+            "duration": 0.417875
+          }
+        ]
+      },
+      "world/lift-end": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/lift-end/01",
+            "start": 4.008,
+            "duration": 0.282
+          },
+          {
+            "id": "world/lift-end/02",
+            "start": 4.33,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "world/secret": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/secret/01",
+            "start": 4.6685,
+            "duration": 0.282
+          },
+          {
+            "id": "world/secret/02",
+            "start": 4.9905,
+            "duration": 0.2985
+          },
+          {
+            "id": "world/secret/03",
+            "start": 5.329,
+            "duration": 0.315
+          }
+        ]
+      },
+      "world/teleport": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/teleport/01",
+            "start": 5.684,
+            "duration": 0.488812
+          },
+          {
+            "id": "world/teleport/02",
+            "start": 6.212813,
+            "duration": 0.517375
+          },
+          {
+            "id": "world/teleport/03",
+            "start": 6.770187,
+            "duration": 0.546
+          }
+        ]
+      },
+      "world/breakable": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/breakable/01",
+            "start": 7.356187,
+            "duration": 0.282
+          },
+          {
+            "id": "world/breakable/02",
+            "start": 7.678187,
+            "duration": 0.2985
+          },
+          {
+            "id": "world/breakable/03",
+            "start": 8.016687,
+            "duration": 0.315
+          }
+        ]
+      },
+      "world/hazard-placed": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/hazard-placed/01",
+            "start": 8.371688,
+            "duration": 0.338375
+          },
+          {
+            "id": "world/hazard-placed/02",
+            "start": 8.750063,
+            "duration": 0.358187
+          }
+        ]
+      },
+      "world/hazard-armed": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/hazard-armed/01",
+            "start": 9.14825,
+            "duration": 0.263188
+          },
+          {
+            "id": "world/hazard-armed/02",
+            "start": 9.451438,
+            "duration": 0.278625
+          }
+        ]
+      },
+      "world/mechanism": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/mechanism/01",
+            "start": 9.770062,
+            "duration": 0.282
+          },
+          {
+            "id": "world/mechanism/02",
+            "start": 10.092063,
+            "duration": 0.2985
+          },
+          {
+            "id": "world/mechanism/03",
+            "start": 10.430563,
+            "duration": 0.315
+          }
+        ]
+      },
+      "world/exit": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "world/exit/01",
+            "start": 10.785562,
+            "duration": 0.282
+          },
+          {
+            "id": "world/exit/02",
+            "start": 11.107563,
+            "duration": 0.2985
+          },
+          {
+            "id": "world/exit/03",
+            "start": 11.446063,
+            "duration": 0.315
+          }
+        ]
+      },
+      "ambient/hvac": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "ambient/hvac/01",
+            "start": 11.801063,
+            "duration": 1.8
+          }
+        ]
+      },
+      "ambient/fluorescent": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "ambient/fluorescent/01",
+            "start": 13.641063,
+            "duration": 1.8
+          }
+        ]
+      },
+      "ambient/distant-phone": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "ambient/distant-phone/01",
+            "start": 15.481063,
+            "duration": 1.8
+          }
+        ]
+      },
+      "ambient/rain": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "ambient/rain/01",
+            "start": 17.321063,
+            "duration": 1.8
+          }
+        ]
+      },
+      "ambient/pumps": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "ambient/pumps/01",
+            "start": 19.161062,
+            "duration": 1.8
+          }
+        ]
+      },
+      "ambient/shelving": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "ambient/shelving/01",
+            "start": 21.001062,
+            "duration": 1.8
+          }
+        ]
+      },
+      "ambient/elevator-cable": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "ambient/elevator-cable/01",
+            "start": 22.841062,
+            "duration": 1.8
+          }
+        ]
+      },
+      "footstep/fiber": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "footstep/fiber/01",
+            "start": 24.681062,
+            "duration": 0.14
+          },
+          {
+            "id": "footstep/fiber/02",
+            "start": 24.861062,
+            "duration": 0.152
+          }
+        ]
+      },
+      "footstep/concrete": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "footstep/concrete/01",
+            "start": 25.053062,
+            "duration": 0.14
+          },
+          {
+            "id": "footstep/concrete/02",
+            "start": 25.233062,
+            "duration": 0.152
+          }
+        ]
+      },
+      "footstep/glass": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "footstep/glass/01",
+            "start": 25.425062,
+            "duration": 0.14
+          },
+          {
+            "id": "footstep/glass/02",
+            "start": 25.605062,
+            "duration": 0.152
+          }
+        ]
+      },
+      "footstep/water": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "footstep/water/01",
+            "start": 25.797062,
+            "duration": 0.14
+          },
+          {
+            "id": "footstep/water/02",
+            "start": 25.977062,
+            "duration": 0.152
+          }
+        ]
+      },
+      "footstep/metal": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "footstep/metal/01",
+            "start": 26.169062,
+            "duration": 0.14
+          },
+          {
+            "id": "footstep/metal/02",
+            "start": 26.349062,
+            "duration": 0.152
+          }
+        ]
+      },
+      "footstep/toner": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "footstep/toner/01",
+            "start": 26.541062,
+            "duration": 0.14
+          },
+          {
+            "id": "footstep/toner/02",
+            "start": 26.721062,
+            "duration": 0.152
+          }
+        ]
+      },
+      "footstep/wax": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "footstep/wax/01",
+            "start": 26.913062,
+            "duration": 0.14
+          },
+          {
+            "id": "footstep/wax/02",
+            "start": 27.093062,
+            "duration": 0.152
+          }
+        ]
+      },
+      "footstep/fluid": {
+        "shard": "world-environment",
+        "cues": [
+          {
+            "id": "footstep/fluid/01",
+            "start": 27.285062,
+            "duration": 0.14
+          },
+          {
+            "id": "footstep/fluid/02",
+            "start": 27.465062,
+            "duration": 0.152
+          }
+        ]
+      },
+      "player/hurt": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "player/hurt/01",
+            "start": 0.08,
+            "duration": 0.225625
+          },
+          {
+            "id": "player/hurt/02",
+            "start": 0.345625,
+            "duration": 0.238813
+          },
+          {
+            "id": "player/hurt/03",
+            "start": 0.624437,
+            "duration": 0.252
+          }
+        ]
+      },
+      "player/death": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "player/death/01",
+            "start": 0.916438,
+            "duration": 0.639188
+          },
+          {
+            "id": "player/death/02",
+            "start": 1.595625,
+            "duration": 0.676625
+          }
+        ]
+      },
+      "player/armor": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "player/armor/01",
+            "start": 2.31225,
+            "duration": 0.178625
+          },
+          {
+            "id": "player/armor/02",
+            "start": 2.530875,
+            "duration": 0.189062
+          }
+        ]
+      },
+      "pickup/health": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "pickup/health/01",
+            "start": 2.759937,
+            "duration": 0.282
+          },
+          {
+            "id": "pickup/health/02",
+            "start": 3.081937,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "pickup/armor": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "pickup/armor/01",
+            "start": 3.420437,
+            "duration": 0.178625
+          },
+          {
+            "id": "pickup/armor/02",
+            "start": 3.639063,
+            "duration": 0.189062
+          }
+        ]
+      },
+      "pickup/ammo": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "pickup/ammo/01",
+            "start": 3.868125,
+            "duration": 0.282
+          },
+          {
+            "id": "pickup/ammo/02",
+            "start": 4.190125,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "pickup/weapon": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "pickup/weapon/01",
+            "start": 4.528625,
+            "duration": 0.282
+          },
+          {
+            "id": "pickup/weapon/02",
+            "start": 4.850625,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "pickup/credential": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "pickup/credential/01",
+            "start": 5.189125,
+            "duration": 0.282
+          },
+          {
+            "id": "pickup/credential/02",
+            "start": 5.511125,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "pickup/powerup": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "pickup/powerup/01",
+            "start": 5.849625,
+            "duration": 0.282
+          },
+          {
+            "id": "pickup/powerup/02",
+            "start": 6.171625,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "ui/menu-accept": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "ui/menu-accept/01",
+            "start": 6.510125,
+            "duration": 0.282
+          },
+          {
+            "id": "ui/menu-accept/02",
+            "start": 6.832125,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "ui/menu-back": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "ui/menu-back/01",
+            "start": 7.170625,
+            "duration": 0.282
+          },
+          {
+            "id": "ui/menu-back/02",
+            "start": 7.492625,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "ui/save": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "ui/save/01",
+            "start": 7.831125,
+            "duration": 0.282
+          },
+          {
+            "id": "ui/save/02",
+            "start": 8.153125,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "ui/load": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "ui/load/01",
+            "start": 8.491625,
+            "duration": 0.282
+          },
+          {
+            "id": "ui/load/02",
+            "start": 8.813625,
+            "duration": 0.2985
+          }
+        ]
+      },
+      "ui/map-clear": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "ui/map-clear/01",
+            "start": 9.152125,
+            "duration": 0.676813
+          },
+          {
+            "id": "ui/map-clear/02",
+            "start": 9.868937,
+            "duration": 0.716375
+          },
+          {
+            "id": "ui/map-clear/03",
+            "start": 10.625312,
+            "duration": 0.756
+          }
+        ]
+      },
+      "ui/status-expire": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "ui/status-expire/01",
+            "start": 11.421313,
+            "duration": 0.319625
+          },
+          {
+            "id": "ui/status-expire/02",
+            "start": 11.780938,
+            "duration": 0.338313
+          }
+        ]
+      },
+      "ui/momentum": {
+        "shard": "player-ui",
+        "cues": [
+          {
+            "id": "ui/momentum/01",
+            "start": 12.15925,
+            "duration": 0.244375
+          },
+          {
+            "id": "ui/momentum/02",
+            "start": 12.443625,
+            "duration": 0.258688
+          },
+          {
+            "id": "ui/momentum/03",
+            "start": 12.742313,
+            "duration": 0.273
+          }
+        ]
+      }
+    }
+  }
+}

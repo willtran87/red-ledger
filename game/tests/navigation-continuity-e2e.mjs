@@ -95,7 +95,7 @@ try {
 
   // Main-menu destinations must return to the main menu without changing engine mode.
   await page.click('#replays-button');
-  await page.click('#replay-back');
+  await dispatchMenu(page, 'back');
   assert(await activeScreen(page) === 'menu' && (await state(page)).mode === 'menu', 'Main-menu Replay Back lost its valid origin');
   await page.click('#level-select-button');
   await page.locator('#level-select [data-back]').click();
@@ -129,10 +129,22 @@ try {
 
   await startFirstMap(page);
 
+  // A key used to confirm Resume must not leak through as a gameplay Use action.
+  assert(await page.evaluate(() => window.__redLedger.teleportToDoor('red')), 'Could not stage a locked credential door');
+  await page.evaluate(() => window.advanceTime(100));
+  await pauseGame(page);
+  await page.locator('#resume-game').focus();
+  await page.keyboard.press('Space');
+  let readiness = await assertDesktopInputOwned(page, 'Keyboard Resume');
+  await resolveDesktopGate(page, readiness);
+  await page.evaluate(() => window.advanceTime(100));
+  assert(!/credential required/i.test((await state(page)).message), 'Resume confirmation leaked through as a gameplay Use action');
+  assert(!(await page.locator('#use-feedback').isVisible()), 'Resume confirmation displayed failed Use feedback');
+
   // Every desktop resume path must either recapture immediately or remain frozen behind an explicit gate.
   await pauseGame(page);
   await page.click('#resume-game');
-  let readiness = await assertDesktopInputOwned(page, 'Pause Resume');
+  readiness = await assertDesktopInputOwned(page, 'Pause Resume');
   await resolveDesktopGate(page, readiness);
 
   await pauseGame(page);
@@ -144,7 +156,7 @@ try {
   await pauseGame(page);
   await page.click('#record-replay');
   assert(await activeScreen(page) === 'replay-library' && (await state(page)).mode === 'paused', 'Stopping a replay did not preserve the paused session');
-  await page.click('#replay-back');
+  await dispatchMenu(page, 'back');
   assert(await activeScreen(page) === 'pause-menu' && (await state(page)).mode === 'paused', 'Replay Back stranded a paused session at the title');
 
   // Manual load is paused by design; its subsequent Resume still owns the desktop input transition.

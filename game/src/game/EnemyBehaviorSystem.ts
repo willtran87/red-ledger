@@ -215,6 +215,10 @@ interface AttackBase {
   requiresLineOfSight?: boolean;
   windup?: number;
   recovery?: number;
+  audio?: {
+    windup: string;
+    resolve: string;
+  };
 }
 
 export interface HitscanAttack extends AttackBase {
@@ -434,7 +438,20 @@ const baseProfile = (
   movement: MovementSpec,
   attacks: readonly AttackSpec[],
   extras: Partial<Omit<BehaviorProfile, 'id' | 'movement' | 'attacks'>> = {},
-): BehaviorProfile => ({ id, movement, attacks, initialCooldown: .35, cooldownJitter: .16, ...extras });
+): BehaviorProfile => ({
+  id,
+  movement,
+  attacks: attacks.map((attack) => ({
+    ...attack,
+    audio: {
+      windup: `attack/${attack.id}/windup`,
+      resolve: `attack/${attack.id}/resolve`,
+    },
+  } as AttackSpec)),
+  initialCooldown: .35,
+  cooldownJitter: .16,
+  ...extras,
+});
 
 const returnedMail = baseProfile('returned-mail',
   { kind: 'zigzag', speed: 2.6, preferredRange: 1.1, zigzagFrequency: 5 },

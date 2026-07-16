@@ -6,6 +6,7 @@ game/test-actions/
 game/.vite/
 game/.vite*.log
 game/.devserver.json
+/output/
 
 # Raw image-generation intermediates and reference material
 art/source/

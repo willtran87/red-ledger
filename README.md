@@ -16,6 +16,12 @@ npm run dev
 
 Open the local URL printed by Vite. Keyboard, mouse, controller, and touch input are supported. Controls can be remapped from Options.
 
+Options also provide independent mouse, controller, and touch look sensitivity, Y-axis inversion, controller deadzone, touch size/opacity/handedness, three interface text scales, reduced-motion/effects controls, and persisted speakers/headphones/night/mono audio profiles.
+
+## Authored Audio
+
+The schema-2 runtime library contains 33 original streamed tracks and 347 distinct effects across 189 semantic groups. Its five mono SFX sprite shards load by family on demand; bounded retry and deterministic synthesized fallback keep play responsive when authored media is unavailable. See the [audio production bible](AUDIO_PRODUCTION_BIBLE.md) for the mix, lifecycle, reproduction, and validation contracts.
+
 ## Verify
 
 ```powershell
@@ -23,16 +29,17 @@ cd game
 npm run test:release
 ```
 
-The release gate is self-contained: it builds the standalone package, starts an isolated local server, runs unit, campaign, gameplay, progression, responsive/mobile, combat/save, deterministic demo, controls, mechanisms, generated particle feedback, active-combat lifecycle/performance, production portability, and required Chromium/Firefox/WebKit tests, then stops the server.
+The release gate is self-contained: it builds the standalone package, starts an isolated local server, runs unit, campaign, gameplay, progression, responsive/mobile, combat/save, deterministic demo, controls, mechanisms, authored audio, generated particle feedback, active-combat lifecycle/performance, production portability, and required Chromium/Firefox/WebKit tests, then stops the server.
 
 ## Documentation
 
 - [Game design document](GAME_DESIGN_DOCUMENT.md)
 - [Art production bible](ART_PRODUCTION_BIBLE.md)
+- [Audio production bible](AUDIO_PRODUCTION_BIBLE.md)
 - [Asset manifest](ASSET_MANIFEST.md)
 - [Image-generation pipeline](IMAGEGEN_PIPELINE.md)
 - [Completion audit](implementation/GAME_COMPLETION_AUDIT.md)
 - [Release playtest protocol](implementation/RELEASE_PLAYTEST_PROTOCOL.md)
 
-The public repository includes the complete runtime art library and reproducible game source. Raw generation intermediates and third-party reference boards are intentionally excluded.
+The public repository includes the complete runtime art and authored audio libraries plus reproducible game source. Raw generation intermediates and third-party reference boards are intentionally excluded.
 GitHub Pages uses the repository's `main:/docs` source so publishing works with ordinary repository credentials and does not require workflow scope. Run `npm run pages:publish` from `game/` to build, replace `docs/` with that exact output, and verify every published file by SHA-256 before committing. `npm run pages:verify` is the explicit staleness gate.

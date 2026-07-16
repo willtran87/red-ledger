@@ -4,7 +4,7 @@ import { extname, join, normalize } from 'node:path';
 import { chromium, firefox, webkit } from 'playwright';
 
 const root = normalize(join(process.cwd(), 'dist'));
-const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.txt': 'text/plain' };
+const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.mp3': 'audio/mpeg', '.txt': 'text/plain' };
 const server = createServer(async (request, response) => {
   try {
     const pathname = new URL(request.url, 'http://localhost').pathname;
@@ -30,7 +30,9 @@ const state = (page) => page.evaluate(() => JSON.parse(window.render_game_to_tex
 const monitor = (page, ignoredRequest = () => false) => {
   const failures = [];
   page.on('requestfailed', (request) => {
-    if (!ignoredRequest(request)) failures.push(`${request.url()}: ${request.failure()?.errorText}`);
+    const error = request.failure()?.errorText;
+    const expectedStreamStop = request.url().includes('/audio/music/') && error === 'net::ERR_ABORTED';
+    if (!expectedStreamStop && !ignoredRequest(request)) failures.push(`${request.url()}: ${error}`);
   });
   page.on('response', (response) => {
     if (response.status() >= 400 && !ignoredRequest(response.request())) failures.push(`${response.status()} ${response.url()}`);
@@ -62,10 +64,28 @@ const resumeWithOwnership = async (page) => {
 try {
   const compact = await fetch(`${base}data/game-assets.json`);
   const authoring = await fetch(`${base}data/runtime-assets.json`);
+  const audioManifestResponse = await fetch(`${base}audio/audio-library.json`);
   const license = await fetch(`${base}LICENSE.txt`);
   const notices = await fetch(`${base}THIRD_PARTY_NOTICES.txt`);
   assert(compact.ok && Number(compact.headers.get('content-length') ?? 0) < 500_000, 'Compact production catalog is missing or oversized');
   assert(authoring.status === 404, 'Authoring-only catalog leaked into the production package');
+  assert(audioManifestResponse.ok, 'Authored audio manifest is missing from the production package');
+  const audioManifest = await audioManifestResponse.json();
+  const musicEntries = Object.values(audioManifest.music ?? {});
+  const sfxShards = Object.values(audioManifest.sfx?.shards ?? {});
+  assert(audioManifest.schema === 2 && musicEntries.length === 33,
+    'Production authored music manifest is incomplete');
+  assert(audioManifest.sfx?.shardCount === 5 && audioManifest.sfx?.groupCount === 189
+    && audioManifest.sfx?.cueCount === 347 && sfxShards.length === 5,
+  'Production authored SFX manifest is incomplete');
+  const packagedAudio = await Promise.all([
+    fetch(new URL(musicEntries[0].url, base)),
+    ...sfxShards.map((shard) => fetch(new URL(shard.url, base))),
+  ]);
+  assert(packagedAudio.every((response) => response.ok && response.headers.get('content-type') === 'audio/mpeg'),
+    'Production authored audio media is missing or served with the wrong type');
+  assert((await Promise.all(packagedAudio.map((response) => response.arrayBuffer())))
+    .every((payload) => payload.byteLength > 10_000), 'Production authored audio media is unexpectedly empty');
   assert(license.ok && (await license.text()).includes('All rights reserved'), 'Production license notice is missing');
   assert(notices.ok && (await notices.text()).includes('three.js authors'), 'Production third-party notice is missing');
 

@@ -1,13 +1,14 @@
 # Release Playtest Protocol
 
 - Protocol revision: 2026-07-15
-- Current automated software baseline: `804f837b70efbfa201ffa3a1be4b18908e2896e5` (`804f837`)
+- Previous automated software baseline: `804f837b70efbfa201ffa3a1be4b18908e2896e5` (`804f837`)
+- Candidate under review: **Pending an immutable commit and final automated preflight**
 
-This protocol closes the four release gates that cannot be truthfully certified by automated tests. Record raw observations and hardware details; do not replace failures with subjective summaries. Automated results are prerequisites, not substitutes for these records. This protocol does not close the separate authored-audio content gap recorded in `GAME_COMPLETION_AUDIT.md`.
+This protocol closes the four release gates that cannot be truthfully certified by automated tests. Record raw observations and hardware details; do not replace failures with subjective summaries. Automated results are prerequisites, not substitutes for these records. The authored-audio content target is implemented; its subjective listening, device, and provenance checks are part of the representative-hardware and rights gates below.
 
 ## Current Signoff Status
 
-| Gate | Status for `804f837` | Required evidence |
+| Gate | Status for current candidate | Required evidence |
 |---|---|---|
 | Blind E1M1 onboarding | **Open** | Five independent blind-player records and the aggregate pass calculation. |
 | Campaign balance and duration | **Open** | One continuous Field Adjuster campaign plus a fresh-start run of every map. |
@@ -22,10 +23,11 @@ All four gates must refer to the same immutable candidate. Before recruiting tes
 
 1. Record the full output of `git rev-parse HEAD` and require a clean `git status --short`.
 2. From `game/`, run `npm ci`, `npm run test:release`, `npm run pages:sync`, `npm run pages:verify`, and `npm audit --omit=dev`.
-3. Record the exact command output, UTC timestamp, Node/npm versions, browser versions, production URL, build inventory count, and artifact-manifest SHA-256.
-4. Generate and archive a sorted SHA-256 manifest for every published file. Keep `.nojekyll` in the manifest even though `pages:verify` intentionally ignores it as publication control metadata.
-5. Verify that the deployed production URL loads the recorded candidate without console or page errors before human sessions begin.
-6. Require `git status --short` to be clean again after preflight. If build or Pages synchronization changed tracked files, commit the intended output and repeat preflight from the new commit.
+3. Confirm that `assets/audio/audio-library.json` is schema 2 and records 33 music tracks, 347 unique cues, 189 semantic groups, and five SFX shards; archive its SHA-256 and `manifests/audio-library-validation.json` with the candidate evidence.
+4. Record the exact command output, UTC timestamp, Node/npm versions, browser versions, production URL, build inventory count, and artifact-manifest SHA-256.
+5. Generate and archive a sorted SHA-256 manifest for every published file. Keep `.nojekyll` in the manifest even though `pages:verify` intentionally ignores it as publication control metadata.
+6. Verify that the deployed production URL loads the recorded candidate without console or page errors before human sessions begin.
+7. Require `git status --short` to be clean again after preflight. If build or Pages synchronization changed tracked files, commit the intended output and repeat preflight from the new commit.
 
 Any source, campaign-data, asset, dependency, build, or runtime change creates a new candidate. Repeat the automated preflight and every human gate affected by that change. Documentation-only record corrections do not invalidate gameplay results when the candidate commit and artifact hash remain unchanged.
 
@@ -64,12 +66,15 @@ This prerequisite does **not** certify fun, real aiming behavior, incoming-damag
 - Run E1M1, a mixed eight-enemy fight, E2M8, and E3M8 for at least ten minutes each at default settings. Also test the highest supported internal render scale on at least the discrete-GPU system.
 - Record startup time, median, 95th-percentile, and worst frame time, peak JS heap, context-loss behavior, input latency observations, audio dropouts, thermal throttling, and visual corruption.
 - Exercise keyboard/mouse, controller, and touch on hardware that supports each method. Verify pause/resume, pointer recapture, orientation/resize, and background/foreground restoration.
+- On real speakers and headphones, exercise the speakers, headphones, night, and mono profiles. Include menu/intermission, at least one map from every episode, one multi-attack enemy, one boss phase, save/load, player death, pause/resume, and a map transition.
+- Listen for audible loop seams, unintended silence or restart, stale music after rapid transitions, attack tells masked by music or weapon fire, spatial collapse, clipping, excessive loudness change between profiles, and authored-to-fallback discontinuity during an intentionally blocked media request. Record whether recovery returns to authored playback without stopping simulation.
 - Desktop pass target is 60 FPS without progressive memory growth. Touch passes at stable native refresh or at a documented device ceiling without control loss, runaway heat, or progressive degradation.
 
 ## 4. Rights And Public-Build Review
 
 - Review every public title, filename, UI string, credit, illustration, sprite, texture, sound identity, metadata field, repository document, and deployed artifact.
 - Confirm that every asset is original, commissioned, or covered by a recorded license and that the fictional identity is clear of restricted marks.
+- For audio, review `manifests/audio-production-spec.json`, `tools/build_audio_library.py`, `manifests/audio-library-validation.json`, and the shipped manifest/file hashes. Confirm the declared offline-synthesis provenance, absence of unrecorded samples, required notices, and an acceptable manual sound-resemblance disposition.
 - Re-run the automated public-release scan on the exact candidate, then manually inspect its known blind spots, including imagery, implied identity, sound resemblance, and third-party license obligations.
 - Archive the signed review, asset provenance manifest, automated scan output, artifact-manifest SHA-256, production URL, and release date together.
 - Any unresolved ownership, attribution, license, or mark question fails this gate.
@@ -94,6 +99,8 @@ Create one record set per candidate. Store raw notes, exports, screenshots, trac
 | `npm audit --omit=dev` result and log | |
 | Artifact manifest path | |
 | Artifact manifest SHA-256 | |
+| Audio runtime manifest SHA-256 | |
+| Audio validation record path/SHA-256 | |
 | Coordinator and signature | |
 
 ### Blind Onboarding Observations
@@ -143,6 +150,16 @@ Hardware coverage: integrated GPU **Pass / Fail**; discrete GPU **Pass / Fail**;
 
 Final result, reviewer, date, and signature:
 
+### Authored Audio Listening Log
+
+Use one row per output device/profile/scenario combination. A profile passes only when critical attack information remains intelligible and lifecycle transitions do not leave stale, duplicated, or permanently silent playback.
+
+| Device / output | Browser | Profile | Scenario / map | Track identity and loop | Attack-tell readability | Spatial/mono result | Pause/death/transition | Dropout/fallback/recovery | Result | Evidence/notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| | | | | | | | | | | |
+
+Audio coverage: speakers **Pass / Fail**; headphones **Pass / Fail**; night **Pass / Fail**; mono **Pass / Fail**; all three episodes **Pass / Fail**; boss lifecycle **Pass / Fail**; forced fallback/recovery **Pass / Fail**.
+
 ### Rights And Provenance Log
 
 | Asset/content family | Public paths | Creator/source | Ownership or license basis | Required attribution/notice | Automated scan | Manual visual/audio/mark review | Finding/disposition | Evidence link | Reviewer/date |
@@ -167,4 +184,4 @@ Final result, reviewer, date, and signature:
 | Representative hardware | | | | Open | | | |
 | Rights and public-build review | | | | Open | | | |
 
-Release-final status requires all four rows to read **Pass**, refer to the same candidate commit and artifact-manifest SHA-256, and accompany a passing `npm run test:release` plus `npm run pages:verify` from that candidate. Until then, report the build as an automated-release candidate with open human signoffs.
+Release-final status requires all four rows to read **Pass**, refer to the same candidate commit and artifact-manifest SHA-256, and accompany a passing `npm run test:release` plus `npm run pages:verify` from that candidate. Before that automated preflight is recorded, report the build as a candidate awaiting automated evidence; after it passes, report it as an automated-release candidate with open human signoffs.

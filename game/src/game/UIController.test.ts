@@ -7,8 +7,10 @@ import {
   entryBriefingLabels,
   entryObjectiveCue,
   masteryPresentation,
+  normalizeInterfacePreferences,
   resolveReducedMotionSetting,
   resolveScreenShakeSetting,
+  touchBriefingPadLabels,
 } from './UIController';
 
 const mapRecord = (overrides: Partial<MapRecord> = {}): MapRecord => ({
@@ -122,6 +124,36 @@ describe('reduced motion preference', () => {
   });
 });
 
+describe('interface personalization', () => {
+  it('keeps valid touch layout and text choices', () => {
+    expect(normalizeInterfacePreferences({
+      touchControlSize: 'large',
+      touchControlOpacity: .62,
+      touchHandedness: 'left',
+      uiTextScale: 'largest',
+    })).toEqual({
+      touchControlSize: 'large',
+      touchControlOpacity: .62,
+      touchHandedness: 'left',
+      uiTextScale: 'largest',
+    });
+  });
+
+  it('bounds opacity and restores robust defaults for corrupt choices', () => {
+    expect(normalizeInterfacePreferences({
+      touchControlSize: 'huge',
+      touchControlOpacity: 0,
+      touchHandedness: 'center',
+      uiTextScale: 4,
+    })).toEqual({
+      touchControlSize: 'standard',
+      touchControlOpacity: .45,
+      touchHandedness: 'right',
+      uiTextScale: 'standard',
+    });
+  });
+});
+
 describe('contextual entry briefing', () => {
   it('teaches only the essential actions during initial orientation', () => {
     expect(entryBriefingLabels(true)).toEqual(['MOVE', 'LOOK', 'FIRE', 'USE']);
@@ -129,6 +161,11 @@ describe('contextual entry briefing', () => {
 
   it('retains only route-relevant bindings after orientation', () => {
     expect(entryBriefingLabels(false)).toEqual(['USE', 'WEAPON', 'MAP']);
+  });
+
+  it('mirrors touch briefing pad names with the configured handedness', () => {
+    expect(touchBriefingPadLabels('right')).toEqual({ move: 'Left pad', look: 'Right pad' });
+    expect(touchBriefingPadLabels('left')).toEqual({ move: 'Right pad', look: 'Left pad' });
   });
 
   it('derives an honest objective cue from the current map', () => {

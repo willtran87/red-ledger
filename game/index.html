@@ -74,21 +74,43 @@
       </section>
       <section id="options-menu" class="screen compact" aria-label="Options">
         <h1>Options</h1>
-        <label>Mouse sensitivity <input id="sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /></label>
-        <label>Render scale <select id="render-scale"><option value="1" selected>320 x 200</option><option value="2">640 x 400</option><option value="3">960 x 600</option></select></label>
-        <label>HUD <select id="hud-mode"><option value="classic">Classic status</option><option value="minimal">Minimal overlay</option></select></label>
-        <label><input id="classic-input" type="checkbox" /> 1993 input preset</label>
-        <label><input id="screen-shake" type="checkbox" checked /> Screen shake</label>
-        <label><input id="reduced-motion" type="checkbox" /> Reduced motion</label>
-        <label><input id="high-contrast" type="checkbox" /> High-contrast attacks</label>
-        <label><input id="reduced-effects" type="checkbox" /> Reduced effects</label>
-        <label><input id="flash-effects" type="checkbox" checked /> Screen flashes</label>
-        <label>Master volume <input id="master-volume" type="range" min="0" max="1" value="0.8" step="0.05" /></label>
-        <label>Music volume <input id="music-volume" type="range" min="0" max="1" value="0.65" step="0.05" /></label>
-        <label>Effects volume <input id="sfx-volume" type="range" min="0" max="1" value="0.8" step="0.05" /></label>
-        <label><input id="mute-audio" type="checkbox" /> Mute audio</label>
-        <button id="controls-button">Controls</button>
-        <button data-back>Back</button>
+        <div class="options-grid">
+          <section class="option-section" aria-labelledby="input-options-heading">
+            <h2 id="input-options-heading">Input</h2>
+            <label>Mouse sensitivity <input id="sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /></label>
+            <label>Controller sensitivity <input id="controller-sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /></label>
+            <label>Controller deadzone <input id="controller-deadzone" type="range" min="0.05" max="0.45" value="0.18" step="0.01" /></label>
+            <label>Touch sensitivity <input id="touch-sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /></label>
+            <label class="option-check"><input id="invert-y" type="checkbox" /> Invert look Y</label>
+            <label>Touch size <select id="touch-size"><option value="small">Small</option><option value="standard" selected>Standard</option><option value="large">Large</option></select></label>
+            <label>Touch opacity <input id="touch-opacity" type="range" min="0.45" max="1" value="0.78" step="0.01" /></label>
+            <label>Touch handedness <select id="touch-handedness"><option value="right" selected>Right-handed</option><option value="left">Left-handed</option></select></label>
+          </section>
+          <section class="option-section" aria-labelledby="display-options-heading">
+            <h2 id="display-options-heading">Display</h2>
+            <label>Render scale <select id="render-scale"><option value="1" selected>320 x 200</option><option value="2">640 x 400</option><option value="3">960 x 600</option></select></label>
+            <label>HUD <select id="hud-mode"><option value="classic">Classic status</option><option value="minimal">Minimal overlay</option></select></label>
+            <label>Text size <select id="text-scale"><option value="standard" selected>Standard</option><option value="large">Large</option><option value="largest">Largest</option></select></label>
+            <label class="option-check"><input id="classic-input" type="checkbox" /> 1993 input preset</label>
+            <label class="option-check"><input id="screen-shake" type="checkbox" checked /> Screen shake</label>
+            <label class="option-check"><input id="reduced-motion" type="checkbox" /> Reduced motion</label>
+            <label class="option-check"><input id="high-contrast" type="checkbox" /> High-contrast attacks</label>
+            <label class="option-check"><input id="reduced-effects" type="checkbox" /> Reduced effects</label>
+            <label class="option-check"><input id="flash-effects" type="checkbox" checked /> Screen flashes</label>
+          </section>
+          <section class="option-section" aria-labelledby="audio-options-heading">
+            <h2 id="audio-options-heading">Audio</h2>
+            <label>Master volume <input id="master-volume" type="range" min="0" max="1" value="0.8" step="0.05" /></label>
+            <label>Music volume <input id="music-volume" type="range" min="0" max="1" value="0.65" step="0.05" /></label>
+            <label>Effects volume <input id="sfx-volume" type="range" min="0" max="1" value="0.8" step="0.05" /></label>
+            <label>Playback <select id="audio-profile"><option value="speakers">Speakers</option><option value="headphones">Headphones</option><option value="night">Night</option><option value="mono">Mono</option></select></label>
+            <label class="option-check"><input id="mute-audio" type="checkbox" /> Mute audio</label>
+          </section>
+        </div>
+        <div class="options-actions">
+          <button id="controls-button">Controls</button>
+          <button data-back>Back</button>
+        </div>
       </section>
       <section id="controls-menu" class="screen compact controls-screen" aria-label="Controls">
         <h1>Controls</h1>

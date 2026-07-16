@@ -30,15 +30,16 @@ const denialMap = await page.evaluate((ids) => {
 }, maps);
 assert(denialMap, 'No Denial Officer was available for telegraph coverage');
 
-let nearCue;
-for (let attempt = 0; attempt < 30; attempt += 1) {
-  await page.evaluate(() => window.advanceTime(35));
-  nearCue = (await state()).audio.lastSpatialCue;
-  if (nearCue?.kind.includes('denial-officer')) break;
-}
-assert(nearCue?.gain > .7, `Nearby hostile audio was not full and readable: ${JSON.stringify(nearCue)}`);
-
 assert((await state()).visibleActors.some((candidate) => candidate.id === 'denial-officer'), 'Nearby Denial Officer was not represented in text state');
+const nearResult = await page.evaluate(() => ({
+  defeated: window.__redLedger.defeatActor('denial-officer'),
+  cue: JSON.parse(window.render_game_to_text()).audio.lastSpatialCue,
+}));
+assert(nearResult.defeated, 'Could not stage the nearby Denial Officer cue');
+const nearCue = nearResult.cue;
+assert(nearCue?.kind === 'enemy:denial-officer:death' && nearCue.gain > .7,
+  `Nearby hostile audio was not identity-specific, full, and readable: ${JSON.stringify(nearCue)}`);
+
 const distantDenial = await page.evaluate((ids) => {
   for (const mapId of ids) {
     window.__redLedger.loadMap(mapId);
@@ -51,13 +52,14 @@ const distantDenial = await page.evaluate((ids) => {
   return undefined;
 }, maps);
 assert(distantDenial, 'No genuinely distant Denial Officer sightline was available');
-let farCue;
-for (let attempt = 0; attempt < 40; attempt += 1) {
-  await page.evaluate(() => window.advanceTime(35));
-  farCue = (await state()).audio.lastSpatialCue;
-  if (farCue?.kind.includes('denial-officer') && farCue.gain < nearCue.gain * .9) break;
-}
-assert(farCue?.gain < nearCue.gain * .8, `Distant hostile audio was not attenuated: near=${nearCue.gain}, far=${farCue?.gain}`);
+const farResult = await page.evaluate(() => ({
+  defeated: window.__redLedger.defeatActor('denial-officer'),
+  cue: JSON.parse(window.render_game_to_text()).audio.lastSpatialCue,
+}));
+assert(farResult.defeated, 'Could not stage the distant Denial Officer cue');
+const farCue = farResult.cue;
+assert(farCue?.kind === 'enemy:denial-officer:death' && farCue.gain < nearCue.gain * .8,
+  `Distant hostile audio was not identity-specific and attenuated: near=${JSON.stringify(nearCue)}, far=${JSON.stringify(farCue)}`);
 
 await page.evaluate((mapId) => {
   window.__redLedger.loadMap(mapId);
@@ -72,7 +74,8 @@ for (let attempt = 0; attempt < 100; attempt += 1) {
 }
 assert(beamState?.combatEffects.hostileBeams[0]?.length > 1, 'Denial hitscan resolved without its authored beam');
 assert(beamState.combatEffects.semanticCues.some((cue) => cue.kind === 'rejection'), 'Denial impact omitted its anchored rejection cue');
-assert(beamState.audio.recentSpatialCues.some((cue) => cue.kind === 'enemy:denial-officer:attack'), 'Denial resolution omitted its attack cue');
+assert(beamState.audio.recentSpatialCues.some((cue) => cue.kind === 'attack:denial-beam:resolve'),
+  'Denial resolution omitted its authored attack-specific cue');
 await page.evaluate(() => {
   window.__redLedger.pause();
   document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));

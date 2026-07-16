@@ -53,5 +53,13 @@
     }
   },
   "total_png": 3547,
-  "validation_passed": true
+  "validation_passed": true,
+  "audio": {
+    "music_tracks": 33,
+    "sfx_sprites": 5,
+    "sfx_cues": 347,
+    "semantic_groups": 189,
+    "bytes": 48474021
+  },
+  "audio_validation_passed": true
 }

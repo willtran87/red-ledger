@@ -65,6 +65,21 @@ for (const [name, type] of Object.entries(engines)) {
     await page.click('#begin-episode');
     if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
+    const audioCapable = await page.evaluate(() => Boolean(window.AudioContext || window.webkitAudioContext));
+    if (audioCapable) {
+      await page.waitForFunction(() => {
+        const audio = JSON.parse(window.render_game_to_text()).audio;
+        return audio.libraryReady && audio.spriteReady && audio.trackSource === 'authored' && audio.loadedSfxShards >= 4;
+      }, undefined, { timeout: 15_000 });
+      const audio = (await state(page)).audio;
+      assert(audio.track === 'E1M1' && audio.decodedTracks === 0,
+        `${name}: authored map music was not streamed with bounded memory`);
+      assert(!audio.error, `${name}: authored audio reported ${audio.error}`);
+    } else {
+      const audio = (await state(page)).audio;
+      assert(audio.libraryStatus === 'idle' && audio.trackSource === 'none',
+        `${name}: audio-less engine entered a misleading partial state`);
+    }
     await page.waitForTimeout(250);
 
     const initial = await state(page);

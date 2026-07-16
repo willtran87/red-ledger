@@ -21,6 +21,117 @@ export interface InputSystemOptions {
   storage?: BindingStorage | null;
 }
 
+export interface InputPreferences {
+  mouseSensitivity: number;
+  controllerSensitivity: number;
+  touchSensitivity: number;
+  invertY: boolean;
+  controllerDeadzone: number;
+}
+
+export const DEFAULT_INPUT_PREFERENCES: Readonly<InputPreferences> = Object.freeze({
+  mouseSensitivity: 1.2,
+  controllerSensitivity: 1.2,
+  touchSensitivity: 1.2,
+  invertY: false,
+  controllerDeadzone: .18,
+});
+
+const boundedNumber = (value: unknown, fallback: number, minimum: number, maximum: number): number =>
+  typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(minimum, Math.min(maximum, value))
+    : fallback;
+
+export function normalizeInputPreferences(value: unknown): InputPreferences {
+  const record = value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  return {
+    mouseSensitivity: boundedNumber(
+      record.mouseSensitivity ?? record.sensitivity,
+      DEFAULT_INPUT_PREFERENCES.mouseSensitivity,
+      .5,
+      3,
+    ),
+    controllerSensitivity: boundedNumber(
+      record.controllerSensitivity,
+      DEFAULT_INPUT_PREFERENCES.controllerSensitivity,
+      .5,
+      3,
+    ),
+    touchSensitivity: boundedNumber(
+      record.touchSensitivity,
+      DEFAULT_INPUT_PREFERENCES.touchSensitivity,
+      .5,
+      3,
+    ),
+    invertY: typeof record.invertY === 'boolean' ? record.invertY : DEFAULT_INPUT_PREFERENCES.invertY,
+    controllerDeadzone: boundedNumber(
+      record.controllerDeadzone,
+      DEFAULT_INPUT_PREFERENCES.controllerDeadzone,
+      .05,
+      .45,
+    ),
+  };
+}
+
+export function applyControllerDeadzone(value: number, deadzone: number): number {
+  if (!Number.isFinite(value)) return 0;
+  const threshold = boundedNumber(deadzone, DEFAULT_INPUT_PREFERENCES.controllerDeadzone, .05, .45);
+  const bounded = Math.max(-1, Math.min(1, value));
+  const magnitude = Math.abs(bounded);
+  if (magnitude <= threshold) return 0;
+  return Math.sign(bounded) * (magnitude - threshold) / (1 - threshold);
+}
+
+export interface LookInputSample {
+  keyboardTurn: number;
+  keyboardLook: number;
+  mouseX: number;
+  mouseY: number;
+  controllerX: number;
+  controllerY: number;
+  touchX: number;
+  touchY: number;
+}
+
+export function composeLookInput(sample: LookInputSample, preferences: InputPreferences): {
+  deltaX: number;
+  deltaY: number;
+  turn: number;
+} {
+  const verticalDirection = preferences.invertY ? -1 : 1;
+  return {
+    deltaX: sample.mouseX * preferences.mouseSensitivity,
+    deltaY: (sample.mouseY * preferences.mouseSensitivity
+      + (sample.controllerY * preferences.controllerSensitivity + sample.touchY * preferences.touchSensitivity) * 8
+    ) * verticalDirection + sample.keyboardLook * 18 * DEFAULT_INPUT_PREFERENCES.mouseSensitivity,
+    turn: sample.keyboardTurn * DEFAULT_INPUT_PREFERENCES.mouseSensitivity
+      + sample.controllerX * preferences.controllerSensitivity
+      + sample.touchX * preferences.touchSensitivity,
+  };
+}
+
+export function touchStickVector(
+  clientX: number,
+  clientY: number,
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+): { x: number; y: number } {
+  if (![clientX, clientY, left, top, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return { x: 0, y: 0 };
+  return {
+    x: Math.max(-1, Math.min(1, (clientX - left - width / 2) / (width / 2))),
+    y: Math.max(-1, Math.min(1, (clientY - top - height / 2) / (height / 2))),
+  };
+}
+
+export function menuAxisEngaged(value: number, wasEngaged: boolean): boolean {
+  if (!Number.isFinite(value)) return false;
+  return wasEngaged ? value > .22 : value >= .4;
+}
+
 export interface InputActionEvent {
   action: InputAction;
   source: 'keyboard' | 'mouse' | 'gamepad' | 'touch';
@@ -70,6 +181,7 @@ export class InputSystem {
   private captureGamepadAxes: boolean[] = [];
   private menuPollFrame = 0;
   private touchLookPointer?: number;
+  private controllerDeadzone = DEFAULT_INPUT_PREFERENCES.controllerDeadzone;
   private readonly keyPressedAt = new Map<string, number>();
   private readonly keyReleaseTimers = new Map<string, number>();
   private readonly firePressedAt = new Map<InputActionEvent['source'], number>();
@@ -91,8 +203,13 @@ export class InputSystem {
         this.finishCapture({ device: 'keyboard', code: event.code });
         return;
       }
+      if (this.isTextEntryTarget(event.target)) return;
       const actions = this.bindings.keyboardActions(event.code);
-      if (actions.includes('automap') || actions.includes('automap-overlay')) event.preventDefault();
+      const ownsDirectionalNavigation = actions.some((action) => {
+        const menuAction = MENU_ACTIONS[action];
+        return menuAction === 'up' || menuAction === 'down' || menuAction === 'left' || menuAction === 'right';
+      });
+      if (actions.includes('automap') || actions.includes('automap-overlay') || ownsDirectionalNavigation) event.preventDefault();
       this.physicalKeys.set(event.code, actions);
       if (!event.repeat) {
         this.keyPressedAt.set(event.code, performance.now());
@@ -106,6 +223,7 @@ export class InputSystem {
       if (!actions.length && event.code === 'F5') this.keys.add(event.code);
     });
     window.addEventListener('keyup', (event) => {
+      if (this.isTextEntryTarget(event.target) && !this.physicalKeys.has(event.code)) return;
       const actions = this.physicalKeys.get(event.code) ?? this.bindings.keyboardActions(event.code);
       this.physicalKeys.delete(event.code);
       const elapsed = performance.now() - (this.keyPressedAt.get(event.code) ?? -Infinity);
@@ -170,6 +288,9 @@ export class InputSystem {
   resetBindings(action?: InputAction): void { this.bindings.reset(action); }
   serializeBindings(): string { return this.bindings.serialize(); }
   loadBindings(serialized: string): boolean { return this.bindings.deserialize(serialized); }
+  setControllerDeadzone(value: number): void {
+    this.controllerDeadzone = normalizeInputPreferences({ controllerDeadzone: value }).controllerDeadzone;
+  }
 
   setMenuNavigationEnabled(enabled: boolean): void {
     this.menuNavigationEnabled = enabled;
@@ -254,6 +375,27 @@ export class InputSystem {
     document.querySelectorAll<HTMLElement>('.touch-stick span').forEach((knob) => { knob.style.transform = ''; });
   }
 
+  clearGameplayActions(): void {
+    this.keys.clear();
+    this.pointerFire = false;
+    this.touchFire = false;
+    this.gamepadFire = false;
+    this.keyboardFire = false;
+    this.use = false;
+    this.lookDelta = 0;
+    this.lookDeltaY = 0;
+    this.touchMove = { x: 0, y: 0 };
+    this.touchLook = { x: 0, y: 0 };
+    this.gamepadMove = { x: 0, y: 0 };
+    this.gamepadLook = { x: 0, y: 0 };
+    this.weaponCycle = 0;
+    this.walkToggle = false;
+    this.fireReleaseTimers.forEach((timer) => window.clearTimeout(timer));
+    this.fireReleaseTimers.clear();
+    this.firePressedAt.clear();
+    document.querySelectorAll<HTMLElement>('.touch-stick span').forEach((knob) => { knob.style.transform = ''; });
+  }
+
   pollGamepad(): void {
     const gamepad = navigator.getGamepads?.().find((candidate) => candidate?.connected) ?? null;
     if (!gamepad) {
@@ -267,15 +409,15 @@ export class InputSystem {
       return;
     }
     this.gamepadMove = {
-      x: this.bindings.axisValue('strafe-right', gamepad.axes) - this.bindings.axisValue('strafe-left', gamepad.axes),
-      y: this.bindings.axisValue('move-backward', gamepad.axes) - this.bindings.axisValue('move-forward', gamepad.axes),
+      x: this.controllerAxisValue('strafe-right', gamepad.axes) - this.controllerAxisValue('strafe-left', gamepad.axes),
+      y: this.controllerAxisValue('move-backward', gamepad.axes) - this.controllerAxisValue('move-forward', gamepad.axes),
     };
     this.gamepadLook = {
-      x: this.bindings.axisValue('turn-right', gamepad.axes) - this.bindings.axisValue('turn-left', gamepad.axes),
-      y: this.bindings.axisValue('look-down', gamepad.axes) - this.bindings.axisValue('look-up', gamepad.axes),
+      x: this.controllerAxisValue('turn-right', gamepad.axes) - this.controllerAxisValue('turn-left', gamepad.axes),
+      y: this.controllerAxisValue('look-down', gamepad.axes) - this.controllerAxisValue('look-up', gamepad.axes),
     };
     this.gamepadFire = this.bindings.isGamepadButtonDown('fire', gamepad.buttons)
-      || this.bindings.axisValue('fire', gamepad.axes) > 0;
+      || this.controllerAxisValue('fire', gamepad.axes) > 0;
     const pressed = gamepad.buttons.map((button) => button.pressed);
     const edge = (index: number) => pressed[index] && !this.gamepadButtons[index];
     const released = (index: number) => !pressed[index] && this.gamepadButtons[index];
@@ -285,7 +427,7 @@ export class InputSystem {
     }
     for (const action of INPUT_ACTIONS) {
       if (ANALOG_ACTIONS.has(action) || action === 'fire' || MENU_ACTIONS[action]) continue;
-      const down = this.bindings.axisValue(action, gamepad.axes) > 0;
+      const down = this.controllerAxisValue(action, gamepad.axes) > 0;
       const wasDown = this.gamepadAxisActions.get(action) ?? false;
       if (down && !wasDown) this.pressActions([action], false, 'gamepad', false);
       if (!down && wasDown) this.releaseActions([action], 'gamepad');
@@ -331,6 +473,15 @@ export class InputSystem {
     }
   }
 
+  private controllerAxisValue(action: InputAction, axes: readonly number[]): number {
+    let value = 0;
+    for (const binding of this.bindings.get(action)) {
+      if (binding.device !== 'gamepad-axis') continue;
+      value = Math.max(value, applyControllerDeadzone((axes[binding.axis] ?? 0) * binding.direction, this.controllerDeadzone));
+    }
+    return value;
+  }
+
   private releaseActions(
     actions: readonly InputAction[],
     source: 'keyboard' | 'mouse' | 'gamepad' | 'touch',
@@ -364,7 +515,7 @@ export class InputSystem {
   private pollMenuAxes(axes: readonly number[]): void {
     const menuActions: InputAction[] = ['menu-up', 'menu-down', 'menu-left', 'menu-right'];
     menuActions.forEach((action, index) => {
-      const pressed = this.bindings.axisValue(action, axes) > 0;
+      const pressed = menuAxisEngaged(this.controllerAxisValue(action, axes), this.menuAxisActions[index] ?? false);
       if (pressed && !this.menuAxisActions[index] && this.menuNavigationEnabled) {
         this.emitMenuNavigation(MENU_ACTIONS[action]!, 'gamepad', false);
       }
@@ -430,6 +581,12 @@ export class InputSystem {
     try { return window.localStorage; } catch { return null; }
   }
 
+  private isTextEntryTarget(target: EventTarget | null): boolean {
+    if (target instanceof HTMLTextAreaElement) return true;
+    if (target instanceof HTMLInputElement) return ['text', 'search', 'email', 'url', 'tel', 'password'].includes(target.type);
+    return target instanceof HTMLElement && target.isContentEditable;
+  }
+
   private suspendInput(reason: 'blur' | 'hidden'): void {
     this.clearTransientInputs();
     window.dispatchEvent(new CustomEvent('input-lifecycle-pause', { detail: { reason } }));
@@ -465,10 +622,10 @@ export class InputSystem {
     const knob = stick?.querySelector<HTMLElement>('span');
     if (stick && knob) {
       const move = (event: PointerEvent) => {
-      const bounds = stick.getBoundingClientRect();
-      this.touchMove.x = Math.max(-1, Math.min(1, (event.clientX - bounds.left - bounds.width / 2) / (bounds.width / 2)));
-      this.touchMove.y = Math.max(-1, Math.min(1, (event.clientY - bounds.top - bounds.height / 2) / (bounds.height / 2)));
-      knob.style.transform = `translate(${this.touchMove.x * 24}px, ${this.touchMove.y * 24}px)`;
+        const bounds = stick.getBoundingClientRect();
+        this.touchMove = touchStickVector(event.clientX, event.clientY, bounds.left, bounds.top, bounds.width, bounds.height);
+        const travel = Math.max(8, (bounds.width - knob.getBoundingClientRect().width) / 2 - 2);
+        knob.style.transform = `translate(${this.touchMove.x * travel}px, ${this.touchMove.y * travel}px)`;
       };
       const releaseMove = (event: PointerEvent) => {
         if (stick.hasPointerCapture(event.pointerId)) stick.releasePointerCapture(event.pointerId);
@@ -484,7 +641,12 @@ export class InputSystem {
     const look = document.querySelector<HTMLElement>('#touch-look');
     const lookKnob = look?.querySelector<HTMLElement>('span');
     if (!look || !lookKnob) return;
-    let previousX = 0;
+    const updateLook = (event: PointerEvent) => {
+      const bounds = look.getBoundingClientRect();
+      this.touchLook = touchStickVector(event.clientX, event.clientY, bounds.left, bounds.top, bounds.width, bounds.height);
+      const travel = Math.max(8, (bounds.width - lookKnob.getBoundingClientRect().width) / 2 - 2);
+      lookKnob.style.transform = `translate(${this.touchLook.x * travel}px, ${this.touchLook.y * travel}px)`;
+    };
     const releaseLook = (event: PointerEvent) => {
       if (look.hasPointerCapture(event.pointerId)) look.releasePointerCapture(event.pointerId);
       this.touchLookPointer = undefined;
@@ -494,19 +656,12 @@ export class InputSystem {
     look.addEventListener('pointerdown', (event) => {
       event.preventDefault();
       this.touchLookPointer = event.pointerId;
-      previousX = event.clientX;
       look.setPointerCapture(event.pointerId);
+      updateLook(event);
     });
     look.addEventListener('pointermove', (event) => {
       if (this.touchLookPointer !== event.pointerId || !look.hasPointerCapture(event.pointerId)) return;
-      const bounds = look.getBoundingClientRect();
-      const x = Math.max(-1, Math.min(1, (event.clientX - bounds.left - bounds.width / 2) / (bounds.width / 2)));
-      const y = Math.max(-1, Math.min(1, (event.clientY - bounds.top - bounds.height / 2) / (bounds.height / 2)));
-      this.lookDelta += (event.clientX - previousX) * .8;
-      this.lookDeltaY += y * 2;
-      previousX = event.clientX;
-      this.touchLook = { x, y };
-      lookKnob.style.transform = `translate(${x * 24}px, ${y * 24}px)`;
+      updateLook(event);
     });
     look.addEventListener('pointerup', releaseLook);
     look.addEventListener('pointercancel', releaseLook);

@@ -111,6 +111,128 @@ async function inspectAutomap(page, name, mobile) {
   assert(!(await page.locator('#automap').isVisible()), `${name}: automap did not close`);
 }
 
+async function inspectCompactOptions(viewport, name, mobile = false) {
+  const context = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
+  const page = await context.newPage();
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.click('#options-button');
+  await page.selectOption('#text-scale', 'largest');
+  const initial = await page.locator('#options-menu').evaluate((element) => {
+    element.scrollTop = 0;
+    const panel = element.getBoundingClientRect();
+    const heading = element.querySelector('h1').getBoundingClientRect();
+    const firstSetting = element.querySelector('label').getBoundingClientRect();
+    const controlsContained = [...element.querySelectorAll('label > input, label > select')].every((control) => {
+      const label = control.closest('label').getBoundingClientRect();
+      const rect = control.getBoundingClientRect();
+      return rect.left >= label.left - 1 && rect.right <= label.right + 1 && rect.top >= label.top - 1 && rect.bottom <= label.bottom + 1;
+    });
+    return {
+      panel: { top: panel.top, bottom: panel.bottom },
+      heading: { top: heading.top, bottom: heading.bottom },
+      firstSetting: { top: firstSetting.top, bottom: firstSetting.bottom },
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      controlsContained,
+      rootFontSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+    };
+  });
+  assert(initial.heading.top >= initial.panel.top && initial.heading.bottom <= initial.panel.bottom, `${name}: Options heading is unreachable at scroll start`);
+  assert(initial.firstSetting.top >= initial.panel.top && initial.firstSetting.bottom <= initial.panel.bottom, `${name}: First option is unreachable at scroll start`);
+  assert(initial.scrollWidth <= initial.clientWidth + 1, `${name}: Options overflow horizontally`);
+  assert(initial.controlsContained, `${name}: Largest text caused an option control to overlap or escape its label`);
+  assert(initial.rootFontSize >= 19.5, `${name}: Largest text preference was not applied`);
+  const back = page.locator('#options-menu [data-back]');
+  await back.scrollIntoViewIfNeeded();
+  const final = await Promise.all([
+    page.locator('#options-menu').boundingBox(),
+    back.boundingBox(),
+  ]);
+  assert(final[0] && final[1] && final[1].y >= final[0].y && final[1].y + final[1].height <= final[0].y + final[0].height + 1, `${name}: Options Back control cannot be scrolled into view`);
+  await page.screenshot({ path: `output/responsive/${name}-options.png` });
+  await context.close();
+}
+
+async function inspectShortLandscapeDifficulty() {
+  const context = await browser.newContext({ viewport: { width: 568, height: 320 }, isMobile: true, hasTouch: true });
+  await context.addInitScript(() => localStorage.setItem('red-ledger-settings-v1', JSON.stringify({ uiTextScale: 'largest' })));
+  const page = await context.newPage();
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.click('#new-game');
+  await page.locator('.episode-card').first().click();
+  const initial = await page.locator('#difficulty-menu').evaluate((screen) => {
+    screen.scrollTop = 0;
+    const panel = screen.getBoundingClientRect();
+    const heading = screen.querySelector('h1').getBoundingClientRect();
+    return {
+      panel: { top: panel.top, bottom: panel.bottom },
+      heading: { top: heading.top, bottom: heading.bottom },
+      clientHeight: screen.clientHeight,
+      scrollHeight: screen.scrollHeight,
+      overflowY: getComputedStyle(screen).overflowY,
+    };
+  });
+  assert(initial.heading.top >= initial.panel.top && initial.heading.bottom <= initial.panel.bottom,
+    'mobile-landscape-568: Largest Difficulty heading is clipped at scroll start');
+  assert(initial.overflowY === 'auto' && initial.scrollHeight >= initial.clientHeight,
+    'mobile-landscape-568: Difficulty does not provide a bounded scroll surface');
+  const back = page.locator('#difficulty-menu [data-back]');
+  await back.scrollIntoViewIfNeeded();
+  const [panel, backBox] = await Promise.all([page.locator('#difficulty-menu').boundingBox(), back.boundingBox()]);
+  assert(panel && backBox && backBox.y >= panel.y && backBox.y + backBox.height <= panel.y + panel.height + 1,
+    'mobile-landscape-568: Largest Difficulty Back control cannot be reached');
+  await page.screenshot({ path: 'output/responsive/mobile-landscape-568-difficulty-largest.png' });
+  await context.close();
+}
+
+async function inspectSmallPersonalizedDeck(handedness) {
+  const context = await browser.newContext({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true });
+  await context.addInitScript((hand) => localStorage.setItem('red-ledger-settings-v1', JSON.stringify({
+    touchControlSize: 'large',
+    touchHandedness: hand,
+    uiTextScale: 'largest',
+  })), handedness);
+  const page = await context.newPage();
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.click('#new-game');
+  await page.locator('.episode-card').first().click();
+  await page.locator('#difficulty-actions button').nth(1).click();
+  await page.click('#begin-episode');
+  if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
+
+  const result = await page.evaluate((messageText) => {
+    const selectors = ['#touch-stick', '#touch-look', '#touch-fire', '#touch-use', '#touch-weapon', '#touch-map', '#touch-pause'];
+    const box = (selector) => {
+      const rect = document.querySelector(selector).getBoundingClientRect();
+      return { selector, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    };
+    const controls = selectors.map(box);
+    const overlaps = [];
+    controls.forEach((left, index) => controls.slice(index + 1).forEach((right) => {
+      const width = Math.max(0, Math.min(left.right, right.right) - Math.max(left.left, right.left));
+      const height = Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top));
+      if (width > .5 && height > .5) overlaps.push(`${left.selector}/${right.selector}:${width}x${height}`);
+    }));
+    const message = document.querySelector('#message');
+    message.textContent = messageText;
+    const messageBox = box('#message');
+    const objectiveBox = box('#objective');
+    const hudOverlap = Math.max(0, Math.min(messageBox.bottom, objectiveBox.bottom) - Math.max(messageBox.top, objectiveBox.top));
+    return { controls, overlaps, messageBox, objectiveBox, hudOverlap };
+  }, 'The red credential is visible through glass from the starting room, then opens the parking return loop.');
+  assert(result.overlaps.length === 0, `320x568 ${handedness}: touch controls overlap (${result.overlaps.join(', ')})`);
+  assert(result.controls.every((box) => box.left >= 0 && box.top >= 0 && box.right <= 320 && box.bottom <= 568),
+    `320x568 ${handedness}: a personalized touch control escaped the viewport`);
+  assert(result.hudOverlap === 0,
+    `320x568 ${handedness}: long authored message overlaps the objective by ${result.hudOverlap}px`);
+  assert(result.controls.every((box) => result.messageBox.bottom <= box.top || result.messageBox.top >= box.bottom
+    || result.messageBox.right <= box.left || result.messageBox.left >= box.right),
+  `320x568 ${handedness}: long authored message overlaps a touch control`);
+  await page.screenshot({ path: `output/responsive/mobile-320-${handedness}-large-deck.png` });
+  await context.close();
+}
+
 async function run(viewport, name, mobile = false) {
   const context = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
   const page = await context.newPage();
@@ -246,6 +368,11 @@ async function run(viewport, name, mobile = false) {
   await context.close();
 }
 
+await inspectCompactOptions({ width: 1280, height: 500 }, 'desktop-short-1280');
+await inspectCompactOptions({ width: 568, height: 320 }, 'mobile-landscape-568', true);
+await inspectShortLandscapeDifficulty();
+await inspectSmallPersonalizedDeck('right');
+await inspectSmallPersonalizedDeck('left');
 await run({ width: 2560, height: 1600 }, 'desktop-2560');
 await run({ width: 1280, height: 720 }, 'desktop-1280');
 await run({ width: 390, height: 844 }, 'mobile-390', true);

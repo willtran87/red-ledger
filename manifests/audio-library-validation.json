@@ -1,0 +1,3447 @@
+{
+  "schema": 2,
+  "passed": true,
+  "revision": "2026-07-16",
+  "sourceSpec": "manifests/audio-production-spec.json",
+  "sourceSpecSha256": "ee4cbfd0a12d5c56b9638ccb957dd3c0475db6b8220ef8710a3a4e3a188f5a5f",
+  "generator": "tools/build_audio_library.py",
+  "numpyVersion": "2.0.0",
+  "generationCommand": "py -3.11 tools/build_audio_library.py --force",
+  "musicTrackCount": 33,
+  "mapTrackCount": 27,
+  "distinctMapMotifs": 27,
+  "music": [
+    {
+      "id": "menu",
+      "file": "assets/audio/music/menu.mp3",
+      "sha256": "8484350320f6381b8e277280e0a5bdcc92bbc20bd8707530f2c30c92cab434f6",
+      "motifSha256": "d73e1f57f85430500cb74e844b8d4250bfeb123f7f80dc3ccd1d4f6910bb2545",
+      "kind": "ui",
+      "declaredDuration": 120,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 120.0,
+        "bytes": 960723,
+        "meanDb": -20.0,
+        "peakDb": -4.0
+      }
+    },
+    {
+      "id": "intermission",
+      "file": "assets/audio/music/intermission.mp3",
+      "sha256": "9d644a68e94a6b690954fc5cf39d48d2808d8e9d70d92dcc31d2ed2eb18003d0",
+      "motifSha256": "5e89077f67b65cf21539f13fb2b99704434f433220b30b42bdc5309982cf2c3f",
+      "kind": "ui",
+      "declaredDuration": 84,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 84.0,
+        "bytes": 672749,
+        "meanDb": -20.0,
+        "peakDb": -2.6
+      }
+    },
+    {
+      "id": "episode-1-outro",
+      "file": "assets/audio/music/episode-1-outro.mp3",
+      "sha256": "f3f28f49425d97040b158ce7b06c973563d6905fc1d0353a0f1fcd2d9b4aa272",
+      "motifSha256": "fe908fbe0548bd5a7924c2cd2154446fbffe36e693ef5aef1acd2ca5c945caeb",
+      "kind": "ending",
+      "declaredDuration": 96,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 96.0,
+        "bytes": 768670,
+        "meanDb": -18.6,
+        "peakDb": -1.2
+      }
+    },
+    {
+      "id": "episode-2-outro",
+      "file": "assets/audio/music/episode-2-outro.mp3",
+      "sha256": "143f184f57377fc97503647a714568fc144dd63f1273861105ed24ce5cac9790",
+      "motifSha256": "3b29027d5d18d44ab58abad6008abbd73b777c7057d39d3cf393d2ba8491c5e9",
+      "kind": "ending",
+      "declaredDuration": 104,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 104.0,
+        "bytes": 832827,
+        "meanDb": -21.9,
+        "peakDb": -5.3
+      }
+    },
+    {
+      "id": "episode-3-outro",
+      "file": "assets/audio/music/episode-3-outro.mp3",
+      "sha256": "624077744fd63e8b216855b825190f6b5f2adf450b30f8f7236b45f185dca0d3",
+      "motifSha256": "106676b3917bcf69db8fa7a9f5bcf579c858898f217a2e3de32e752a06514cdf",
+      "kind": "ending",
+      "declaredDuration": 128,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 128.0,
+        "bytes": 1024670,
+        "meanDb": -21.9,
+        "peakDb": -5.1
+      }
+    },
+    {
+      "id": "credits",
+      "file": "assets/audio/music/credits.mp3",
+      "sha256": "2b719cd5672e1935fab6d245db4c5390abd2afa48932842cc46e75ba24229c88",
+      "motifSha256": "53cada871a104ab5c3ab3682c5e9a4b5f0afcc084c3a308c707e8ac761399a69",
+      "kind": "ui",
+      "declaredDuration": 112,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 112.0,
+        "bytes": 896775,
+        "meanDb": -20.0,
+        "peakDb": -3.4
+      }
+    },
+    {
+      "id": "E1M1",
+      "file": "assets/audio/music/e1m1.mp3",
+      "sha256": "e993aed53291562f17cb5f71b75a35876c447348399a606bb5baaa5015ea5737",
+      "motifSha256": "3ce650b61037fe9e7a3c96ef2b32c1a0da83a0e55a5170a9431663aa22499974",
+      "kind": "map",
+      "declaredDuration": 154,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 154.0,
+        "bytes": 1232814,
+        "meanDb": -18.5,
+        "peakDb": -0.8
+      }
+    },
+    {
+      "id": "E1M2",
+      "file": "assets/audio/music/e1m2.mp3",
+      "sha256": "263065439f2e20f12ccd0fefc43dc117baabdbf47cd129842b8ae6f404db8338",
+      "motifSha256": "02c8530dae8b1c854b13f0ebc59cab82232da6f6e4a7bb94594eff1d7306f5f3",
+      "kind": "map",
+      "declaredDuration": 166,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 166.0,
+        "bytes": 1328736,
+        "meanDb": -20.0,
+        "peakDb": -3.2
+      }
+    },
+    {
+      "id": "E1M3",
+      "file": "assets/audio/music/e1m3.mp3",
+      "sha256": "a4fef0431f7d68819d7200631bedc3784320e135b88da956b8a74d53cd364f90",
+      "motifSha256": "e140d7191af01c2ffc53a4c72d84f224745763d226f3e965af92895e84baa284",
+      "kind": "map",
+      "declaredDuration": 178,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 178.000499,
+        "bytes": 1424866,
+        "meanDb": -19.3,
+        "peakDb": -0.9
+      }
+    },
+    {
+      "id": "E1M4",
+      "file": "assets/audio/music/e1m4.mp3",
+      "sha256": "ac7bd3635bb45ad263fbe6dcc54ec35600a5b93755f092b073fb8cc361bc78a1",
+      "motifSha256": "cc7fa1c481fbf706ebe453e01fae5f4f07e22cf3165f0d9b20a4bf821531bc4d",
+      "kind": "map",
+      "declaredDuration": 190,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 190.0,
+        "bytes": 1520788,
+        "meanDb": -21.9,
+        "peakDb": -5.9
+      }
+    },
+    {
+      "id": "E1M5",
+      "file": "assets/audio/music/e1m5.mp3",
+      "sha256": "656809eeb9fbe0d722531884d6a0cc78751003a66d1337075c57fa0da67ddfa9",
+      "motifSha256": "3ad154a77f63753c9f8a1681f41b29fbcbbe5204b94416d614941686b6aee9c5",
+      "kind": "map",
+      "declaredDuration": 202,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 202.0,
+        "bytes": 1616710,
+        "meanDb": -18.5,
+        "peakDb": -1.4
+      }
+    },
+    {
+      "id": "E1M6",
+      "file": "assets/audio/music/e1m6.mp3",
+      "sha256": "eafaa68072a91f8fa98b2b738948d6501accf2524bd5c5739789e98d0c87eae1",
+      "motifSha256": "931ee1ba3de7416b9979bb8264f94c65988b473cffacd84d80d581f15e5d3be0",
+      "kind": "map",
+      "declaredDuration": 214,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 214.0,
+        "bytes": 1712840,
+        "meanDb": -20.0,
+        "peakDb": -4.0
+      }
+    },
+    {
+      "id": "E1M7",
+      "file": "assets/audio/music/e1m7.mp3",
+      "sha256": "df5abb139afec25b51bda1e976c002a121b97484aaaa599b619d4255738c91e1",
+      "motifSha256": "9349197bb17b634248f4186b02ce75cb1a50ac1e874e0fd66804320bd6b33d5f",
+      "kind": "map",
+      "declaredDuration": 226,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 226.0,
+        "bytes": 1808762,
+        "meanDb": -18.5,
+        "peakDb": -1.3
+      }
+    },
+    {
+      "id": "E1M8",
+      "file": "assets/audio/music/e1m8.mp3",
+      "sha256": "7b7e830eecbb45fd7a9466c2a708be9e929a3a17f062940bfa9d84b73551419b",
+      "motifSha256": "02da74c724a93273fd32dff419a9322dc2dcb2bbd914b68fc99c177f62d706e8",
+      "kind": "map",
+      "declaredDuration": 196,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 196.0,
+        "bytes": 1568853,
+        "meanDb": -19.1,
+        "peakDb": -1.7
+      }
+    },
+    {
+      "id": "E1M9",
+      "file": "assets/audio/music/e1m9.mp3",
+      "sha256": "bc597b3099700cf8d8cf75889ce991963d97bf824568c455df33fd0a56f3f067",
+      "motifSha256": "f15b03e389c90e78cae4fab9b6089e4a8e35285b93510eed6d6306d22e5cc106",
+      "kind": "map",
+      "declaredDuration": 172,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 172.0,
+        "bytes": 1376801,
+        "meanDb": -20.0,
+        "peakDb": -2.6
+      }
+    },
+    {
+      "id": "E2M1",
+      "file": "assets/audio/music/e2m1.mp3",
+      "sha256": "e96af67895bcfde50c8140c554182912186b08e9a1c9735e4c92719a52e2fb6b",
+      "motifSha256": "e75e336b657a8257c979072a3c38a7bededc4b2af8b5d7d6a46c9e990c43ffe8",
+      "kind": "map",
+      "declaredDuration": 160,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 160.0,
+        "bytes": 1280670,
+        "meanDb": -18.8,
+        "peakDb": -1.8
+      }
+    },
+    {
+      "id": "E2M2",
+      "file": "assets/audio/music/e2m2.mp3",
+      "sha256": "c9c5cc373bfd08b83fe61e44de08970a4bd314e2040097c924012b2f36961e31",
+      "motifSha256": "0f9eac64c5ea3518437e16d21f15a0c03e15b1da199c05f1084c9c938bc86130",
+      "kind": "map",
+      "declaredDuration": 184,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 184.0,
+        "bytes": 1472723,
+        "meanDb": -20.0,
+        "peakDb": -2.6
+      }
+    },
+    {
+      "id": "E2M3",
+      "file": "assets/audio/music/e2m3.mp3",
+      "sha256": "26e154903a7acd9a8abbbb302637744223ec74eab4fc8a8710983ceff62a477e",
+      "motifSha256": "f50bab16bee2e2c5ff2b00ddd802063dddd7bb6d02d7bf0d11ba558ca44fcb10",
+      "kind": "map",
+      "declaredDuration": 208,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 208.0,
+        "bytes": 1664775,
+        "meanDb": -18.5,
+        "peakDb": -1.3
+      }
+    },
+    {
+      "id": "E2M4",
+      "file": "assets/audio/music/e2m4.mp3",
+      "sha256": "144e5a4b71255cef3f158dfdb200984530251ca2cad14aee984ecb4c29695c8d",
+      "motifSha256": "bf6697f741e52c58d58b83589d18092618163b0f4830667e6a0a93f274e2f5df",
+      "kind": "map",
+      "declaredDuration": 220,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 220.0,
+        "bytes": 1760697,
+        "meanDb": -21.9,
+        "peakDb": -5.2
+      }
+    },
+    {
+      "id": "E2M5",
+      "file": "assets/audio/music/e2m5.mp3",
+      "sha256": "4fec7f54d8cad5d7ab124c0eaff14a5e4ed3e5649739745eefd7ab7f307b8559",
+      "motifSha256": "25354dc2aebe50cc3d565e496113682394c9de80f77843dfa87e25b9b340d5bb",
+      "kind": "map",
+      "declaredDuration": 176,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 176.0,
+        "bytes": 1408775,
+        "meanDb": -18.5,
+        "peakDb": -1.4
+      }
+    },
+    {
+      "id": "E2M6",
+      "file": "assets/audio/music/e2m6.mp3",
+      "sha256": "e07e038413d1d751b9d550bcb16df0fd258d7749969bb416028512c8604f37b8",
+      "motifSha256": "033ca39accd0e3a16b7bdc4bcbc0be250580b415342b9cbb7a48cb35c91b7cfb",
+      "kind": "map",
+      "declaredDuration": 200,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 200.0,
+        "bytes": 1600827,
+        "meanDb": -20.0,
+        "peakDb": -2.5
+      }
+    },
+    {
+      "id": "E2M7",
+      "file": "assets/audio/music/e2m7.mp3",
+      "sha256": "d43145d3365a5e5db995ad82d5247562cda49b96db5f1636a7e22f01fb1887d2",
+      "motifSha256": "179671a65abe32873f0857b578da09393715796385cdc3ba4cab991e07a8585f",
+      "kind": "map",
+      "declaredDuration": 224,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 224.0,
+        "bytes": 1792670,
+        "meanDb": -18.5,
+        "peakDb": -1.6
+      }
+    },
+    {
+      "id": "E2M8",
+      "file": "assets/audio/music/e2m8.mp3",
+      "sha256": "65d6c092c176081c0bbb20473aa7bade4dc04df73904b4a6e99d99b877f4d8ad",
+      "motifSha256": "0592b3e1f4e738d0d0b15508aa517a460659208fad00199d6cf46fae04865ea7",
+      "kind": "map",
+      "declaredDuration": 188,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 188.0,
+        "bytes": 1504697,
+        "meanDb": -18.7,
+        "peakDb": -1.2
+      }
+    },
+    {
+      "id": "E2M9",
+      "file": "assets/audio/music/e2m9.mp3",
+      "sha256": "5bd4aeaf4ae0937be6a55c08030cd7ac04e6155f3816a439498156b526fabf14",
+      "motifSha256": "02a501b61858b2fc49f6b04478227f85b46bbc19b799d8865ab1daab73aeda8b",
+      "kind": "map",
+      "declaredDuration": 168,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 168.0,
+        "bytes": 1344827,
+        "meanDb": -21.9,
+        "peakDb": -5.8
+      }
+    },
+    {
+      "id": "E3M1",
+      "file": "assets/audio/music/e3m1.mp3",
+      "sha256": "235180cacf17df8a69078cfa8c5a7093c9a0b907a226e6bdfd3f33f3724e113f",
+      "motifSha256": "769d1999a332cb1a5291bf39975a7eadc2820905a2f967fca7d4f43b9f0a705a",
+      "kind": "map",
+      "declaredDuration": 158,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 158.0,
+        "bytes": 1264788,
+        "meanDb": -20.0,
+        "peakDb": -3.7
+      }
+    },
+    {
+      "id": "E3M2",
+      "file": "assets/audio/music/e3m2.mp3",
+      "sha256": "77d8239fb43ec4615ebc76c1b36666d29d950d4c760b49f9352a214252edbb7e",
+      "motifSha256": "cacc37114623addcca76a8df56b499a9645dab07c64980c1231252e63f1b0eb3",
+      "kind": "map",
+      "declaredDuration": 182,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 182.0,
+        "bytes": 1456840,
+        "meanDb": -18.5,
+        "peakDb": -1.2
+      }
+    },
+    {
+      "id": "E3M3",
+      "file": "assets/audio/music/e3m3.mp3",
+      "sha256": "a5d0dfa97b7ce6ca118670a9c4be7a26d9f7a8ddf9820d7b1e03bb286aa1554b",
+      "motifSha256": "ddcab49c526e5d58a38e71d832f3bedc70e0bf24982f18e2ce4618838e13588f",
+      "kind": "map",
+      "declaredDuration": 206,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 206.0,
+        "bytes": 1648684,
+        "meanDb": -21.9,
+        "peakDb": -4.6
+      }
+    },
+    {
+      "id": "E3M4",
+      "file": "assets/audio/music/e3m4.mp3",
+      "sha256": "9d74b2406b259272ec4e63a934e9d9670bb12702747a98ae73323296aea8933e",
+      "motifSha256": "802b4a68c6ab5d17f79b4a3c8e5a1cb71832146d9cef7cf1448696ee3d3071de",
+      "kind": "map",
+      "declaredDuration": 230,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 230.0,
+        "bytes": 1840736,
+        "meanDb": -18.5,
+        "peakDb": -1.5
+      }
+    },
+    {
+      "id": "E3M5",
+      "file": "assets/audio/music/e3m5.mp3",
+      "sha256": "536d0770dbe660603b66c50b43dbb843bb976e684f1efc05dcb9ec3d8c2a0d4e",
+      "motifSha256": "dfbca73323c599844248491272caf222f76ea66a7dda41546ec3de28a3415d0f",
+      "kind": "map",
+      "declaredDuration": 174,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 174.0,
+        "bytes": 1392684,
+        "meanDb": -20.0,
+        "peakDb": -2.7
+      }
+    },
+    {
+      "id": "E3M6",
+      "file": "assets/audio/music/e3m6.mp3",
+      "sha256": "e67cedfcd99400928bdff166d04b7069cf29b537e4d0b6239509dab6746792ac",
+      "motifSha256": "f448f0d0b48a8b5e94994143b7f9cd1454f9c2e8bd38c63431cc20c4f0c8785e",
+      "kind": "map",
+      "declaredDuration": 198,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 198.0,
+        "bytes": 1584736,
+        "meanDb": -18.5,
+        "peakDb": -0.8
+      }
+    },
+    {
+      "id": "E3M7",
+      "file": "assets/audio/music/e3m7.mp3",
+      "sha256": "0284e070553472e275b12f1298e8e6e4206ff6586a852f571b7cb82ea1a5768b",
+      "motifSha256": "0be50b0522ee95c2794085544a8a10fcb0e5c72d36fed81afc083f5f51c1e625",
+      "kind": "map",
+      "declaredDuration": 222,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 222.0,
+        "bytes": 1776788,
+        "meanDb": -21.9,
+        "peakDb": -4.8
+      }
+    },
+    {
+      "id": "E3M8",
+      "file": "assets/audio/music/e3m8.mp3",
+      "sha256": "8ef460923cf7247ef11e8dd448efbd7c25443e3096b834df3847495fd268d50e",
+      "motifSha256": "a5efb307d26e41b5699917790964c4ceab8f5e06579f2062f9f09d8da7c9bcaa",
+      "kind": "map",
+      "declaredDuration": 236,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 236.0,
+        "bytes": 1888801,
+        "meanDb": -18.8,
+        "peakDb": -1.6
+      }
+    },
+    {
+      "id": "E3M9",
+      "file": "assets/audio/music/e3m9.mp3",
+      "sha256": "34d8ec6d775c0c8126c9753e658491101e0848ae3914da382feb9a2d4db145b3",
+      "motifSha256": "d1ac0d853882d688d70b984e3f516c467b058312f111933835e790ed59e625c7",
+      "kind": "map",
+      "declaredDuration": 186,
+      "probe": {
+        "codec": "mp3",
+        "sampleRate": 22050,
+        "channels": 2,
+        "duration": 186.0,
+        "bytes": 1488814,
+        "meanDb": -20.0,
+        "peakDb": -2.5
+      }
+    }
+  ],
+  "sfx": {
+    "shardCount": 5,
+    "shards": [
+      {
+        "id": "actors",
+        "file": "assets/audio/sfx/red-ledger-actors.mp3",
+        "sha256": "e4a5021729f0761945f39ef06ed4257a2064f289bf8578418806eba4ac1907a9",
+        "duration": 80.16675,
+        "probe": {
+          "codec": "mp3",
+          "sampleRate": 16000,
+          "channels": 1,
+          "duration": 80.16675,
+          "bytes": 802845,
+          "meanDb": -16.5,
+          "peakDb": -7.2
+        },
+        "groupCount": 68,
+        "cueCount": 156
+      },
+      {
+        "id": "attacks",
+        "file": "assets/audio/sfx/red-ledger-attacks.mp3",
+        "sha256": "1ef475b948cae8f992f78f39d19100acaeb05d5fb6a588891a7a05292347ce71",
+        "duration": 20.006,
+        "probe": {
+          "codec": "mp3",
+          "sampleRate": 16000,
+          "channels": 1,
+          "duration": 20.006,
+          "bytes": 201285,
+          "meanDb": -17.8,
+          "peakDb": -6.4
+        },
+        "groupCount": 54,
+        "cueCount": 54
+      },
+      {
+        "id": "weapons",
+        "file": "assets/audio/sfx/red-ledger-weapons.mp3",
+        "sha256": "d256eb55e79683b94226d5530aa8382546f32ab414e4ec984025eea1930d7793",
+        "duration": 13.777313,
+        "probe": {
+          "codec": "mp3",
+          "sampleRate": 16000,
+          "channels": 1,
+          "duration": 13.777312,
+          "bytes": 139005,
+          "meanDb": -19.3,
+          "peakDb": -3.6
+        },
+        "groupCount": 24,
+        "cueCount": 48
+      },
+      {
+        "id": "world-environment",
+        "file": "assets/audio/sfx/red-ledger-world-environment.mp3",
+        "sha256": "6395106335d1ccde8f5d0720cf8b6e4fd0412083f94024082802f722ce7452dc",
+        "duration": 27.657062,
+        "probe": {
+          "codec": "mp3",
+          "sampleRate": 16000,
+          "channels": 1,
+          "duration": 27.657062,
+          "bytes": 277965,
+          "meanDb": -19.4,
+          "peakDb": -7.8
+        },
+        "groupCount": 27,
+        "cueCount": 54
+      },
+      {
+        "id": "player-ui",
+        "file": "assets/audio/sfx/red-ledger-player-ui.mp3",
+        "sha256": "f46ec95d86cb7a84ccafc5141df8ef11a6b2f53d14a9339974d413a23554a7a8",
+        "duration": 13.055312,
+        "probe": {
+          "codec": "mp3",
+          "sampleRate": 16000,
+          "channels": 1,
+          "duration": 13.055312,
+          "bytes": 131805,
+          "meanDb": -18.8,
+          "peakDb": -8.2
+        },
+        "groupCount": 16,
+        "cueCount": 35
+      }
+    ],
+    "groupCount": 189,
+    "cueCount": 347,
+    "distinctPcmFingerprints": 347,
+    "cues": [
+      {
+        "id": "enemy/returned-mail/idle/01",
+        "start": 0.08,
+        "duration": 0.432375,
+        "group": "enemy/returned-mail/idle",
+        "shard": "actors",
+        "pcmSha256": "1e4ec1de2356be407df5da9f429860da12fe1bee548a24e90a8ab90e4acc0c78"
+      },
+      {
+        "id": "enemy/returned-mail/idle/02",
+        "start": 0.552375,
+        "duration": 0.457688,
+        "group": "enemy/returned-mail/idle",
+        "shard": "actors",
+        "pcmSha256": "b89cf4c3975a8a26a335f2f7a133b0f111db9ea325bc9a8c35d8b362dcaf9339"
+      },
+      {
+        "id": "enemy/returned-mail/alert/01",
+        "start": 1.050062,
+        "duration": 0.319625,
+        "group": "enemy/returned-mail/alert",
+        "shard": "actors",
+        "pcmSha256": "ae63a78585426115ebfa872a3e456ce496315605062c02cda2dd4480285e6cba"
+      },
+      {
+        "id": "enemy/returned-mail/alert/02",
+        "start": 1.409687,
+        "duration": 0.338313,
+        "group": "enemy/returned-mail/alert",
+        "shard": "actors",
+        "pcmSha256": "d8057e0eda8d23465f4d2d010ba0d82bcdba1e4d2a7e2f43477c0dad4a2d4b59"
+      },
+      {
+        "id": "enemy/returned-mail/pain/01",
+        "start": 1.788,
+        "duration": 0.206813,
+        "group": "enemy/returned-mail/pain",
+        "shard": "actors",
+        "pcmSha256": "a9cef10c2014ed61b270f6a5976fbe8431c5fbe040dbd62d118f2258f4906763"
+      },
+      {
+        "id": "enemy/returned-mail/pain/02",
+        "start": 2.034813,
+        "duration": 0.218875,
+        "group": "enemy/returned-mail/pain",
+        "shard": "actors",
+        "pcmSha256": "7cc8fe41ef56d06e0dc5bbc45486061d5f2714dc762b9004fb0af0a33170dcda"
+      },
+      {
+        "id": "enemy/returned-mail/death/01",
+        "start": 2.293687,
+        "duration": 0.639188,
+        "group": "enemy/returned-mail/death",
+        "shard": "actors",
+        "pcmSha256": "fd4a183899b87813588895cfc43adc34472ff8ecf78fab91a7b4a71492658a18"
+      },
+      {
+        "id": "enemy/returned-mail/death/02",
+        "start": 2.972875,
+        "duration": 0.676625,
+        "group": "enemy/returned-mail/death",
+        "shard": "actors",
+        "pcmSha256": "1f33b0f69c5ae04540311ef6308bf0732b4697137c763c7b410fc57ec0847915"
+      },
+      {
+        "id": "enemy/returned-mail/death/03",
+        "start": 3.6895,
+        "duration": 0.714,
+        "group": "enemy/returned-mail/death",
+        "shard": "actors",
+        "pcmSha256": "071ba10732fff63924cd3f98d5220cec46d86f3847f18f2551027ffa62d089a5"
+      },
+      {
+        "id": "enemy/desk-warden/idle/01",
+        "start": 4.4435,
+        "duration": 0.432375,
+        "group": "enemy/desk-warden/idle",
+        "shard": "actors",
+        "pcmSha256": "7bbadf55c66f3b806869268fdb7aafd97c391a66ca1d475870f653c2bc55e007"
+      },
+      {
+        "id": "enemy/desk-warden/idle/02",
+        "start": 4.915875,
+        "duration": 0.457688,
+        "group": "enemy/desk-warden/idle",
+        "shard": "actors",
+        "pcmSha256": "fb7a397370660e54de12505bbef73649bbabcff84df33c0c2a4d3973072743e5"
+      },
+      {
+        "id": "enemy/desk-warden/alert/01",
+        "start": 5.413563,
+        "duration": 0.319625,
+        "group": "enemy/desk-warden/alert",
+        "shard": "actors",
+        "pcmSha256": "93fc7e29a4ae1aeec0652b06975bf6d15f9ad513416332cbdc80c3a4b635a428"
+      },
+      {
+        "id": "enemy/desk-warden/alert/02",
+        "start": 5.773187,
+        "duration": 0.338313,
+        "group": "enemy/desk-warden/alert",
+        "shard": "actors",
+        "pcmSha256": "80b79f3fd62ca4982dada486b1af40204d391facb506ca942aaa87eb5a920de6"
+      },
+      {
+        "id": "enemy/desk-warden/pain/01",
+        "start": 6.1515,
+        "duration": 0.206813,
+        "group": "enemy/desk-warden/pain",
+        "shard": "actors",
+        "pcmSha256": "f00d55ba802e65bf43590a0bef8630574e373f0a4f300a396b366a45b023eb86"
+      },
+      {
+        "id": "enemy/desk-warden/pain/02",
+        "start": 6.398313,
+        "duration": 0.218875,
+        "group": "enemy/desk-warden/pain",
+        "shard": "actors",
+        "pcmSha256": "0f62061986e2e59bbd2712df7fc131bdd6b950683e2737ade1bcd9597d9db561"
+      },
+      {
+        "id": "enemy/desk-warden/death/01",
+        "start": 6.657188,
+        "duration": 0.639188,
+        "group": "enemy/desk-warden/death",
+        "shard": "actors",
+        "pcmSha256": "6a54dd894c21aaa265234701ae3457e1fbf900aba76ff0add32cb5a0f66c0937"
+      },
+      {
+        "id": "enemy/desk-warden/death/02",
+        "start": 7.336375,
+        "duration": 0.676625,
+        "group": "enemy/desk-warden/death",
+        "shard": "actors",
+        "pcmSha256": "9ac27e8cd7c98121751de829fe8db1b399d09a197adf0a0c70bff935ff418847"
+      },
+      {
+        "id": "enemy/desk-warden/death/03",
+        "start": 8.053,
+        "duration": 0.714,
+        "group": "enemy/desk-warden/death",
+        "shard": "actors",
+        "pcmSha256": "4eb3b7f27998743f3fe518d1e385b73436e1ee4194fa8a4386ceb47d9e8076bc"
+      },
+      {
+        "id": "enemy/ember-clerk/idle/01",
+        "start": 8.807,
+        "duration": 0.432375,
+        "group": "enemy/ember-clerk/idle",
+        "shard": "actors",
+        "pcmSha256": "25cd413326171a72097f4767f0928cf1fbe158dca7a43a755a2bc0f687fa29e7"
+      },
+      {
+        "id": "enemy/ember-clerk/idle/02",
+        "start": 9.279375,
+        "duration": 0.457688,
+        "group": "enemy/ember-clerk/idle",
+        "shard": "actors",
+        "pcmSha256": "072cf0e09ee7d90a8f2ae38cb7a09678fd8ebd04997ce13cf4b5eea5a8dd6dff"
+      },
+      {
+        "id": "enemy/ember-clerk/alert/01",
+        "start": 9.777062,
+        "duration": 0.319625,
+        "group": "enemy/ember-clerk/alert",
+        "shard": "actors",
+        "pcmSha256": "feb656898966ec1aba0a9547a71ee11219445ca60c2e7fb3dedcf03de4451cb4"
+      },
+      {
+        "id": "enemy/ember-clerk/alert/02",
+        "start": 10.136688,
+        "duration": 0.338313,
+        "group": "enemy/ember-clerk/alert",
+        "shard": "actors",
+        "pcmSha256": "79a9d9588ff002e4863ec1e4ba121b1d5e733136bbaa61c52a34c93fa00c97c5"
+      },
+      {
+        "id": "enemy/ember-clerk/pain/01",
+        "start": 10.515,
+        "duration": 0.206813,
+        "group": "enemy/ember-clerk/pain",
+        "shard": "actors",
+        "pcmSha256": "e056fc44c3cd2b2258e57319b2e9aa4db6cf0acb1d6530a8608db4d818080bed"
+      },
+      {
+        "id": "enemy/ember-clerk/pain/02",
+        "start": 10.761812,
+        "duration": 0.218875,
+        "group": "enemy/ember-clerk/pain",
+        "shard": "actors",
+        "pcmSha256": "6106e24cd5b0177b540dd21d182ffcf4fc79672aaa63cca8630344969cac8393"
+      },
+      {
+        "id": "enemy/ember-clerk/death/01",
+        "start": 11.020687,
+        "duration": 0.639188,
+        "group": "enemy/ember-clerk/death",
+        "shard": "actors",
+        "pcmSha256": "a52126dffaf3e954ce9ce096db7488605fd14941e2953e94a9df3f5923af27be"
+      },
+      {
+        "id": "enemy/ember-clerk/death/02",
+        "start": 11.699875,
+        "duration": 0.676625,
+        "group": "enemy/ember-clerk/death",
+        "shard": "actors",
+        "pcmSha256": "18e82a8b948f79deb876e187902d7620521b77b75dbf84d8f3840ba071ab67c9"
+      },
+      {
+        "id": "enemy/ember-clerk/death/03",
+        "start": 12.4165,
+        "duration": 0.714,
+        "group": "enemy/ember-clerk/death",
+        "shard": "actors",
+        "pcmSha256": "3ef5e632e8e004daf0e462e638dfa648be682abe0029a5c88ff9242ce97b3840"
+      },
+      {
+        "id": "enemy/exposure-hound/idle/01",
+        "start": 13.1705,
+        "duration": 0.432375,
+        "group": "enemy/exposure-hound/idle",
+        "shard": "actors",
+        "pcmSha256": "05ba2013702e4318d16cdde28149a8c388e7e958f27a7a80867ca7afa26ad4ea"
+      },
+      {
+        "id": "enemy/exposure-hound/idle/02",
+        "start": 13.642875,
+        "duration": 0.457688,
+        "group": "enemy/exposure-hound/idle",
+        "shard": "actors",
+        "pcmSha256": "2c9b194a6b48425b08111c43756376fdaff3c4dab4aff5c538d5d1ab86cf7711"
+      },
+      {
+        "id": "enemy/exposure-hound/alert/01",
+        "start": 14.140562,
+        "duration": 0.319625,
+        "group": "enemy/exposure-hound/alert",
+        "shard": "actors",
+        "pcmSha256": "552e59670ea5bf0a0038c44f075d890810b5f6980381d421b37f270b1c053332"
+      },
+      {
+        "id": "enemy/exposure-hound/alert/02",
+        "start": 14.500187,
+        "duration": 0.338313,
+        "group": "enemy/exposure-hound/alert",
+        "shard": "actors",
+        "pcmSha256": "dd8a5c1e283cf4aee3f249198c140406f65cc77694136760d909460a15a0d1bb"
+      },
+      {
+        "id": "enemy/exposure-hound/pain/01",
+        "start": 14.8785,
+        "duration": 0.206813,
+        "group": "enemy/exposure-hound/pain",
+        "shard": "actors",
+        "pcmSha256": "268c463bbf128b8fdf5060f338981a8ebee1177006b243c05fea675915e74d64"
+      },
+      {
+        "id": "enemy/exposure-hound/pain/02",
+        "start": 15.125312,
+        "duration": 0.218875,
+        "group": "enemy/exposure-hound/pain",
+        "shard": "actors",
+        "pcmSha256": "73e35cc08c3f2772af2ab1560e4cf2b3907866b2ac58afcb5a8fbff2a63447aa"
+      },
+      {
+        "id": "enemy/exposure-hound/death/01",
+        "start": 15.384187,
+        "duration": 0.639188,
+        "group": "enemy/exposure-hound/death",
+        "shard": "actors",
+        "pcmSha256": "a958b463bb0a4320c0e23fbc23a67cba2ac1c3935b33262049fe44bc21acbe0f"
+      },
+      {
+        "id": "enemy/exposure-hound/death/02",
+        "start": 16.063375,
+        "duration": 0.676625,
+        "group": "enemy/exposure-hound/death",
+        "shard": "actors",
+        "pcmSha256": "e7111e568b7f569a21f150e13fd82da5f5deb64f1f12aba0b9dededcf4e80dce"
+      },
+      {
+        "id": "enemy/exposure-hound/death/03",
+        "start": 16.78,
+        "duration": 0.714,
+        "group": "enemy/exposure-hound/death",
+        "shard": "actors",
+        "pcmSha256": "fe27e055d5383748a7eb0d9fea6e7de3bc98252ca71017aefab4d443b7886c25"
+      },
+      {
+        "id": "enemy/coverage-drone/idle/01",
+        "start": 17.534,
+        "duration": 0.432375,
+        "group": "enemy/coverage-drone/idle",
+        "shard": "actors",
+        "pcmSha256": "ff5aa28ade3ef836b4cd1720bea9f8debc44f3ff15da2fa446f5a83a9334efd8"
+      },
+      {
+        "id": "enemy/coverage-drone/idle/02",
+        "start": 18.006375,
+        "duration": 0.457688,
+        "group": "enemy/coverage-drone/idle",
+        "shard": "actors",
+        "pcmSha256": "34c577c0c528c077d206aea0cfd286bde428fab3f0a40f589dbd7290f39929b6"
+      },
+      {
+        "id": "enemy/coverage-drone/alert/01",
+        "start": 18.504062,
+        "duration": 0.319625,
+        "group": "enemy/coverage-drone/alert",
+        "shard": "actors",
+        "pcmSha256": "660c12a092c050f63577abfa7a0dbfcf1a181b04ab5ec4acf0d51757e1b074be"
+      },
+      {
+        "id": "enemy/coverage-drone/alert/02",
+        "start": 18.863688,
+        "duration": 0.338313,
+        "group": "enemy/coverage-drone/alert",
+        "shard": "actors",
+        "pcmSha256": "6464e45f394345a8156f7b4f0e9cc0d81dd0f404e21f950930f74eb63e6ea402"
+      },
+      {
+        "id": "enemy/coverage-drone/pain/01",
+        "start": 19.242,
+        "duration": 0.206813,
+        "group": "enemy/coverage-drone/pain",
+        "shard": "actors",
+        "pcmSha256": "974b878a0b55b421a170ff9ae625f93c568deaed327723e94127f6aa9118eefe"
+      },
+      {
+        "id": "enemy/coverage-drone/pain/02",
+        "start": 19.488813,
+        "duration": 0.218875,
+        "group": "enemy/coverage-drone/pain",
+        "shard": "actors",
+        "pcmSha256": "6b6f924da9bdf89d5cc63754432ab39ddf5119f7de734c70306f7f4f00c8bffd"
+      },
+      {
+        "id": "enemy/coverage-drone/death/01",
+        "start": 19.747688,
+        "duration": 0.639188,
+        "group": "enemy/coverage-drone/death",
+        "shard": "actors",
+        "pcmSha256": "d611ad39c9cf3d358f1f70dcf2052a129d675babd5a176dbcbd827d7d0a457c9"
+      },
+      {
+        "id": "enemy/coverage-drone/death/02",
+        "start": 20.426875,
+        "duration": 0.676625,
+        "group": "enemy/coverage-drone/death",
+        "shard": "actors",
+        "pcmSha256": "5ad2d34ec084468a1c552bed6a54d56b0fdc25594c2a03a6d080185580ac94aa"
+      },
+      {
+        "id": "enemy/coverage-drone/death/03",
+        "start": 21.1435,
+        "duration": 0.714,
+        "group": "enemy/coverage-drone/death",
+        "shard": "actors",
+        "pcmSha256": "02a9b0ea538c2fc5713a72768b691111124b2192d61e6e214dc31b831582f9b1"
+      },
+      {
+        "id": "enemy/liability-mass/idle/01",
+        "start": 21.8975,
+        "duration": 0.432375,
+        "group": "enemy/liability-mass/idle",
+        "shard": "actors",
+        "pcmSha256": "564c3ce7be2d4feb2f829b29c350906f4ca5ccd71743c76f6bbddde6cb59b568"
+      },
+      {
+        "id": "enemy/liability-mass/idle/02",
+        "start": 22.369875,
+        "duration": 0.457688,
+        "group": "enemy/liability-mass/idle",
+        "shard": "actors",
+        "pcmSha256": "bd55aaefb3fa585bc62efe9d0896fd212ae08aa4ec0177dcd4c41d1547b63bce"
+      },
+      {
+        "id": "enemy/liability-mass/alert/01",
+        "start": 22.867562,
+        "duration": 0.319625,
+        "group": "enemy/liability-mass/alert",
+        "shard": "actors",
+        "pcmSha256": "92c292dac250a0bb6d619d5696646b50b1ce87858edf379959b8752a12916ee7"
+      },
+      {
+        "id": "enemy/liability-mass/alert/02",
+        "start": 23.227187,
+        "duration": 0.338313,
+        "group": "enemy/liability-mass/alert",
+        "shard": "actors",
+        "pcmSha256": "abe0b2a90b1501962d65300c5d529da9eed6bb5a1be8194184225b5ad605e56f"
+      },
+      {
+        "id": "enemy/liability-mass/pain/01",
+        "start": 23.6055,
+        "duration": 0.206813,
+        "group": "enemy/liability-mass/pain",
+        "shard": "actors",
+        "pcmSha256": "b77f5dab0cf7209a62a21e2f2a13507b3080caa395a9a2944e56c17bb601d5cd"
+      },
+      {
+        "id": "enemy/liability-mass/pain/02",
+        "start": 23.852313,
+        "duration": 0.218875,
+        "group": "enemy/liability-mass/pain",
+        "shard": "actors",
+        "pcmSha256": "cb879d6bf47912c3f1fd3eaac6bef2e15b105f8d7897081e7bf6315a9a9087fa"
+      },
+      {
+        "id": "enemy/liability-mass/death/01",
+        "start": 24.111187,
+        "duration": 0.639188,
+        "group": "enemy/liability-mass/death",
+        "shard": "actors",
+        "pcmSha256": "82c02c9ba139b8f0e1b3d6f3342c2ced8a63653309ab4757c3b0fb67847d6f8a"
+      },
+      {
+        "id": "enemy/liability-mass/death/02",
+        "start": 24.790375,
+        "duration": 0.676625,
+        "group": "enemy/liability-mass/death",
+        "shard": "actors",
+        "pcmSha256": "74735674b16f31b43254d4989eb559fabcb04a46496edbe727de133da050805e"
+      },
+      {
+        "id": "enemy/liability-mass/death/03",
+        "start": 25.507,
+        "duration": 0.714,
+        "group": "enemy/liability-mass/death",
+        "shard": "actors",
+        "pcmSha256": "80ee558fcad5e78da47479ab427aa5b6abe13b39fb97d556c5818e637aa6788b"
+      },
+      {
+        "id": "enemy/denial-officer/idle/01",
+        "start": 26.261,
+        "duration": 0.432375,
+        "group": "enemy/denial-officer/idle",
+        "shard": "actors",
+        "pcmSha256": "af8579795c1b7a35588ff758f2e13705b1a10ab5c9d6f808cd585023fbe849d5"
+      },
+      {
+        "id": "enemy/denial-officer/idle/02",
+        "start": 26.733375,
+        "duration": 0.457688,
+        "group": "enemy/denial-officer/idle",
+        "shard": "actors",
+        "pcmSha256": "c43332a6b3a9bab58978e1ae0c14bfab741428188c2cf0330382a844b1798689"
+      },
+      {
+        "id": "enemy/denial-officer/alert/01",
+        "start": 27.231063,
+        "duration": 0.319625,
+        "group": "enemy/denial-officer/alert",
+        "shard": "actors",
+        "pcmSha256": "a1d62d95e8ef5dc85898d60bad68a87da3cbfd86be405282be0d05aac833dd65"
+      },
+      {
+        "id": "enemy/denial-officer/alert/02",
+        "start": 27.590688,
+        "duration": 0.338313,
+        "group": "enemy/denial-officer/alert",
+        "shard": "actors",
+        "pcmSha256": "683c34fca33db84f1f2eccfbb521060f27de619754d21ca792245a91755c7bf7"
+      },
+      {
+        "id": "enemy/denial-officer/pain/01",
+        "start": 27.969,
+        "duration": 0.206813,
+        "group": "enemy/denial-officer/pain",
+        "shard": "actors",
+        "pcmSha256": "a8f77e28f2d3817e72ef7db1ed04f2868d30af3a2d0cf2268b321467ab1fc419"
+      },
+      {
+        "id": "enemy/denial-officer/pain/02",
+        "start": 28.215812,
+        "duration": 0.218875,
+        "group": "enemy/denial-officer/pain",
+        "shard": "actors",
+        "pcmSha256": "ed946f190262c717b1ea75b04b6ee827066daa92292c5db41428de614049e52a"
+      },
+      {
+        "id": "enemy/denial-officer/death/01",
+        "start": 28.474688,
+        "duration": 0.639188,
+        "group": "enemy/denial-officer/death",
+        "shard": "actors",
+        "pcmSha256": "290443b1344807f98ab509ab1e9a7a38b37bbc115c7f39fb7d7fed1b3eea1e8a"
+      },
+      {
+        "id": "enemy/denial-officer/death/02",
+        "start": 29.153875,
+        "duration": 0.676625,
+        "group": "enemy/denial-officer/death",
+        "shard": "actors",
+        "pcmSha256": "b3dbe6db875b58a233e10dd742c84178897099450666ffe838235a3317adbc12"
+      },
+      {
+        "id": "enemy/denial-officer/death/03",
+        "start": 29.8705,
+        "duration": 0.714,
+        "group": "enemy/denial-officer/death",
+        "shard": "actors",
+        "pcmSha256": "03f8fb6c829f98ecb2464aee0e53ab057b9b0f5bbac4d40036ce78681d6f3751"
+      },
+      {
+        "id": "enemy/subrogator/idle/01",
+        "start": 30.6245,
+        "duration": 0.432375,
+        "group": "enemy/subrogator/idle",
+        "shard": "actors",
+        "pcmSha256": "f8cdccd9753c21531a6be648cf3d21f62168dfb4df7600dadb5efcd5997d1d4d"
+      },
+      {
+        "id": "enemy/subrogator/idle/02",
+        "start": 31.096875,
+        "duration": 0.457688,
+        "group": "enemy/subrogator/idle",
+        "shard": "actors",
+        "pcmSha256": "e6235316f8a27cf6dd4499f770a8893592cdb064efb569d9578370545e51435f"
+      },
+      {
+        "id": "enemy/subrogator/alert/01",
+        "start": 31.594562,
+        "duration": 0.319625,
+        "group": "enemy/subrogator/alert",
+        "shard": "actors",
+        "pcmSha256": "164bcdf8adfd9b4046e991e972ab80d3583e0ff804d375b5906e6a7eabf37eee"
+      },
+      {
+        "id": "enemy/subrogator/alert/02",
+        "start": 31.954187,
+        "duration": 0.338313,
+        "group": "enemy/subrogator/alert",
+        "shard": "actors",
+        "pcmSha256": "1f330d84c471a6a42ada45fa3d494a2e140d273c3409b879f94ecba2a46b45e1"
+      },
+      {
+        "id": "enemy/subrogator/pain/01",
+        "start": 32.3325,
+        "duration": 0.206813,
+        "group": "enemy/subrogator/pain",
+        "shard": "actors",
+        "pcmSha256": "f3b4fad02ba68af12a79a097848320667ec4c336f87f823b24c8c18c40eac102"
+      },
+      {
+        "id": "enemy/subrogator/pain/02",
+        "start": 32.579313,
+        "duration": 0.218875,
+        "group": "enemy/subrogator/pain",
+        "shard": "actors",
+        "pcmSha256": "a2c0884fa241d5a8cd9bc92f00f9aba83f2f6ad38d9b4402d61092e9b744203c"
+      },
+      {
+        "id": "enemy/subrogator/death/01",
+        "start": 32.838187,
+        "duration": 0.639188,
+        "group": "enemy/subrogator/death",
+        "shard": "actors",
+        "pcmSha256": "9e9457b31f1715b464ec34bc136a4ceeeee2a304671a4a7eb20325bade5e5645"
+      },
+      {
+        "id": "enemy/subrogator/death/02",
+        "start": 33.517375,
+        "duration": 0.676625,
+        "group": "enemy/subrogator/death",
+        "shard": "actors",
+        "pcmSha256": "813ae65e106e6b1d938b4ee6a5d38378f94fc9253023b913c48ab997c5a1cad6"
+      },
+      {
+        "id": "enemy/subrogator/death/03",
+        "start": 34.234,
+        "duration": 0.714,
+        "group": "enemy/subrogator/death",
+        "shard": "actors",
+        "pcmSha256": "0a2fddd83349e1b40d4b48bd04a07aa234719bd958f65e55c8aed2f21f7e8505"
+      },
+      {
+        "id": "enemy/reserve-eater/idle/01",
+        "start": 34.988,
+        "duration": 0.432375,
+        "group": "enemy/reserve-eater/idle",
+        "shard": "actors",
+        "pcmSha256": "3051293a8454ea77d33143b3083f968c094fda22e2a1043f4973e3e9b61e5091"
+      },
+      {
+        "id": "enemy/reserve-eater/idle/02",
+        "start": 35.460375,
+        "duration": 0.457688,
+        "group": "enemy/reserve-eater/idle",
+        "shard": "actors",
+        "pcmSha256": "f9c92b277d08906bea389eb1e3e23c138f16307cb8a8d8962e603dc36a1bd6c3"
+      },
+      {
+        "id": "enemy/reserve-eater/alert/01",
+        "start": 35.958062,
+        "duration": 0.319625,
+        "group": "enemy/reserve-eater/alert",
+        "shard": "actors",
+        "pcmSha256": "117c68f8984a59daeeb253ab85aecf09f794e37b25b7a29efd9b7d33f78111cd"
+      },
+      {
+        "id": "enemy/reserve-eater/alert/02",
+        "start": 36.317687,
+        "duration": 0.338313,
+        "group": "enemy/reserve-eater/alert",
+        "shard": "actors",
+        "pcmSha256": "2339cbe26a126b2d6835b0b1b3530df7803befa207f5877e7b65c8ddfa31aa91"
+      },
+      {
+        "id": "enemy/reserve-eater/pain/01",
+        "start": 36.696,
+        "duration": 0.206813,
+        "group": "enemy/reserve-eater/pain",
+        "shard": "actors",
+        "pcmSha256": "50c657faf091c43c0717b3946475a78b3c45e2ad9d20fd575cafdac04147d260"
+      },
+      {
+        "id": "enemy/reserve-eater/pain/02",
+        "start": 36.942813,
+        "duration": 0.218875,
+        "group": "enemy/reserve-eater/pain",
+        "shard": "actors",
+        "pcmSha256": "ff44c95e8ec73407628fbf71e1ac6eb096a5a25c2a6f53c07a32d617c8008c95"
+      },
+      {
+        "id": "enemy/reserve-eater/death/01",
+        "start": 37.201687,
+        "duration": 0.639188,
+        "group": "enemy/reserve-eater/death",
+        "shard": "actors",
+        "pcmSha256": "56ed8e5a07bdd1e70bfd45d46c3be73c7df58e9c712f7ce57a3da5f75e05b029"
+      },
+      {
+        "id": "enemy/reserve-eater/death/02",
+        "start": 37.880875,
+        "duration": 0.676625,
+        "group": "enemy/reserve-eater/death",
+        "shard": "actors",
+        "pcmSha256": "f8689cc9304dcc5ed33a08fb38004387f0110814aaa36b9aefa65973a6c5c4be"
+      },
+      {
+        "id": "enemy/reserve-eater/death/03",
+        "start": 38.5975,
+        "duration": 0.714,
+        "group": "enemy/reserve-eater/death",
+        "shard": "actors",
+        "pcmSha256": "bdaeda76abdcf122b9d1d9cab428f424c44db4fd553a70e4adf328946465398d"
+      },
+      {
+        "id": "enemy/fraud-apparition/idle/01",
+        "start": 39.3515,
+        "duration": 0.432375,
+        "group": "enemy/fraud-apparition/idle",
+        "shard": "actors",
+        "pcmSha256": "25369b7f6b744470fd6666370daa0e8198653e687114fa0ba7f6c6706b5d9588"
+      },
+      {
+        "id": "enemy/fraud-apparition/idle/02",
+        "start": 39.823875,
+        "duration": 0.457688,
+        "group": "enemy/fraud-apparition/idle",
+        "shard": "actors",
+        "pcmSha256": "782796ab81876fafa5fb013d924336849fde166fcc70fc9f8be5c4977e33619e"
+      },
+      {
+        "id": "enemy/fraud-apparition/alert/01",
+        "start": 40.321562,
+        "duration": 0.319625,
+        "group": "enemy/fraud-apparition/alert",
+        "shard": "actors",
+        "pcmSha256": "2550e90dfca79444492eec38089d46bd4c9737df9e687e78a7cefb367ac73f18"
+      },
+      {
+        "id": "enemy/fraud-apparition/alert/02",
+        "start": 40.681188,
+        "duration": 0.338313,
+        "group": "enemy/fraud-apparition/alert",
+        "shard": "actors",
+        "pcmSha256": "b25feff618f81c89cea9914efb2fb25e6e0fd763c6ef6fe8cb158d42f92aa866"
+      },
+      {
+        "id": "enemy/fraud-apparition/pain/01",
+        "start": 41.0595,
+        "duration": 0.206813,
+        "group": "enemy/fraud-apparition/pain",
+        "shard": "actors",
+        "pcmSha256": "85bd02b9f841590cbfd1b92d96af93eab8f3d5c197663de72acea9cea1edb1de"
+      },
+      {
+        "id": "enemy/fraud-apparition/pain/02",
+        "start": 41.306312,
+        "duration": 0.218875,
+        "group": "enemy/fraud-apparition/pain",
+        "shard": "actors",
+        "pcmSha256": "89efef6d3c6e84eb2a393dc22557cc3041700677828e084a6ba0184c7047cfc5"
+      },
+      {
+        "id": "enemy/fraud-apparition/death/01",
+        "start": 41.565188,
+        "duration": 0.639188,
+        "group": "enemy/fraud-apparition/death",
+        "shard": "actors",
+        "pcmSha256": "25cf913595aec5483e1ad8194f14840f7bfad7dcdb28d73b4296c1ac5747e55a"
+      },
+      {
+        "id": "enemy/fraud-apparition/death/02",
+        "start": 42.244375,
+        "duration": 0.676625,
+        "group": "enemy/fraud-apparition/death",
+        "shard": "actors",
+        "pcmSha256": "0dec16aea135306b46aa2fb1ace0255e5822069163d9dd5fc7a4985343cbec16"
+      },
+      {
+        "id": "enemy/fraud-apparition/death/03",
+        "start": 42.961,
+        "duration": 0.714,
+        "group": "enemy/fraud-apparition/death",
+        "shard": "actors",
+        "pcmSha256": "a68c1a79c715a145da8b42feebfabb87a4ebaf0e0b8b74764c5f7ba4a4b8515a"
+      },
+      {
+        "id": "enemy/cat-model/idle/01",
+        "start": 43.715,
+        "duration": 0.432375,
+        "group": "enemy/cat-model/idle",
+        "shard": "actors",
+        "pcmSha256": "a0248f5671543ad78d39b75a0b0341b821c69ad42128b23bc11fdbb15614ac22"
+      },
+      {
+        "id": "enemy/cat-model/idle/02",
+        "start": 44.187375,
+        "duration": 0.457688,
+        "group": "enemy/cat-model/idle",
+        "shard": "actors",
+        "pcmSha256": "a93e4ffd27eaa1c3d6219800b4ec5480ddc7c1d35081de26af4421956a4e8be7"
+      },
+      {
+        "id": "enemy/cat-model/alert/01",
+        "start": 44.685063,
+        "duration": 0.319625,
+        "group": "enemy/cat-model/alert",
+        "shard": "actors",
+        "pcmSha256": "a9b69671493e39d57ce925fc02ef6e382cfe103e510712d351414aad1e2845f1"
+      },
+      {
+        "id": "enemy/cat-model/alert/02",
+        "start": 45.044688,
+        "duration": 0.338313,
+        "group": "enemy/cat-model/alert",
+        "shard": "actors",
+        "pcmSha256": "8b1bd4b17b712535f606c7e95cd2a18bbddd849b6da4cb44d262f599be432a27"
+      },
+      {
+        "id": "enemy/cat-model/pain/01",
+        "start": 45.423,
+        "duration": 0.206813,
+        "group": "enemy/cat-model/pain",
+        "shard": "actors",
+        "pcmSha256": "8aaf5e9fd503091553b9cb6e3b83039864f12b1140af74a6c9957e2cfc6cbd76"
+      },
+      {
+        "id": "enemy/cat-model/pain/02",
+        "start": 45.669812,
+        "duration": 0.218875,
+        "group": "enemy/cat-model/pain",
+        "shard": "actors",
+        "pcmSha256": "b873eccd0ac6b3ef24e1d57a5c33fe7b2a6512b50a3a95eb7370f2e5be62eb8b"
+      },
+      {
+        "id": "enemy/cat-model/death/01",
+        "start": 45.928688,
+        "duration": 0.639188,
+        "group": "enemy/cat-model/death",
+        "shard": "actors",
+        "pcmSha256": "300de009763283bd20e69bf08e16474c73a5ef7c4e609debe7c3a0d47c8afcaf"
+      },
+      {
+        "id": "enemy/cat-model/death/02",
+        "start": 46.607875,
+        "duration": 0.676625,
+        "group": "enemy/cat-model/death",
+        "shard": "actors",
+        "pcmSha256": "9d75809e4b096b65ee3d830b9d2b2c0a7b22fbc19ec1df2a97b8a5b95fba4332"
+      },
+      {
+        "id": "enemy/cat-model/death/03",
+        "start": 47.3245,
+        "duration": 0.714,
+        "group": "enemy/cat-model/death",
+        "shard": "actors",
+        "pcmSha256": "712be822eb42dafe31e80d44923d39a3b95004533f5dd7430a66648f72bff69b"
+      },
+      {
+        "id": "enemy/bad-faith-counsel/idle/01",
+        "start": 48.0785,
+        "duration": 0.432375,
+        "group": "enemy/bad-faith-counsel/idle",
+        "shard": "actors",
+        "pcmSha256": "41a63127e7870d386faab6eb23af530649632b2b1f65d10c5181fff8a3b5657e"
+      },
+      {
+        "id": "enemy/bad-faith-counsel/idle/02",
+        "start": 48.550875,
+        "duration": 0.457688,
+        "group": "enemy/bad-faith-counsel/idle",
+        "shard": "actors",
+        "pcmSha256": "64413160327bffeff2039cdab46e94c97dd7023e69b7e62734854c8ae18963ad"
+      },
+      {
+        "id": "enemy/bad-faith-counsel/alert/01",
+        "start": 49.048563,
+        "duration": 0.319625,
+        "group": "enemy/bad-faith-counsel/alert",
+        "shard": "actors",
+        "pcmSha256": "ed9c701a274364c52060535ead3c2d75a05d876a61455d2ea70d2d3c86e9d499"
+      },
+      {
+        "id": "enemy/bad-faith-counsel/alert/02",
+        "start": 49.408187,
+        "duration": 0.338313,
+        "group": "enemy/bad-faith-counsel/alert",
+        "shard": "actors",
+        "pcmSha256": "bd1ca00feac8b98b1a20f08369d313ad2d8233b1987991592fc4c1c3d94e7ce8"
+      },
+      {
+        "id": "enemy/bad-faith-counsel/pain/01",
+        "start": 49.7865,
+        "duration": 0.206813,
+        "group": "enemy/bad-faith-counsel/pain",
+        "shard": "actors",
+        "pcmSha256": "0af7b367f9f18ab337b8bce4e8e9fe4bbde4d5d5fb3d00a11d2f286d857f655d"
+      },
+      {
+        "id": "enemy/bad-faith-counsel/pain/02",
+        "start": 50.033313,
+        "duration": 0.218875,
+        "group": "enemy/bad-faith-counsel/pain",
+        "shard": "actors",
+        "pcmSha256": "cb8e39be3010109ee2a31ecf08d2afbd085d2342538462cf18070eb78b926948"
+      },
+      {
+        "id": "enemy/bad-faith-counsel/death/01",
+        "start": 50.292187,
+        "duration": 0.639188,
+        "group": "enemy/bad-faith-counsel/death",
+        "shard": "actors",
+        "pcmSha256": "405e5c9c7b5fa4915bbea76da42b86dda918e7107e5f133d9ba5abe1b725eab5"
+      },
+      {
+        "id": "enemy/bad-faith-counsel/death/02",
+        "start": 50.971375,
+        "duration": 0.676625,
+        "group": "enemy/bad-faith-counsel/death",
+        "shard": "actors",
+        "pcmSha256": "86e4f0a616635cddff4a4cecd7202628f900af2b9a2368c2c06e14b74cf9b38d"
+      },
+      {
+        "id": "enemy/bad-faith-counsel/death/03",
+        "start": 51.688,
+        "duration": 0.714,
+        "group": "enemy/bad-faith-counsel/death",
+        "shard": "actors",
+        "pcmSha256": "5edf02769ab852dc7956ef1dc2d3fc0d407a1959c03549c716731ad8786bfc4d"
+      },
+      {
+        "id": "enemy/regional-director/idle/01",
+        "start": 52.442,
+        "duration": 0.432375,
+        "group": "enemy/regional-director/idle",
+        "shard": "actors",
+        "pcmSha256": "d187548a76754f9375bb3e92cdd9c9f1f11ae0ccf52f57802e8fca87f20b9644"
+      },
+      {
+        "id": "enemy/regional-director/idle/02",
+        "start": 52.914375,
+        "duration": 0.457688,
+        "group": "enemy/regional-director/idle",
+        "shard": "actors",
+        "pcmSha256": "39d1e4a0575e06c4447685c740a0308e27821c0213eefa389924ccb9a8d9ef99"
+      },
+      {
+        "id": "enemy/regional-director/alert/01",
+        "start": 53.412062,
+        "duration": 0.319625,
+        "group": "enemy/regional-director/alert",
+        "shard": "actors",
+        "pcmSha256": "79293b390da77f30cc4b964ce78ad753390ae7ac5e50ea87b98430c606fe365e"
+      },
+      {
+        "id": "enemy/regional-director/alert/02",
+        "start": 53.771687,
+        "duration": 0.338313,
+        "group": "enemy/regional-director/alert",
+        "shard": "actors",
+        "pcmSha256": "8e9790d885e47f877ef7d3f6611e584aa179a1819cc3de958f346dd2543817b9"
+      },
+      {
+        "id": "enemy/regional-director/pain/01",
+        "start": 54.15,
+        "duration": 0.206813,
+        "group": "enemy/regional-director/pain",
+        "shard": "actors",
+        "pcmSha256": "67f206ea1d580b297407241f005fd1508b7be0b0d5b87d5251308f6f25297337"
+      },
+      {
+        "id": "enemy/regional-director/pain/02",
+        "start": 54.396813,
+        "duration": 0.218875,
+        "group": "enemy/regional-director/pain",
+        "shard": "actors",
+        "pcmSha256": "41b384233564e22689a2650af113b29652ff07183125ce68fd6e6dda6240eeca"
+      },
+      {
+        "id": "enemy/regional-director/death/01",
+        "start": 54.655687,
+        "duration": 0.639188,
+        "group": "enemy/regional-director/death",
+        "shard": "actors",
+        "pcmSha256": "4bfcd52b2f12764e1f643c14bda0bc2264510661a1a37e54f472bec6ca8fa0ea"
+      },
+      {
+        "id": "enemy/regional-director/death/02",
+        "start": 55.334875,
+        "duration": 0.676625,
+        "group": "enemy/regional-director/death",
+        "shard": "actors",
+        "pcmSha256": "5e7c3d58e2a5b86e98fecd23a814768347a5d07130e3145be8b30ae79b9c158b"
+      },
+      {
+        "id": "enemy/regional-director/death/03",
+        "start": 56.0515,
+        "duration": 0.714,
+        "group": "enemy/regional-director/death",
+        "shard": "actors",
+        "pcmSha256": "07cab51c56c941beba36756d16be9a24214bb2b95ba72634f3ff150a1b06c448"
+      },
+      {
+        "id": "enemy/regional-director/phase/01",
+        "start": 56.8055,
+        "duration": 0.770813,
+        "group": "enemy/regional-director/phase",
+        "shard": "actors",
+        "pcmSha256": "4a43b962661fe7e98266080200c15a902ac134bd3005a6a4d732e79a7566ec8c"
+      },
+      {
+        "id": "enemy/regional-director/phase/02",
+        "start": 57.616312,
+        "duration": 0.815875,
+        "group": "enemy/regional-director/phase",
+        "shard": "actors",
+        "pcmSha256": "5f0180f396a0a20a704145cb07acb8f54c76a5f24a5ee816075c472e6c2db1c5"
+      },
+      {
+        "id": "enemy/regional-director/phase/03",
+        "start": 58.472187,
+        "duration": 0.861,
+        "group": "enemy/regional-director/phase",
+        "shard": "actors",
+        "pcmSha256": "43df87618f2980b945d3bd0806a9cbe68b9d88e048f88669c91bff8e800f20cd"
+      },
+      {
+        "id": "enemy/aggregate/idle/01",
+        "start": 59.373188,
+        "duration": 0.432375,
+        "group": "enemy/aggregate/idle",
+        "shard": "actors",
+        "pcmSha256": "0e7cf2ab7283c428812046b12b7fded974cfbcf99383e4fe03fe09386b6e3ac0"
+      },
+      {
+        "id": "enemy/aggregate/idle/02",
+        "start": 59.845562,
+        "duration": 0.457688,
+        "group": "enemy/aggregate/idle",
+        "shard": "actors",
+        "pcmSha256": "948262dd130403647240daceae8fb65cf64fdaf33118981f10241dc7dd3fbdd1"
+      },
+      {
+        "id": "enemy/aggregate/alert/01",
+        "start": 60.34325,
+        "duration": 0.319625,
+        "group": "enemy/aggregate/alert",
+        "shard": "actors",
+        "pcmSha256": "49b14477d7acb1cfe912f43f5ff8633803d023b53aa46b2c357470eb7371f487"
+      },
+      {
+        "id": "enemy/aggregate/alert/02",
+        "start": 60.702875,
+        "duration": 0.338313,
+        "group": "enemy/aggregate/alert",
+        "shard": "actors",
+        "pcmSha256": "25c0aa32d6341d0d460609592c12c41d37daea3a9fbf79f5ee2f4f5060cf8522"
+      },
+      {
+        "id": "enemy/aggregate/pain/01",
+        "start": 61.081187,
+        "duration": 0.206813,
+        "group": "enemy/aggregate/pain",
+        "shard": "actors",
+        "pcmSha256": "7ee676f05c8848ed29837e937d96e8a1ca94ac6554c67b666c6ceeed0f43fccb"
+      },
+      {
+        "id": "enemy/aggregate/pain/02",
+        "start": 61.328,
+        "duration": 0.218875,
+        "group": "enemy/aggregate/pain",
+        "shard": "actors",
+        "pcmSha256": "4050f8148ec461beb2f2e267e00f0a026b30e9dff717367119283580a99f67d0"
+      },
+      {
+        "id": "enemy/aggregate/death/01",
+        "start": 61.586875,
+        "duration": 0.639188,
+        "group": "enemy/aggregate/death",
+        "shard": "actors",
+        "pcmSha256": "a2bae3f97df47152d8536371e985897b41425a852ac6376e5e870c9b16bb0902"
+      },
+      {
+        "id": "enemy/aggregate/death/02",
+        "start": 62.266062,
+        "duration": 0.676625,
+        "group": "enemy/aggregate/death",
+        "shard": "actors",
+        "pcmSha256": "fd043bf344cd72b1c8df795e93d3267cf934f729b85c5a8be29fb0f2d86c2afe"
+      },
+      {
+        "id": "enemy/aggregate/death/03",
+        "start": 62.982687,
+        "duration": 0.714,
+        "group": "enemy/aggregate/death",
+        "shard": "actors",
+        "pcmSha256": "a79216be9e49524f1ab24c5581445793d7aaf2be1b013ac04191b9107f0d019b"
+      },
+      {
+        "id": "enemy/aggregate/phase/01",
+        "start": 63.736688,
+        "duration": 0.770813,
+        "group": "enemy/aggregate/phase",
+        "shard": "actors",
+        "pcmSha256": "dbf7ee20b88f979edc2c2075799dacb3a25945709d609c96f2f68942fce8a9b7"
+      },
+      {
+        "id": "enemy/aggregate/phase/02",
+        "start": 64.5475,
+        "duration": 0.815875,
+        "group": "enemy/aggregate/phase",
+        "shard": "actors",
+        "pcmSha256": "df03cfa31481d27d897b65ffa13dc60188585a4f7a5ac5779256095aa08b1744"
+      },
+      {
+        "id": "enemy/aggregate/phase/03",
+        "start": 65.403375,
+        "duration": 0.861,
+        "group": "enemy/aggregate/phase",
+        "shard": "actors",
+        "pcmSha256": "bad018f1f04ee4b7950de4d1032687a51a7db63cc0d8051e10eec2966bc871ac"
+      },
+      {
+        "id": "enemy/chief-actuary/idle/01",
+        "start": 66.304375,
+        "duration": 0.432375,
+        "group": "enemy/chief-actuary/idle",
+        "shard": "actors",
+        "pcmSha256": "f3cbefe1c83c677575b8c464be7eca9cd7fd8093898c0891544f81390b5eadfc"
+      },
+      {
+        "id": "enemy/chief-actuary/idle/02",
+        "start": 66.77675,
+        "duration": 0.457688,
+        "group": "enemy/chief-actuary/idle",
+        "shard": "actors",
+        "pcmSha256": "b791ffcd8b56db25400f19a10dbce60bde9b525a5053edc632abd106213f3b20"
+      },
+      {
+        "id": "enemy/chief-actuary/alert/01",
+        "start": 67.274438,
+        "duration": 0.319625,
+        "group": "enemy/chief-actuary/alert",
+        "shard": "actors",
+        "pcmSha256": "3a6332491c9ed052f60695f10fe0978bb66634a61fa3315253f2be585c51f5b9"
+      },
+      {
+        "id": "enemy/chief-actuary/alert/02",
+        "start": 67.634062,
+        "duration": 0.338313,
+        "group": "enemy/chief-actuary/alert",
+        "shard": "actors",
+        "pcmSha256": "c4137c2e7630b79ea3e2ecc1e06778d9e67e156bf7320354613bb0879cf36ec4"
+      },
+      {
+        "id": "enemy/chief-actuary/pain/01",
+        "start": 68.012375,
+        "duration": 0.206813,
+        "group": "enemy/chief-actuary/pain",
+        "shard": "actors",
+        "pcmSha256": "b2b71feb3bbb7f05c1d7f2054f265f42a3d5b5c770e30df2746f54af479e4c0f"
+      },
+      {
+        "id": "enemy/chief-actuary/pain/02",
+        "start": 68.259187,
+        "duration": 0.218875,
+        "group": "enemy/chief-actuary/pain",
+        "shard": "actors",
+        "pcmSha256": "805fbf80d3c88e2fd8410a606ee62305140b6b9d28115cc00a6e793e735523d9"
+      },
+      {
+        "id": "enemy/chief-actuary/death/01",
+        "start": 68.518062,
+        "duration": 0.639188,
+        "group": "enemy/chief-actuary/death",
+        "shard": "actors",
+        "pcmSha256": "5541dd2db9c6d4af9f05cfd25c34113d734cfcb704701e0cfa9cbe065b42710f"
+      },
+      {
+        "id": "enemy/chief-actuary/death/02",
+        "start": 69.19725,
+        "duration": 0.676625,
+        "group": "enemy/chief-actuary/death",
+        "shard": "actors",
+        "pcmSha256": "a69dd4e407acfc717f194c97f89183bcbb7d78b283d2535e9e061a3c3f57c5c2"
+      },
+      {
+        "id": "enemy/chief-actuary/death/03",
+        "start": 69.913875,
+        "duration": 0.714,
+        "group": "enemy/chief-actuary/death",
+        "shard": "actors",
+        "pcmSha256": "6d67606a05d8ff64de6e9333966b255f60fb8e2f5381e3185e097b8ab607aab0"
+      },
+      {
+        "id": "enemy/chief-actuary/phase/01",
+        "start": 70.667875,
+        "duration": 0.770813,
+        "group": "enemy/chief-actuary/phase",
+        "shard": "actors",
+        "pcmSha256": "fc3da255d2e8b187694d27c9eb5c6eb9b8fd26acf75bf092a24b90aa294c291f"
+      },
+      {
+        "id": "enemy/chief-actuary/phase/02",
+        "start": 71.478688,
+        "duration": 0.815875,
+        "group": "enemy/chief-actuary/phase",
+        "shard": "actors",
+        "pcmSha256": "1c6a58e54c55823201ac057a7580b5c0e5b81efaf6ca7ff7c424c45781338068"
+      },
+      {
+        "id": "enemy/chief-actuary/phase/03",
+        "start": 72.334563,
+        "duration": 0.861,
+        "group": "enemy/chief-actuary/phase",
+        "shard": "actors",
+        "pcmSha256": "0ef892e88c3499ddfbf6d2b122e348cdb08d8bb67ad50da01c6ce60022a41ba6"
+      },
+      {
+        "id": "enemy/uninsurable/idle/01",
+        "start": 73.235563,
+        "duration": 0.432375,
+        "group": "enemy/uninsurable/idle",
+        "shard": "actors",
+        "pcmSha256": "79952bc81a7ddc7f9143822ab7a05b4627877b1bdbe054a357cdebc44ae5a4c5"
+      },
+      {
+        "id": "enemy/uninsurable/idle/02",
+        "start": 73.707937,
+        "duration": 0.457688,
+        "group": "enemy/uninsurable/idle",
+        "shard": "actors",
+        "pcmSha256": "f8fd0ad734a31eae6da6299c82a49999b8c69a15bdda469ff56f3156b2da4aaa"
+      },
+      {
+        "id": "enemy/uninsurable/alert/01",
+        "start": 74.205625,
+        "duration": 0.319625,
+        "group": "enemy/uninsurable/alert",
+        "shard": "actors",
+        "pcmSha256": "54fa2110dfae9ab74892125962eb42f51aaad793c57dec35a4bc5787ed5a16a8"
+      },
+      {
+        "id": "enemy/uninsurable/alert/02",
+        "start": 74.56525,
+        "duration": 0.338313,
+        "group": "enemy/uninsurable/alert",
+        "shard": "actors",
+        "pcmSha256": "7012bbf90e1a7901a37934a4bfb6f15dda8f69c6c1d5db4d7ecc664899faf9c4"
+      },
+      {
+        "id": "enemy/uninsurable/pain/01",
+        "start": 74.943562,
+        "duration": 0.206813,
+        "group": "enemy/uninsurable/pain",
+        "shard": "actors",
+        "pcmSha256": "5b4b2614de276898fb5c7eed7ef501ab7ca6e109cda577a906b5216a7afc4343"
+      },
+      {
+        "id": "enemy/uninsurable/pain/02",
+        "start": 75.190375,
+        "duration": 0.218875,
+        "group": "enemy/uninsurable/pain",
+        "shard": "actors",
+        "pcmSha256": "f858972a0d22815a5fcdaea9396df0389c1f73592d2e7711bcd2beb3016ee729"
+      },
+      {
+        "id": "enemy/uninsurable/death/01",
+        "start": 75.44925,
+        "duration": 0.639188,
+        "group": "enemy/uninsurable/death",
+        "shard": "actors",
+        "pcmSha256": "736c5240f62a0e88d6181678000f7e6d363baed33d5d0f9c60788d6483c26bc9"
+      },
+      {
+        "id": "enemy/uninsurable/death/02",
+        "start": 76.128438,
+        "duration": 0.676625,
+        "group": "enemy/uninsurable/death",
+        "shard": "actors",
+        "pcmSha256": "49f467043f76d3bfb4cac3f2e09c6dd07ae73391f5b6eb6f69e25a1674417349"
+      },
+      {
+        "id": "enemy/uninsurable/death/03",
+        "start": 76.845062,
+        "duration": 0.714,
+        "group": "enemy/uninsurable/death",
+        "shard": "actors",
+        "pcmSha256": "ba603059ce77c1c008f4c632b343acd6f1cba765d16c63b853ba58671cba5318"
+      },
+      {
+        "id": "enemy/uninsurable/phase/01",
+        "start": 77.599063,
+        "duration": 0.770813,
+        "group": "enemy/uninsurable/phase",
+        "shard": "actors",
+        "pcmSha256": "312d1e5a0dc0fd1bab5c2951890cdf95406ec0d613244caba30282221a30f730"
+      },
+      {
+        "id": "enemy/uninsurable/phase/02",
+        "start": 78.409875,
+        "duration": 0.815875,
+        "group": "enemy/uninsurable/phase",
+        "shard": "actors",
+        "pcmSha256": "8c0dd857b433cb635c01f823609a3e4757f24584385078c383fdaa1a0e5ed0ef"
+      },
+      {
+        "id": "enemy/uninsurable/phase/03",
+        "start": 79.26575,
+        "duration": 0.861,
+        "group": "enemy/uninsurable/phase",
+        "shard": "actors",
+        "pcmSha256": "f8a4ebcf9feb0095c30f638eca2d970b3102110544b04f5f7cdaf3948606dc60"
+      },
+      {
+        "id": "attack/rejection-rush/windup/01",
+        "start": 0.08,
+        "duration": 0.376,
+        "group": "attack/rejection-rush/windup",
+        "shard": "attacks",
+        "pcmSha256": "91044fd9627a23b54e847c367fad59e5f5c9329e00ddae9592d0a3df371f011c"
+      },
+      {
+        "id": "attack/rejection-rush/resolve/01",
+        "start": 0.496,
+        "duration": 0.282,
+        "group": "attack/rejection-rush/resolve",
+        "shard": "attacks",
+        "pcmSha256": "cf36a072242d27463f55b1c5dd70db3834ad50c05d308cbd246344724d18a2e0"
+      },
+      {
+        "id": "attack/staple-burst/windup/01",
+        "start": 0.818,
+        "duration": 0.376,
+        "group": "attack/staple-burst/windup",
+        "shard": "attacks",
+        "pcmSha256": "cec7623d259c422c42c857b984afc3293295ab91acc6d0bddd7f479017045dd4"
+      },
+      {
+        "id": "attack/staple-burst/resolve/01",
+        "start": 1.234,
+        "duration": 0.282,
+        "group": "attack/staple-burst/resolve",
+        "shard": "attacks",
+        "pcmSha256": "26394be9ad404ed10f7fa4de68b6d2d83ae3122e3446149cd96283259586fc7e"
+      },
+      {
+        "id": "attack/ember-claims/windup/01",
+        "start": 1.556,
+        "duration": 0.376,
+        "group": "attack/ember-claims/windup",
+        "shard": "attacks",
+        "pcmSha256": "31f2523ca3df2e433001a29b6c25271bab4044f4d054462fa3f1b89438ae05c4"
+      },
+      {
+        "id": "attack/ember-claims/resolve/01",
+        "start": 1.972,
+        "duration": 0.282,
+        "group": "attack/ember-claims/resolve",
+        "shard": "attacks",
+        "pcmSha256": "1108be35dcc47c0c76342bcc1b50c300095acd5664ca86e5905b0cf76f792d75"
+      },
+      {
+        "id": "attack/survey-lunge/windup/01",
+        "start": 2.294,
+        "duration": 0.376,
+        "group": "attack/survey-lunge/windup",
+        "shard": "attacks",
+        "pcmSha256": "1b3c7c550db7da08eee7a55f9e2be75c2f854a3dae67ec35c69ae4015d150256"
+      },
+      {
+        "id": "attack/survey-lunge/resolve/01",
+        "start": 2.71,
+        "duration": 0.282,
+        "group": "attack/survey-lunge/resolve",
+        "shard": "attacks",
+        "pcmSha256": "c4bbfb1f529ac70d9c3beb2fd38b28cc5ebb38559cba1680ef6ea9a0100e45b1"
+      },
+      {
+        "id": "attack/coverage-fan/windup/01",
+        "start": 3.032,
+        "duration": 0.376,
+        "group": "attack/coverage-fan/windup",
+        "shard": "attacks",
+        "pcmSha256": "335c288eeb86bf508b892415812a322846e121f25ce948719e0d128e8c9ed2d0"
+      },
+      {
+        "id": "attack/coverage-fan/resolve/01",
+        "start": 3.448,
+        "duration": 0.282,
+        "group": "attack/coverage-fan/resolve",
+        "shard": "attacks",
+        "pcmSha256": "d8d318c8b13a5c89f63c7fc94ed22520c9efe4572d45255c7ff24602b321fdb7"
+      },
+      {
+        "id": "attack/liability-orbs/windup/01",
+        "start": 3.77,
+        "duration": 0.376,
+        "group": "attack/liability-orbs/windup",
+        "shard": "attacks",
+        "pcmSha256": "7d131bb456f24975b4fa14f8e014367c0457fb2e4ffa6c0c29bdbf0cf306d0dc"
+      },
+      {
+        "id": "attack/liability-orbs/resolve/01",
+        "start": 4.186,
+        "duration": 0.282,
+        "group": "attack/liability-orbs/resolve",
+        "shard": "attacks",
+        "pcmSha256": "66e822d799aeca142451a30fc7a156b93db666ecc6c842bcf4157a6c852ad32d"
+      },
+      {
+        "id": "attack/denial-beam/windup/01",
+        "start": 4.508,
+        "duration": 0.376,
+        "group": "attack/denial-beam/windup",
+        "shard": "attacks",
+        "pcmSha256": "e5a534b6f9fa99f0c22962c887086a698cd7f24e2ce6319e7b288d2274ebb39f"
+      },
+      {
+        "id": "attack/denial-beam/resolve/01",
+        "start": 4.924,
+        "duration": 0.282,
+        "group": "attack/denial-beam/resolve",
+        "shard": "attacks",
+        "pcmSha256": "5b866e75e6d17d61c7ea5df68c01729d859fadc88c369bdd07a179d9b654b81b"
+      },
+      {
+        "id": "attack/paired-recovery/windup/01",
+        "start": 5.246,
+        "duration": 0.376,
+        "group": "attack/paired-recovery/windup",
+        "shard": "attacks",
+        "pcmSha256": "206f26e679d2cf53486cdfd5f445a0d25188269f89b44378dbaa580e3ea0b2f6"
+      },
+      {
+        "id": "attack/paired-recovery/resolve/01",
+        "start": 5.662,
+        "duration": 0.282,
+        "group": "attack/paired-recovery/resolve",
+        "shard": "attacks",
+        "pcmSha256": "369b3790f36b9f0a430f9ee4d80d13e9af845351cc88fca2b1242e6d9c598902"
+      },
+      {
+        "id": "attack/vault-bite/windup/01",
+        "start": 5.984,
+        "duration": 0.376,
+        "group": "attack/vault-bite/windup",
+        "shard": "attacks",
+        "pcmSha256": "ec78613b26fc2a53d6dd0a41d4479617215a5d2e2202b44159b7d0c717b100b4"
+      },
+      {
+        "id": "attack/vault-bite/resolve/01",
+        "start": 6.4,
+        "duration": 0.282,
+        "group": "attack/vault-bite/resolve",
+        "shard": "attacks",
+        "pcmSha256": "6f3398e5ae1f23d9f8b90aa04289ba797ab2551f4a81b647d59deff39847750e"
+      },
+      {
+        "id": "attack/reserve-spill/windup/01",
+        "start": 6.722,
+        "duration": 0.376,
+        "group": "attack/reserve-spill/windup",
+        "shard": "attacks",
+        "pcmSha256": "6acdef00425c86d45d0ff24bf6806d1db74ab04a894b33ee7292a04e944f4edb"
+      },
+      {
+        "id": "attack/reserve-spill/resolve/01",
+        "start": 7.138,
+        "duration": 0.282,
+        "group": "attack/reserve-spill/resolve",
+        "shard": "attacks",
+        "pcmSha256": "de8a2dbd026c174e443e834b527c4adff03f3097ba47d91ecff2eb551a172861"
+      },
+      {
+        "id": "attack/contradiction-rend/windup/01",
+        "start": 7.46,
+        "duration": 0.376,
+        "group": "attack/contradiction-rend/windup",
+        "shard": "attacks",
+        "pcmSha256": "3cb65ad449aa0ad011dade99f1c103fdfb120081270bd9e37d02f520bbb1b8c1"
+      },
+      {
+        "id": "attack/contradiction-rend/resolve/01",
+        "start": 7.876,
+        "duration": 0.282,
+        "group": "attack/contradiction-rend/resolve",
+        "shard": "attacks",
+        "pcmSha256": "c1c62a8476e968733cd75bd0087a6140d70c775a21559b613987de1b2e7ca792"
+      },
+      {
+        "id": "attack/loss-prediction/windup/01",
+        "start": 8.198,
+        "duration": 0.376,
+        "group": "attack/loss-prediction/windup",
+        "shard": "attacks",
+        "pcmSha256": "512ad7a1d0e6ec7c4be1cc878266b948894b03b4ae501f00135bad13b050381c"
+      },
+      {
+        "id": "attack/loss-prediction/resolve/01",
+        "start": 8.614,
+        "duration": 0.282,
+        "group": "attack/loss-prediction/resolve",
+        "shard": "attacks",
+        "pcmSha256": "1939d9b9afdd9eaf59f5e8ebe1e64cdf42ae8f2ebe898d83c85a62aa60371aff"
+      },
+      {
+        "id": "attack/adverse-opinion/windup/01",
+        "start": 8.936,
+        "duration": 0.376,
+        "group": "attack/adverse-opinion/windup",
+        "shard": "attacks",
+        "pcmSha256": "78aef610e4232af826905431fb92709366310055845905a0922780043b4ce52f"
+      },
+      {
+        "id": "attack/adverse-opinion/resolve/01",
+        "start": 9.352,
+        "duration": 0.282,
+        "group": "attack/adverse-opinion/resolve",
+        "shard": "attacks",
+        "pcmSha256": "3ddd2f44aae0dcbf166921ba401dca431f686eca3856700386e3fb4807247a77"
+      },
+      {
+        "id": "attack/reopen-file/windup/01",
+        "start": 9.674,
+        "duration": 0.376,
+        "group": "attack/reopen-file/windup",
+        "shard": "attacks",
+        "pcmSha256": "49fee94bd13945a78ef344aea2cfef6a6200161b8900a94a79bcffd4df158401"
+      },
+      {
+        "id": "attack/reopen-file/resolve/01",
+        "start": 10.09,
+        "duration": 0.282,
+        "group": "attack/reopen-file/resolve",
+        "shard": "attacks",
+        "pcmSha256": "596b6499d577d99e5e0c942061d180cf977dde1fdcd5fd2b5f1bd11c3720ed3f"
+      },
+      {
+        "id": "attack/response-canister/windup/01",
+        "start": 10.412,
+        "duration": 0.376,
+        "group": "attack/response-canister/windup",
+        "shard": "attacks",
+        "pcmSha256": "ab9f78acc3055a8f441afe47038b6d7bb8828c79fcc94e79b88099caf8da38c2"
+      },
+      {
+        "id": "attack/response-canister/resolve/01",
+        "start": 10.828,
+        "duration": 0.282,
+        "group": "attack/response-canister/resolve",
+        "shard": "attacks",
+        "pcmSha256": "b873dcc6a59795a41dd7521107e8820961d9af6c1fffce3e3efd804edc0a3602"
+      },
+      {
+        "id": "attack/authority-summons/windup/01",
+        "start": 11.15,
+        "duration": 0.376,
+        "group": "attack/authority-summons/windup",
+        "shard": "attacks",
+        "pcmSha256": "572b03c8125c4b07670dec577d1045591b1fffe8cb32a743d28ad21e6cc72d0b"
+      },
+      {
+        "id": "attack/authority-summons/resolve/01",
+        "start": 11.566,
+        "duration": 0.282,
+        "group": "attack/authority-summons/resolve",
+        "shard": "attacks",
+        "pcmSha256": "85bbd9c3c30c94a35333be2344ecc1e787c5ee9004dae03bc033f6f4f86e3b9d"
+      },
+      {
+        "id": "attack/executive-volley/windup/01",
+        "start": 11.888,
+        "duration": 0.376,
+        "group": "attack/executive-volley/windup",
+        "shard": "attacks",
+        "pcmSha256": "424689b698ecb90e8cecd317952aefd9ed964f925933531425f19262e956d9d4"
+      },
+      {
+        "id": "attack/executive-volley/resolve/01",
+        "start": 12.304,
+        "duration": 0.282,
+        "group": "attack/executive-volley/resolve",
+        "shard": "attacks",
+        "pcmSha256": "674ed43e466ea836d1f4ece44671c496bf24ae71735aa70730240e89ff7dd752"
+      },
+      {
+        "id": "attack/joined-loss-emitters/windup/01",
+        "start": 12.626,
+        "duration": 0.376,
+        "group": "attack/joined-loss-emitters/windup",
+        "shard": "attacks",
+        "pcmSha256": "a007e3a4104c6e94baede2b8f79a5e6abd581e695ff888b29d0e5d088c45ec03"
+      },
+      {
+        "id": "attack/joined-loss-emitters/resolve/01",
+        "start": 13.042,
+        "duration": 0.282,
+        "group": "attack/joined-loss-emitters/resolve",
+        "shard": "attacks",
+        "pcmSha256": "7dc68a075cc4ce4f736ac9c7f24b2eed37c6ed3920a745b5551f5fdeea3c5690"
+      },
+      {
+        "id": "attack/joined-loss-right/windup/01",
+        "start": 13.364,
+        "duration": 0.376,
+        "group": "attack/joined-loss-right/windup",
+        "shard": "attacks",
+        "pcmSha256": "daa3f4f27b29e61c4fd25b5e5a40b05a6396b89e1fd5c4a7118562c966277c34"
+      },
+      {
+        "id": "attack/joined-loss-right/resolve/01",
+        "start": 13.78,
+        "duration": 0.282,
+        "group": "attack/joined-loss-right/resolve",
+        "shard": "attacks",
+        "pcmSha256": "4301d8b4f458897bad88a2f43d196c0990a52892f31d981669898ee0d7c00f55"
+      },
+      {
+        "id": "attack/aggregate-pool/windup/01",
+        "start": 14.102,
+        "duration": 0.376,
+        "group": "attack/aggregate-pool/windup",
+        "shard": "attacks",
+        "pcmSha256": "672d93884110d5931db5ec1d930dba028a0d33a6652467f66054b5a396de2bb3"
+      },
+      {
+        "id": "attack/aggregate-pool/resolve/01",
+        "start": 14.518,
+        "duration": 0.282,
+        "group": "attack/aggregate-pool/resolve",
+        "shard": "attacks",
+        "pcmSha256": "62cc5cca65e4510c10d19d973b636109382c257fecf5efadee3ed34fffa85186"
+      },
+      {
+        "id": "attack/total-loss-ring/windup/01",
+        "start": 14.84,
+        "duration": 0.376,
+        "group": "attack/total-loss-ring/windup",
+        "shard": "attacks",
+        "pcmSha256": "6908f26f6bf8eb89ac22137adce1fb36c66ef5ad4856740e2fe164c6a2e0d5e6"
+      },
+      {
+        "id": "attack/total-loss-ring/resolve/01",
+        "start": 15.256,
+        "duration": 0.282,
+        "group": "attack/total-loss-ring/resolve",
+        "shard": "attacks",
+        "pcmSha256": "372bd9be5040f72aef3e92e1cf05a732422530fba804506d0bded5da07cc1a31"
+      },
+      {
+        "id": "attack/actuarial-prediction/windup/01",
+        "start": 15.578,
+        "duration": 0.376,
+        "group": "attack/actuarial-prediction/windup",
+        "shard": "attacks",
+        "pcmSha256": "47665a1b7726def3ec2adaa409dbf1b6021ee7160120776500f4dacaaacf23d9"
+      },
+      {
+        "id": "attack/actuarial-prediction/resolve/01",
+        "start": 15.994,
+        "duration": 0.282,
+        "group": "attack/actuarial-prediction/resolve",
+        "shard": "attacks",
+        "pcmSha256": "4736c50c01f816a2cd273407bcdd25fff5215c4bb6538d7d4782e1d8a9fd26d4"
+      },
+      {
+        "id": "attack/probability-salvo/windup/01",
+        "start": 16.316,
+        "duration": 0.376,
+        "group": "attack/probability-salvo/windup",
+        "shard": "attacks",
+        "pcmSha256": "36d68da66ab928f7625ad8ac376fee5ed8d9e86009677eebe9beb50fec0b8b4e"
+      },
+      {
+        "id": "attack/probability-salvo/resolve/01",
+        "start": 16.732,
+        "duration": 0.282,
+        "group": "attack/probability-salvo/resolve",
+        "shard": "attacks",
+        "pcmSha256": "09273e2e9ecc268a076beb89ebfc92f8378caa39519b807d0b03433392acf557"
+      },
+      {
+        "id": "attack/certainty-lunge/windup/01",
+        "start": 17.054,
+        "duration": 0.376,
+        "group": "attack/certainty-lunge/windup",
+        "shard": "attacks",
+        "pcmSha256": "63fc7df6aee4be79c2987e13b1dc488c19f6a95166623965b3911bfaebbdf9a4"
+      },
+      {
+        "id": "attack/certainty-lunge/resolve/01",
+        "start": 17.47,
+        "duration": 0.282,
+        "group": "attack/certainty-lunge/resolve",
+        "shard": "attacks",
+        "pcmSha256": "3b1062489603c45facf37da553f12b7090539b0b51dabec7c10b9e60a53950b3"
+      },
+      {
+        "id": "attack/reserve-core-pulse/windup/01",
+        "start": 17.792,
+        "duration": 0.376,
+        "group": "attack/reserve-core-pulse/windup",
+        "shard": "attacks",
+        "pcmSha256": "50947c6553fe1f8fbf786d429b8f6e441b24cbde05ab1e84011f954176016458"
+      },
+      {
+        "id": "attack/reserve-core-pulse/resolve/01",
+        "start": 18.208,
+        "duration": 0.282,
+        "group": "attack/reserve-core-pulse/resolve",
+        "shard": "attacks",
+        "pcmSha256": "842e539fb391bba443a3a80f8a5dc400de9c764a688cbc5296e6b81211774d8a"
+      },
+      {
+        "id": "attack/binding-failure/windup/01",
+        "start": 18.53,
+        "duration": 0.376,
+        "group": "attack/binding-failure/windup",
+        "shard": "attacks",
+        "pcmSha256": "752d9ba36a6bede9b57cb8d4afb72fec9f7779943c23c8675a80ff63e7e9fd54"
+      },
+      {
+        "id": "attack/binding-failure/resolve/01",
+        "start": 18.946,
+        "duration": 0.282,
+        "group": "attack/binding-failure/resolve",
+        "shard": "attacks",
+        "pcmSha256": "78de1ee639ee436a1cdf0656b645b21c79afab1077bb260af095cb23a6badcff"
+      },
+      {
+        "id": "attack/uninsurable-denial/windup/01",
+        "start": 19.268,
+        "duration": 0.376,
+        "group": "attack/uninsurable-denial/windup",
+        "shard": "attacks",
+        "pcmSha256": "ff8685615fa70cd8dda3d8cb8c5cc040361a4c78de8272e2909fe88143f1748b"
+      },
+      {
+        "id": "attack/uninsurable-denial/resolve/01",
+        "start": 19.684,
+        "duration": 0.282,
+        "group": "attack/uninsurable-denial/resolve",
+        "shard": "attacks",
+        "pcmSha256": "74a99066d20ee86080bbf030895b763c453f3c1afe650c8734a435067a6c846c"
+      },
+      {
+        "id": "weapon/claim-stamp/fire/01",
+        "start": 0.08,
+        "duration": 0.225625,
+        "group": "weapon/claim-stamp/fire",
+        "shard": "weapons",
+        "pcmSha256": "a9b5872460d9f18b06e3c24b69385d9839978d7a6683085458efbf917c67e0a6"
+      },
+      {
+        "id": "weapon/claim-stamp/fire/02",
+        "start": 0.345625,
+        "duration": 0.238813,
+        "group": "weapon/claim-stamp/fire",
+        "shard": "weapons",
+        "pcmSha256": "16f14e0601ae7a2e1cddaed46d9bb197b0a1c525c5d8073e2c9bcf4a1f2da8de"
+      },
+      {
+        "id": "weapon/claim-stamp/fire/03",
+        "start": 0.624437,
+        "duration": 0.252,
+        "group": "weapon/claim-stamp/fire",
+        "shard": "weapons",
+        "pcmSha256": "d54c281578349a59af542eaf3e4cd09663e1fbf56a86cc4e7dc8094d2aea564d"
+      },
+      {
+        "id": "weapon/claim-stamp/dry/01",
+        "start": 0.916438,
+        "duration": 0.094,
+        "group": "weapon/claim-stamp/dry",
+        "shard": "weapons",
+        "pcmSha256": "34ecd0e855ce2fd702488717bc14ca3aea0fb3c66b50d297d3de85cf8def06ae"
+      },
+      {
+        "id": "weapon/claim-stamp/impact/01",
+        "start": 1.050437,
+        "duration": 0.169187,
+        "group": "weapon/claim-stamp/impact",
+        "shard": "weapons",
+        "pcmSha256": "3b0059d6c33fae964bc2aee536f0b0bdd2063532ab7998a133056c8b6c1b17f4"
+      },
+      {
+        "id": "weapon/claim-stamp/impact/02",
+        "start": 1.259625,
+        "duration": 0.179125,
+        "group": "weapon/claim-stamp/impact",
+        "shard": "weapons",
+        "pcmSha256": "a07a03ab20193426e8de636a7417fd8d519598b1071b5fdd70df5c90815550af"
+      },
+      {
+        "id": "weapon/staple-driver/fire/01",
+        "start": 1.47875,
+        "duration": 0.225625,
+        "group": "weapon/staple-driver/fire",
+        "shard": "weapons",
+        "pcmSha256": "3a288b43be895787a025cc51daa195c17f9812d296b59ef18dcc2d03a12cef9d"
+      },
+      {
+        "id": "weapon/staple-driver/fire/02",
+        "start": 1.744375,
+        "duration": 0.238813,
+        "group": "weapon/staple-driver/fire",
+        "shard": "weapons",
+        "pcmSha256": "519b19159dad3de6905c28b0f95d28fce6c38ad9c31455e47f88ba33188f45ac"
+      },
+      {
+        "id": "weapon/staple-driver/fire/03",
+        "start": 2.023188,
+        "duration": 0.252,
+        "group": "weapon/staple-driver/fire",
+        "shard": "weapons",
+        "pcmSha256": "1835e758b87ea22a6797e814eb6a5be46af01a3e173ef25ad328d6cfc2ea5c1a"
+      },
+      {
+        "id": "weapon/staple-driver/dry/01",
+        "start": 2.315187,
+        "duration": 0.094,
+        "group": "weapon/staple-driver/dry",
+        "shard": "weapons",
+        "pcmSha256": "1747ebc338cfe4ad89995780386b20617edbdf75c33551e265811dd3d7edbce0"
+      },
+      {
+        "id": "weapon/staple-driver/impact/01",
+        "start": 2.449187,
+        "duration": 0.169187,
+        "group": "weapon/staple-driver/impact",
+        "shard": "weapons",
+        "pcmSha256": "9001b18a6d2598c34a1a45d6d23681306c9b3f949168a2dc29db11f01bf6de93"
+      },
+      {
+        "id": "weapon/staple-driver/impact/02",
+        "start": 2.658375,
+        "duration": 0.179125,
+        "group": "weapon/staple-driver/impact",
+        "shard": "weapons",
+        "pcmSha256": "1e05e972ed5cfb897f9958a662ed255fca6044ce6d4b711d1dc905b44c78e36d"
+      },
+      {
+        "id": "weapon/twin-bore-riveter/fire/01",
+        "start": 2.8775,
+        "duration": 0.225625,
+        "group": "weapon/twin-bore-riveter/fire",
+        "shard": "weapons",
+        "pcmSha256": "811b3fae280792d4a78ec25b095d801ca34ca5dfdc241544242aa6d2bdaefb7a"
+      },
+      {
+        "id": "weapon/twin-bore-riveter/fire/02",
+        "start": 3.143125,
+        "duration": 0.238813,
+        "group": "weapon/twin-bore-riveter/fire",
+        "shard": "weapons",
+        "pcmSha256": "966c55bebdfecfbadd5173d09e887b1e26e76895bfcb95b73a506ff3da0ff160"
+      },
+      {
+        "id": "weapon/twin-bore-riveter/fire/03",
+        "start": 3.421937,
+        "duration": 0.252,
+        "group": "weapon/twin-bore-riveter/fire",
+        "shard": "weapons",
+        "pcmSha256": "ffd1ef1bbc860023187dbb846d92c12b43b507a9282412576e51f8358c92edf3"
+      },
+      {
+        "id": "weapon/twin-bore-riveter/dry/01",
+        "start": 3.713938,
+        "duration": 0.094,
+        "group": "weapon/twin-bore-riveter/dry",
+        "shard": "weapons",
+        "pcmSha256": "bd9f14c5dde042ca16bcb0bee4603d21983b0a4dd9b088acde7b692452d26550"
+      },
+      {
+        "id": "weapon/twin-bore-riveter/impact/01",
+        "start": 3.847938,
+        "duration": 0.169187,
+        "group": "weapon/twin-bore-riveter/impact",
+        "shard": "weapons",
+        "pcmSha256": "630557ef12fa0687ca68d66a718d5e26ca9172dee09d29e5cc04bb7640d2de61"
+      },
+      {
+        "id": "weapon/twin-bore-riveter/impact/02",
+        "start": 4.057125,
+        "duration": 0.179125,
+        "group": "weapon/twin-bore-riveter/impact",
+        "shard": "weapons",
+        "pcmSha256": "c5f59973b8507e522909c6ad20c53af54e45ca04e9a3bc424c9bce1b5c787221"
+      },
+      {
+        "id": "weapon/audit-repeater/fire/01",
+        "start": 4.27625,
+        "duration": 0.225625,
+        "group": "weapon/audit-repeater/fire",
+        "shard": "weapons",
+        "pcmSha256": "1cd8ea297d623bfeb162e745524a3cb97d2819d4ba433a640ac2dc3504b61c15"
+      },
+      {
+        "id": "weapon/audit-repeater/fire/02",
+        "start": 4.541875,
+        "duration": 0.238813,
+        "group": "weapon/audit-repeater/fire",
+        "shard": "weapons",
+        "pcmSha256": "9aad411a88fb59c20f1f8a310615200e173eeb159530db299cfaaf6e3ebe8055"
+      },
+      {
+        "id": "weapon/audit-repeater/fire/03",
+        "start": 4.820688,
+        "duration": 0.252,
+        "group": "weapon/audit-repeater/fire",
+        "shard": "weapons",
+        "pcmSha256": "340196be004c4c62eb8a3b3e694c6aefde6c5dcb36591aa006eb04f57688885b"
+      },
+      {
+        "id": "weapon/audit-repeater/dry/01",
+        "start": 5.112687,
+        "duration": 0.094,
+        "group": "weapon/audit-repeater/dry",
+        "shard": "weapons",
+        "pcmSha256": "a55a357c45311f9f11c279867daf8dec7673b93ac2ab09a468c91e584bffbaba"
+      },
+      {
+        "id": "weapon/audit-repeater/impact/01",
+        "start": 5.246688,
+        "duration": 0.169187,
+        "group": "weapon/audit-repeater/impact",
+        "shard": "weapons",
+        "pcmSha256": "48e3bb62b17566b308e67bf7442d8919f2191ba40156b93ff25634318664be37"
+      },
+      {
+        "id": "weapon/audit-repeater/impact/02",
+        "start": 5.455875,
+        "duration": 0.179125,
+        "group": "weapon/audit-repeater/impact",
+        "shard": "weapons",
+        "pcmSha256": "55735a16193eba38fbce74bce11609dbc8c05da9b3eb638a70931068a9dac483"
+      },
+      {
+        "id": "weapon/catastrophe-launcher/fire/01",
+        "start": 5.675,
+        "duration": 0.545188,
+        "group": "weapon/catastrophe-launcher/fire",
+        "shard": "weapons",
+        "pcmSha256": "cd193e46b0aee037537b5bcc6091414624be763828580c0a9e9f22e3db9f526e"
+      },
+      {
+        "id": "weapon/catastrophe-launcher/fire/02",
+        "start": 6.260187,
+        "duration": 0.577125,
+        "group": "weapon/catastrophe-launcher/fire",
+        "shard": "weapons",
+        "pcmSha256": "ebe6d7ddd40364dabb504acc8049d9490773afd506d90b68f16e95efa8b576a9"
+      },
+      {
+        "id": "weapon/catastrophe-launcher/fire/03",
+        "start": 6.877313,
+        "duration": 0.609,
+        "group": "weapon/catastrophe-launcher/fire",
+        "shard": "weapons",
+        "pcmSha256": "7f1585640f4b84ae02bf75cf9b2d8d847e51ff6e6443ecda1bf42089f09df36b"
+      },
+      {
+        "id": "weapon/catastrophe-launcher/dry/01",
+        "start": 7.526313,
+        "duration": 0.094,
+        "group": "weapon/catastrophe-launcher/dry",
+        "shard": "weapons",
+        "pcmSha256": "be26c563eb11b86885a20ee3f8c899fe1f24b3100538d0383ad19dcd4099f710"
+      },
+      {
+        "id": "weapon/catastrophe-launcher/impact/01",
+        "start": 7.660312,
+        "duration": 0.169187,
+        "group": "weapon/catastrophe-launcher/impact",
+        "shard": "weapons",
+        "pcmSha256": "f4f5302ab20d63fee34fd6c1f885627d5ec571efd0ded36a9e95c3df72bd98e0"
+      },
+      {
+        "id": "weapon/catastrophe-launcher/impact/02",
+        "start": 7.8695,
+        "duration": 0.179125,
+        "group": "weapon/catastrophe-launcher/impact",
+        "shard": "weapons",
+        "pcmSha256": "76fa683565ba93c6f42972c69c2d80359578ec958848ccfe6a19a069d37df13e"
+      },
+      {
+        "id": "weapon/plasma-copier/fire/01",
+        "start": 8.088625,
+        "duration": 0.225625,
+        "group": "weapon/plasma-copier/fire",
+        "shard": "weapons",
+        "pcmSha256": "1ba24f13deafa7df8dfee1345029efbed421a2e12f35f10bc4dda396873c0a07"
+      },
+      {
+        "id": "weapon/plasma-copier/fire/02",
+        "start": 8.35425,
+        "duration": 0.238813,
+        "group": "weapon/plasma-copier/fire",
+        "shard": "weapons",
+        "pcmSha256": "45e1f7e260d2d967989e34f91e09312ce7e8881988f62b3125d42965b19ba314"
+      },
+      {
+        "id": "weapon/plasma-copier/fire/03",
+        "start": 8.633062,
+        "duration": 0.252,
+        "group": "weapon/plasma-copier/fire",
+        "shard": "weapons",
+        "pcmSha256": "2498217ce40d6c048eefec18fc6351d5a25a05efa66a5b98fac5f3b6ca96b042"
+      },
+      {
+        "id": "weapon/plasma-copier/dry/01",
+        "start": 8.925062,
+        "duration": 0.094,
+        "group": "weapon/plasma-copier/dry",
+        "shard": "weapons",
+        "pcmSha256": "f77897c2f561584963a2d5bded2e505754c6087b58e4fc317774363751ea5cd6"
+      },
+      {
+        "id": "weapon/plasma-copier/impact/01",
+        "start": 9.059062,
+        "duration": 0.169187,
+        "group": "weapon/plasma-copier/impact",
+        "shard": "weapons",
+        "pcmSha256": "772027525f8b048495507c31ed94ec38d620ec4d5e45ca23d3c40e5d48b68bf0"
+      },
+      {
+        "id": "weapon/plasma-copier/impact/02",
+        "start": 9.26825,
+        "duration": 0.179125,
+        "group": "weapon/plasma-copier/impact",
+        "shard": "weapons",
+        "pcmSha256": "7b5f397e2ebd29c3f21a321ac3f68e3f423efe1db14841189ac0880e665b8af0"
+      },
+      {
+        "id": "weapon/binding-engine/fire/01",
+        "start": 9.487375,
+        "duration": 0.545188,
+        "group": "weapon/binding-engine/fire",
+        "shard": "weapons",
+        "pcmSha256": "7d060b210271c7b7e11805ceee9634099146372fe3876bbaf9b9c9d0e213416b"
+      },
+      {
+        "id": "weapon/binding-engine/fire/02",
+        "start": 10.072563,
+        "duration": 0.577125,
+        "group": "weapon/binding-engine/fire",
+        "shard": "weapons",
+        "pcmSha256": "12f9b5bdccfdccb8a60ec8650cdf407bde66b1244cd6158fec9d3ad4caf3944b"
+      },
+      {
+        "id": "weapon/binding-engine/fire/03",
+        "start": 10.689687,
+        "duration": 0.609,
+        "group": "weapon/binding-engine/fire",
+        "shard": "weapons",
+        "pcmSha256": "bc00c995657bab7fa25ec330cc456ae3c95140946a797b0928889db0f8fad475"
+      },
+      {
+        "id": "weapon/binding-engine/dry/01",
+        "start": 11.338688,
+        "duration": 0.094,
+        "group": "weapon/binding-engine/dry",
+        "shard": "weapons",
+        "pcmSha256": "9ee540f068c8ec7cb25dcbe3f58c1fad4648606746a53d453b6e6895dd5f7f97"
+      },
+      {
+        "id": "weapon/binding-engine/impact/01",
+        "start": 11.472687,
+        "duration": 0.169187,
+        "group": "weapon/binding-engine/impact",
+        "shard": "weapons",
+        "pcmSha256": "2a933435d67563b68de5d5d1a5f7c102156d90732bfb79c68855ef5407cd44a1"
+      },
+      {
+        "id": "weapon/binding-engine/impact/02",
+        "start": 11.681875,
+        "duration": 0.179125,
+        "group": "weapon/binding-engine/impact",
+        "shard": "weapons",
+        "pcmSha256": "434263b9d90ca90a7739796fc03c80008e576e6f93baf8e3f9527acaf2d2f9eb"
+      },
+      {
+        "id": "weapon/umbra-saw/fire/01",
+        "start": 11.901,
+        "duration": 0.376,
+        "group": "weapon/umbra-saw/fire",
+        "shard": "weapons",
+        "pcmSha256": "cffddac4068647a4974d1a12223d4bd52754523c4e5ecbd8a6350ccf045ae365"
+      },
+      {
+        "id": "weapon/umbra-saw/fire/02",
+        "start": 12.317,
+        "duration": 0.398,
+        "group": "weapon/umbra-saw/fire",
+        "shard": "weapons",
+        "pcmSha256": "c499f54a944675f9309d985cfe6a70085949a363ff3f88054b3c831bfdc4546e"
+      },
+      {
+        "id": "weapon/umbra-saw/fire/03",
+        "start": 12.755,
+        "duration": 0.42,
+        "group": "weapon/umbra-saw/fire",
+        "shard": "weapons",
+        "pcmSha256": "7fea9f5015b3ff758147050c319e34d273c50e14185f5f315590ebeda90d61a4"
+      },
+      {
+        "id": "weapon/umbra-saw/dry/01",
+        "start": 13.215,
+        "duration": 0.094,
+        "group": "weapon/umbra-saw/dry",
+        "shard": "weapons",
+        "pcmSha256": "6afa4e52ab24810c916fdb44beccdbbc5c5ac6650e057251ed86688d27c2261e"
+      },
+      {
+        "id": "weapon/umbra-saw/impact/01",
+        "start": 13.349,
+        "duration": 0.169187,
+        "group": "weapon/umbra-saw/impact",
+        "shard": "weapons",
+        "pcmSha256": "b4b0a81a7256357be134bbe00d9f42c2f0215c865c0dcdf41837e3595251579b"
+      },
+      {
+        "id": "weapon/umbra-saw/impact/02",
+        "start": 13.558188,
+        "duration": 0.179125,
+        "group": "weapon/umbra-saw/impact",
+        "shard": "weapons",
+        "pcmSha256": "3a46ad4ee4c4c1d70c2f9a1cc4e876c42991d7f8d316b2353c110e023bb80130"
+      },
+      {
+        "id": "world/door-open/01",
+        "start": 0.08,
+        "duration": 0.451188,
+        "group": "world/door-open",
+        "shard": "world-environment",
+        "pcmSha256": "03011152793a32d58dada441935b3d6f8ec97ff8471889fec85af1cab972277a"
+      },
+      {
+        "id": "world/door-open/02",
+        "start": 0.571187,
+        "duration": 0.477625,
+        "group": "world/door-open",
+        "shard": "world-environment",
+        "pcmSha256": "e752a923d47f79c18fdccf537a5031fac0e012bcfcb6a59af3df9ecd26581b14"
+      },
+      {
+        "id": "world/door-open/03",
+        "start": 1.088812,
+        "duration": 0.504,
+        "group": "world/door-open",
+        "shard": "world-environment",
+        "pcmSha256": "57178536d3e2e8e9e8fe51667d9091cc09ce09fc2f7401e14de4055863f4c3bd"
+      },
+      {
+        "id": "world/door-locked/01",
+        "start": 1.632812,
+        "duration": 0.188,
+        "group": "world/door-locked",
+        "shard": "world-environment",
+        "pcmSha256": "05070a69f8f97bb98cae97399d55da4b15d68957a2b318f3be33dd7d64fa9d4c"
+      },
+      {
+        "id": "world/door-locked/02",
+        "start": 1.860812,
+        "duration": 0.199,
+        "group": "world/door-locked",
+        "shard": "world-environment",
+        "pcmSha256": "bb4821ff2bef5732c3563feb296564dd705de5e2327ac80ee87c63536e90043d"
+      },
+      {
+        "id": "world/switch/01",
+        "start": 2.099813,
+        "duration": 0.282,
+        "group": "world/switch",
+        "shard": "world-environment",
+        "pcmSha256": "2c925921b972ed806808d646c3ab82dc1822786d75874f69a4b06ee512998657"
+      },
+      {
+        "id": "world/switch/02",
+        "start": 2.421813,
+        "duration": 0.2985,
+        "group": "world/switch",
+        "shard": "world-environment",
+        "pcmSha256": "681827d099d06da0d1290bc44ee69d02ee3fc0b4710eb0dd7a6a37a014fc83ec"
+      },
+      {
+        "id": "world/switch/03",
+        "start": 2.760312,
+        "duration": 0.315,
+        "group": "world/switch",
+        "shard": "world-environment",
+        "pcmSha256": "ef0cbf2a751a65bcfb5cc05d544c3f5c255c564dca0444eb15bbb92a3129ee27"
+      },
+      {
+        "id": "world/lift-start/01",
+        "start": 3.115312,
+        "duration": 0.394813,
+        "group": "world/lift-start",
+        "shard": "world-environment",
+        "pcmSha256": "fbdf03276d343da7d24b99bd70d6d7a30f46563d298e6166c49ade37e8ed1ddf"
+      },
+      {
+        "id": "world/lift-start/02",
+        "start": 3.550125,
+        "duration": 0.417875,
+        "group": "world/lift-start",
+        "shard": "world-environment",
+        "pcmSha256": "9e15c9f6876f415cfd42ffdb695695ba1419ae4ca962fb85507022c1ad42ff04"
+      },
+      {
+        "id": "world/lift-end/01",
+        "start": 4.008,
+        "duration": 0.282,
+        "group": "world/lift-end",
+        "shard": "world-environment",
+        "pcmSha256": "8e8a516827c8b8746e3fde6f199b5a444d0e7c06a74e6ffce04fcaac88d9d332"
+      },
+      {
+        "id": "world/lift-end/02",
+        "start": 4.33,
+        "duration": 0.2985,
+        "group": "world/lift-end",
+        "shard": "world-environment",
+        "pcmSha256": "cf38f874054f8efc8658a9b44f65d85cef566057a241ff5b46cf8b56a49306b6"
+      },
+      {
+        "id": "world/secret/01",
+        "start": 4.6685,
+        "duration": 0.282,
+        "group": "world/secret",
+        "shard": "world-environment",
+        "pcmSha256": "df50cf80dc940730cb00fb293d4ce2f21fa26ca294af74b4f5e5220051e24caa"
+      },
+      {
+        "id": "world/secret/02",
+        "start": 4.9905,
+        "duration": 0.2985,
+        "group": "world/secret",
+        "shard": "world-environment",
+        "pcmSha256": "bd6ce885e61a4f50f2b3c5f739e8cfd3e7a73744829aa91faea100ee91975776"
+      },
+      {
+        "id": "world/secret/03",
+        "start": 5.329,
+        "duration": 0.315,
+        "group": "world/secret",
+        "shard": "world-environment",
+        "pcmSha256": "3c7eb82f8ba32e7853f082d33e2b641c63297893597e5e40a51309e1aeeffbed"
+      },
+      {
+        "id": "world/teleport/01",
+        "start": 5.684,
+        "duration": 0.488812,
+        "group": "world/teleport",
+        "shard": "world-environment",
+        "pcmSha256": "5217c3ddfe5f864cf3c9661a66065aa2fe002021bc8b829c46c8fefff3c31d99"
+      },
+      {
+        "id": "world/teleport/02",
+        "start": 6.212813,
+        "duration": 0.517375,
+        "group": "world/teleport",
+        "shard": "world-environment",
+        "pcmSha256": "24f346ba2aeef11d98b8bc848eaa0cdf31df47987bc90921e3acfae012af0fd8"
+      },
+      {
+        "id": "world/teleport/03",
+        "start": 6.770187,
+        "duration": 0.546,
+        "group": "world/teleport",
+        "shard": "world-environment",
+        "pcmSha256": "930edc0eb0a9f26bfa0b0a8cd89f6914a09e3dcca277057fa01bf5781b4ed084"
+      },
+      {
+        "id": "world/breakable/01",
+        "start": 7.356187,
+        "duration": 0.282,
+        "group": "world/breakable",
+        "shard": "world-environment",
+        "pcmSha256": "3308c2adc8021889796a7bb8f9dc4038cfac44247387e4544e5fd77e607a2f39"
+      },
+      {
+        "id": "world/breakable/02",
+        "start": 7.678187,
+        "duration": 0.2985,
+        "group": "world/breakable",
+        "shard": "world-environment",
+        "pcmSha256": "333a7d52037371553d8d6ceefca439f11c449bfeb74bc34a4c7fc37381897b1e"
+      },
+      {
+        "id": "world/breakable/03",
+        "start": 8.016687,
+        "duration": 0.315,
+        "group": "world/breakable",
+        "shard": "world-environment",
+        "pcmSha256": "e9f429ddd5081b53cb1cba6cf9ed627062d2692a8aec673e5bd35cb60c155787"
+      },
+      {
+        "id": "world/hazard-placed/01",
+        "start": 8.371688,
+        "duration": 0.338375,
+        "group": "world/hazard-placed",
+        "shard": "world-environment",
+        "pcmSha256": "35790b7b1afbc918c4b31530c67d5acd49cc89dea6321deceb61dbce5be59822"
+      },
+      {
+        "id": "world/hazard-placed/02",
+        "start": 8.750063,
+        "duration": 0.358187,
+        "group": "world/hazard-placed",
+        "shard": "world-environment",
+        "pcmSha256": "4071367244e652c4b69c1e4db3708af9bd8d7c25527f864da1448cbcbf40724d"
+      },
+      {
+        "id": "world/hazard-armed/01",
+        "start": 9.14825,
+        "duration": 0.263188,
+        "group": "world/hazard-armed",
+        "shard": "world-environment",
+        "pcmSha256": "69c3d5eaafbccde11bfbb9fa1c7d4654cb8b179e3aea8d673d5700486e747814"
+      },
+      {
+        "id": "world/hazard-armed/02",
+        "start": 9.451438,
+        "duration": 0.278625,
+        "group": "world/hazard-armed",
+        "shard": "world-environment",
+        "pcmSha256": "c60ce80710a7dc857e8a0f88c7c2bf99670e30d6dd554df900a48bb1d82378b2"
+      },
+      {
+        "id": "world/mechanism/01",
+        "start": 9.770062,
+        "duration": 0.282,
+        "group": "world/mechanism",
+        "shard": "world-environment",
+        "pcmSha256": "0faae54a66302c85a398cec90150619b8eb65b1d9614344ca1c1ebe170db7f2c"
+      },
+      {
+        "id": "world/mechanism/02",
+        "start": 10.092063,
+        "duration": 0.2985,
+        "group": "world/mechanism",
+        "shard": "world-environment",
+        "pcmSha256": "e2976a5520af8a52db527bab2e6eb24b0f6ba1a5f8bb2a059796ba4cb8717678"
+      },
+      {
+        "id": "world/mechanism/03",
+        "start": 10.430563,
+        "duration": 0.315,
+        "group": "world/mechanism",
+        "shard": "world-environment",
+        "pcmSha256": "187e5c6cd131910666137f526a11e9656053d673875843821dbd5eaa0554ee72"
+      },
+      {
+        "id": "world/exit/01",
+        "start": 10.785562,
+        "duration": 0.282,
+        "group": "world/exit",
+        "shard": "world-environment",
+        "pcmSha256": "cc4556780d903749c0aa9e24de269e13b88ad346cdcb90977ba7c7573e6c63b7"
+      },
+      {
+        "id": "world/exit/02",
+        "start": 11.107563,
+        "duration": 0.2985,
+        "group": "world/exit",
+        "shard": "world-environment",
+        "pcmSha256": "0724300f54e1d4683e9f62bfcd7a401e9acff6e80b8f7b39d5934acafe411048"
+      },
+      {
+        "id": "world/exit/03",
+        "start": 11.446063,
+        "duration": 0.315,
+        "group": "world/exit",
+        "shard": "world-environment",
+        "pcmSha256": "19c75556936c7dce1ebf715c4b4698dace3f10ff60b91a23910165ade3f93631"
+      },
+      {
+        "id": "ambient/hvac/01",
+        "start": 11.801063,
+        "duration": 1.8,
+        "group": "ambient/hvac",
+        "shard": "world-environment",
+        "pcmSha256": "5da47d5602185156555ea69786fd2aae5d4ee9f3841f98564ad5896350baf50c"
+      },
+      {
+        "id": "ambient/fluorescent/01",
+        "start": 13.641063,
+        "duration": 1.8,
+        "group": "ambient/fluorescent",
+        "shard": "world-environment",
+        "pcmSha256": "5eaa975e38a04967ee180fac361d1f0ceaddc58057ec0363324226a8e3d324b7"
+      },
+      {
+        "id": "ambient/distant-phone/01",
+        "start": 15.481063,
+        "duration": 1.8,
+        "group": "ambient/distant-phone",
+        "shard": "world-environment",
+        "pcmSha256": "d6700b7e8481fe1bef7724bca57ba2ea5edf6dcc9cd6e00881f88c3cff06fb9f"
+      },
+      {
+        "id": "ambient/rain/01",
+        "start": 17.321063,
+        "duration": 1.8,
+        "group": "ambient/rain",
+        "shard": "world-environment",
+        "pcmSha256": "049fa899d247ae07e0053b51e3f8c41ead7b08a6887b23f26db681b6ea054e02"
+      },
+      {
+        "id": "ambient/pumps/01",
+        "start": 19.161062,
+        "duration": 1.8,
+        "group": "ambient/pumps",
+        "shard": "world-environment",
+        "pcmSha256": "8e9112a8eec2e6ac00e298ff00440940b15ef0a1281ed7373564227f9277384f"
+      },
+      {
+        "id": "ambient/shelving/01",
+        "start": 21.001062,
+        "duration": 1.8,
+        "group": "ambient/shelving",
+        "shard": "world-environment",
+        "pcmSha256": "5b0ca6f6af4e07fbfb02067e3f87422a4842218729c2a895296d92920af9adb8"
+      },
+      {
+        "id": "ambient/elevator-cable/01",
+        "start": 22.841062,
+        "duration": 1.8,
+        "group": "ambient/elevator-cable",
+        "shard": "world-environment",
+        "pcmSha256": "40784bced983e195fd31a6885c1e8103bcb90c41d39184adf5a37645c6a3f464"
+      },
+      {
+        "id": "footstep/fiber/01",
+        "start": 24.681062,
+        "duration": 0.14,
+        "group": "footstep/fiber",
+        "shard": "world-environment",
+        "pcmSha256": "0abf3b888dec44ec8a4452b03eae0fcedef4056d9c6af81ace4dbf17156622ba"
+      },
+      {
+        "id": "footstep/fiber/02",
+        "start": 24.861062,
+        "duration": 0.152,
+        "group": "footstep/fiber",
+        "shard": "world-environment",
+        "pcmSha256": "7d9367ea2755558896fee03307caad334fd1a057fc27b88d0b4585dd82bcb556"
+      },
+      {
+        "id": "footstep/concrete/01",
+        "start": 25.053062,
+        "duration": 0.14,
+        "group": "footstep/concrete",
+        "shard": "world-environment",
+        "pcmSha256": "9df27fa3d353f30caa272b88545255709f4e56b26d9c2281e1cb35451161fe25"
+      },
+      {
+        "id": "footstep/concrete/02",
+        "start": 25.233062,
+        "duration": 0.152,
+        "group": "footstep/concrete",
+        "shard": "world-environment",
+        "pcmSha256": "16fdb8845d24278838ad1aabb4825ca5e2ad53672e18bdda38a227d088018293"
+      },
+      {
+        "id": "footstep/glass/01",
+        "start": 25.425062,
+        "duration": 0.14,
+        "group": "footstep/glass",
+        "shard": "world-environment",
+        "pcmSha256": "4b5e9179de3eb2db8de5b3c7a6ddd45a5ebd51ccbcd18c4913ecd8c44aa1a7f7"
+      },
+      {
+        "id": "footstep/glass/02",
+        "start": 25.605062,
+        "duration": 0.152,
+        "group": "footstep/glass",
+        "shard": "world-environment",
+        "pcmSha256": "fff2a78651996e6d1e79bb556bdeb994db30af89290890b4247abe19e9af2f0d"
+      },
+      {
+        "id": "footstep/water/01",
+        "start": 25.797062,
+        "duration": 0.14,
+        "group": "footstep/water",
+        "shard": "world-environment",
+        "pcmSha256": "822c5b4b9d98f758f532302e3362ef037cd2fb3e264b427c436ab5453b996aab"
+      },
+      {
+        "id": "footstep/water/02",
+        "start": 25.977062,
+        "duration": 0.152,
+        "group": "footstep/water",
+        "shard": "world-environment",
+        "pcmSha256": "0e498da58b79ce4e6b81e2c15f7c4d2035eda032c753e661d97931de5c33dded"
+      },
+      {
+        "id": "footstep/metal/01",
+        "start": 26.169062,
+        "duration": 0.14,
+        "group": "footstep/metal",
+        "shard": "world-environment",
+        "pcmSha256": "86a7203eaacd11032f66289448d3e8fc4b49f67b2d89698ae1ac7d6e207216b5"
+      },
+      {
+        "id": "footstep/metal/02",
+        "start": 26.349062,
+        "duration": 0.152,
+        "group": "footstep/metal",
+        "shard": "world-environment",
+        "pcmSha256": "5c0fd71ff8a0bf00d67f635a94bddfa75f7b4df49953cd4aa1fbb8ad09c344c0"
+      },
+      {
+        "id": "footstep/toner/01",
+        "start": 26.541062,
+        "duration": 0.14,
+        "group": "footstep/toner",
+        "shard": "world-environment",
+        "pcmSha256": "141806e05cf5341b404d47148b4a346ff8b1018a0813230356bf2c1a10081ba2"
+      },
+      {
+        "id": "footstep/toner/02",
+        "start": 26.721062,
+        "duration": 0.152,
+        "group": "footstep/toner",
+        "shard": "world-environment",
+        "pcmSha256": "7533d253e754300e14d7dd1a29920f9230020ff07927cd8c7f6044e7d6ec2ac2"
+      },
+      {
+        "id": "footstep/wax/01",
+        "start": 26.913062,
+        "duration": 0.14,
+        "group": "footstep/wax",
+        "shard": "world-environment",
+        "pcmSha256": "c7eaafbca7e792944e2a8a0649d389d19bb2b787a15953962cdeabee910fc2bf"
+      },
+      {
+        "id": "footstep/wax/02",
+        "start": 27.093062,
+        "duration": 0.152,
+        "group": "footstep/wax",
+        "shard": "world-environment",
+        "pcmSha256": "b684d714afcf130a7848e99041bb702eefb61ff9f0b00821f71650fbfe4209e5"
+      },
+      {
+        "id": "footstep/fluid/01",
+        "start": 27.285062,
+        "duration": 0.14,
+        "group": "footstep/fluid",
+        "shard": "world-environment",
+        "pcmSha256": "075de47f76cb07c3d087072be26a041a65eba20bee8930f2bc3ebf0b2a6533f5"
+      },
+      {
+        "id": "footstep/fluid/02",
+        "start": 27.465062,
+        "duration": 0.152,
+        "group": "footstep/fluid",
+        "shard": "world-environment",
+        "pcmSha256": "4e0045c329ff3f110757db50ce2b11c0295fc960593e4430f8130148535024ee"
+      },
+      {
+        "id": "player/hurt/01",
+        "start": 0.08,
+        "duration": 0.225625,
+        "group": "player/hurt",
+        "shard": "player-ui",
+        "pcmSha256": "1cdd5783de75ccb67be69ea92dd272b5b6f42774073f4db3605df0fd6008f4ad"
+      },
+      {
+        "id": "player/hurt/02",
+        "start": 0.345625,
+        "duration": 0.238813,
+        "group": "player/hurt",
+        "shard": "player-ui",
+        "pcmSha256": "4077b48020fb9a16a3c4a03d0f1486aed8d6d351585dafa6b59e04f1bc34221c"
+      },
+      {
+        "id": "player/hurt/03",
+        "start": 0.624437,
+        "duration": 0.252,
+        "group": "player/hurt",
+        "shard": "player-ui",
+        "pcmSha256": "b806f204064601a51781adb138e77a343ac16e9f097fc36686989f8ef08f0c4d"
+      },
+      {
+        "id": "player/death/01",
+        "start": 0.916438,
+        "duration": 0.639188,
+        "group": "player/death",
+        "shard": "player-ui",
+        "pcmSha256": "e2a13a2d86df38ea04c82d3a812bc193ed2a90aee01e3efce7902d9687f5105d"
+      },
+      {
+        "id": "player/death/02",
+        "start": 1.595625,
+        "duration": 0.676625,
+        "group": "player/death",
+        "shard": "player-ui",
+        "pcmSha256": "d68e01d14cc2809cf7fbdd570039ce11c609ac9db69ee307e7b540a552cd487f"
+      },
+      {
+        "id": "player/armor/01",
+        "start": 2.31225,
+        "duration": 0.178625,
+        "group": "player/armor",
+        "shard": "player-ui",
+        "pcmSha256": "2c4b194c939efbd3157ca347d6989aff21b9295050c8391e01672ece39e0f1ea"
+      },
+      {
+        "id": "player/armor/02",
+        "start": 2.530875,
+        "duration": 0.189062,
+        "group": "player/armor",
+        "shard": "player-ui",
+        "pcmSha256": "35b70e64fe7b4163a7561f2df962823e6c20b4b3db3ef859becc2255d3abe78e"
+      },
+      {
+        "id": "pickup/health/01",
+        "start": 2.759937,
+        "duration": 0.282,
+        "group": "pickup/health",
+        "shard": "player-ui",
+        "pcmSha256": "5c981afac5f9dbbfdb0cb4194f4f2b34ec9a9ea7bb1e17e0df929d2bed3b5068"
+      },
+      {
+        "id": "pickup/health/02",
+        "start": 3.081937,
+        "duration": 0.2985,
+        "group": "pickup/health",
+        "shard": "player-ui",
+        "pcmSha256": "d3ffcf3bb066f018abefd295be26223292c7289393b89d011a8256f521995684"
+      },
+      {
+        "id": "pickup/armor/01",
+        "start": 3.420437,
+        "duration": 0.178625,
+        "group": "pickup/armor",
+        "shard": "player-ui",
+        "pcmSha256": "a74694ec6a5c1a515b5d1699028769ef4dc93064a0922f96d84a6c6a887819bf"
+      },
+      {
+        "id": "pickup/armor/02",
+        "start": 3.639063,
+        "duration": 0.189062,
+        "group": "pickup/armor",
+        "shard": "player-ui",
+        "pcmSha256": "67bcad6650a11b893a6b9eabd369ad85b3f7ff7834473a5a1b3e89327f9b4ed7"
+      },
+      {
+        "id": "pickup/ammo/01",
+        "start": 3.868125,
+        "duration": 0.282,
+        "group": "pickup/ammo",
+        "shard": "player-ui",
+        "pcmSha256": "ea2b2649627b818c16222bb38606f0b2d3fb3217c3f5840d8b845725925c4b00"
+      },
+      {
+        "id": "pickup/ammo/02",
+        "start": 4.190125,
+        "duration": 0.2985,
+        "group": "pickup/ammo",
+        "shard": "player-ui",
+        "pcmSha256": "e4c8b003c6b10ce6ab93fba992511931a3278f6435277732939d6c426678a49b"
+      },
+      {
+        "id": "pickup/weapon/01",
+        "start": 4.528625,
+        "duration": 0.282,
+        "group": "pickup/weapon",
+        "shard": "player-ui",
+        "pcmSha256": "264349e7abf458bb5e6651cf8e7c9e0a33b249084b79fcf541e50a17b6789372"
+      },
+      {
+        "id": "pickup/weapon/02",
+        "start": 4.850625,
+        "duration": 0.2985,
+        "group": "pickup/weapon",
+        "shard": "player-ui",
+        "pcmSha256": "2a2670f7cf410c593c122ae4a978294bce850c031be9912c5aae1fa061bd9ae4"
+      },
+      {
+        "id": "pickup/credential/01",
+        "start": 5.189125,
+        "duration": 0.282,
+        "group": "pickup/credential",
+        "shard": "player-ui",
+        "pcmSha256": "7768ea7c841b917b47a430a3a2975030f02c766004b0c4852cf47144bdae6fec"
+      },
+      {
+        "id": "pickup/credential/02",
+        "start": 5.511125,
+        "duration": 0.2985,
+        "group": "pickup/credential",
+        "shard": "player-ui",
+        "pcmSha256": "ab0914232249dd9ee0aad01e47fdce778927da950bd413a9f458a61aea81948a"
+      },
+      {
+        "id": "pickup/powerup/01",
+        "start": 5.849625,
+        "duration": 0.282,
+        "group": "pickup/powerup",
+        "shard": "player-ui",
+        "pcmSha256": "133666ca629ed81390de5843df9274b57e706f55eee36d7c1e5b63f818b9c48c"
+      },
+      {
+        "id": "pickup/powerup/02",
+        "start": 6.171625,
+        "duration": 0.2985,
+        "group": "pickup/powerup",
+        "shard": "player-ui",
+        "pcmSha256": "3133c8d35dd86ca99fb25057c8bbd533f65c1c8ec80f7af9d8f36438179237e5"
+      },
+      {
+        "id": "ui/menu-accept/01",
+        "start": 6.510125,
+        "duration": 0.282,
+        "group": "ui/menu-accept",
+        "shard": "player-ui",
+        "pcmSha256": "b4c160c41356a058928804551cdb642e62de69d36c0a8fe044927fbf5c7ea5de"
+      },
+      {
+        "id": "ui/menu-accept/02",
+        "start": 6.832125,
+        "duration": 0.2985,
+        "group": "ui/menu-accept",
+        "shard": "player-ui",
+        "pcmSha256": "061dac66083b9f402e1146e996c2e9f6e0fdf55ec5f0bcfbd102f4f3636f9377"
+      },
+      {
+        "id": "ui/menu-back/01",
+        "start": 7.170625,
+        "duration": 0.282,
+        "group": "ui/menu-back",
+        "shard": "player-ui",
+        "pcmSha256": "b8778e6150760063b9a727b1eeed1e775c687612e5024a498a7daf0684fbb6bb"
+      },
+      {
+        "id": "ui/menu-back/02",
+        "start": 7.492625,
+        "duration": 0.2985,
+        "group": "ui/menu-back",
+        "shard": "player-ui",
+        "pcmSha256": "92204d230ff5dd3f03eca14b9f976a5bc2159584ffa686be7b1f3b476f865ea2"
+      },
+      {
+        "id": "ui/save/01",
+        "start": 7.831125,
+        "duration": 0.282,
+        "group": "ui/save",
+        "shard": "player-ui",
+        "pcmSha256": "1b652816f4fac334b218ec1dd6474c99a071ed5c83432516479ad9554c319543"
+      },
+      {
+        "id": "ui/save/02",
+        "start": 8.153125,
+        "duration": 0.2985,
+        "group": "ui/save",
+        "shard": "player-ui",
+        "pcmSha256": "d1a7a2d9c5d654932275da109102763c12f15cd9ea44e90bbfd6c7fd3bcd7e9a"
+      },
+      {
+        "id": "ui/load/01",
+        "start": 8.491625,
+        "duration": 0.282,
+        "group": "ui/load",
+        "shard": "player-ui",
+        "pcmSha256": "bb8aa15398641456fe8fe7ba42c8b453e8cd890f0590ddc90ef8f4e777a8cd72"
+      },
+      {
+        "id": "ui/load/02",
+        "start": 8.813625,
+        "duration": 0.2985,
+        "group": "ui/load",
+        "shard": "player-ui",
+        "pcmSha256": "0aea5ef698ab6cbd3e05e38f5df65c1f24e1fa13c37fce897be637a63d17b1c0"
+      },
+      {
+        "id": "ui/map-clear/01",
+        "start": 9.152125,
+        "duration": 0.676813,
+        "group": "ui/map-clear",
+        "shard": "player-ui",
+        "pcmSha256": "1b7f0d8ab6ea04e0eee2bf05d3100dce3402872d0f0e9b60582896146f059386"
+      },
+      {
+        "id": "ui/map-clear/02",
+        "start": 9.868937,
+        "duration": 0.716375,
+        "group": "ui/map-clear",
+        "shard": "player-ui",
+        "pcmSha256": "0f431eeeaa426fb57242c37c8dc63739f2143591bb6b207e34b2ed0994316c61"
+      },
+      {
+        "id": "ui/map-clear/03",
+        "start": 10.625312,
+        "duration": 0.756,
+        "group": "ui/map-clear",
+        "shard": "player-ui",
+        "pcmSha256": "76b0e615bbd9cf044b20c3fa64063c246ff0e762d0e244d22dd53904b523bdd6"
+      },
+      {
+        "id": "ui/status-expire/01",
+        "start": 11.421313,
+        "duration": 0.319625,
+        "group": "ui/status-expire",
+        "shard": "player-ui",
+        "pcmSha256": "ec02a813cb852cb854fa80f987935c8e6fcb4e3e352419bf5f3d9e91328019db"
+      },
+      {
+        "id": "ui/status-expire/02",
+        "start": 11.780938,
+        "duration": 0.338313,
+        "group": "ui/status-expire",
+        "shard": "player-ui",
+        "pcmSha256": "493d1c3777ecf93340947b7f3a7ddc009860161909fdfd9dbd04390218d08128"
+      },
+      {
+        "id": "ui/momentum/01",
+        "start": 12.15925,
+        "duration": 0.244375,
+        "group": "ui/momentum",
+        "shard": "player-ui",
+        "pcmSha256": "281c5250551a48ff8d2aff51dc4c019be51a13e45262ccdaaaf2a3a4ce78060a"
+      },
+      {
+        "id": "ui/momentum/02",
+        "start": 12.443625,
+        "duration": 0.258688,
+        "group": "ui/momentum",
+        "shard": "player-ui",
+        "pcmSha256": "91cecd54185f820e90021517c5011d3c1b96baa3fda3a0492c977728d6e2c4b1"
+      },
+      {
+        "id": "ui/momentum/03",
+        "start": 12.742313,
+        "duration": 0.273,
+        "group": "ui/momentum",
+        "shard": "player-ui",
+        "pcmSha256": "f8d14e20577856eb0c8e39f619e9789033989dac450cdcdda1194a548f9230bd"
+      }
+    ]
+  }
+}

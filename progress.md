@@ -92,6 +92,18 @@ Original prompt: implement the game
 
 - Execute `implementation/RELEASE_PLAYTEST_PROTOCOL.md` for blind onboarding, full-campaign balance/duration, representative-GPU 60 FPS, and formal rights review.
 
-## Open Content Gap
+## Closed Authored Audio Target
 
-- The runtime's procedural score and synthesized cues are functional and release-tested, but they do not satisfy the GDD's authored 2.5-4 minute per-map music and extensive unique SFX target. That authored-audio content remains open unless a future signed scope decision explicitly changes the target.
+- The GDD audio-content target is implemented by the schema-2 authored library described below. Procedural audio remains only as a deterministic availability fallback, not the primary soundtrack or effects source. Candidate-wide release evidence is pending the final immutable commit and full release run; the four external human signoffs remain separate.
+
+## Onboarding and Accessibility Remediation
+
+- 2026-07-15: Hardened onboarding and accessibility input paths: resume confirmation no longer leaks into gameplay, settings arrows advance once, replay playback is controller-navigable, remapping preserves accessible action names and focus, touch look uses one event-cadence-independent held-stick model, compact Options remains reachable at 1280x500 and 568x320, and hybrid touch/controller devices retain controller guidance. TypeScript, 22 focused unit tests, and the controls, navigation, replay, mobile, responsive, and installed web-game-client checks pass.
+- 2026-07-15: Added persisted independent mouse, controller, and touch look sensitivity, Y inversion, controller deadzone, touch control size/opacity/handedness, and standard/large/largest interface text scales. The input preferences migrate the legacy shared sensitivity value without discarding existing settings. Configured deadzone now governs gameplay and menu axes with stable menu hysteresis; briefing pad labels mirror handedness. Adversarial browser gates cover collision-free Large decks at 320x568 for both hands, Largest-text Difficulty reachability at 568x320, exact long authored-message separation, and equivalent one/eight-event touch-look delivery.
+
+## Authored Audio Integration
+
+- 2026-07-15: Authored and deterministically rendered 33 original music tracks plus 347 distinct SFX across 189 semantic groups. All 27 maps own unique 154-236 second scores and distinct opening motifs; enemies, bosses, attacks, weapons, player state, pickups, mechanisms, UI, ambience, and eight footstep materials have explicit cues.
+- 2026-07-15: Replaced whole-track Web Audio decoding with bounded `HTMLMediaElement` streaming through the existing compressor/mix graph. Split the former 154-second effects sprite into five independently loaded semantic shards (actors, attacks, weapons, world/environment, player/UI), reducing representative 48 kHz decoded audio from roughly 200 MiB to a bounded family-at-a-time footprint.
+- 2026-07-15: Wired canonical map, ending, intermission, credits, weapon, attack windup/resolve, damage/death, pickup, footstep, ambience, door/lift/switch, secret, teleport, breakable, save/load, status, momentum, and map-clear cues. Added persisted speakers/headphones/night/mono profiles, bounded retry after manifest/shard failure, superseded-stream ownership, truthful diagnostics, and procedural fallback.
+- 2026-07-15: Audio content contracts, 16 AudioSystem tests, TypeScript, the installed web-game client, an authored-audio browser journey with forced failure/recovery, and Chromium/Firefox/WebKit smoke pass. Browser evidence reaches E1M1 with streamed authored music, four prewarmed gameplay shards (player/UI, weapons, actors, and critical attack tells), lazy world/environment loading, spatial hostile diagnostics, and zero decoded long-form tracks.

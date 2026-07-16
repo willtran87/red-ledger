@@ -12,14 +12,36 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 
 await page.goto(url, { waitUntil: 'networkidle' });
 await page.click('#options-button');
+
+await page.locator('#sensitivity').evaluate((element) => { element.value = '1.2'; });
+await page.locator('#sensitivity').focus();
+await page.keyboard.press('ArrowRight');
+assert(await page.locator('#sensitivity').inputValue() === '1.3', 'A single settings arrow press changed sensitivity more than one step');
+await page.selectOption('#render-scale', '1');
+await page.locator('#render-scale').focus();
+await page.keyboard.press('ArrowRight');
+assert(await page.locator('#render-scale').inputValue() === '2', 'A single settings arrow press changed render scale more than one option');
+await page.selectOption('#render-scale', '1');
+await page.locator('#controller-sensitivity').fill('2.3');
+await page.locator('#touch-sensitivity').fill('0.7');
+await page.locator('#controller-deadzone').fill('0.22');
+await page.locator('#invert-y').check();
+await page.selectOption('#text-scale', 'largest');
+const scaledText = await page.locator('#options-menu label').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+assert(scaledText >= 19.5, 'Largest text setting did not increase inherited UI text');
+
 await page.click('#controls-button');
 assert(await page.locator('.control-row').count() === 34, 'Controls screen does not expose every remappable action');
 await page.screenshot({ path: 'output/controls/controls.png' });
 
 const automapRow = page.locator('.control-row', { has: page.getByText('Automap', { exact: true }) }).first();
-await automapRow.locator('button').click();
+const automapButton = automapRow.locator('button');
+assert((await automapButton.getAttribute('aria-label'))?.includes('Automap'), 'Remapping control accessible name omits the action name');
+await automapButton.click();
 await page.keyboard.press('KeyM');
-assert((await automapRow.locator('button').textContent())?.trim() === 'M', 'Automap binding capture did not update its label');
+assert((await automapButton.textContent())?.trim() === 'M', 'Automap binding capture did not update its label');
+await page.waitForFunction(() => (document.activeElement instanceof HTMLElement) && document.activeElement.dataset.action === 'automap');
+assert((await automapButton.getAttribute('aria-label'))?.includes('Current bindings: M'), 'Remapping control accessible name omits its current binding');
 
 await page.click('#controls-back');
 await page.locator('#options-menu [data-back]').click();
@@ -49,6 +71,11 @@ assert(!(await page.locator('#automap').isVisible()), 'Replaced default automap 
 
 await page.reload({ waitUntil: 'networkidle' });
 await page.click('#options-button');
+assert(await page.locator('#controller-sensitivity').inputValue() === '2.3', 'Controller sensitivity did not persist independently');
+assert(await page.locator('#touch-sensitivity').inputValue() === '0.7', 'Touch sensitivity did not persist independently');
+assert(await page.locator('#controller-deadzone').inputValue() === '0.22', 'Controller deadzone did not persist');
+assert(await page.locator('#invert-y').isChecked(), 'Y inversion did not persist');
+assert(await page.locator('#text-scale').inputValue() === 'largest', 'Text size did not persist');
 await page.click('#controls-button');
 const restoredRow = page.locator('.control-row', { has: page.getByText('Automap', { exact: true }) }).first();
 assert(await restoredRow.count() === 1, 'Remapped binding did not persist across reload');

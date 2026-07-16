@@ -19,6 +19,7 @@ import {
 import { CAMPAIGN, type CampaignMap, type Credential, type MapId, type PickupId, type WeaponId } from '../data';
 import { AssetCatalog } from './AssetCatalog';
 import { AudioSystem } from './AudioSystem';
+import { ambientAudioGroups, pickupAudioFeedbackCue, surfaceAudioFeedbackGroup } from './AudioSemantics';
 import { directionFromView, rayVerticalCylinderDistance, sampleShotSpread } from './CombatMath';
 import { DIFFICULTY, ENEMIES, WEAPONS, type AmmoType, type GameDifficulty } from './definitions';
 import { addAmmoWithinCap, ammoCap, pickupAmmoGrant, weaponAcquisitionAmmoGrant } from './EconomyPolicy';
@@ -31,6 +32,7 @@ import {
   type AuthoredEffectCue,
 } from './EffectSemantics';
 import {
+  ENEMY_BEHAVIOR_PROFILES,
   EnemyBehaviorSystem,
   buildNavigationDistanceField,
   navigationDirectionFromField,
@@ -47,7 +49,13 @@ import {
   type NavigationGridAdapter,
   type ProjectileState,
 } from './EnemyBehaviorSystem';
-import { InputSystem } from './InputSystem';
+import {
+  DEFAULT_INPUT_PREFERENCES,
+  InputSystem,
+  composeLookInput,
+  normalizeInputPreferences,
+  type InputPreferences,
+} from './InputSystem';
 import { ParticleSystem, type ParticleKind, type ParticlePriority } from './ParticleSystem';
 import {
   DemoPlayback,
@@ -570,7 +578,11 @@ export class GameEngine {
   tally: MapTally = { kills: 0, totalKills: 0, items: 0, totalItems: 0, secrets: 0, totalSecrets: 0, elapsed: 0 };
   readonly momentum: CombatMomentum = { chain: 0, best: 0, score: 0, timer: 0 };
   message = '';
-  sensitivity = 1.2;
+  sensitivity = DEFAULT_INPUT_PREFERENCES.mouseSensitivity;
+  controllerSensitivity = DEFAULT_INPUT_PREFERENCES.controllerSensitivity;
+  touchSensitivity = DEFAULT_INPUT_PREFERENCES.touchSensitivity;
+  invertLookY = DEFAULT_INPUT_PREFERENCES.invertY;
+  controllerDeadzone = DEFAULT_INPUT_PREFERENCES.controllerDeadzone;
   classicInput = false;
   accessibility = { highContrast: false, reducedEffects: false, reducedMotion: false, flashEffects: true, screenShake: true };
   onChange?: (snapshot: GameSnapshot) => void;
@@ -610,6 +622,8 @@ export class GameEngine {
   private renderCount = 0;
   private halted = false;
   private ambientParticleTimer = 0;
+  private ambientAudioTimer = 0;
+  private ambientAudioCursor = 0;
   private movementParticleDistance = 0;
   private visibilityRefreshTimer = 0;
   private readonly behaviorLineOfSightFrom = new Vector3();
@@ -657,6 +671,17 @@ export class GameEngine {
     this.applyViewportSize();
   }
 
+  setInputPreferences(value: unknown): InputPreferences {
+    const preferences = normalizeInputPreferences(value);
+    this.sensitivity = preferences.mouseSensitivity;
+    this.controllerSensitivity = preferences.controllerSensitivity;
+    this.touchSensitivity = preferences.touchSensitivity;
+    this.invertLookY = preferences.invertY;
+    this.controllerDeadzone = preferences.controllerDeadzone;
+    this.input.setControllerDeadzone(preferences.controllerDeadzone);
+    return preferences;
+  }
+
   private applyViewportSize(): void {
     const portrait = matchMedia('(pointer: coarse)').matches && innerHeight > innerWidth;
     const aspect = portrait ? innerWidth / innerHeight : 16 / 10;
@@ -689,6 +714,8 @@ export class GameEngine {
     this.world.load(map, DIFFICULTY[this.difficulty].placement);
     this.particles.clear();
     this.ambientParticleTimer = .7;
+    this.ambientAudioTimer = 3.5;
+    this.ambientAudioCursor = 0;
     this.movementParticleDistance = 0;
     this.enemyBehavior.clear();
     this.projectileSprites.clear();
@@ -725,7 +752,14 @@ export class GameEngine {
     this.nextMap = undefined;
     this.triggered.clear();
     this.scene.fog = new FogExp2(Number(map.id[1]) === 1 ? 0x34383d : Number(map.id[1]) === 2 ? 0x18342f : 0x33070b, .012);
-    this.audio.startMusic(Number(map.id[1]), map.index);
+    this.audio.playMusic(map.music);
+    const firstActor = this.world.actors[0];
+    const firstBehavior = firstActor ? ENEMY_BEHAVIOR_PROFILES[firstActor.id] : undefined;
+    void this.audio.prepareCueGroups([
+      `weapon/${this.player.weapon}/fire`,
+      ...(firstActor ? [`enemy/${firstActor.id}/alert`] : []),
+      ...(firstBehavior?.attacks.map((attack) => `attack/${attack.id}/windup`) ?? []),
+    ]);
     this.showMessage(`${map.id}: ${map.title}`, 2.8);
     this.updateCamera();
     this.visibilityRefreshTimer = 0;
@@ -746,6 +780,7 @@ export class GameEngine {
 
   resume(): void {
     if (this.mode !== 'paused') return;
+    this.input.clearGameplayActions();
     this.mode = 'playing';
     this.audio.resume();
     this.emit();
@@ -806,6 +841,7 @@ export class GameEngine {
     this.particles.update(dt);
     this.updateAnimatedEffects(dt);
     this.updateSemanticCues(dt);
+    this.updateAmbientAudio(dt);
     this.updateAmbientParticles(dt);
     this.updatePowerupTimers(dt);
     this.updateVisionEffects();
@@ -858,15 +894,31 @@ export class GameEngine {
       this.input.keys.delete('KeyQ');
       weaponCycle = -1;
     }
+    const mouseLook = this.input.consumeLook();
+    const mouseLookVertical = this.input.consumeVerticalLook();
+    const lookInput = composeLookInput({
+      keyboardTurn: (this.input.keys.has('ArrowRight') ? 1 : 0) - (this.input.keys.has('ArrowLeft') ? 1 : 0),
+      keyboardLook: (this.input.keys.has('PageDown') ? 1 : 0) - (this.input.keys.has('PageUp') ? 1 : 0),
+      mouseX: mouseLook,
+      mouseY: mouseLookVertical,
+      controllerX: this.input.gamepadLook.x,
+      controllerY: this.input.gamepadLook.y,
+      touchX: this.input.touchLook.x,
+      touchY: this.input.touchLook.y,
+    }, {
+      mouseSensitivity: this.sensitivity,
+      controllerSensitivity: this.controllerSensitivity,
+      touchSensitivity: this.touchSensitivity,
+      invertY: this.invertLookY,
+      controllerDeadzone: this.controllerDeadzone,
+    });
     return {
       forward: (this.input.keys.has('KeyW') || this.input.keys.has('ArrowUp') ? 1 : 0)
         - (this.input.keys.has('KeyS') || this.input.keys.has('ArrowDown') ? 1 : 0) - this.input.touchMove.y - this.input.gamepadMove.y,
       strafe: (this.input.keys.has('KeyD') ? 1 : 0) - (this.input.keys.has('KeyA') ? 1 : 0) + this.input.touchMove.x + this.input.gamepadMove.x,
-      turn: this.radialSelecting ? 0 : (this.input.keys.has('ArrowRight') ? 1 : 0) - (this.input.keys.has('ArrowLeft') ? 1 : 0) + this.input.gamepadLook.x + this.input.touchLook.x,
-      look: this.classicInput ? 0 : this.input.consumeLook(),
-      lookVertical: this.classicInput ? 0 : this.input.consumeVerticalLook()
-        + ((this.input.keys.has('PageDown') ? 1 : 0) - (this.input.keys.has('PageUp') ? 1 : 0)) * 18
-        + (this.input.gamepadLook.y + this.input.touchLook.y) * 8,
+      turn: this.radialSelecting ? 0 : lookInput.turn,
+      look: this.classicInput ? 0 : lookInput.deltaX,
+      lookVertical: this.classicInput ? 0 : lookInput.deltaY,
       fire: this.radialSelecting ? false : this.input.fire,
       use: this.input.consumeUse(),
       walkToggle: this.input.consumeWalkToggle(),
@@ -903,9 +955,9 @@ export class GameEngine {
   private movePlayer(dt: number, command: GameplayCommand): void {
     const previousX = this.player.position.x;
     const previousZ = this.player.position.z;
-    this.player.yaw -= command.look * .002 * this.sensitivity;
-    this.player.yaw -= command.turn * 2.25 * dt * this.sensitivity;
-    this.player.pitch = Math.max(-.62, Math.min(.62, this.player.pitch - (command.lookVertical ?? 0) * .002 * this.sensitivity));
+    this.player.yaw -= command.look * .002;
+    this.player.yaw -= command.turn * 2.25 * dt;
+    this.player.pitch = Math.max(-.62, Math.min(.62, this.player.pitch - (command.lookVertical ?? 0) * .002));
     const forward = new Vector3(-Math.sin(this.player.yaw), 0, -Math.cos(this.player.yaw));
     const right = new Vector3(-forward.z, 0, forward.x);
     const movement = forward.multiplyScalar(command.forward).add(right.multiplyScalar(command.strafe));
@@ -934,16 +986,17 @@ export class GameEngine {
   }
 
   private updateMovementParticles(distance: number): void {
-    if (this.accessibility.reducedEffects) {
-      this.movementParticleDistance = 0;
-      return;
-    }
     if (distance <= .001) return;
     this.movementParticleDistance += distance;
-    const spacing = this.walkMode ? 2.4 : 3.1;
+    const spacing = this.walkMode ? 1.9 : 2.45;
     if (this.movementParticleDistance < spacing) return;
     this.movementParticleDistance %= spacing;
     const tile = this.world.map.legend[this.world.tileAt(this.player.position)];
+    this.audio.playCue(surfaceAudioFeedbackGroup(tile?.floorMaterial ?? ''), {
+      gain: this.walkMode ? .42 : .58,
+      priority: 'routine',
+    });
+    if (this.accessibility.reducedEffects) return;
     const kind = surfaceParticleFeedbackKind(tile?.floorMaterial ?? '');
     const point = this.player.position.clone();
     point.y = this.world.floorHeightAt(point) + .08;
@@ -959,6 +1012,7 @@ export class GameEngine {
       const kind = statusExpiryParticleFeedbackKind(key);
       const point = this.player.position.clone().add(new Vector3(0, -.55, 0));
       this.emitParticles(kind, point, 2);
+      this.audio.uiCue('status-expire');
       window.dispatchEvent(new CustomEvent('powerup-expired', { detail: { powerup: key, kind } }));
     }
   }
@@ -980,6 +1034,8 @@ export class GameEngine {
       }
     }
     if (door) {
+      const spatial = this.pointSpatialAudio(new Vector3(door.x, door.y, door.z));
+      this.audio.worldCue('door-open', spatial.pan, spatial.gain * .62);
       this.emitParticles(
         doorParticleFeedbackKind(door.material, door.credential),
         new Vector3(door.x, door.y + .08, door.z),
@@ -987,6 +1043,8 @@ export class GameEngine {
       );
     }
     if (sector) {
+      const spatial = this.pointSpatialAudio(new Vector3(sector.x, sector.y, sector.z));
+      this.audio.worldCue('lift-end', spatial.pan, spatial.gain);
       this.emitParticles(
         surfaceParticleFeedbackKind(sector.material),
         new Vector3(sector.x, sector.y + .08, sector.z),
@@ -1021,7 +1079,7 @@ export class GameEngine {
     const weapon = WEAPONS[this.player.weapon];
     if (weapon.ammo !== 'none' && this.player.ammo[weapon.ammo] < weapon.ammoCost) {
       this.weaponCooldown = .25;
-      this.audio.tone(80, .06, 'square', .025);
+      this.audio.weaponDryCue(weapon.id);
       const fallback = this.bestUsableWeapon(weapon.id);
       this.showMessage(fallback
         ? `${this.pretty(weapon.ammo)} needed - switching to ${this.pretty(fallback)}`
@@ -1122,6 +1180,8 @@ export class GameEngine {
   }
 
   private playWeaponImpact(weapon: WeaponId, position: Vector3, actor = false): void {
+    const spatial = this.pointSpatialAudio(position);
+    this.audio.weaponImpactCue(weapon, spatial.pan, spatial.gain * (actor ? 1 : .78));
     if (this.accessibility.reducedEffects) return;
     const family = actor || weapon === 'claim-stamp' ? 'hit-ink-small'
       : weapon === 'staple-driver' ? 'staple-impact'
@@ -1150,7 +1210,7 @@ export class GameEngine {
           this.damageBreakable(breakable.key, this.rollWeaponDamage('binding-engine'), impactParticleDirection(direction));
         }
       }
-      this.audio.tone(150 + this.bindingBeam.pulses * 7, .035, 'sawtooth', .022);
+      if (this.bindingBeam.pulses % 5 === 0) this.audio.weaponImpactCue('binding-engine', 0, .5);
       this.bindingBeam.pulses -= 1;
       this.bindingBeam.timer += 1 / 22;
       if (this.bindingBeam.pulses <= 0) this.bindingBeam.timer += .12;
@@ -1421,6 +1481,7 @@ export class GameEngine {
           const breakable = this.world.closestBreakable(projectile.position, projectile.radius + .9);
           if (breakable) this.damageBreakable(breakable.key, projectile.damage, impactParticleDirection(projectile.velocity));
         }
+        this.playWeaponImpact(projectile.weapon, projectile.position, Boolean(target));
         if (projectile.weapon === 'catastrophe-launcher') {
           const launcher = WEAPONS['catastrophe-launcher'];
           this.applyPlayerSplash(projectile.position, launcher.splashDamage ?? 128, launcher.splashRadius ?? 3.8, target);
@@ -1560,7 +1621,8 @@ export class GameEngine {
       this.emitParticles(material, impactPoint, 3, impactDirection);
       return;
     }
-    this.audio.noise(.12, .055);
+    const spatial = this.pointSpatialAudio(impactPoint);
+    this.audio.worldCue('breakable', spatial.pan, spatial.gain);
     this.emitParticles(material, impactPoint, 12, impactDirection);
     breakableDestructionEffects(item.definition.prop, material)
       .forEach((effect) => this.playEffectCue(effect, impactPoint));
@@ -1591,7 +1653,7 @@ export class GameEngine {
       this.momentum.best = Math.max(this.momentum.best, this.momentum.chain);
       this.momentum.timer = 4;
       this.momentum.score += Math.round((100 + Math.min(400, actor.maxHealth * .35)) * this.momentum.chain);
-      if (this.momentum.chain > 1) this.audio.tone(430 + Math.min(6, this.momentum.chain) * 55, .075, 'square', .026);
+      if (this.momentum.chain > 1) this.audio.uiCue('momentum');
       window.dispatchEvent(new CustomEvent('combat-momentum', { detail: { ...this.momentum } }));
       if ([3, 5, 8].includes(this.momentum.chain)) {
         this.playSemanticCue('momentum', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .7, 0)));
@@ -1832,7 +1894,7 @@ export class GameEngine {
       case 'attack':
         if (actor) actor.attackFlash = .2;
         if (actor) {
-          this.audio.enemyCue(actor.id, 'attack', this.actorPan(actor), this.actorAudibility(actor));
+          this.audio.enemyAttackCue(event.attackId, 'resolve', this.actorPan(actor), this.actorAudibility(actor));
           if (event.attackId === 'denial-beam' || event.attackId === 'uninsurable-denial') {
             if (event.resolved || event.blocked) this.spawnHostileBeamVisual(actor, event.resolved, (event.hitCount ?? 0) > 0);
           }
@@ -1841,7 +1903,8 @@ export class GameEngine {
       case 'state':
         if (actor && event.state === 'windup') {
           actor.attackFlash = Math.max(actor.attackFlash, event.duration);
-          this.audio.enemyCue(actor.id, 'windup', this.actorPan(actor), this.actorAudibility(actor));
+          if (event.attackId) this.audio.enemyAttackCue(event.attackId, 'windup', this.actorPan(actor), this.actorAudibility(actor));
+          else this.audio.enemyCue(actor.id, 'windup', this.actorPan(actor), this.actorAudibility(actor));
         }
         break;
       case 'wake':
@@ -2257,7 +2320,7 @@ export class GameEngine {
     this.player.armor -= absorbed;
     if (this.player.armor <= 0) this.player.armorClass = 'none';
     this.player.health -= amount - absorbed;
-    this.audio.noise(.08, .05);
+    this.audio.playerCue(absorbed > 0 ? 'armor' : 'hurt');
     const source = sourceUid ? this.world.actors.find((actor) => actor.uid === sourceUid) : undefined;
     let direction: 'left' | 'right' | 'center' = 'center';
     if (source) {
@@ -2356,7 +2419,7 @@ export class GameEngine {
       } else {
         this.emitParticles(feedbackKind, feedbackPoint, pickup.kind === 'pickup' ? 3 : 4);
       }
-      this.audio.tone(660, .1, 'square', .035);
+      this.audio.pickupCue(pickupAudioFeedbackCue(pickup));
     }
   }
 
@@ -2416,7 +2479,8 @@ export class GameEngine {
       const doorPoint = new Vector3((door.x + .5) * this.world.map.cellSize, this.world.floorHeightAt(this.player.position) + 1.2, (door.z + .5) * this.world.map.cellSize);
       const doorTile = this.world.map.legend[this.world.map.grid[door.z]?.[door.x]];
       this.emitParticles(doorParticleFeedbackKind(doorTile?.wallMaterial ?? '', door.credential), doorPoint, door.credential ? 5 : 3);
-      this.audio.tone(160, .22, 'sawtooth', .035);
+      const spatial = this.pointSpatialAudio(doorPoint);
+      this.audio.worldCue('door-open', spatial.pan, spatial.gain);
       this.showMessage('Access granted', .8);
       return;
     }
@@ -2461,7 +2525,7 @@ export class GameEngine {
         const secretId = trigger.targets.find((target) => this.world.map.secrets.some((secret) => secret.id === target));
         if (secretId && this.world.revealSecret(secretId)) {
           this.tally.secrets += 1;
-          this.audio.tone(880, .16, 'triangle', .04);
+          this.audio.worldCue('secret');
           const secret = this.world.map.secrets.find((candidate) => candidate.id === secretId);
           if (secret) {
             outcomeMessage = `Anomaly confirmed: ${secret.clue}`;
@@ -2501,7 +2565,12 @@ export class GameEngine {
         }
         else this.world.applyTransformation(trigger.action);
       }
-      this.audio.tone(210, .24, 'sawtooth', .04);
+      if (trigger.action !== 'teleport' && trigger.action !== 'reveal-secret') {
+        if (trigger.action === 'raise-floor' || trigger.action === 'lower-floor' || trigger.action === 'move-walls'
+          || trigger.action === 'drain-liquid' || trigger.action === 'flood-liquid') this.audio.worldCue('lift-start');
+        else if (trigger.action === 'open-door' || trigger.action === 'open-exit') this.audio.worldCue('switch');
+        else this.audio.worldCue('mechanism');
+      }
       this.showMessage(outcomeMessage, outcomeDuration);
       if (checkpointChanged) this.checkpoint();
       if (trigger.action !== 'open-exit') return;
@@ -2572,7 +2641,11 @@ export class GameEngine {
   }
 
   private rejectUse(message: string, reason: 'credential' | 'encounter' | 'nothing', credential?: Credential, point?: Vector3): void {
-    this.audio.tone(reason === 'nothing' ? 78 : 90, reason === 'nothing' ? .055 : .08, 'square', reason === 'nothing' ? .018 : .03);
+    if (reason === 'nothing') this.audio.uiCue('menu-back');
+    else {
+      const spatial = point ? this.pointSpatialAudio(point) : { pan: 0, gain: 1 };
+      this.audio.worldCue('door-locked', spatial.pan, spatial.gain);
+    }
     this.showMessage(message, reason === 'nothing' ? .65 : 1.2);
     let direction: 'left' | 'right' | 'center' = 'center';
     if (point) {
@@ -2590,7 +2663,8 @@ export class GameEngine {
   }
 
   private teleportTell(position: Vector3): void {
-    this.audio.tone(240, .18, 'square', .045);
+    const spatial = this.pointSpatialAudio(position);
+    this.audio.worldCue('teleport', spatial.pan, spatial.gain);
     const frames = ['start', 'expand-01', 'expand-02', 'expand-03', 'peak', 'collapse-01', 'collapse-02', 'end']
       .map((frame) => `/public_runtime/effects/teleport-approval-ring/fx_teleport-approval-ring_${frame}.png`);
     const point = position.clone().addScaledVector(this.aimDirection(), 1.45).setY(this.world.floorHeightAt(position) + .85);
@@ -2656,8 +2730,10 @@ export class GameEngine {
     }
     this.nextMap = nextMap;
     this.mode = 'intermission';
-    this.audio.stopMusic();
-    this.audio.suspend();
+    this.audio.worldCue('exit');
+    this.audio.uiCue('map-clear');
+    if (this.world.map.index === 8) this.audio.startEndingMusic(Number(this.world.map.id[1]));
+    else this.audio.startIntermissionMusic();
     document.exitPointerLock();
     this.onIntermission?.(nextMap);
     this.emit();
@@ -2698,7 +2774,7 @@ export class GameEngine {
     }
     this.mode = 'dead';
     this.audio.stopMusic();
-    this.audio.suspend();
+    this.audio.playerCue('death');
     document.exitPointerLock();
     this.showMessage('Claim denied', 2);
     this.emit();
@@ -2869,11 +2945,13 @@ export class GameEngine {
   save(): void {
     if (!this.world.map || this.activeDemo || this.demoReadOnly) return;
     this.persistence.quicksave(this.createSaveData(), this.saveMetadata(undefined, true));
+    this.audio.uiCue('save');
   }
 
   saveManual(slot: number, name?: string): void {
     if (!this.world.map || this.activeDemo || this.demoReadOnly) return;
     this.persistence.saveManual(slot, this.createSaveData(), this.saveMetadata(name, true));
+    this.audio.uiCue('save');
   }
 
   manualSlots(): readonly ManualSlotSummary[] {
@@ -2918,12 +2996,18 @@ export class GameEngine {
   loadManual(slot: number): boolean {
     const result = this.persistence.loadManual(slot);
     if (result.status !== 'valid') return false;
-    return this.restoreSave(result.state, false);
+    const restored = this.restoreSave(result.state, false);
+    if (restored) this.audio.uiCue('load');
+    return restored;
   }
 
   loadQuicksave(): boolean {
     const result = this.persistence.loadQuicksave();
-    if (result.status === 'valid') return this.restoreSave(result.state);
+    if (result.status === 'valid') {
+      const restored = this.restoreSave(result.state);
+      if (restored) this.audio.uiCue('load');
+      return restored;
+    }
     this.showMessage('No quicksave is available', 1.8);
     this.emit();
     return false;
@@ -2931,12 +3015,18 @@ export class GameEngine {
 
   loadAutomatic(slotId: string): boolean {
     const result = this.persistence.inspectAllSlots().find((entry) => entry.slotId === slotId && entry.kind !== 'manual');
-    return result?.status === 'valid' ? this.restoreSave(result.state, false) : false;
+    if (result?.status !== 'valid') return false;
+    const restored = this.restoreSave(result.state, false);
+    if (restored) this.audio.uiCue('load');
+    return restored;
   }
 
   load(): boolean {
     const result = this.persistence.newestValidContinue();
-    return result ? this.restoreSave(result.state) : false;
+    if (!result) return false;
+    const restored = this.restoreSave(result.state);
+    if (restored) this.audio.uiCue('load');
+    return restored;
   }
 
   private restoreSave(save: SaveData, resume = true): boolean {
@@ -3691,6 +3781,21 @@ export class GameEngine {
     this.particles.setTextures('momentum', frames('status-feedback', [6]));
     this.particles.setTextures('rejection', frames('status-feedback', [7]));
     this.particles.setTextures('confetti', frames('status-feedback', [8]));
+  }
+  private updateAmbientAudio(dt: number): void {
+    if (this.mode !== 'playing') return;
+    this.ambientAudioTimer -= dt;
+    if (this.ambientAudioTimer > 0) return;
+    const groups = ambientAudioGroups(this.world.map.id);
+    const group = groups[this.ambientAudioCursor % groups.length];
+    const phase = this.ambientAudioCursor * 1.73 + Number(this.world.map.id[1]);
+    this.audio.playCue(group, {
+      gain: .22,
+      pan: Math.sin(phase) * .72,
+      priority: 'ambient',
+    });
+    this.ambientAudioCursor += 1;
+    this.ambientAudioTimer = 7.2 + (this.ambientAudioCursor % 4) * 1.35;
   }
   private updateAmbientParticles(dt: number): void {
     if (this.accessibility.reducedEffects || this.mode !== 'playing') return;

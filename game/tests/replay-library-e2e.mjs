@@ -11,6 +11,11 @@ page.on('pageerror', (error) => errors.push(String(error)));
 page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
 const state = async () => JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const dispatchMenu = (action) => page.evaluate((menuAction) => {
+  window.dispatchEvent(new CustomEvent('input-menu-navigation', {
+    detail: { action: menuAction, source: 'gamepad', repeat: false },
+  }));
+}, action);
 const persistentGameplay = () => page.evaluate(() => Object.fromEntries(Object.keys(localStorage)
   .filter((key) => key.startsWith('red-ledger-v2:save:') || key === 'red-ledger-v2:campaign')
   .sort().map((key) => [key, localStorage.getItem(key)])));
@@ -19,7 +24,8 @@ await page.goto(url, { waitUntil: 'networkidle' });
 await page.evaluate(() => localStorage.setItem('red-ledger-replays-v1', JSON.stringify([{ name: 'Legacy replay' }])));
 await page.click('#replays-button');
 assert((await page.locator('#replay-feedback').textContent()).includes('incompatible simulation version'), 'Legacy replay incompatibility is not explained');
-await page.click('#replay-back');
+await dispatchMenu('back');
+assert(await page.locator('#menu').isVisible(), 'Controller Back did not leave the replay library');
 await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
@@ -76,23 +82,26 @@ await page.reload({ waitUntil: 'networkidle' });
 await page.click('#replays-button');
 assert(await page.locator('#replay-list .replay-row').count() === 1, 'Current replay was unavailable after a fresh-page reload');
 await page.locator('#replay-list .replay-row button').filter({ hasText: 'Play' }).click();
+await page.waitForFunction(() => document.activeElement?.id === 'replay-pause');
 let snapshot = await state();
 assert(snapshot.demo.playback?.currentTick === 0, 'Replay fast-forwarded instead of starting at tick zero');
 assert(snapshot.player.x === initial.player.x && snapshot.player.z === initial.player.z, 'Replay did not restore its initial state');
 assert(snapshot.audio.lifecycleSuspended, 'Replay preview did not begin with audio suspended');
 assert(snapshot.audio.musicActive, 'Fresh-page replay did not initialize its music scheduler');
-await page.click('#replay-pause');
+await dispatchMenu('confirm');
 await page.evaluate(() => window.advanceTime(100));
 snapshot = await state();
 assert(snapshot.demo.playback.currentTick > 0 && snapshot.demo.playback.currentTick < snapshot.demo.playback.totalTicks, 'Replay did not advance incrementally');
 assert(!snapshot.audio.lifecycleSuspended, 'Playing replay did not resume audio');
-await page.click('#replay-pause');
+await dispatchMenu('confirm');
 const pausedTick = (await state()).demo.playback.currentTick;
 assert((await state()).audio.lifecycleSuspended, 'Paused replay left audio running');
 await page.evaluate(() => window.advanceTime(250));
 assert((await state()).demo.playback.currentTick === pausedTick, 'Paused replay continued advancing');
-await page.click('#replay-pause');
-await page.click('#replay-speed');
+await dispatchMenu('confirm');
+await dispatchMenu('right');
+assert(await page.evaluate(() => document.activeElement?.id) === 'replay-speed', 'Controller navigation did not reach replay speed');
+await dispatchMenu('confirm');
 assert((await state()).demo.playback.speed === 2, 'Replay speed did not cycle to 2x');
 await page.screenshot({ path: 'output/replays/active-controls.png' });
 await page.evaluate(() => window.advanceTime(100));
@@ -108,7 +117,7 @@ assert((await state()).audio.lifecycleSuspended, 'Completed replay left audio ru
 assert(await page.locator('#replay-state').textContent() === 'Replay Complete', 'Finished replay controls were not visible');
 const storageAfter = await persistentGameplay();
 assert(JSON.stringify(storageAfter) === JSON.stringify(storageBefore), 'Replay mutated campaign or save persistence');
-await page.click('#replay-exit');
+await dispatchMenu('back');
 assert(await page.locator('#menu').isVisible(), 'Replay Exit did not return to the main menu');
 
 await page.click('#replays-button');

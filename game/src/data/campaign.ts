@@ -882,7 +882,7 @@ const buildMap = (spec: MapSpec): CampaignMap => {
     index: Number(spec.id[3]),
     title: spec.title,
     location: spec.location,
-    music: `music.${spec.id.toLowerCase()}`,
+    music: spec.id,
     sky: skies[episode.number],
     parSeconds: experiencedPar(spec),
     secretMap: spec.secretMap,

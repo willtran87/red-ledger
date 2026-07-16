@@ -26,7 +26,7 @@ The Vite configuration mounts `../assets` as the public root. Runtime images res
 | Quicksave / quickload | F6 (F5 alias) / F9 |
 | Fullscreen | F |
 
-Touch devices receive a movement stick and fire control. Standard controllers support movement, aim, fire, use, weapon cycling, automap, and pause.
+Touch devices receive configurable movement/look controls and fire/use actions. Standard controllers support movement, aim, fire, use, weapon cycling, automap, and pause. Options expose independent mouse/controller/touch look sensitivity, Y inversion, controller deadzone, touch size/opacity/handedness, and three interface text scales.
 
 ## Implemented Systems
 
@@ -41,7 +41,7 @@ Touch devices receive a movement stick and fire control. Standard controllers su
 - Persistent episode inventory, intermissions, tallies, narrative art, and final epilogue
 - Explored automap and face-driven status bar
 - Eight manual slots, quicksave/quickload, rotating map-entry autosaves, episode recovery, corruption-safe Continue, campaign unlocks, and level select
-- Deterministic map-specific 2.56-minute procedural scores and identity-specific combat cues with no external audio dependency
+- Schema-2 authored audio with 33 streamed tracks, including one distinct 2.5-4 minute score per map, plus 347 cues in 189 semantic groups across five lazy SFX shards, persisted speakers/headphones/night/mono profiles, bounded retry, and synthesized failure fallback
 - Desktop, fullscreen, and touch layouts
 - Deterministic `window.advanceTime(ms)` and `window.render_game_to_text()` hooks
 - Checksummed 35 Hz gameplay demo recording/playback, persistent keyboard/mouse/controller remapping, menu navigation, and a held controller weapon radial
@@ -58,6 +58,7 @@ npm run test:combat-save
 npm run test:demo
 npm run test:controls
 npm run test:mechanisms
+npx vitest run tests/audio-content-contracts.test.ts src/game/AudioSystem.test.ts
 npm run build
 ```
 
@@ -68,6 +69,8 @@ High-resolution visual coverage uses `2560x1600`, ordinary desktop uses `1280x72
 - Campaign: `src/data`
 - Engine: `src/game`
 - Runtime catalog: `../assets/data/game-assets.json`
+- Runtime audio manifest: `../assets/audio/audio-library.json`
+- Audio production contract: `../AUDIO_PRODUCTION_BIBLE.md`
 - Authoring catalog: `../assets/data/runtime-assets.json`
 - Runtime projection: `scripts/build-game-catalog.mjs`
 - Authoring catalog generator: `../implementation/generate-runtime-catalog.mjs`

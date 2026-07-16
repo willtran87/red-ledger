@@ -65,6 +65,7 @@ const browserTests = [
   ['lifecycle and active-combat performance', 'tests/lifecycle-performance-e2e.mjs', 2],
   ['gameplay', 'tests/gameplay-e2e.mjs'],
   ['campaign runtime', 'tests/campaign-runtime-e2e.mjs'],
+  ['authored streaming audio and fallback recovery', 'tests/authored-audio-e2e.mjs'],
   ['campaign credential guidance', 'tests/campaign-guidance-e2e.mjs'],
   ['progression', 'tests/progression-e2e.mjs'],
   ['optional encounter progression', 'tests/optional-encounter-e2e.mjs'],

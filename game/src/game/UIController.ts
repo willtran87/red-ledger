@@ -1,9 +1,15 @@
 import { CAMPAIGN, type CampaignMap, type MapId } from '../data';
 import { INPUT_ACTIONS, bindingLabel, type InputAction } from './InputBindings';
-import type { InputActionEvent, MenuNavigationEvent } from './InputSystem';
+import {
+  normalizeInputPreferences,
+  type InputActionEvent,
+  type InputPreferences,
+  type MenuNavigationEvent,
+} from './InputSystem';
 import { WEAPONS, type GameDifficulty } from './definitions';
 import { GameEngine, type GameSnapshot } from './GameEngine';
 import { ASSET_DEGRADED_EVENT, runtimeUrl } from './AssetCatalog';
+import type { AudioPlaybackProfile } from './AudioSystem';
 import {
   DEMO_SCHEMA_VERSION,
   PERSISTENCE_CONFLICT_EVENT,
@@ -33,6 +39,48 @@ const REPLAY_LIBRARY_KEY = 'red-ledger-replays-v2';
 const LEGACY_REPLAY_LIBRARY_KEY = 'red-ledger-replays-v1';
 const REPLAY_LIBRARY_BYTES = 3_500_000;
 const REPLAY_LIBRARY_LIMIT = 6;
+
+export type TouchControlSize = 'small' | 'standard' | 'large';
+export type TouchHandedness = 'right' | 'left';
+export type UiTextScale = 'standard' | 'large' | 'largest';
+
+export interface InterfacePreferences {
+  touchControlSize: TouchControlSize;
+  touchControlOpacity: number;
+  touchHandedness: TouchHandedness;
+  uiTextScale: UiTextScale;
+}
+
+export const DEFAULT_INTERFACE_PREFERENCES: Readonly<InterfacePreferences> = Object.freeze({
+  touchControlSize: 'standard',
+  touchControlOpacity: .78,
+  touchHandedness: 'right',
+  uiTextScale: 'standard',
+});
+
+export const normalizeInterfacePreferences = (value: unknown): InterfacePreferences => {
+  const record = value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  const sizes: readonly TouchControlSize[] = ['small', 'standard', 'large'];
+  const hands: readonly TouchHandedness[] = ['right', 'left'];
+  const textScales: readonly UiTextScale[] = ['standard', 'large', 'largest'];
+  const opacity = typeof record.touchControlOpacity === 'number' && Number.isFinite(record.touchControlOpacity)
+    ? Math.max(.45, Math.min(1, record.touchControlOpacity))
+    : DEFAULT_INTERFACE_PREFERENCES.touchControlOpacity;
+  return {
+    touchControlSize: sizes.includes(record.touchControlSize as TouchControlSize)
+      ? record.touchControlSize as TouchControlSize
+      : DEFAULT_INTERFACE_PREFERENCES.touchControlSize,
+    touchControlOpacity: opacity,
+    touchHandedness: hands.includes(record.touchHandedness as TouchHandedness)
+      ? record.touchHandedness as TouchHandedness
+      : DEFAULT_INTERFACE_PREFERENCES.touchHandedness,
+    uiTextScale: textScales.includes(record.uiTextScale as UiTextScale)
+      ? record.uiTextScale as UiTextScale
+      : DEFAULT_INTERFACE_PREFERENCES.uiTextScale,
+  };
+};
 
 const DIFFICULTY_OPTIONS: ReadonlyArray<{ id: GameDifficulty; label: string; detail: string }> = [
   { id: 'orientation', label: 'Orientation', detail: 'Story-focused. More supplies, slower threats, forgiving damage.' },
@@ -115,6 +163,11 @@ export const resolveScreenShakeSetting = (
 export const entryBriefingLabels = (initialOrientation: boolean): readonly string[] => initialOrientation
   ? ['MOVE', 'LOOK', 'FIRE', 'USE']
   : ['USE', 'WEAPON', 'MAP'];
+
+export const touchBriefingPadLabels = (handedness: TouchHandedness): { move: string; look: string } =>
+  handedness === 'left'
+    ? { move: 'Right pad', look: 'Left pad' }
+    : { move: 'Left pad', look: 'Right pad' };
 
 export const entryObjectiveCue = (map: CampaignMap): string => {
   const authorities = map.actors
@@ -216,6 +269,7 @@ export class UIController {
   private lastCredentialSignature = '';
   private lastInteractionSignature?: string;
   private lastPortraitFile = '';
+  private audioReadyRequested = false;
 
   constructor(readonly game: GameEngine) {
     window.addEventListener(PERSISTENCE_DEGRADED_EVENT, () => this.showRuntimeWarning(
@@ -231,6 +285,7 @@ export class UIController {
     this.buildEpisodeCards();
     this.buildDifficulties();
     this.bindActions();
+    this.setEntryDevice('desktop');
     this.game.onChange = (snapshot) => this.update(snapshot);
     this.game.onIntermission = () => this.showIntermission();
     this.updateContinue();
@@ -311,9 +366,19 @@ export class UIController {
 
   private bindActions(): void {
     window.addEventListener('pointerdown', (event) => {
-      this.entryDevice = event.pointerType === 'touch' ? 'touch' : 'desktop';
+      this.unlockAudio();
+      this.setEntryDevice(event.pointerType === 'touch' ? 'touch' : 'desktop');
     }, { capture: true });
-    window.addEventListener('keydown', () => { this.entryDevice = 'desktop'; }, { capture: true });
+    window.addEventListener('keydown', () => {
+      this.unlockAudio();
+      this.setEntryDevice('desktop');
+    }, { capture: true });
+    document.addEventListener('click', (event) => {
+      const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('button') : null;
+      if (!button || button.disabled || !button.closest('.screen, dialog, #ready-overlay')) return;
+      const isBack = button.matches('[data-back], #confirm-cancel, #controls-back, .slot-back, #replay-back, #replay-exit');
+      this.game.audio.uiCue(isBack ? 'menu-back' : 'menu-accept');
+    }, { capture: true });
     $('#new-game').addEventListener('click', () => { this.updateEpisodeLocks(); this.showScreen('episode-menu'); });
     $('#continue-game').addEventListener('click', () => {
       this.game.audio.unlock();
@@ -431,13 +496,14 @@ export class UIController {
       this.updateContinue();
       this.showScreen('menu');
     });
-    $('#sensitivity').addEventListener('input', (event) => { this.game.sensitivity = Number((event.target as HTMLInputElement).value); });
-    $('#render-scale').addEventListener('change', (event) => this.game.setRenderScale(Number((event.target as HTMLSelectElement).value)));
-    ['sensitivity', 'render-scale', 'hud-mode', 'classic-input', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects',
-      'master-volume', 'music-volume', 'sfx-volume', 'mute-audio'].forEach((id) => {
+    ['sensitivity', 'controller-sensitivity', 'touch-sensitivity', 'invert-y', 'controller-deadzone',
+      'touch-size', 'touch-opacity', 'touch-handedness', 'text-scale', 'render-scale', 'hud-mode', 'classic-input',
+      'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects',
+      'master-volume', 'music-volume', 'sfx-volume', 'audio-profile', 'mute-audio'].forEach((id) => {
       $(`#${id}`).addEventListener('change', () => this.applySettings(true));
     });
-    for (const id of ['master-volume', 'music-volume', 'sfx-volume']) {
+    for (const id of ['sensitivity', 'controller-sensitivity', 'touch-sensitivity', 'controller-deadzone',
+      'touch-opacity', 'master-volume', 'music-volume', 'sfx-volume']) {
       $(`#${id}`).addEventListener('input', () => this.applySettings(true));
     }
     window.addEventListener('keydown', (event) => {
@@ -485,10 +551,11 @@ export class UIController {
     window.addEventListener('input-action', (event) => this.handleInputAction((event as CustomEvent<InputActionEvent>).detail));
     window.addEventListener('input-action-release', (event) => this.handleInputRelease((event as CustomEvent<InputActionEvent>).detail));
     window.addEventListener('input-menu-navigation', (event) => this.handleMenuNavigation((event as CustomEvent<MenuNavigationEvent>).detail));
-    window.addEventListener('input-binding-captured', () => {
+    window.addEventListener('input-binding-captured', (event) => {
+      const action = (event as CustomEvent<{ action: InputAction }>).detail.action;
       this.capturingAction = undefined;
       $('#cancel-binding').toggleAttribute('hidden', true);
-      this.buildControls();
+      this.buildControls(action);
     });
     window.addEventListener('input-binding-cancelled', () => this.cancelBindingCapture());
     window.addEventListener('input-lifecycle-pause', () => {
@@ -1013,6 +1080,11 @@ export class UIController {
     reticle.style.setProperty('--reticle-gap', `${gap.toFixed(2)}px`);
   }
 
+  private setEntryDevice(device: 'desktop' | 'gamepad' | 'touch'): void {
+    this.entryDevice = device;
+    $('#game-shell').setAttribute('data-input-device', device);
+  }
+
   private entryBinding(
     action: InputAction,
     device: 'keyboard' | 'mouse-button' | 'gamepad-button' | 'gamepad-axis' = 'keyboard',
@@ -1034,14 +1106,17 @@ export class UIController {
 
   private buildEntryBriefing(): void {
     const coarse = matchMedia('(pointer: coarse)').matches;
-    const device = coarse ? 'touch' : this.entryDevice;
+    const device = this.entryDevice === 'gamepad' ? 'gamepad' : coarse ? 'touch' : this.entryDevice;
+    this.setEntryDevice(device);
     const container = $('#entry-controls');
     const progress = this.game.campaignProgress();
     const initialOrientation = this.game.world.map.id === 'E1M1' && progress.completedMaps.length === 0;
     const movement = ['move-forward', 'strafe-left', 'move-backward', 'strafe-right']
       .map((action) => this.entryBinding(action as InputAction)).join(' ');
+    const touchHandedness = $<HTMLSelectElement>('#touch-handedness').value === 'left' ? 'left' : 'right';
+    const touchPads = touchBriefingPadLabels(touchHandedness);
     const values = device === 'touch' ? {
-      MOVE: 'Left pad', LOOK: 'Right pad', FIRE: 'Red control', USE: 'Use control', WEAPON: 'WPN control', MAP: 'Map control',
+      MOVE: touchPads.move, LOOK: touchPads.look, FIRE: 'Red control', USE: 'Use control', WEAPON: 'WPN control', MAP: 'Map control',
     } : device === 'gamepad' ? {
       MOVE: 'Left stick', LOOK: 'Right stick', FIRE: this.entryGamepadBinding('fire'), USE: this.entryGamepadBinding('use'),
       WEAPON: this.entryGamepadBinding('weapon-radial'), MAP: this.entryGamepadBinding('automap'),
@@ -1166,7 +1241,7 @@ export class UIController {
   }
 
   private hurtFlash(detail: { direction?: 'left' | 'right' | 'center' } = {}): void {
-    const shell = $('#game-shell');
+    const shell = $<HTMLElement>('#game-shell');
     const direction = detail.direction ?? 'center';
     this.setPortrait(direction === 'left' ? 'pain-left' : direction === 'right' ? 'pain-right' : 'pain-center');
     this.portraitUntil = performance.now() + 320;
@@ -1567,6 +1642,7 @@ export class UIController {
           return;
         }
         this.hideScreens();
+        requestAnimationFrame(() => $<HTMLButtonElement>('#replay-pause').focus({ preventScroll: true }));
       });
       const save = document.createElement('button');
       save.textContent = 'Export';
@@ -1619,7 +1695,7 @@ export class UIController {
     }
   }
 
-  private buildControls(): void {
+  private buildControls(focusAction?: InputAction): void {
     const container = $('#controls-list');
     container.replaceChildren();
     INPUT_ACTIONS.forEach((action) => {
@@ -1628,34 +1704,50 @@ export class UIController {
       const label = document.createElement('span');
       label.textContent = action.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
       const button = document.createElement('button');
+      button.dataset.action = action;
       const bindings = this.game.input.getBinding(action);
-      button.textContent = bindings.length ? bindings.map(bindingLabel).join(' / ') : 'Unbound';
+      const bindingCopy = bindings.length ? bindings.map(bindingLabel).join(' / ') : 'Unbound';
+      const setButtonCopy = (copy: string, capturing = false) => {
+        button.textContent = copy;
+        button.setAttribute('aria-label', capturing
+          ? `${label.textContent}. Press an input or choose Cancel.`
+          : `${label.textContent}. Current bindings: ${copy}. Activate to rebind.`);
+      };
+      setButtonCopy(bindingCopy);
       button.title = `Rebind ${label.textContent}`;
       button.classList.toggle('capturing', this.capturingAction === action);
       button.addEventListener('click', () => {
         this.capturingAction = action;
         this.game.input.beginBindingCapture(action);
-        button.textContent = 'Press an input';
+        setButtonCopy('Press an input', true);
         button.classList.add('capturing');
         $('#cancel-binding').toggleAttribute('hidden', false);
       });
       row.append(label, button);
       container.append(row);
     });
+    if (focusAction) {
+      requestAnimationFrame(() => {
+        [...container.querySelectorAll<HTMLButtonElement>('button[data-action]')]
+          .find((button) => button.dataset.action === focusAction)
+          ?.focus({ preventScroll: true });
+      });
+    }
   }
 
   private cancelBindingCapture(): void {
+    const action = this.capturingAction;
     this.game.input.cancelBindingCapture();
     this.capturingAction = undefined;
     $('#cancel-binding').toggleAttribute('hidden', true);
-    if ($('#controls-menu').classList.contains('active')) this.buildControls();
+    if ($('#controls-menu').classList.contains('active')) this.buildControls(action);
   }
 
   private handleInputAction(detail: InputActionEvent): void {
     if (detail.repeat) return;
-    if (detail.source === 'gamepad') this.entryDevice = 'gamepad';
-    else if (detail.source === 'touch') this.entryDevice = 'touch';
-    else this.entryDevice = 'desktop';
+    if (detail.source === 'gamepad') this.setEntryDevice('gamepad');
+    else if (detail.source === 'touch') this.setEntryDevice('touch');
+    else this.setEntryDevice('desktop');
     const dialog = $<HTMLDialogElement>('#confirm-dialog');
     if (dialog.open) {
       if (detail.action === 'pause') this.closeConfirm();
@@ -1733,7 +1825,7 @@ export class UIController {
   }
 
   private handleMenuNavigation(detail: MenuNavigationEvent): void {
-    this.entryDevice = detail.source === 'gamepad' ? 'gamepad' : 'desktop';
+    this.setEntryDevice(detail.source === 'gamepad' ? 'gamepad' : 'desktop');
     if (detail.action === 'back' && !detail.repeat) {
       this.handleBackNavigation();
       return;
@@ -1741,7 +1833,14 @@ export class UIController {
     const dialog = $<HTMLDialogElement>('#confirm-dialog');
     const ready = $('#ready-overlay');
     const active = document.querySelector<HTMLElement>('.screen.active');
-    const root = dialog.open ? dialog : !ready.hasAttribute('hidden') ? ready : active;
+    const replayControls = $('#replay-controls');
+    const root = dialog.open
+      ? dialog
+      : !ready.hasAttribute('hidden')
+        ? ready
+        : !replayControls.hasAttribute('hidden')
+          ? replayControls
+          : active;
     if (!root || this.capturingAction) return;
     const focusable = [...root.querySelectorAll<HTMLElement>('button:not(:disabled):not([hidden]), select:not(:disabled), input:not(:disabled)')]
       .filter((element) => element.offsetParent !== null);
@@ -1784,9 +1883,14 @@ export class UIController {
       this.showScreen('pause-menu');
       return;
     }
+    if (!$('#replay-controls').hasAttribute('hidden')) {
+      $<HTMLButtonElement>('#replay-exit').click();
+      return;
+    }
     if (!active) return;
     if (active.id === 'controls-menu') $<HTMLButtonElement>('#controls-back').click();
     else if (active.id === 'save-slots' || active.id === 'load-slots') active.querySelector<HTMLElement>('.slot-back')?.click();
+    else if (active.id === 'replay-library') $<HTMLButtonElement>('#replay-back').click();
     else if (active.id === 'pause-menu') $<HTMLButtonElement>('#resume-game').click();
     else active.querySelector<HTMLElement>('[data-back]')?.click();
   }
@@ -1808,7 +1912,17 @@ export class UIController {
       settings = stored !== null && typeof stored === 'object' && !Array.isArray(stored)
         ? stored as Record<string, unknown>
         : {};
-      if (typeof settings.sensitivity === 'number') $<HTMLInputElement>('#sensitivity').value = String(settings.sensitivity);
+      const input = normalizeInputPreferences(settings);
+      const presentation = normalizeInterfacePreferences(settings);
+      $<HTMLInputElement>('#sensitivity').value = String(input.mouseSensitivity);
+      $<HTMLInputElement>('#controller-sensitivity').value = String(input.controllerSensitivity);
+      $<HTMLInputElement>('#touch-sensitivity').value = String(input.touchSensitivity);
+      $<HTMLInputElement>('#invert-y').checked = input.invertY;
+      $<HTMLInputElement>('#controller-deadzone').value = String(input.controllerDeadzone);
+      $<HTMLSelectElement>('#touch-size').value = presentation.touchControlSize;
+      $<HTMLInputElement>('#touch-opacity').value = String(presentation.touchControlOpacity);
+      $<HTMLSelectElement>('#touch-handedness').value = presentation.touchHandedness;
+      $<HTMLSelectElement>('#text-scale').value = presentation.uiTextScale;
       if (typeof settings.renderScale === 'number') $<HTMLSelectElement>('#render-scale').value = String(settings.renderScale);
       if (settings.hudMode === 'minimal') $<HTMLSelectElement>('#hud-mode').value = 'minimal';
       for (const id of ['classic-input', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects']) {
@@ -1830,25 +1944,43 @@ export class UIController {
     $<HTMLInputElement>('#master-volume').value = String(this.game.audio.masterVolume);
     $<HTMLInputElement>('#music-volume').value = String(this.game.audio.musicVolume);
     $<HTMLInputElement>('#sfx-volume').value = String(this.game.audio.sfxVolume);
+    $<HTMLSelectElement>('#audio-profile').value = this.game.audio.playbackProfile;
     $<HTMLInputElement>('#mute-audio').checked = this.game.audio.muted;
     this.applySettings(false);
   }
 
   private applySettings(persist: boolean): void {
-    const sensitivity = Number($<HTMLInputElement>('#sensitivity').value);
+    const input: InputPreferences = this.game.setInputPreferences({
+      mouseSensitivity: Number($<HTMLInputElement>('#sensitivity').value),
+      controllerSensitivity: Number($<HTMLInputElement>('#controller-sensitivity').value),
+      touchSensitivity: Number($<HTMLInputElement>('#touch-sensitivity').value),
+      invertY: $<HTMLInputElement>('#invert-y').checked,
+      controllerDeadzone: Number($<HTMLInputElement>('#controller-deadzone').value),
+    });
+    const presentation = normalizeInterfacePreferences({
+      touchControlSize: $<HTMLSelectElement>('#touch-size').value,
+      touchControlOpacity: Number($<HTMLInputElement>('#touch-opacity').value),
+      touchHandedness: $<HTMLSelectElement>('#touch-handedness').value,
+      uiTextScale: $<HTMLSelectElement>('#text-scale').value,
+    });
     const renderScale = Number($<HTMLSelectElement>('#render-scale').value);
     const hudMode = $<HTMLSelectElement>('#hud-mode').value;
-    this.game.sensitivity = sensitivity;
     this.game.classicInput = $<HTMLInputElement>('#classic-input').checked;
     this.game.setRenderScale(renderScale);
+    const shell = $<HTMLElement>('#game-shell');
+    shell.dataset.touchSize = presentation.touchControlSize;
+    shell.dataset.touchHandedness = presentation.touchHandedness;
+    shell.style.setProperty('--touch-control-opacity', String(presentation.touchControlOpacity));
+    document.documentElement.dataset.uiTextScale = presentation.uiTextScale;
     $('#hud').classList.toggle('minimal', hudMode === 'minimal');
-    $('#game-shell').classList.toggle('reduced-motion', $<HTMLInputElement>('#reduced-motion').checked);
-    $('#game-shell').classList.toggle('high-contrast-attacks', $<HTMLInputElement>('#high-contrast').checked);
+    shell.classList.toggle('reduced-motion', $<HTMLInputElement>('#reduced-motion').checked);
+    shell.classList.toggle('high-contrast-attacks', $<HTMLInputElement>('#high-contrast').checked);
     this.game.accessibility.highContrast = $<HTMLInputElement>('#high-contrast').checked;
     this.game.accessibility.reducedEffects = $<HTMLInputElement>('#reduced-effects').checked;
     this.game.audio.setMasterVolume(Number($<HTMLInputElement>('#master-volume').value));
     this.game.audio.setMusicVolume(Number($<HTMLInputElement>('#music-volume').value));
     this.game.audio.setSfxVolume(Number($<HTMLInputElement>('#sfx-volume').value));
+    this.game.audio.setPlaybackProfile($<HTMLSelectElement>('#audio-profile').value as AudioPlaybackProfile);
     this.game.audio.setMuted($<HTMLInputElement>('#mute-audio').checked);
     window.dispatchEvent(new CustomEvent('accessibility-settings-change', { detail: {
       reducedMotion: $<HTMLInputElement>('#reduced-motion').checked,
@@ -1860,7 +1992,16 @@ export class UIController {
     if (!persist) return;
     try {
       localStorage.setItem('red-ledger-settings-v1', JSON.stringify({
-        sensitivity,
+        sensitivity: input.mouseSensitivity,
+        mouseSensitivity: input.mouseSensitivity,
+        controllerSensitivity: input.controllerSensitivity,
+        touchSensitivity: input.touchSensitivity,
+        invertY: input.invertY,
+        controllerDeadzone: input.controllerDeadzone,
+        touchControlSize: presentation.touchControlSize,
+        touchControlOpacity: presentation.touchControlOpacity,
+        touchHandedness: presentation.touchHandedness,
+        uiTextScale: presentation.uiTextScale,
         renderScale,
         hudMode,
         'classic-input': $<HTMLInputElement>('#classic-input').checked,
@@ -1900,6 +2041,10 @@ export class UIController {
   }
   private hideScreens(): void { document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active')); }
   private showScreen(id: string): void {
+    if (id === 'menu' && this.game.mode === 'menu' && this.audioReadyRequested) {
+      this.game.audio.resume();
+      this.game.audio.startMenuMusic();
+    } else if (id === 'credits' && this.audioReadyRequested) this.game.audio.startCreditsMusic();
     $('#ready-overlay').toggleAttribute('hidden', true);
     this.hideScreens();
     const screen = $<HTMLElement>(`#${id}`);
@@ -1941,6 +2086,14 @@ export class UIController {
     if (dialog.open) dialog.close();
     this.focusBeforeDialog?.focus();
     this.focusBeforeDialog = undefined;
+  }
+
+  private unlockAudio(): void {
+    this.game.audio.unlock();
+    if (this.audioReadyRequested) return;
+    this.audioReadyRequested = true;
+    if (this.game.mode === 'menu') this.game.audio.startMenuMusic();
+    void this.game.audio.prepareAuthoredAudio();
   }
 
   private confirmMainMenu(): void {
