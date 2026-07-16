@@ -1,13 +1,13 @@
 # Game Completion Audit
 
 - Current evidence review: 2026-07-16
-- Previous released software baseline: `804f837b70efbfa201ffa3a1be4b18908e2896e5` (`804f837`)
-- Current automated-release candidate: `f5796564af6c142a13979cdc2852659797ce6ace` (`f579656`)
+- Previous released software baseline: `f5796564af6c142a13979cdc2852659797ce6ace` (`f579656`)
+- Current automated-release candidate: `694b12b24758f3e6c95453e5cf1ab34623fd63dc` (`694b12b`)
 - Release status: **All automated promotion gates pass for the immutable candidate; four external human signoffs remain open.**
 
 ## Current Authority And Scope
 
-This section supersedes every count, status, and verdict in the archived 2026-07-10 audit below. Commit `804f837` remains the previous released software baseline. Commit `f5796564af6c142a13979cdc2852659797ce6ace` is the current immutable automated-release candidate and includes the authored-audio, accessibility, input-personalization, and regression-hardening work. Its exact clean-install preflight is archived in `manifests/release-candidate-preflight.txt`, with structured evidence in `manifests/release-candidate-evidence.json` and a complete published-file inventory in `manifests/pages-artifact-sha256.txt`.
+This section supersedes every count, status, and verdict in the archived 2026-07-10 audit below. Commit `f579656` remains the previous released software baseline. Commit `694b12b24758f3e6c95453e5cf1ab34623fd63dc` is the current immutable automated-release candidate and adds stable save identity remapping, schema-4 deterministic demos, authored encounter-pressure profiles, vertical-only auto-aim, enemy crossfire, Forensic Lens counterplay, generated particle coverage, and accessibility/UI hardening. Its exact clean-install preflight is archived in `manifests/release-candidate-preflight.txt`, with structured evidence in `manifests/release-candidate-evidence.json` and a reproducible complete published-file inventory in `manifests/pages-artifact-sha256.txt`.
 
 Automated tests prove only the covered behavior on their recorded environments. They do not replace blind-player observations, full-campaign judgment, representative-device measurements, or formal rights review. The authored-audio content target is now implemented; listening, device, and provenance checks for that library are included inside the four remaining human gates rather than treated as a separate content gap.
 
@@ -15,7 +15,7 @@ Status meanings for this current section:
 
 | Status | Meaning |
 |---|---|
-| **Proven on current candidate** | Direct automated or inspectable evidence passed on immutable commit `f579656`. |
+| **Proven on current candidate** | Direct automated or inspectable evidence passed on immutable commit `694b12b`. |
 | **Open human gate** | Automation is a prerequisite, but the requirement needs recorded external judgment or representative hardware. |
 | **Not applicable** | The product intentionally does not contain the feature. |
 
@@ -23,23 +23,23 @@ Status meanings for this current section:
 
 | Evidence surface | Status | Current evidence | Limit of the evidence |
 |---|---|---|---|
-| Full release command | **Proven on current candidate** | Clean-install `npm run test:release` passes 233 tests across 28 files, the nested production package, and 31 registered browser scenarios. Exact output is archived with preflight-log SHA-256 `cf187beae481621a96547a8aa4f11e1de1db0da5f352f3619bd490fd4eeb9a1c`. | Automated success does not provide human play, rights, or representative-device signoff. |
+| Full release command | **Proven on current candidate** | Clean-install `npm run test:release` passes 270 tests across 29 files, the nested production package, and 31 registered browser scenarios. Exact output is archived with preflight-log SHA-256 `2e5b29e2f874e72e4b2aee5e3399b50231a422dfc922f80f257ff4f01f58d5d9`. | Automated success does not provide human play, rights, or representative-device signoff. |
 | Campaign structure and runtime | **Proven on current candidate** | All 27 maps and 24 credential-bearing routes pass, including encounter phases, mechanisms, starts, supplies, secrets, exits, phase-gated recovery, and the two-stage finale; the campaign sample peaks at 38 draw calls. | Full continuous and fresh-start human playthrough balance remains open. |
-| Gameplay, feedback, and progression | **Proven on current candidate** | Browser suites cover combat feel, hostile telegraphs, weapon selection, optional encounters, intermission flow, mastery, milestones, replays, mechanisms, semantic animation, and 40 validated particle seeds. | Subjective readability and long-session pacing require playtest records. |
-| Difficulty, goals, and replayability | **Proven on current candidate** | Five response levels, pistol-start retry, records, grades, pars, secret discovery, milestones, mastery targets, deterministic demos, replay, and the deterministic campaign economy simulator pass. | Human play remains necessary to judge difficulty curves, strategy variety, incoming-damage fairness, duration, and reward pacing. |
+| Gameplay, feedback, and progression | **Proven on current candidate** | Browser suites cover combat feel, vertical-only auto-aim, nearest-actor enemy crossfire, Forensic Lens concealment/counterplay, hostile telegraphs, weapon selection, optional encounters, intermission flow, mastery, milestones, mechanisms, semantic animation, and 40 validated particle seeds across five generated families. | Subjective readability and long-session pacing require playtest records. |
+| Difficulty, goals, and replayability | **Proven on current candidate** | Five response levels, 81 authored phase profiles, exact per-map hostile budgets, proportional route supplies, pistol-start retry, records, grades, pars, secrets, milestones, mastery targets, schema-4 deterministic demos/replays, and the deterministic campaign economy simulator pass. | Human play remains necessary to judge difficulty curves, strategy variety, incoming-damage fairness, duration, and reward pacing. |
 | Visual and animation integration | **Proven on current candidate** | Responsive visuals, particles, material/status feedback, transient effects, semantic animation, the Binding Engine, hostile telegraphs, and aggregated combat feedback pass focused and integrated checks. | Beauty and long-session readability remain qualitative concerns. |
 | Authored audio content and runtime | **Proven on current candidate** | The schema-2 library contains 33 original streamed tracks, including unique 154-236 second music and opening motifs for all 27 maps, plus 347 distinct cues in 189 semantic groups across five lazy SFX shards. Content contracts, 16 AudioSystem tests, failure/recovery coverage, and Chromium/Firefox/WebKit smoke pass. The 32-voice limiter, spatial mix, four playback profiles, bounded retry, and deterministic fallback are wired. | Human sessions must still judge loop seams, mix and tell readability, profile behavior, device dropouts, provenance, and sound resemblance. |
-| Controls, onboarding, UI, and accessibility | **Proven on current candidate** | Desktop, touch, controller/remapping, responsive layouts, reduced-motion/effects behavior, semantic meters, and entry guidance pass. Persisted independent look sensitivities, Y inversion, deadzone, touch size/opacity/handedness, three text scales, leak-free resume, controller replay, stable menu hysteresis, collision-free 320x568 Large decks, 568x320 Largest text, and cadence-independent touch look are covered by 22 focused unit tests and integrated browser gates. | Blind E1M1 onboarding with five independent players remains an open human gate. |
-| Persistence and resilience | **Proven on current candidate** | Persistence contracts plus two-tab and fault-injection journeys cover fixtures, saves, recovery, bounded conflict copies, campaign journals, old writers, quota/removal failures, corrupt/future byte preservation, storage denial, context loss, fatal shutdown, catalog recovery, and exact paused restore. | Browser storage cannot guarantee durability when the platform denies or clears storage. |
-| Performance and lifecycle | **Proven on current candidate** / **Open human gate** | The archived SwiftShader active-combat sample delivered 435 frames at 23.0 ms mean / 49.9 ms p95 with 16 hostiles and 90 resident textures; particle stress moved from 28 to 30 draw calls. Music streams without long-form buffer decoding and SFX decode by semantic shard. | Representative integrated GPU, discrete GPU, and touch-device targets remain an open human gate. |
+| Controls, onboarding, UI, and accessibility | **Proven on current candidate** | Desktop, touch, controller/remapping, responsive layouts, reduced-motion/effects behavior, semantic meters, and entry guidance pass. Difficulty focus and touch preview are synchronized, slider values are visible and announced, compact zoom layouts reflow, gamepad labels are neutral, MOVE/LOOK/FIRE pads remain labeled, and Reduced Motion retains static muzzle/impact cues without active animation. | Blind E1M1 onboarding with five independent players remains an open human gate. |
+| Persistence and resilience | **Proven on current candidate** | Persistence contracts plus two-tab and fault-injection journeys cover stable authored actor/pickup identity remapping, dynamic-summon namespaces, explicit encounter unlocks, schema-4 replay settings, frozen public fixtures, saves, recovery, bounded conflict copies, campaign journals, quota/removal failures, corrupt/future byte preservation, storage denial, context loss, fatal shutdown, catalog recovery, and exact paused restore. | Browser storage cannot guarantee durability when the platform denies or clears storage. |
+| Performance and lifecycle | **Proven on current candidate** / **Open human gate** | The immutable preflight's SwiftShader active-combat sample delivered 460 frames at 21.8 ms mean / 49.9 ms p95 with 28 hostiles and 92 resident textures; particle stress moved from 28 to 30 draw calls. Music streams without long-form buffer decoding and SFX decode by semantic shard. | Representative integrated GPU, discrete GPU, and touch-device targets remain an open human gate. |
 | Browser portability | **Proven on current candidate** | The nested production package and complete smoke pass in Chromium 149.0.7827.55, Firefox 151.0, and WebKit 26.5. | Representative real-device behavior remains part of the hardware gate. |
-| Production package and Pages source | **Proven on current candidate** | `dist` contains 3,659 files; Pages contains 3,660 committed files including `.nojekyll`, totaling 74,290,908 bytes. The raw Git-tree manifest hash is `6d1f765671e21bc84f85e686cb962e4a01644221fa898c1eb08e8a02926c9d68`, the production audit reports zero vulnerabilities, and deployment run `29475230094` succeeded. Live byte checks match the committed HTML, hashed JS/CSS, audio manifest, E1M1 MP3, and particle PNG. | Any later `docs` change requires a new committed-tree inventory and live smoke. |
-| Public-release scanning and provenance | **Proven on current candidate** / **Open human gate** | Seven focused public-release/audio contracts pass, covering restricted text/artifact references, licenses, notices, asset signatures, package leakage, audio specification, media hashes, and PCM fingerprints. | Formal visual/audio/mark rights review and a signed provenance record remain open. |
+| Production package and Pages source | **Proven on current candidate** | `dist` contains 3,659 files; Pages contains 3,660 committed files including `.nojekyll`, totaling 74,315,596 raw Git-blob bytes. The reproducible Git-tree manifest hash is `bce4111233bd61500f652b3adeddaab82119a0decf6385f4fdafc61835954f45`, the production audit reports zero vulnerabilities, and deployment run `29497253110` succeeded. Live byte checks match the committed HTML, hashed JS/CSS, audio manifest, E1M1 MP3, and generated status-particle PNG. | Any later `docs` change requires a new committed-tree inventory and live smoke. |
+| Public-release scanning and provenance | **Proven on current candidate** / **Open human gate** | Eleven tests across three focused public-release/audio files pass, covering restricted text/artifact references, licenses, notices, asset signatures, package leakage, audio specification, media hashes, and PCM fingerprints. | Formal visual/audio/mark rights review and a signed provenance record remain open. |
 | Monetization | **Not applicable** | No monetization, paid currency, advertising, or engagement purchase system is present. | Any future monetization would require a new design and release review. |
 
 ## Current Verdict
 
-Commit `f5796564af6c142a13979cdc2852659797ce6ace` is promoted as the current **automated-release candidate**. Its clean-install release suite, exact committed Pages inventory, dependency audit, public scan, successful deployment, and live browser smoke pass. It is **not release-final** until the following four human records exist for that same immutable candidate:
+Commit `694b12b24758f3e6c95453e5cf1ab34623fd63dc` is promoted as the current **automated-release candidate**. Its clean-install release suite, exact committed Pages inventory, dependency audit, public scan, successful deployment, and live browser smoke pass. It is **not release-final** until the following four human records exist for that same immutable candidate:
 
 1. Blind E1M1 onboarding signoff.
 2. Continuous-campaign and every-map fresh-start balance/duration signoff.
@@ -50,19 +50,20 @@ Commit `f5796564af6c142a13979cdc2852659797ce6ace` is promoted as the current **a
 
 | Candidate field | Recorded value |
 |---|---|
-| Software commit | `f5796564af6c142a13979cdc2852659797ce6ace` (`f579656`) |
-| Full release gate | **Pass:** 233 tests / 28 files, nested production package, and 31 browser scenarios after clean `npm ci` |
+| Software commit | `694b12b24758f3e6c95453e5cf1ab34623fd63dc` (`694b12b`) |
+| Full release gate | **Pass:** 270 tests / 29 files, nested production package, and 31 browser scenarios after clean `npm ci` |
 | Cross-engine result | **Pass:** Chromium 149.0.7827.55, Firefox 151.0, and WebKit 26.5 |
 | Campaign runtime | **Pass:** 27 maps, 24 credential routes, maximum 38 draw calls |
-| Performance sample | **Pass:** ready 3,337 ms; 16 hostiles; 435 frames; 23.0 ms mean; 49.9 ms p95; 90 textures |
+| Performance sample | **Pass:** ready 3,327 ms; 28 hostiles; 460 frames; 21.8 ms mean; 49.9 ms p95; 92 textures |
 | Particle stress | **Pass:** 28 baseline draw calls to 30 under stress |
-| Production inventory | **Pass:** 3,659 `dist` files; 3,660 committed published files including `.nojekyll`; 74,290,908 bytes |
-| Pages source | **Pass:** raw committed-tree SHA-256 inventory; manifest hash `6d1f765671e21bc84f85e686cb962e4a01644221fa898c1eb08e8a02926c9d68` |
+| Production inventory | **Pass:** 3,659 `dist` files; 3,660 committed published files including `.nojekyll`; 74,315,596 raw Git-blob bytes |
+| Pages source | **Pass:** reproducible raw committed-tree SHA-256 inventory; manifest hash `bce4111233bd61500f652b3adeddaab82119a0decf6385f4fdafc61835954f45` |
 | Production dependency audit | **Pass:** zero vulnerabilities after clean install |
-| Public-release scan | **Pass:** seven contracts across two focused test files |
+| Public-release scan | **Pass:** 11 tests across three focused test files |
 | Authored-audio content | **Pass:** schema 2; 33 tracks; 347 cues; 189 groups; five lazy SFX shards |
-| Evidence archive | `manifests/release-candidate-evidence.json`; preflight log SHA-256 `cf187beae481621a96547a8aa4f11e1de1db0da5f352f3619bd490fd4eeb9a1c` |
-| Live deployment smoke | **Pass:** Pages run `29475230094`; exact byte samples; Chromium E1M1 with authored audio and zero console/network failures |
+| Art and particle validation | **Pass:** 93 keyed/alpha sheet families, 87 spacing checks, 16 actor families, 1,383 other runtime PNGs, and all 40 generated particle seeds |
+| Evidence archive | `manifests/release-candidate-evidence.json`; preflight log SHA-256 `2e5b29e2f874e72e4b2aee5e3399b50231a422dfc922f80f257ff4f01f58d5d9` |
+| Live deployment smoke | **Pass:** Pages run `29497253110`; six exact byte samples; Chromium E1M1 movement/fire with authored audio, no debug API, and zero console/network failures |
 | Human signoffs | **All four remain open** |
 
 This table records the automated promotion of the immutable software candidate. Any later source, data, asset, dependency, or built-output change invalidates that evidence and requires the full candidate preflight again. Documentation-only evidence corrections do not change the tested software SHA.

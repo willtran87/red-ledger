@@ -1,7 +1,7 @@
 {
-  "schema": 1,
-  "recordedAtUtc": "2026-07-16T06:04:39Z",
-  "candidateCommit": "f5796564af6c142a13979cdc2852659797ce6ace",
+  "schema": 2,
+  "recordedAtUtc": "2026-07-16T12:18:16Z",
+  "candidateCommit": "694b12b24758f3e6c95453e5cf1ab34623fd63dc",
   "productionUrl": "https://willtran87.github.io/red-ledger/",
   "toolchain": {
     "node": "20.20.2",
@@ -22,17 +22,17 @@
     },
     "publicReleaseScan": {
       "result": "pass",
-      "testFiles": 2,
-      "tests": 7
+      "testFiles": 3,
+      "tests": 11
     },
     "log": {
       "path": "manifests/release-candidate-preflight.txt",
-      "sha256": "cf187beae481621a96547a8aa4f11e1de1db0da5f352f3619bd490fd4eeb9a1c"
+      "sha256": "2e5b29e2f874e72e4b2aee5e3399b50231a422dfc922f80f257ff4f01f58d5d9"
     }
   },
   "automatedCoverage": {
-    "unitAndDataTestFiles": 28,
-    "unitAndDataTests": 233,
+    "unitAndDataTestFiles": 29,
+    "unitAndDataTests": 270,
     "registeredBrowserScenarios": 31,
     "browserEngines": [
       "chromium",
@@ -45,23 +45,24 @@
   },
   "performanceSample": {
     "renderer": "Playwright Chromium SwiftShader",
-    "readyMilliseconds": 3337,
-    "activeHostiles": 16,
-    "frames": 435,
-    "meanFrameMilliseconds": 23.0,
+    "readyMilliseconds": 3327,
+    "activeHostiles": 28,
+    "frames": 460,
+    "meanFrameMilliseconds": 21.8,
     "p95FrameMilliseconds": 49.9,
-    "residentTextures": 90,
+    "residentTextures": 92,
     "particleBaselineDrawCalls": 28,
     "particleStressDrawCalls": 30
   },
   "publishedArtifact": {
-    "gitTreeCommit": "b741b855f1a597afeed8ce3a9e79ae0620dd88b2",
+    "gitTreeCommit": "694b12b24758f3e6c95453e5cf1ab34623fd63dc",
     "distFiles": 3659,
     "publishedFilesIncludingNojekyll": 3660,
-    "publishedBytes": 74290908,
+    "publishedBytes": 74315596,
     "sha256Manifest": "manifests/pages-artifact-sha256.txt",
     "manifestAuthority": "raw committed Git tree bytes with checkout conversion disabled",
-    "sha256": "6d1f765671e21bc84f85e686cb962e4a01644221fa898c1eb08e8a02926c9d68"
+    "sha256": "bce4111233bd61500f652b3adeddaab82119a0decf6385f4fdafc61835954f45",
+    "generator": "tools/generate_pages_artifact_manifest.mjs"
   },
   "authoredAudio": {
     "schema": 2,
@@ -69,28 +70,70 @@
     "uniqueCues": 347,
     "semanticGroups": 189,
     "sfxShards": 5,
-    "sourceLibraryManifestSha256": "e38315f30bbb6e3b9cc965bf9d49104827c315384311a9f44a9c895f1d77ab48",
+    "hashAuthority": "raw candidate Git blobs",
+    "sourceLibraryManifestSha256": "943be26b32095f00229cc8185048283bfc6a6460703c80e28601c4e3209d0478",
     "publishedLibraryManifestSha256": "943be26b32095f00229cc8185048283bfc6a6460703c80e28601c4e3209d0478",
-    "validationManifestSha256": "038be4b71c3572dc05ee149e06818bba251c463980cf95810437342cabb0b8ae"
+    "validationManifestSha256": "a1c91c82aac5884605fbe8fc78bf997ffa2e763707eb3cf1866f457d6ddaddce"
+  },
+  "artValidation": {
+    "result": "pass",
+    "report": "manifests/art-library-validation.json",
+    "reportSha256": "325b37968187d352004a96a924f535fa03d3e6d442e0fea25a403da808175748",
+    "generationSourcesPassed": 14,
+    "actorFamiliesPassed": 16,
+    "registeredSheetFamilies": 93,
+    "chromaChecksPassed": 93,
+    "alphaChecksPassed": 93,
+    "spacingChecksPassed": 87,
+    "otherRuntimePngsPassed": 1383,
+    "generatedParticleFamilies": 5,
+    "generatedParticleSeeds": 40
   },
   "deployment": {
     "result": "pass",
-    "pagesRunId": 29475230094,
-    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29475230094",
-    "deployedCommit": "b741b855f1a597afeed8ce3a9e79ae0620dd88b2",
+    "pagesRunId": 29497253110,
+    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29497253110",
+    "deployedCommit": "694b12b24758f3e6c95453e5cf1ab34623fd63dc",
     "httpsEnforced": true,
     "liveByteChecks": [
-      "index.html",
-      "assets/index-CIdywydh.js",
-      "assets/index-zjNTfBTL.css",
-      "audio/audio-library.json",
-      "audio/music/e1m1.mp3",
-      "public_runtime/effects/binding-beam/fx_binding-beam_impact_F_01.png"
+      {
+        "path": "index.html",
+        "bytes": 17794,
+        "sha256": "e56f29f60f56cf3a697575f5749cb033b0013f178b9634d95ed0ee7b5abfd1f6"
+      },
+      {
+        "path": "assets/index-CaElIiws.js",
+        "bytes": 944067,
+        "sha256": "e408173bc0d08195d5eefda51f5b6339ef109935ab3d5eec985c1b2b043225b4"
+      },
+      {
+        "path": "assets/index-DhOn4lwA.css",
+        "bytes": 33061,
+        "sha256": "7822d1b727667aee59b88fa1ac04d294322f5efa3f9cd1f36a4c655a0fc3b3b7"
+      },
+      {
+        "path": "audio/audio-library.json",
+        "bytes": 80464,
+        "sha256": "943be26b32095f00229cc8185048283bfc6a6460703c80e28601c4e3209d0478"
+      },
+      {
+        "path": "audio/music/e1m1.mp3",
+        "bytes": 1232814,
+        "sha256": "e993aed53291562f17cb5f71b75a35876c447348399a606bb5baaa5015ea5737"
+      },
+      {
+        "path": "public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_07.png",
+        "bytes": 522,
+        "sha256": "87430e9865b2f9c880d934ea08c351037d1ace32d91f24db36d58f8ffc56f1a7"
+      }
     ],
     "liveBrowserSmoke": {
       "browser": "chromium",
       "map": "E1M1",
       "mode": "playing",
+      "visibleActors": 1,
+      "movementPassed": true,
+      "firePassed": true,
       "audioSource": "authored",
       "loadedSfxShards": 4,
       "decodedLongFormTracks": 0,

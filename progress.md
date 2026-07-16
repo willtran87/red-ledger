@@ -87,9 +87,9 @@ Original prompt: implement the game
 - High-resolution viewport: `2560x1600`
 - Desktop viewport: `1280x720`
 - Mobile viewport: `390x844`
-- Automated-release candidate: `f5796564af6c142a13979cdc2852659797ce6ace`
-- Production Pages package: 3,659 build files plus `.nojekyll`; 74,290,908 committed bytes
-- Published artifact-manifest SHA-256: `6d1f765671e21bc84f85e686cb962e4a01644221fa898c1eb08e8a02926c9d68`
+- Automated-release candidate: `694b12b24758f3e6c95453e5cf1ab34623fd63dc`
+- Production Pages package: 3,659 build files plus `.nojekyll`; 74,315,596 raw committed Git-blob bytes
+- Published artifact-manifest SHA-256: `bce4111233bd61500f652b3adeddaab82119a0decf6385f4fdafc61835954f45`
 
 ## External Signoff
 
@@ -97,7 +97,7 @@ Original prompt: implement the game
 
 ## Closed Authored Audio Target
 
-- The GDD audio-content target is implemented by the schema-2 authored library described below. Procedural audio remains only as a deterministic availability fallback, not the primary soundtrack or effects source. Candidate-wide automated release evidence passes on `f579656`; the four external human signoffs remain separate.
+- The GDD audio-content target is implemented by the schema-2 authored library described below. Procedural audio remains only as a deterministic availability fallback, not the primary soundtrack or effects source. Candidate-wide automated release evidence passes on `694b12b`; the four external human signoffs remain separate.
 
 ## Onboarding and Accessibility Remediation
 
@@ -116,3 +116,4 @@ Original prompt: implement the game
 - 2026-07-16: Save compatibility now uses stable authored actor placement keys, exact pickup identity, a separate dynamic-summon namespace, unique boss remapping, and an accepted-identity map for behavior snapshots. Current saves persist `unlockedEncounters` explicitly and treat it as authoritative; supported public saves reconstruct only progression proven by encounter/mechanism evidence, while ambiguous mutable state is discarded and tallies are reconciled to compatible runtime content. Frozen public compatibility fixtures and focused actor, pickup, summon, boss, behavior, and encounter-state contracts cover the path; full clean-install promotion remains pending.
 - 2026-07-16: Deterministic demos now use schema 4 with required, checksummed, size-budgeted `playbackSettings.verticalAutoAim`, lock the preference while recording, apply it during playback, and restore the viewer's preference after natural completion, stop, map replacement, or synchronous playback. Schema-v3 recordings are rejected as incompatible. The active replay library moved to `red-ledger-replays-v3`; prior v2/v1 keys are detected for truthful feedback and left untouched. Focused unit and browser contracts cover both opposite-preference replay directions, incompatible import, storage fallback, and exact terminal state; full clean-install promotion remains pending.
 - 2026-07-16: Clean-install post-audit release verification passes 270 tests across 29 files, the nested production package, all 31 browser scenarios, all 27 maps and 24 credential routes, and Chromium/Firefox/WebKit. The isolated SwiftShader combat soak delivered 532 frames at 18.8 ms mean / 33.3 ms p95 with 28 live hostiles and 92 textures; particle stress held at 28 to 30 draw calls. `dist` and Pages match across 3,659 production files, the committed Pages inventory contains 3,660 files including `.nojekyll`, the production audit reports zero vulnerabilities, 11 focused public/audio contracts pass, and the complete art validator passes 93 keyed/alpha sheet pairs, 87 spacing checks, 16 actor families, and 1,383 other runtime PNGs. Publication and external human signoffs remain pending.
+- 2026-07-16: Promoted immutable automated-release candidate `694b12b24758f3e6c95453e5cf1ab34623fd63dc` after a second clean lockfile install and exact-candidate preflight. The archived run passes 270 tests across 29 files, the nested package, 31 browser scenarios, 27 maps, 24 credential routes, Chromium/Firefox/WebKit, zero production vulnerabilities, 11 focused public/audio tests, and all art/chroma/alpha/spacing checks. Its SwiftShader sample delivered 460 frames at 21.8 ms mean / 49.9 ms p95 with 28 live hostiles and 92 textures; particle stress held at 28 to 30 draw calls. Pages run `29497253110` deployed the 3,660-file tree, all six sampled live files match raw committed bytes, and Chromium reaches E1M1 with movement, firing, authored audio, no debug API, and no console/network failures. The four external human signoffs remain open.
