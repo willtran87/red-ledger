@@ -12,6 +12,22 @@ export type WorldAudioCue =
 export type PlayerAudioCue = 'hurt' | 'death' | 'armor';
 export type PickupAudioCue = 'health' | 'armor' | 'ammo' | 'weapon' | 'credential' | 'powerup';
 export type UiAudioCue = 'menu-accept' | 'menu-back' | 'save' | 'load' | 'map-clear' | 'status-expire' | 'momentum';
+export const AUDIO_CAPTION_EVENT = 'audio-caption' as const;
+export type AudioCaptionCategory =
+  | 'music' | 'weapon' | 'enemy' | 'attack' | 'hazard'
+  | 'world' | 'player' | 'pickup' | 'ui' | 'environment';
+export type AudioCaptionDirection = 'left' | 'center' | 'right';
+
+export interface AudioCaptionDetail {
+  readonly cue: string;
+  readonly text: string;
+  readonly category: AudioCaptionCategory;
+  readonly priority: AudioVoicePriority;
+  readonly pan: number;
+  readonly direction: AudioCaptionDirection;
+  readonly dedupeKey: string;
+  readonly repeatWindowMs: number;
+}
 
 interface AudioSettings {
   master: number;
@@ -103,6 +119,12 @@ const AUTHORED_SFX_GAIN = .72;
 const MUSIC_FADE_SECONDS = .08;
 const NOISE_BUFFER_SECONDS = 1;
 const SPATIAL_CUE_HISTORY_LIMIT = 16;
+const DEFAULT_CAPTION_REPEAT_WINDOWS: Record<AudioVoicePriority, number> = {
+  ambient: 1_500,
+  routine: 500,
+  important: 250,
+  critical: 120,
+};
 const VOICE_PRIORITY_ORDER: Record<AudioVoicePriority, number> = {
   ambient: 0,
   routine: 1,
@@ -127,6 +149,100 @@ const PLAYBACK_PROFILES: Record<AudioPlaybackProfile, PlaybackProfileConfig> = {
 const clamp = (value: number): number => Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const errorMessage = (error: unknown): string => error instanceof Error ? error.message : String(error);
+
+const humanizeAudioId = (value: string): string => value.split('-').map((word) => {
+  if (word.toLowerCase() === 'hvac') return 'HVAC';
+  if (/^E[1-3]M[1-9]$/i.test(word)) return word.toUpperCase();
+  return word.length > 0 ? `${word[0].toUpperCase()}${word.slice(1)}` : word;
+}).join(' ');
+
+const STATIC_AUDIO_CAPTIONS: Readonly<Record<string, string>> = {
+  'ambient/hvac': 'HVAC hums',
+  'ambient/fluorescent': 'Fluorescent lights buzz',
+  'ambient/distant-phone': 'A distant phone rings',
+  'ambient/rain': 'Rain falls nearby',
+  'ambient/pumps': 'Pumps churn',
+  'ambient/shelving': 'Shelving shifts',
+  'ambient/elevator-cable': 'Elevator cables strain',
+  'footstep/fiber': 'Footsteps on soft flooring',
+  'footstep/concrete': 'Footsteps on concrete',
+  'footstep/glass': 'Footsteps on glass',
+  'footstep/water': 'Footsteps splash through water',
+  'footstep/metal': 'Footsteps ring on metal',
+  'footstep/toner': 'Footsteps squelch through toner',
+  'footstep/wax': 'Footsteps drag through wax',
+  'footstep/fluid': 'Footsteps wade through fluid',
+  'world/door-open': 'Door opens',
+  'world/door-locked': 'Door is locked',
+  'world/switch': 'Switch activates',
+  'world/lift-start': 'Lift starts moving',
+  'world/lift-end': 'Lift stops',
+  'world/secret': 'Secret revealed',
+  'world/teleport': 'Teleport activates',
+  'world/breakable': 'Object breaks',
+  'world/hazard-placed': 'Hazard deployed',
+  'world/hazard-armed': 'Hazard armed',
+  'world/mechanism': 'Mechanism activates',
+  'world/exit': 'Exit opens',
+  'player/hurt': 'You are hurt',
+  'player/death': 'You are down',
+  'player/armor': 'Armor absorbs the hit',
+  'pickup/health': 'Health collected',
+  'pickup/armor': 'Armor collected',
+  'pickup/ammo': 'Ammunition collected',
+  'pickup/weapon': 'Weapon collected',
+  'pickup/credential': 'Credential collected',
+  'pickup/powerup': 'Power-up collected',
+  'ui/menu-accept': 'Selection confirmed',
+  'ui/menu-back': 'Back',
+  'ui/save': 'Game saved',
+  'ui/load': 'Game loaded',
+  'ui/map-clear': 'File complete',
+  'ui/status-expire': 'Status effect expired',
+  'ui/momentum': 'Momentum increased',
+};
+
+const captionCategory = (cue: string): AudioCaptionCategory => {
+  if (cue.startsWith('music/')) return 'music';
+  if (cue.startsWith('weapon/')) return 'weapon';
+  if (cue.startsWith('enemy/')) return 'enemy';
+  if (cue.startsWith('attack/')) return 'attack';
+  if (cue.startsWith('world/hazard-')) return 'hazard';
+  if (cue.startsWith('world/')) return 'world';
+  if (cue.startsWith('player/')) return 'player';
+  if (cue.startsWith('pickup/')) return 'pickup';
+  if (cue.startsWith('ui/')) return 'ui';
+  return 'environment';
+};
+
+const dynamicCaptionText = (cue: string): string => {
+  const [family, id = '', event = ''] = cue.split('/');
+  const label = humanizeAudioId(id);
+  if (family === 'music') return `${label} music begins`;
+  if (family === 'weapon') {
+    if (event === 'fire') return `${label} fires`;
+    if (event === 'dry') return `${label} is empty`;
+    if (event === 'impact') return `${label} impact`;
+  }
+  if (family === 'enemy') {
+    const actions: Readonly<Record<string, string>> = {
+      idle: 'nearby', alert: 'alerted', windup: 'preparing an attack', pain: 'hurt',
+      attack: 'attacks', death: 'defeated', phase: 'changes phase',
+    };
+    return `${label} ${actions[event] ?? humanizeAudioId(event)}`;
+  }
+  if (family === 'attack') return event === 'windup' ? `${label} charging` : `${label} resolves`;
+  return STATIC_AUDIO_CAPTIONS[cue] ?? `${cue.split('/').map(humanizeAudioId).join(' ')} sound`;
+};
+
+const captionRepeatWindow = (cue: string, priority: AudioVoicePriority): number => {
+  if (cue.startsWith('music/')) return 5_000;
+  if (cue.startsWith('ambient/')) return 5_000;
+  if (cue.startsWith('footstep/')) return 900;
+  if (cue.endsWith('/idle')) return 2_000;
+  if (cue.includes('/fire') || cue.includes('/impact')) return Math.max(180, DEFAULT_CAPTION_REPEAT_WINDOWS[priority]);
+  return DEFAULT_CAPTION_REPEAT_WINDOWS[priority];
+};
 
 const isPlaybackProfile = (value: unknown): value is AudioPlaybackProfile =>
   typeof value === 'string' && value in PLAYBACK_PROFILES;
@@ -206,6 +322,7 @@ export class AudioSystem {
   private combatIntensity = 0;
   private lastSpatialCue?: SpatialCueDiagnostic;
   private readonly spatialCueHistory: SpatialCueDiagnostic[] = [];
+  private readonly lastCaptionAt = new Map<string, number>();
   private settings: AudioSettings = { master: .8, music: .65, sfx: .8, muted: false, profile: 'speakers' };
 
   constructor() { this.restoreSettings(); }
@@ -329,6 +446,9 @@ export class AudioSystem {
   playMusic(trackId: string, loop = true): void {
     if (this.currentTrack === trackId && this.currentTrackLoop === loop
       && (this.musicTimer !== undefined || (this.currentTrackSource === 'authored' && !this.musicElement?.paused))) return;
+    this.emitCaption(`music/${trackId}`, { priority: 'ambient' }, this.library?.music[trackId]?.title
+      ? `${this.library.music[trackId].title} music begins`
+      : undefined);
     this.stopMusicPlayback();
     this.currentTrack = trackId;
     this.currentTrackLoop = loop;
@@ -352,6 +472,7 @@ export class AudioSystem {
   setCombatIntensity(value: number): void { this.combatIntensity = clamp(value); }
 
   playCue(group: string, options: SemanticCueOptions = {}): boolean {
+    this.emitCaption(group, options);
     if (!this.context || this.lifecycleSuspended) return false;
     const authored = this.playAuthoredGroup(group, options);
     if (authored) return true;
@@ -360,6 +481,7 @@ export class AudioSystem {
   }
 
   weaponCue(id: string, pan = 0): void {
+    this.emitCaption(`weapon/${id}/fire`, { pan, priority: 'important' });
     if (this.playAuthoredGroup(`weapon/${id}/fire`, { pan, priority: 'important' })) {
       this.duckMusic(id === 'catastrophe-launcher' || id === 'binding-engine' ? .18 : .1);
       return;
@@ -385,6 +507,7 @@ export class AudioSystem {
   }
 
   weaponDryCue(id: string, pan = 0): void {
+    this.emitCaption(`weapon/${id}/dry`, { pan, priority: 'important' });
     if (!this.playAuthoredGroup(`weapon/${id}/dry`, { pan, priority: 'important' })) {
       this.requestLibraryLoad();
       if (this.synthTone(80, .06, 'square', .025, 'sfx', pan, 'important')) this.markFallbackPlay();
@@ -392,6 +515,7 @@ export class AudioSystem {
   }
 
   weaponImpactCue(id: string, pan = 0, gain = 1): void {
+    this.emitCaption(`weapon/${id}/impact`, { pan, gain, priority: 'important' });
     if (!this.playAuthoredGroup(`weapon/${id}/impact`, { pan, gain, priority: 'important' })) {
       this.requestLibraryLoad();
       const played = this.synthNoise(.045, .025 * clamp(gain), 'sfx', pan, 'important');
@@ -409,6 +533,7 @@ export class AudioSystem {
         : event === 'windup' || event === 'attack' || event === 'phase'
           ? 'critical'
           : 'routine';
+    this.emitCaption(`enemy/${id}/${event}`, { pan, gain: spatialGain, priority });
     if (event !== 'windup' && event !== 'attack'
       && this.playAuthoredGroup(`enemy/${id}/${event}`, { pan, gain: spatialGain, priority })) return;
     this.requestLibraryLoad();
@@ -431,6 +556,7 @@ export class AudioSystem {
   enemyAttackCue(attackId: string, event: EnemyAttackCueEvent, pan = 0, gain = 1): void {
     const spatialGain = clamp(gain);
     this.recordSpatialCue({ kind: `attack:${attackId}:${event}`, pan, gain: spatialGain });
+    this.emitCaption(`attack/${attackId}/${event}`, { pan, gain: spatialGain, priority: 'critical' });
     if (this.playAuthoredGroup(`attack/${attackId}/${event}`, { pan, gain: spatialGain, priority: 'critical' })) return;
     this.requestLibraryLoad();
     let hash = 2166136261;
@@ -444,6 +570,7 @@ export class AudioSystem {
   hazardCue(event: 'placed' | 'armed', pan = 0, gain = 1): void {
     const spatialGain = clamp(gain);
     this.recordSpatialCue({ kind: `hazard:${event}`, pan, gain: spatialGain });
+    this.emitCaption(`world/hazard-${event}`, { pan, gain: spatialGain, priority: 'critical' });
     if (this.playAuthoredGroup(`world/hazard-${event}`, { pan, gain: spatialGain, priority: 'critical' })) return;
     this.requestLibraryLoad();
     let played: boolean;
@@ -876,6 +1003,36 @@ export class AudioSystem {
     this.lastSpatialCue = cue;
     this.spatialCueHistory.push(cue);
     if (this.spatialCueHistory.length > SPATIAL_CUE_HISTORY_LIMIT) this.spatialCueHistory.shift();
+  }
+
+  private emitCaption(cue: string, options: SemanticCueOptions, text?: string): void {
+    if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function' || typeof CustomEvent === 'undefined') return;
+    const rawPan = options.pan ?? 0;
+    const pan = Math.max(-1, Math.min(1, Number.isFinite(rawPan) ? rawPan : 0));
+    const direction: AudioCaptionDirection = pan < -.25 ? 'left' : pan > .25 ? 'right' : 'center';
+    const priority = options.priority ?? 'routine';
+    const repeatWindowMs = captionRepeatWindow(cue, priority);
+    const dedupeKey = `${cue}:${direction}`;
+    const now = Date.now();
+    const previous = this.lastCaptionAt.get(dedupeKey);
+    if (previous !== undefined && now >= previous && now - previous < repeatWindowMs) return;
+    this.lastCaptionAt.set(dedupeKey, now);
+    const baseText = text ?? dynamicCaptionText(cue);
+    const category = captionCategory(cue);
+    const spatialText = direction === 'center' || ['music', 'weapon', 'player', 'pickup', 'ui'].includes(category)
+      ? baseText
+      : `${baseText} from the ${direction}`;
+    const detail: AudioCaptionDetail = {
+      cue,
+      text: spatialText,
+      category,
+      priority,
+      pan,
+      direction,
+      dedupeKey,
+      repeatWindowMs,
+    };
+    window.dispatchEvent(new CustomEvent<AudioCaptionDetail>(AUDIO_CAPTION_EVENT, { detail }));
   }
 
   private connectToBus(node: AudioNode, bus: AudioBus, pan: number): AudioNode[] {

@@ -97,22 +97,46 @@ assert(await page.locator('#use-feedback').isVisible(), 'Failed use has no immed
 assert((await page.locator('#use-feedback').getAttribute('role')) === 'status', 'Failed use feedback is not exposed accessibly');
 assert(await page.locator('#use-feedback img').evaluate((image) => image.complete && image.naturalWidth > 0), 'Failed use feedback icon did not load');
 
-const repeatedFloorPlan = await page.evaluate(() => {
+const mapScopedBeforeSave = await page.evaluate(() => {
   const api = window.__redLedger;
   api.loadMap('E1M2');
-  const firstFound = api.teleportToPickup('pickup', 'floor-plan');
+  const floorPlanFound = api.teleportToPickup('pickup', 'floor-plan');
   window.advanceTime(80);
-  const first = JSON.parse(window.render_game_to_text());
+  const binderFound = api.teleportToPickup('pickup', 'temporary-binder');
+  window.advanceTime(80);
+  api.pause();
+  return { floorPlanFound, binderFound, state: JSON.parse(window.render_game_to_text()) };
+});
+assert(mapScopedBeforeSave.floorPlanFound && mapScopedBeforeSave.state.player.floorPlan, 'E1M2 Floor Plan was not collected');
+assert(mapScopedBeforeSave.binderFound && mapScopedBeforeSave.state.player.powerups.binder > 0, 'E1M2 Temporary Binder was not activated');
+assert(mapScopedBeforeSave.state.mode === 'paused', 'Map-scoped save fixture was not paused');
+
+await page.click('#save-game');
+await page.locator('#save-slot-list .slot-action').first().click();
+await page.click('#load-game');
+assert(await page.locator('#load-slot-list .slot-action').first().isEnabled(), 'Map-scoped manual save was not loadable');
+await page.locator('#load-slot-list .slot-action').first().click();
+const mapScopedRestored = await state();
+assert(mapScopedRestored.map.id === 'E1M2' && mapScopedRestored.mode === 'paused', 'Map-scoped save did not restore the paused E1M2 session');
+assert(mapScopedRestored.player.floorPlan, 'Same-map save restore lost the Floor Plan');
+assert(Math.abs(mapScopedRestored.player.powerups.binder - mapScopedBeforeSave.state.player.powerups.binder) < .01,
+  'Same-map save restore changed the Temporary Binder duration');
+
+await page.click('#resume-game');
+const repeatedFloorPlan = await page.evaluate(() => {
+  const api = window.__redLedger;
   api.loadMap('E1M3');
   const before = JSON.parse(window.render_game_to_text());
   const secondFound = api.teleportToPickup('pickup', 'floor-plan');
   window.advanceTime(80);
   const second = JSON.parse(window.render_game_to_text());
-  return { firstFound, secondFound, first, before, second };
+  return { secondFound, before, second };
 });
-assert(repeatedFloorPlan.firstFound && repeatedFloorPlan.first.player.floorPlan, 'First Floor Plan was not collected');
+assert(!repeatedFloorPlan.before.player.floorPlan, 'Floor Plan leaked across a normal map transition');
+assert(Object.values(repeatedFloorPlan.before.player.powerups).every((remaining) => remaining === 0),
+  `Timed powerups leaked across a normal map transition: ${JSON.stringify(repeatedFloorPlan.before.player.powerups)}`);
 assert(repeatedFloorPlan.secondFound, 'Second map did not expose its authored Floor Plan');
-assert(repeatedFloorPlan.second.tally.items === repeatedFloorPlan.before.tally.items + 1, 'Carried Floor Plan stranded second-map item mastery');
+assert(repeatedFloorPlan.second.tally.items === repeatedFloorPlan.before.tally.items + 1, 'Second-map Floor Plan did not advance item mastery');
 
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 fs.writeFileSync('output/e2e/final-state.json', JSON.stringify(await state(), null, 2));

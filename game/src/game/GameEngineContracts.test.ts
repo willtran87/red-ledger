@@ -91,6 +91,27 @@ describe('long-form replay contract', () => {
 });
 
 describe('powerup combat contracts', () => {
+  it('clears map-scoped knowledge and timed effects without touching persistent inventory', () => {
+    const harness = {
+      player: {
+        health: 73,
+        armor: 41,
+        floorPlan: true,
+        powerups: { binder: 8, hazard: 9, rapid: 10, forensic: 11, goggles: 12 },
+      },
+    };
+    const resetMapScopedPlayerState = (GameEngine.prototype as unknown as {
+      resetMapScopedPlayerState(): void;
+    }).resetMapScopedPlayerState;
+
+    resetMapScopedPlayerState.call(harness);
+
+    expect(harness.player.floorPlan).toBe(false);
+    expect(harness.player.powerups).toEqual({ binder: 0, hazard: 0, rapid: 0, forensic: 0, goggles: 0 });
+    expect(harness.player.health).toBe(73);
+    expect(harness.player.armor).toBe(41);
+  });
+
   it('applies a cyan live-hostile signature and restores the underlying material tint', () => {
     expect(hostileSignatureTint(true, false, false)).toBe(0x47bcd1);
     expect(hostileSignatureTint(true, true, false)).toBe(0x47bcd1);

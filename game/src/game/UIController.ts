@@ -1,5 +1,5 @@
 import { CAMPAIGN, type CampaignMap, type MapId } from '../data';
-import { INPUT_ACTIONS, bindingLabel, type InputAction } from './InputBindings';
+import { INPUT_ACTIONS, bindingLabel, type CaptureResult, type InputAction } from './InputBindings';
 import {
   normalizeInputPreferences,
   type InputActionEvent,
@@ -9,7 +9,11 @@ import {
 import { WEAPONS, type GameDifficulty } from './definitions';
 import { GameEngine, type GameSnapshot } from './GameEngine';
 import { ASSET_DEGRADED_EVENT, runtimeUrl } from './AssetCatalog';
-import type { AudioPlaybackProfile } from './AudioSystem';
+import {
+  AUDIO_CAPTION_EVENT,
+  type AudioCaptionDetail,
+  type AudioPlaybackProfile,
+} from './AudioSystem';
 import {
   DEMO_SCHEMA_VERSION,
   PERSISTENCE_CONFLICT_EVENT,
@@ -275,12 +279,14 @@ export class UIController {
   private entryDevice: 'desktop' | 'gamepad' | 'touch' = 'desktop';
   private entryContinuation?: () => void;
   private readonly runtimeWarnings = new Set<string>();
+  private readonly screenFocusHistory = new Map<string, HTMLElement>();
   private reticleKick = 0;
   private lastCredentialSignature = '';
   private lastInteractionSignature?: string;
   private lastPortraitFile = '';
   private audioReadyRequested = false;
   private entryPreparationToken = 0;
+  private soundCaptionTimer?: number;
 
   constructor(readonly game: GameEngine) {
     window.addEventListener(PERSISTENCE_DEGRADED_EVENT, () => this.showRuntimeWarning(
@@ -296,7 +302,7 @@ export class UIController {
     this.buildEpisodeCards();
     this.buildDifficulties();
     this.bindActions();
-    this.setEntryDevice('desktop');
+    this.setEntryDevice(window.matchMedia('(pointer: coarse)').matches ? 'touch' : 'desktop');
     this.game.onChange = (snapshot) => this.update(snapshot);
     this.game.onIntermission = () => this.showIntermission();
     this.updateContinue();
@@ -446,13 +452,21 @@ export class UIController {
       'Quit game?', 'This browser session will end. Unsaved progress will be lost.', 'Quit', () => this.endSession(),
     ));
     $('#session-return').addEventListener('click', () => location.reload());
-    $('#controls-button').addEventListener('click', () => { this.buildControls(); this.showScreen('controls-menu'); });
+    $('#controls-button').addEventListener('click', () => {
+      $('#controls-feedback').textContent = '';
+      this.buildControls();
+      this.showScreen('controls-menu');
+    });
     $('#controls-back').addEventListener('click', () => { this.cancelBindingCapture(); this.showScreen('options-menu'); });
     $('#reset-controls').addEventListener('click', () => this.confirm(
       'Reset controls?',
       'All keyboard, mouse, and controller bindings will return to their defaults.',
       'Reset',
-      () => { this.game.input.resetBindings(); this.buildControls(); },
+      () => {
+        this.game.input.resetBindings();
+        this.buildControls();
+        $('#controls-feedback').textContent = 'All controls restored to their defaults.';
+      },
     ));
     $('#cancel-binding').addEventListener('click', () => this.cancelBindingCapture());
     $('#level-select-button').addEventListener('click', () => { this.levelSelectReturn = 'menu'; this.showLevelSelect(); });
@@ -546,7 +560,7 @@ export class UIController {
     ['sensitivity', 'controller-sensitivity', 'touch-sensitivity', 'invert-y', 'vertical-auto-aim', 'controller-deadzone',
       'touch-size', 'touch-opacity', 'touch-handedness', 'text-scale', 'render-scale', 'hud-mode', 'classic-input',
       'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects',
-      'master-volume', 'music-volume', 'sfx-volume', 'audio-profile', 'mute-audio'].forEach((id) => {
+      'master-volume', 'music-volume', 'sfx-volume', 'audio-profile', 'mute-audio', 'sound-captions'].forEach((id) => {
       $(`#${id}`).addEventListener('change', () => this.applySettings(true));
     });
     for (const id of ['sensitivity', 'controller-sensitivity', 'touch-sensitivity', 'controller-deadzone',
@@ -599,10 +613,34 @@ export class UIController {
     window.addEventListener('input-action-release', (event) => this.handleInputRelease((event as CustomEvent<InputActionEvent>).detail));
     window.addEventListener('input-menu-navigation', (event) => this.handleMenuNavigation((event as CustomEvent<MenuNavigationEvent>).detail));
     window.addEventListener('input-binding-captured', (event) => {
-      const action = (event as CustomEvent<{ action: InputAction }>).detail.action;
+      const detail = (event as CustomEvent<CaptureResult>).detail;
+      const action = detail.action;
       this.capturingAction = undefined;
       $('#cancel-binding').toggleAttribute('hidden', true);
       this.buildControls(action);
+      const family = detail.binding.device === 'keyboard' ? 'Keyboard'
+        : detail.binding.device === 'mouse-button' || detail.binding.device === 'mouse-wheel' ? 'Mouse'
+          : 'Controller';
+      const retained = family === 'Keyboard' ? 'Mouse and controller bindings retained.'
+        : family === 'Mouse' ? 'Keyboard and controller bindings retained.'
+          : 'Keyboard and mouse bindings retained.';
+      const conflicts = detail.removedFrom.length
+        ? ` Removed from ${detail.removedFrom.map(formatLabel).join(', ')} to prevent a conflict.`
+        : '';
+      $('#controls-feedback').textContent = `${bindingLabel(detail.binding)} assigned to ${formatLabel(action)}. ${retained}${conflicts}`;
+    });
+    window.addEventListener('input-device-change', (event) => {
+      const source = (event as CustomEvent<{ source: InputActionEvent['source'] }>).detail.source;
+      this.setEntryDevice(source === 'gamepad' ? 'gamepad' : source === 'touch' ? 'touch' : 'desktop');
+    });
+    window.addEventListener('input-controller-disconnected', () => {
+      const message = 'Controller disconnected. Reconnect it or continue with keyboard, mouse, or touch controls.';
+      this.showRuntimeWarning(message);
+      this.announce(message);
+      if (this.game.mode === 'playing') this.game.pause();
+    });
+    window.addEventListener(AUDIO_CAPTION_EVENT, (event) => {
+      this.showSoundCaption((event as CustomEvent<AudioCaptionDetail>).detail);
     });
     window.addEventListener('input-binding-cancelled', () => this.cancelBindingCapture());
     window.addEventListener('input-lifecycle-pause', () => {
@@ -1158,8 +1196,10 @@ export class UIController {
   }
 
   private setEntryDevice(device: 'desktop' | 'gamepad' | 'touch'): void {
+    const changed = this.entryDevice !== device;
     this.entryDevice = device;
     $('#game-shell').setAttribute('data-input-device', device);
+    if (changed && !$('#ready-overlay').hasAttribute('hidden')) this.buildEntryBriefing();
   }
 
   private entryBinding(
@@ -1172,16 +1212,11 @@ export class UIController {
   }
 
   private entryGamepadBinding(action: InputAction): string {
-    const raw = this.entryBinding(action, 'gamepad-button');
-    const button = /^Gamepad (\d+)$/.exec(raw)?.[1];
-    if (button === undefined) return raw;
-    return `Button ${Number(button) + 1}`;
+    return this.entryBinding(action, 'gamepad-button');
   }
 
   private buildEntryBriefing(): void {
-    const coarse = matchMedia('(pointer: coarse)').matches;
-    const device = this.entryDevice === 'gamepad' ? 'gamepad' : coarse ? 'touch' : this.entryDevice;
-    this.setEntryDevice(device);
+    const device = this.entryDevice;
     const container = $('#entry-controls');
     const progress = this.game.campaignProgress();
     const initialOrientation = this.game.world.map.id === 'E1M1' && progress.completedMaps.length === 0;
@@ -1260,7 +1295,7 @@ export class UIController {
       this.game.resume();
       continuation?.();
     };
-    if (matchMedia('(pointer: coarse)').matches || this.entryDevice === 'gamepad') {
+    if (this.entryDevice !== 'desktop') {
       resume();
       return;
     }
@@ -1427,6 +1462,7 @@ export class UIController {
       const action = document.createElement('button');
       action.className = 'slot-action';
       action.textContent = mode === 'save' ? 'Write' : 'Load';
+      action.setAttribute('aria-label', `${mode === 'save' ? 'Write' : 'Load'} slot ${slot.slot}${slot.status === 'valid' ? `: ${slot.name}` : ''}`);
       action.disabled = mode === 'load' && slot.status !== 'valid';
       action.addEventListener('click', () => {
         if (mode === 'save') {
@@ -1500,6 +1536,7 @@ export class UIController {
       const action = document.createElement('button');
       action.className = 'slot-action';
       action.textContent = 'Load';
+      action.setAttribute('aria-label', `Load ${badge.textContent.toLowerCase()} save: ${slot.name}`);
       action.disabled = slot.status !== 'valid';
       action.addEventListener('click', () => {
         if (!this.game.loadAutomatic(slot.slotId)) return;
@@ -1721,7 +1758,7 @@ export class UIController {
       const name = document.createElement('input');
       name.value = entry.name;
       name.maxLength = 48;
-      name.setAttribute('aria-label', `Rename ${entry.mapId} replay`);
+      name.setAttribute('aria-label', `Rename replay ${entry.name}`);
       name.addEventListener('change', () => {
         const entriesNow = this.replayLibrary();
         const stored = entriesNow.find((candidate) => candidate.id === entry.id);
@@ -1735,6 +1772,7 @@ export class UIController {
       copy.append(name, detail);
       const play = document.createElement('button');
       play.textContent = 'Play';
+      play.setAttribute('aria-label', `Play replay ${entry.name}`);
       play.addEventListener('click', () => {
         this.game.audio.unlock();
         if (!this.game.startDemoPlayback(entry.demo)) {
@@ -1746,6 +1784,7 @@ export class UIController {
       });
       const save = document.createElement('button');
       save.textContent = 'Export';
+      save.setAttribute('aria-label', `Export replay ${entry.name}`);
       save.addEventListener('click', () => {
         const url = URL.createObjectURL(new Blob([JSON.stringify(entry.demo)], { type: 'application/json' }));
         const anchor = document.createElement('a');
@@ -1819,6 +1858,7 @@ export class UIController {
       button.addEventListener('click', () => {
         this.capturingAction = action;
         this.game.input.beginBindingCapture(action);
+        $('#controls-feedback').textContent = '';
         setButtonCopy('Press an input', true);
         button.classList.add('capturing');
         $('#cancel-binding').toggleAttribute('hidden', false);
@@ -1942,7 +1982,7 @@ export class UIController {
           ? replayControls
           : active;
     if (!root || this.capturingAction) return;
-    const focusable = [...root.querySelectorAll<HTMLElement>('button:not(:disabled):not([hidden]), select:not(:disabled), input:not(:disabled)')]
+    const focusable = [...root.querySelectorAll<HTMLElement>('button:not(:disabled):not([hidden]), select:not(:disabled), input:not(:disabled), a[href]')]
       .filter((element) => element.offsetParent !== null);
     if (!focusable.length) return;
     const current = document.activeElement instanceof HTMLElement ? focusable.indexOf(document.activeElement) : -1;
@@ -2025,7 +2065,7 @@ export class UIController {
       $<HTMLSelectElement>('#text-scale').value = presentation.uiTextScale;
       if (typeof settings.renderScale === 'number') $<HTMLSelectElement>('#render-scale').value = String(settings.renderScale);
       if (settings.hudMode === 'minimal') $<HTMLSelectElement>('#hud-mode').value = 'minimal';
-      for (const id of ['classic-input', 'vertical-auto-aim', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects']) {
+      for (const id of ['classic-input', 'vertical-auto-aim', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects', 'sound-captions']) {
         if (typeof settings[id] === 'boolean') $<HTMLInputElement>(`#${id}`).checked = Boolean(settings[id]);
       }
     } catch {
@@ -2085,6 +2125,7 @@ export class UIController {
     this.game.audio.setSfxVolume(Number($<HTMLInputElement>('#sfx-volume').value));
     this.game.audio.setPlaybackProfile($<HTMLSelectElement>('#audio-profile').value as AudioPlaybackProfile);
     this.game.audio.setMuted($<HTMLInputElement>('#mute-audio').checked);
+    if (!$<HTMLInputElement>('#sound-captions').checked) this.hideSoundCaption();
     this.updateRangeOutputs();
     window.dispatchEvent(new CustomEvent('accessibility-settings-change', { detail: {
       reducedMotion: $<HTMLInputElement>('#reduced-motion').checked,
@@ -2115,6 +2156,7 @@ export class UIController {
         'high-contrast': $<HTMLInputElement>('#high-contrast').checked,
         'reduced-effects': $<HTMLInputElement>('#reduced-effects').checked,
         'flash-effects': $<HTMLInputElement>('#flash-effects').checked,
+        'sound-captions': $<HTMLInputElement>('#sound-captions').checked,
       }));
     } catch {
       this.showRuntimeWarning('Browser storage is unavailable. Settings apply for this session only.');
@@ -2148,6 +2190,28 @@ export class UIController {
     announcer.textContent = '';
     requestAnimationFrame(() => { announcer.textContent = message; });
   }
+  private showSoundCaption(detail: AudioCaptionDetail): void {
+    if (!$<HTMLInputElement>('#sound-captions').checked || !detail?.text) return;
+    if (document.querySelector('.screen.active') || !$('#ready-overlay').hasAttribute('hidden')) return;
+    const caption = $<HTMLElement>('#sound-caption');
+    caption.textContent = detail.text;
+    caption.dataset.priority = detail.priority;
+    caption.dataset.direction = detail.direction;
+    caption.toggleAttribute('hidden', false);
+    if (this.soundCaptionTimer !== undefined) window.clearTimeout(this.soundCaptionTimer);
+    const duration = detail.priority === 'critical' ? 1_650
+      : detail.priority === 'important' ? 1_450
+        : detail.priority === 'ambient' ? 2_000
+          : 1_250;
+    this.soundCaptionTimer = window.setTimeout(() => this.hideSoundCaption(), duration);
+  }
+  private hideSoundCaption(): void {
+    if (this.soundCaptionTimer !== undefined) window.clearTimeout(this.soundCaptionTimer);
+    this.soundCaptionTimer = undefined;
+    const caption = $<HTMLElement>('#sound-caption');
+    caption.textContent = '';
+    caption.toggleAttribute('hidden', true);
+  }
   private showRuntimeWarning(message: string): void {
     this.runtimeWarnings.add(message);
     const warning = $('#runtime-warning');
@@ -2161,6 +2225,9 @@ export class UIController {
       this.game.audio.startMenuMusic();
     } else if (id === 'credits' && this.audioReadyRequested) this.game.audio.startCreditsMusic();
     $('#ready-overlay').toggleAttribute('hidden', true);
+    const previous = document.querySelector<HTMLElement>('.screen.active');
+    const focused = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    if (previous && focused && previous.contains(focused)) this.screenFocusHistory.set(previous.id, focused);
     this.hideScreens();
     const screen = $<HTMLElement>(`#${id}`);
     screen.classList.add('active');
@@ -2168,8 +2235,10 @@ export class UIController {
       const selectedDifficulty = id === 'difficulty-menu'
         ? screen.querySelector<HTMLElement>(`button[data-difficulty="${this.pendingDifficulty}"]:not(:disabled)`)
         : undefined;
+      const remembered = this.screenFocusHistory.get(id);
       (selectedDifficulty
-        ?? screen.querySelector<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled)'))
+        ?? (remembered?.isConnected && screen.contains(remembered) && !remembered.matches(':disabled') ? remembered : undefined)
+        ?? screen.querySelector<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled), a[href]'))
         ?.focus({ preventScroll: true });
       screen.scrollTop = 0;
     });

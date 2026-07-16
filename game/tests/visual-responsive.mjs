@@ -240,8 +240,8 @@ async function inspectSmallPersonalizedDeck(handedness) {
   await page.click('#new-game');
   await page.locator('.episode-card').first().click();
   await page.locator('#difficulty-actions button').nth(1).click();
-  await page.click('#begin-episode');
-  if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+  await page.locator('#begin-episode').tap();
+  if (await page.locator('#ready-overlay').isVisible()) await page.locator('#enter-file').tap();
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
   const result = await page.evaluate((messageText) => {
@@ -339,7 +339,8 @@ async function run(viewport, name, mobile = false) {
   }
   if (mobile) assert(introPresentation.buttons.every((button) => button.height >= 44), `${name}: intro has sub-44px touch targets`);
   await page.screenshot({ path: `output/responsive/${name}-intro.png` });
-  await page.click('#begin-episode');
+  if (mobile) await page.locator('#begin-episode').tap();
+  else await page.click('#begin-episode');
   if (!mobile && viewport.width >= 1920) {
     const briefing = await page.locator('#entry-controls').evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -350,7 +351,10 @@ async function run(viewport, name, mobile = false) {
     assert(briefing.valueFontSize >= 14, `${name}: entry briefing values are too small on a high-resolution display`);
     await page.screenshot({ path: `output/responsive/${name}-briefing.png` });
   }
-  if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+  if (await page.locator('#ready-overlay').isVisible()) {
+    if (mobile) await page.locator('#enter-file').tap();
+    else await page.click('#enter-file');
+  }
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
   await page.waitForTimeout(500);
   const metrics = await page.evaluate(() => {

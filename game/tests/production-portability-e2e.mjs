@@ -45,11 +45,12 @@ const monitor = (page, ignoredRequest = () => false) => {
 };
 
 const startCampaign = async (page) => {
-  await page.click('#new-game');
-  await page.locator('.episode-card').first().click();
-  await page.locator('#difficulty-actions button').nth(1).click();
-  await page.click('#begin-episode');
-  if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+  await page.locator('#new-game').tap();
+  await page.locator('.episode-card').first().tap();
+  await page.locator('#difficulty-actions button').nth(1).tap();
+  await page.locator('#difficulty-confirm').tap();
+  await page.locator('#begin-episode').tap();
+  if (await page.locator('#ready-overlay').isVisible()) await page.locator('#enter-file').tap();
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 };
 

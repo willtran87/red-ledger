@@ -34,7 +34,33 @@ describe('InputBindings', () => {
     expect(bindings.keyboardActions('KeyW')).toContain('fire');
     expect(bindings.keyboardActions('KeyW')).toContain('menu-up');
     expect(bindings.keyboardActions('KeyW')).not.toContain('move-forward');
+    expect(bindings.get('fire')).toEqual([
+      { device: 'mouse-button', button: 0 },
+      { device: 'gamepad-button', button: 7 },
+      { device: 'keyboard', code: 'KeyW' },
+    ]);
     expect(bindings.capturing).toBeUndefined();
+  });
+
+  it('replaces only the captured device family so hybrid controls remain available', () => {
+    const bindings = new InputBindings();
+    bindings.beginCapture('move-forward');
+    bindings.capture({ device: 'gamepad-axis', axis: 4, direction: -1 });
+    expect(bindings.get('move-forward')).toEqual([
+      { device: 'keyboard', code: 'KeyW' },
+      { device: 'keyboard', code: 'ArrowUp' },
+      { device: 'gamepad-axis', axis: 4, direction: -1 },
+    ]);
+
+    bindings.beginCapture('fire');
+    bindings.capture({ device: 'keyboard', code: 'KeyR' });
+    bindings.beginCapture('fire');
+    bindings.capture({ device: 'mouse-button', button: 2 });
+    expect(bindings.get('fire')).toEqual([
+      { device: 'gamepad-button', button: 7 },
+      { device: 'keyboard', code: 'KeyR' },
+      { device: 'mouse-button', button: 2 },
+    ]);
   });
 
   it('supports alternate bindings and action-level reset', () => {
@@ -73,6 +99,7 @@ describe('InputBindings', () => {
   it('provides concise labels for remapping UI', () => {
     expect(bindingLabel({ device: 'keyboard', code: 'KeyR' })).toBe('R');
     expect(bindingLabel({ device: 'mouse-wheel', direction: -1 })).toBe('Wheel Up');
-    expect(bindingLabel({ device: 'gamepad-axis', axis: 2, direction: 1 })).toBe('Axis 2 +');
+    expect(bindingLabel({ device: 'gamepad-axis', axis: 2, direction: 1 })).toBe('Axis 3 +');
+    expect(bindingLabel({ device: 'gamepad-button', button: 7 })).toBe('Button 8');
   });
 });

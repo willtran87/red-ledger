@@ -32,12 +32,16 @@ await page.locator('#controller-sensitivity').fill('2.3');
 await page.locator('#touch-sensitivity').fill('0.7');
 await page.locator('#controller-deadzone').fill('0.22');
 await page.locator('#invert-y').check();
+await page.locator('#sound-captions').check();
+await page.waitForTimeout(520);
 await page.selectOption('#text-scale', 'largest');
 const scaledText = await page.locator('#options-menu label').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
 assert(scaledText >= 19.5, 'Largest text setting did not increase inherited UI text');
 
 await page.click('#controls-button');
 assert(await page.locator('.control-row').count() === 34, 'Controls screen does not expose every remappable action');
+await page.waitForFunction(() => document.querySelector('#controls-menu')?.scrollTop === 0
+  && document.activeElement?.getAttribute('data-action') === 'move-forward');
 await page.screenshot({ path: 'output/controls/controls.png' });
 
 const automapRow = page.locator('.control-row', { has: page.getByText('Automap', { exact: true }) }).first();
@@ -45,9 +49,17 @@ const automapButton = automapRow.locator('button');
 assert((await automapButton.getAttribute('aria-label'))?.includes('Automap'), 'Remapping control accessible name omits the action name');
 await automapButton.click();
 await page.keyboard.press('KeyM');
-assert((await automapButton.textContent())?.trim() === 'M', 'Automap binding capture did not update its label');
+const remappedAutomapCopy = (await automapButton.textContent())?.trim() ?? '';
+assert(remappedAutomapCopy.includes('M'), 'Automap binding capture did not update its keyboard label');
+assert(remappedAutomapCopy.includes('Button 9'), 'Keyboard remap erased the controller automap binding');
 await page.waitForFunction(() => (document.activeElement instanceof HTMLElement) && document.activeElement.dataset.action === 'automap');
-assert((await automapButton.getAttribute('aria-label'))?.includes('Current bindings: M'), 'Remapping control accessible name omits its current binding');
+assert((await automapButton.getAttribute('aria-label'))?.includes(`Current bindings: ${remappedAutomapCopy}`), 'Remapping control accessible name omits its current bindings');
+assert((await page.locator('#controls-feedback').textContent())?.includes('Mouse and controller bindings retained.'), 'Remapping feedback did not explain preserved device bindings');
+
+const quickSaveRow = page.locator('.control-row', { has: page.getByText('Quick Save', { exact: true }) }).first();
+await quickSaveRow.locator('button').click();
+await page.keyboard.press('KeyQ');
+assert((await page.locator('#controls-feedback').textContent())?.includes('Removed from Weapon Previous'), 'Conflict resolution was not announced');
 
 await page.click('#controls-back');
 await page.locator('#options-menu [data-back]').click();
@@ -63,6 +75,28 @@ if (await page.locator('#ready-overlay').isVisible()) {
   await page.click('#enter-file');
 }
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
+await page.mouse.down();
+await page.waitForTimeout(80);
+await page.mouse.up();
+await page.waitForFunction(() => !document.querySelector('#sound-caption')?.hasAttribute('hidden'));
+assert((await page.locator('#sound-caption').textContent())?.includes('Staple Driver'), 'Gameplay sound caption did not identify the fired weapon');
+await page.screenshot({ path: 'output/controls/sound-caption.png' });
+const hudTextScale = await page.evaluate(() => {
+  const root = document.documentElement;
+  const objective = document.querySelector('#objective');
+  const status = document.querySelector('#status');
+  const current = () => ({
+    objective: Number.parseFloat(getComputedStyle(objective).fontSize),
+    status: Number.parseFloat(getComputedStyle(status).fontSize),
+  });
+  const largest = current();
+  root.dataset.uiTextScale = 'standard';
+  const standard = current();
+  root.dataset.uiTextScale = 'largest';
+  return { largest, standard };
+});
+assert(hudTextScale.largest.objective >= hudTextScale.standard.objective * 1.12, 'Largest text setting barely changed objective text');
+assert(hudTextScale.largest.status >= hudTextScale.standard.status * 1.12, 'Largest text setting barely changed status text');
 
 const classicLookBefore = JSON.parse(await page.evaluate(() => window.render_game_to_text())).player;
 await page.evaluate(() => {
@@ -143,10 +177,12 @@ assert(await page.locator('#invert-y').isChecked(), 'Y inversion did not persist
 assert(!(await page.locator('#vertical-auto-aim').isChecked()), 'Vertical auto-aim preference did not persist');
 assert(await page.locator('#classic-input').isChecked(), '1993 input preference did not persist');
 assert(await page.locator('#text-scale').inputValue() === 'largest', 'Text size did not persist');
+assert(await page.locator('#sound-captions').isChecked(), 'Sound caption preference did not persist');
 await page.click('#controls-button');
 const restoredRow = page.locator('.control-row', { has: page.getByText('Automap', { exact: true }) }).first();
 assert(await restoredRow.count() === 1, 'Remapped binding did not persist across reload');
-assert((await restoredRow.locator('button').textContent())?.trim() === 'M', 'Persisted automap binding label changed after reload');
+assert((await restoredRow.locator('button').textContent())?.includes('M'), 'Persisted automap keyboard binding changed after reload');
+assert((await restoredRow.locator('button').textContent())?.includes('Button 9'), 'Persisted automap controller binding changed after reload');
 await page.click('#reset-controls');
 assert(await page.locator('#confirm-dialog').isVisible(), 'Reset controls did not request confirmation');
 await page.click('#confirm-accept');
@@ -154,9 +190,45 @@ assert((await restoredRow.locator('button').textContent())?.includes('Tab'), 'Re
 
 await page.click('#controls-back');
 await page.locator('#options-menu [data-back]').click();
-await page.waitForFunction(() => document.activeElement?.id === 'new-game');
+await page.waitForFunction(() => document.activeElement?.id === 'options-button');
 await page.keyboard.press('ArrowDown');
-assert((await page.evaluate(() => document.activeElement?.id)) === 'continue-game', 'Keyboard menu navigation did not advance to the next command');
+assert((await page.evaluate(() => document.activeElement?.id)) === 'credits-button', 'Keyboard menu navigation did not continue from restored focus');
+
+await page.keyboard.press('Enter');
+await page.waitForFunction(() => document.querySelector('#credits')?.classList.contains('active'));
+await page.waitForFunction(() => document.activeElement?.matches('#credits a[href]'));
+assert(await page.evaluate(() => document.activeElement?.matches('#credits a[href]')), 'Credits did not expose its links to keyboard/controller focus');
+
+await page.evaluate(() => {
+  const buttons = Array.from({ length: 16 }, () => ({ pressed: false, touched: false, value: 0 }));
+  window.__testGamepad = { connected: true, buttons, axes: [0, 0, 0, 0] };
+  window.__gamepadNavigation = [];
+  Object.defineProperty(navigator, 'getGamepads', {
+    configurable: true,
+    value: () => window.__testGamepad.connected ? [window.__testGamepad] : [],
+  });
+  window.addEventListener('input-menu-navigation', (event) => {
+    if (event.detail.source === 'gamepad') window.__gamepadNavigation.push(event.detail);
+  });
+  buttons[13].pressed = true;
+  buttons[13].touched = true;
+  buttons[13].value = 1;
+});
+await page.waitForTimeout(700);
+await page.evaluate(() => {
+  const button = window.__testGamepad.buttons[13];
+  button.pressed = false;
+  button.touched = false;
+  button.value = 0;
+});
+await page.waitForTimeout(120);
+const gamepadNavigation = await page.evaluate(() => window.__gamepadNavigation);
+assert(gamepadNavigation.length >= 3, 'Held controller navigation did not repeat after its initial step');
+assert(gamepadNavigation[0].repeat === false && gamepadNavigation.slice(1).some((event) => event.repeat), 'Controller navigation did not distinguish its initial press from repeats');
+assert(await page.locator('#game-shell').getAttribute('data-input-device') === 'gamepad', 'Controller activity did not become the active input device');
+
+await page.evaluate(() => { window.__testGamepad.connected = false; });
+await page.waitForFunction(() => document.querySelector('#runtime-warning')?.textContent?.includes('Controller disconnected'));
 
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 console.log('Controls/remapping E2E passed');

@@ -20,6 +20,7 @@ export interface MilestoneHighlights {
 }
 
 const secretMaps = Object.values(CAMPAIGN.maps).filter((map) => map.secretMap).map((map) => map.id);
+const standardMaps = Object.values(CAMPAIGN.maps).filter((map) => !map.secretMap).map((map) => map.id);
 
 const mastered = (record: MapRecord): boolean => hasMasteryProof(record);
 
@@ -58,6 +59,19 @@ const episodeMasteryDepth = (records: readonly MapRecord[]): number => {
   return depth;
 };
 
+const campaignMasteryDepth = (records: readonly MapRecord[]): number => {
+  const difficulties = new Set(records.map((record) => record.difficulty));
+  let depth = 0;
+  for (const difficulty of difficulties) {
+    const count = standardMaps.filter((id) => {
+      const record = records.find((candidate) => candidate.mapId === id && candidate.difficulty === difficulty);
+      return Boolean(record && mastered(record));
+    }).length;
+    depth = Math.max(depth, count);
+  }
+  return depth;
+};
+
 /** Milestones are projections of campaign records, including their single-run mastery proofs. */
 export const deriveMilestones = (progress: CampaignUnlocks): readonly MilestoneStatus[] => {
   const records = Object.values(progress.records).filter((record) => record.mapId in CAMPAIGN.maps);
@@ -67,7 +81,10 @@ export const deriveMilestones = (progress: CampaignUnlocks): readonly MilestoneS
   const sRecords = records.filter((record) => record.bestGrade === 'S').length;
   const masteredRecords = records.filter(mastered).length;
   const episodeDepth = episodeMasteryDepth(records);
+  const campaignDepth = campaignMasteryDepth(records);
+  const bindingMasteries = records.filter((record) => record.difficulty === 'binding-authority' && mastered(record)).length;
   const discoveredSecrets = secretMaps.filter((id) => progress.discoveredSecretMaps.includes(id)).length;
+  const completedSecretMaps = secretMaps.filter((id) => progress.completedMaps.includes(id)).length;
   const campaignEpisodes = CAMPAIGN.episodes.filter((episode) => progress.completedEpisodes.includes(episode.id)).length;
 
   return [
@@ -78,9 +95,12 @@ export const deriveMilestones = (progress: CampaignUnlocks): readonly MilestoneS
     status('first-par', 'Ahead of Schedule', 'Beat par on any file.', parRecords, 1),
     status('first-s', 'Red Seal', 'Earn an S grade on any file.', sRecords, 1),
     status('first-mastery', 'Closed Without Exception', 'Earn full mastery on any file.', masteredRecords, 1),
+    status('binding-mastery', 'Authority Without Appeal', 'Master any file on Binding Authority.', bindingMasteries, 1),
     status('episode-close', 'Regional Close', 'Complete an episode.', progress.completedEpisodes.length, 1),
     status('episode-mastery', 'Clean Ledger', 'Master all eight standard files in one episode at one response level.', episodeDepth, 8, `${episodeDepth}/8 mastered`),
+    status('campaign-mastery', 'One Response Standard', 'Master all 24 standard files at one response level.', campaignDepth, standardMaps.length, `${campaignDepth}/${standardMaps.length} mastered`),
     status('first-secret', 'Fine Print', 'Discover a concealed outbound route.', discoveredSecrets, 1),
+    status('secret-clear', 'Off the Record', 'Complete a concealed file.', completedSecretMaps, 1),
     status('all-secrets', 'Every Exclusion', 'Discover all concealed outbound routes.', discoveredSecrets, secretMaps.length),
     status('campaign-close', 'National Close', 'Complete all three episodes.', campaignEpisodes, CAMPAIGN.episodes.length),
   ];
@@ -100,10 +120,15 @@ const contextualMilestoneIds = (
   if (record.bestChain >= 10) ids.add('chain-ten');
   if (record.parBeaten) ids.add('first-par');
   if (record.bestGrade === 'S') ids.add('first-s');
-  if (mastered(record)) ids.add('first-mastery');
+  if (mastered(record)) {
+    ids.add('first-mastery');
+    if (difficulty === 'binding-authority') ids.add('binding-mastery');
+    if (!CAMPAIGN.maps[mapId].secretMap) ids.add('campaign-mastery');
+  }
   const map = CAMPAIGN.maps[mapId];
   if (progress.completedEpisodes.includes(map.episode)) ids.add('episode-close');
   if (map.secretMap || map.secretExitTo && progress.discoveredSecretMaps.includes(map.secretExitTo)) ids.add('first-secret');
+  if (map.secretMap && progress.completedMaps.includes(mapId)) ids.add('secret-clear');
   return ids;
 };
 

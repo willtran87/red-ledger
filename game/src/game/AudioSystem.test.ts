@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AudioSystem } from './AudioSystem';
+import { AUDIO_CAPTION_EVENT, AudioSystem, type AudioCaptionDetail } from './AudioSystem';
 
 class MockAudioParam {
   value = 0;
@@ -197,7 +197,80 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const captionEvents = (): Array<CustomEvent<AudioCaptionDetail>> => vi.mocked(window.dispatchEvent).mock.calls
+  .map(([event]) => event)
+  .filter((event): event is CustomEvent<AudioCaptionDetail> => event.type === AUDIO_CAPTION_EVENT);
+
 describe('AudioSystem production lifecycle', () => {
+  it('dispatches a stable semantic caption contract without requiring unlocked audio', () => {
+    const audio = new AudioSystem();
+
+    audio.uiCue('save');
+
+    expect(captionEvents()).toHaveLength(1);
+    expect(captionEvents()[0].detail).toEqual({
+      cue: 'ui/save',
+      text: 'Game saved',
+      category: 'ui',
+      priority: 'routine',
+      pan: 0,
+      direction: 'center',
+      dedupeKey: 'ui/save:center',
+      repeatWindowMs: 500,
+    });
+  });
+
+  it('deduplicates repeated captions while preserving spatial attack directions', () => {
+    let now = 1_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const audio = new AudioSystem();
+
+    audio.enemyAttackCue('denial-beam', 'windup', -.8, .75);
+    audio.enemyAttackCue('denial-beam', 'windup', -.8, .75);
+    audio.enemyAttackCue('denial-beam', 'windup', .8, .75);
+    now += 120;
+    audio.enemyAttackCue('denial-beam', 'windup', -.8, .75);
+
+    const events = captionEvents();
+    expect(events).toHaveLength(3);
+    expect(events[0].detail).toEqual({
+      cue: 'attack/denial-beam/windup',
+      text: 'Denial Beam charging from the left',
+      category: 'attack',
+      priority: 'critical',
+      pan: -.8,
+      direction: 'left',
+      dedupeKey: 'attack/denial-beam/windup:left',
+      repeatWindowMs: 120,
+    });
+    expect(events[1].detail).toMatchObject({
+      text: 'Denial Beam charging from the right',
+      direction: 'right',
+      dedupeKey: 'attack/denial-beam/windup:right',
+    });
+    expect(events[2].detail.direction).toBe('left');
+  });
+
+  it('captions music requests but not raw synthesis primitives', () => {
+    const audio = new AudioSystem();
+    audio.unlock();
+
+    audio.tone(440, .1);
+    audio.noise(.05);
+    audio.playMusic('E1M1');
+    audio.playMusic('E1M1');
+
+    expect(captionEvents()).toHaveLength(1);
+    expect(captionEvents()[0].detail).toMatchObject({
+      cue: 'music/E1M1',
+      text: 'E1M1 music begins',
+      category: 'music',
+      priority: 'ambient',
+      dedupeKey: 'music/E1M1:center',
+      repeatWindowMs: 5_000,
+    });
+  });
+
   it('routes buses through a configured master compressor', () => {
     const audio = new AudioSystem();
     audio.unlock();

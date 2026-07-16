@@ -385,16 +385,24 @@ interface RecoveryStageResult {
   readonly collection: RecoveryCollectionStats;
 }
 
+interface RecoverySimulationOptions {
+  readonly optionalEngagement?: number;
+  readonly collectionTiming?: 'before-damage' | 'after-damage';
+}
+
 const simulateRecoveryMap = (
   map: CampaignMap,
   difficulty: GameDifficulty,
   profile: AvoidanceProfile,
   state: RecoveryState = freshRecoveryState(),
-  optionalEngagement = 0,
+  options: RecoverySimulationOptions = {},
 ): readonly RecoveryStageResult[] => recoveryStages(map).map((route) => {
-  // Route-tagged supplies unlock with their encounter, before its mandatory
-  // blockers. Pickup iteration order is the authored order used by World.
-  const collection = collectStageRecovery(map, route, difficulty, state);
+  const optionalEngagement = options.optionalEngagement ?? 0;
+  const collectionTiming = options.collectionTiming ?? 'before-damage';
+  let collection = emptyRecoveryStats();
+  if (collectionTiming === 'before-damage') {
+    collection = collectStageRecovery(map, route, difficulty, state);
+  }
   const incoming = stageIncomingDamage(
     map,
     route,
@@ -406,13 +414,20 @@ const simulateRecoveryMap = (
   const healthBeforeDamage = state.health;
   const armorBeforeDamage = state.armor;
   applyIncomingDamage(state, incoming);
+  const healthAfter = state.health;
+  const armorAfter = state.armor;
+  // Delayed collection is the conservative route-order bound: unlocked
+  // supplies remain useful for the next stage, but cannot erase lethal damage.
+  if (collectionTiming === 'after-damage' && healthAfter > 0) {
+    collection = collectStageRecovery(map, route, difficulty, state);
+  }
   return {
     route,
     incoming,
     healthBeforeDamage,
     armorBeforeDamage,
-    healthAfter: state.health,
-    armorAfter: state.armor,
+    healthAfter,
+    armorAfter,
     collection,
   };
 });
@@ -504,24 +519,50 @@ describe('deterministic whole-campaign balance model', () => {
     expect(failures).toEqual([]);
   });
 
-  it('keeps every fresh-start mandatory route survivable across avoidance and response profiles', () => {
+  it('keeps fresh-start routes survivable with delayed pickups and incidental optional pressure', () => {
     const failures: string[] = [];
-    for (const difficulty of difficultyOrder) {
-      for (const profile of avoidanceProfiles) {
-        for (const map of Object.values(CAMPAIGN.maps)) {
-          const stages = simulateRecoveryMap(map, difficulty, profile);
-          const failed = stages.find((stage) => stage.healthAfter <= 0);
-          if (failed) {
-            failures.push(
-              `${difficulty}:${profile.id}:${map.id}:${failed.route}`
-              + ` start ${failed.healthBeforeDamage.toFixed(1)}H/${failed.armorBeforeDamage.toFixed(1)}A`
-              + ` -> ${failed.healthAfter.toFixed(1)}H after ${failed.incoming.toFixed(1)} incoming`,
-            );
+    const scenarios: readonly { id: string; options: RecoverySimulationOptions }[] = [
+      {
+        id: 'mandatory-delayed-pickups',
+        options: { collectionTiming: 'after-damage' },
+      },
+      {
+        id: 'quarter-optional-pressure',
+        options: { optionalEngagement: .25 },
+      },
+    ];
+    for (const scenario of scenarios) {
+      for (const difficulty of difficultyOrder) {
+        for (const profile of avoidanceProfiles) {
+          for (const map of Object.values(CAMPAIGN.maps)) {
+            const stages = simulateRecoveryMap(map, difficulty, profile, freshRecoveryState(), scenario.options);
+            const failed = stages.find((stage) => stage.healthAfter <= 0);
+            if (failed) {
+              failures.push(
+                `${scenario.id}:${difficulty}:${profile.id}:${map.id}:${failed.route}`
+                + ` start ${failed.healthBeforeDamage.toFixed(1)}H/${failed.armorBeforeDamage.toFixed(1)}A`
+                + ` -> ${failed.healthAfter.toFixed(1)}H after ${failed.incoming.toFixed(1)} incoming`,
+              );
+            }
           }
         }
       }
     }
     expect(failures).toEqual([]);
+  });
+
+  it('does not credit delayed entry supplies as opening armor or weapon throughput', () => {
+    const map = CAMPAIGN.maps.E1M1;
+    const profile = avoidanceProfiles.find((candidate) => candidate.id === 'conservative')!;
+    const beforeDamage = simulateRecoveryMap(map, 'field-adjuster', profile)[0];
+    const afterDamage = simulateRecoveryMap(map, 'field-adjuster', profile, freshRecoveryState(), {
+      collectionTiming: 'after-damage',
+    })[0];
+
+    expect(beforeDamage.armorBeforeDamage).toBe(100);
+    expect(afterDamage.armorBeforeDamage).toBe(0);
+    expect(afterDamage.incoming).toBeGreaterThan(beforeDamage.incoming);
+    expect(afterDamage.collection.armorAccepted).toBe(100);
   });
 
   it('turns continuous expert-route recovery into usable survival margin without starvation streaks', () => {
@@ -542,7 +583,9 @@ describe('deterministic whole-campaign balance model', () => {
         for (const id of episode.maps.filter((mapId) => !CAMPAIGN.maps[mapId].secretMap)) {
           // Expert continuity models a full standard-route clear. Fresh-start
           // progression above deliberately remains mandatory-only.
-          const stages = simulateRecoveryMap(CAMPAIGN.maps[id], difficulty, expert, state, 1);
+          const stages = simulateRecoveryMap(CAMPAIGN.maps[id], difficulty, expert, state, {
+            optionalEngagement: 1,
+          });
           const mapOffered = stages.reduce((total, stage) => total + recoveryOffered(stage.collection), 0);
           const mapAccepted = stages.reduce((total, stage) => total + recoveryAccepted(stage.collection), 0);
           totalOffered += mapOffered;

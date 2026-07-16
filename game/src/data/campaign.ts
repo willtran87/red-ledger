@@ -915,11 +915,33 @@ const difficultyMask = (phaseIndex: number, easyCount: number, normalCount: numb
   return ['hard'];
 };
 
+type TimedPowerupPickupId =
+  | 'temporary-binder'
+  | 'night-inspection-goggles'
+  | 'hazard-endorsement'
+  | 'rapid-authority'
+  | 'forensic-lens';
+
+/** One deliberate, main-route powerup payoff for every authored map. */
+export const STANDARD_TIMED_POWERUP_REWARDS: Readonly<Record<MapId, TimedPowerupPickupId>> = {
+  E1M1: 'night-inspection-goggles', E1M2: 'rapid-authority', E1M3: 'hazard-endorsement',
+  E1M4: 'forensic-lens', E1M5: 'temporary-binder', E1M6: 'night-inspection-goggles',
+  E1M7: 'rapid-authority', E1M8: 'temporary-binder', E1M9: 'forensic-lens',
+  E2M1: 'rapid-authority', E2M2: 'hazard-endorsement', E2M3: 'night-inspection-goggles',
+  E2M4: 'temporary-binder', E2M5: 'forensic-lens', E2M6: 'hazard-endorsement',
+  E2M7: 'forensic-lens', E2M8: 'temporary-binder', E2M9: 'rapid-authority',
+  E3M1: 'rapid-authority', E3M2: 'forensic-lens', E3M3: 'temporary-binder',
+  E3M4: 'hazard-endorsement', E3M5: 'night-inspection-goggles', E3M6: 'temporary-binder',
+  E3M7: 'rapid-authority', E3M8: 'temporary-binder', E3M9: 'night-inspection-goggles',
+};
+
+// Routine route cycles stay predictable; special effects belong to authored
+// reward pockets or concealed rewards rather than recurring as filler.
 const supplyFor = (episode: 1 | 2 | 3): readonly PickupId[] => episode === 1
-  ? ['staples-small', 'fasteners-small', 'adhesive-bandage', 'goodwill-token', 'staples-large', 'field-medical-case', 'loss-control-vest', 'canister', 'night-inspection-goggles']
+  ? ['staples-small', 'fasteners-small', 'adhesive-bandage', 'goodwill-token', 'staples-large', 'field-medical-case', 'loss-control-vest', 'canister', 'goodwill-token']
   : episode === 2
-    ? ['fasteners-large', 'fasteners-large', 'canister', 'canister-crate', 'adhesive-bandage', 'field-medical-case', 'loss-control-vest', 'hazard-endorsement', 'forensic-lens']
-    : ['toner-cell', 'fasteners-large', 'canister-crate', 'toner-cell', 'toner-pack', 'field-medical-case', 'rapid-authority', 'temporary-binder', 'adhesive-bandage', 'goodwill-token'];
+    ? ['fasteners-large', 'fasteners-large', 'canister', 'canister-crate', 'adhesive-bandage', 'field-medical-case', 'loss-control-vest', 'fasteners-small', 'canister']
+    : ['toner-cell', 'fasteners-large', 'canister-crate', 'toner-cell', 'toner-pack', 'field-medical-case', 'toner-cell', 'canister', 'adhesive-bandage', 'goodwill-token'];
 
 const LATE_CAMPAIGN_RECOVERY_ROUTE: Readonly<Partial<Record<MapId, string>>> = {
   E3M1: 'entry', E3M2: 'transformation', E3M3: 'climax', E3M4: 'transformation', E3M5: 'entry',
@@ -1158,19 +1180,28 @@ const makeActors = (
   const pickupCount = 18 + episode * 2 + Math.ceil(normalCount * pickupScale);
   const pickupPhaseCounts = scaleEncounterPhaseBudgets(encounterProfile, pickupCount);
   let pickupIndex = 0;
+  let timedRewardPlaced = false;
   for (const routeId of ENCOUNTER_PHASES) {
     const route = authoredZones[routeId];
+    const phaseReceivesTimedReward = encounterProfile.phases[routeId].reward && !timedRewardPlaced;
     for (let routeSlot = 0; routeSlot < pickupPhaseCounts[routeId]; routeSlot += 1) {
-      const point = encounterProfile.phases[routeId].reward && routeSlot === 0
+      const isRewardPocket = encounterProfile.phases[routeId].reward && routeSlot === 0;
+      const isTimedReward = isRewardPocket && phaseReceivesTimedReward;
+      const routineRouteSlot = routeSlot - Number(phaseReceivesTimedReward);
+      const point = isRewardPocket
         ? blueprint.rewardPocket
         : route[(hardCount + pickupIndex * 11) % route.length];
-      const pickup = routeSlot < routeBundle.length
-        ? routeBundle[routeSlot]
-        : supply[pickupIndex % supply.length];
+      const pickup = isTimedReward
+        ? STANDARD_TIMED_POWERUP_REWARDS[spec.id]
+        : routineRouteSlot >= 0 && routineRouteSlot < routeBundle.length
+          ? routeBundle[routineRouteSlot]
+          : supply[pickupIndex % supply.length];
       actors.push({ ...occupy(point), type: 'pickup', pickup, route: routeId });
+      if (isTimedReward) timedRewardPlaced = true;
       pickupIndex += 1;
     }
   }
+  if (!timedRewardPlaced) throw new Error(`${spec.id} has no authored timed-reward pocket`);
 
   const lateRecoveryRoute = LATE_CAMPAIGN_RECOVERY_ROUTE[spec.id];
   if (lateRecoveryRoute) {

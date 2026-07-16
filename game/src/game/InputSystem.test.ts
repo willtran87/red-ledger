@@ -3,11 +3,36 @@ import {
   DEFAULT_INPUT_PREFERENCES,
   applyClassicLookRestrictions,
   applyControllerDeadzone,
+  advanceMenuRepeat,
   composeLookInput,
   menuAxisEngaged,
   normalizeInputPreferences,
   touchStickVector,
 } from './InputSystem';
+
+describe('controller menu repeat', () => {
+  it('fires once on press, waits through the delay, repeats at cadence, and resets on release', () => {
+    let state = { down: false, nextAt: 0 };
+    let result = advanceMenuRepeat(true, 100, state);
+    expect(result).toMatchObject({ fire: true, repeat: false });
+    state = result.state;
+
+    result = advanceMenuRepeat(true, 439, state);
+    expect(result).toMatchObject({ fire: false, repeat: false });
+    result = advanceMenuRepeat(true, 440, state);
+    expect(result).toMatchObject({ fire: true, repeat: true });
+    state = result.state;
+
+    result = advanceMenuRepeat(true, 529, state);
+    expect(result.fire).toBe(false);
+    result = advanceMenuRepeat(true, 530, state);
+    expect(result).toMatchObject({ fire: true, repeat: true });
+
+    result = advanceMenuRepeat(false, 540, result.state);
+    expect(result).toEqual({ state: { down: false, nextAt: 0 }, fire: false, repeat: false });
+    expect(advanceMenuRepeat(true, 541, result.state)).toMatchObject({ fire: true, repeat: false });
+  });
+});
 
 describe('touch look sampling', () => {
   it('produces the same held vector for a 40px drag delivered in one or eight events', () => {

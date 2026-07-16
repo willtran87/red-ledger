@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { CAMPAIGN, campaignRouteParSeconds, standardRouteCellCount } from './campaign';
+import {
+  CAMPAIGN,
+  STANDARD_TIMED_POWERUP_REWARDS,
+  campaignRouteParSeconds,
+  standardRouteCellCount,
+} from './campaign';
+import type { PickupPlacement, WeaponPlacement } from './types';
 import { statefulReachableCells, validateCampaign } from './validation';
 
 describe('campaign data', () => {
@@ -115,6 +121,56 @@ describe('campaign data', () => {
         .map((point) => `${Math.floor(point.x)},${Math.floor(point.z)}`);
       expect(new Set(anchors).size, map.id).toBe(4);
     });
+  });
+
+  it('places exactly one varied standard timed reward in each authored reward pocket', () => {
+    const timedPowerups = new Set([
+      'temporary-binder', 'night-inspection-goggles', 'hazard-endorsement',
+      'rapid-authority', 'forensic-lens',
+    ]);
+
+    for (const episode of CAMPAIGN.episodes) {
+      const episodeRewards = new Set<string>();
+      for (const id of episode.maps) {
+        const map = CAMPAIGN.maps[id];
+        const standardTimedRewards = map.actors.filter((actor): actor is PickupPlacement => actor.type === 'pickup'
+          && !actor.secret
+          && timedPowerups.has(actor.pickup));
+        expect(standardTimedRewards, id).toHaveLength(1);
+        expect(standardTimedRewards[0].pickup, id).toBe(STANDARD_TIMED_POWERUP_REWARDS[id]);
+        expect(Math.floor(standardTimedRewards[0].x), id).toBe(Math.floor(map.encounterBlueprint.rewardPocket.x));
+        expect(Math.floor(standardTimedRewards[0].z), id).toBe(Math.floor(map.encounterBlueprint.rewardPocket.z));
+        episodeRewards.add(standardTimedRewards[0].pickup);
+      }
+      expect(episodeRewards.size, episode.id).toBeGreaterThanOrEqual(5);
+    }
+
+    const implementedPowerups = new Set([
+      ...timedPowerups,
+      'floor-plan',
+    ]);
+    const realizedPowerups = new Set(Object.values(CAMPAIGN.maps).flatMap((map) => map.actors
+      .filter((actor): actor is PickupPlacement => actor.type === 'pickup' && implementedPowerups.has(actor.pickup))
+      .map((actor) => actor.pickup)));
+    expect(realizedPowerups).toEqual(implementedPowerups);
+  });
+
+  it('keeps authored secret rewards concealed and separate from standard reward pockets', () => {
+    Object.values(CAMPAIGN.maps).forEach((map) => map.secrets.forEach((secret) => {
+      const reward = map.actors.find((actor): actor is PickupPlacement | WeaponPlacement => (
+        actor.type === 'pickup' || actor.type === 'weapon')
+        && Boolean(actor.secret)
+        && Math.floor(actor.x) === Math.floor(secret.at.x)
+        && Math.floor(actor.z) === Math.floor(secret.at.z));
+      expect(reward, `${map.id}:${secret.id}`).toBeDefined();
+      expect(reward?.type, `${map.id}:${secret.id}`).toBe(secret.rewardPlacement.type);
+      if (reward?.type === 'pickup' && secret.rewardPlacement.type === 'pickup') {
+        expect(reward.pickup, `${map.id}:${secret.id}`).toBe(secret.rewardPlacement.pickup);
+      }
+      if (reward?.type === 'weapon' && secret.rewardPlacement.type === 'weapon') {
+        expect(reward.weapon, `${map.id}:${secret.id}`).toBe(secret.rewardPlacement.weapon);
+      }
+    }));
   });
 
   it('preserves authored MapSpec pacing instead of assigning pars only by map index', () => {

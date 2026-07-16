@@ -37,6 +37,7 @@ export interface BindingStorage {
 export interface RebindOptions {
   append?: boolean;
   clearConflicts?: boolean;
+  preserveOtherDeviceFamilies?: boolean;
 }
 
 export interface RebindResult {
@@ -155,9 +156,15 @@ export function bindingLabel(binding: InputBinding): string {
     case 'keyboard': return binding.code.replace(/^Key/, '').replace(/^Digit/, '');
     case 'mouse-button': return binding.button === 0 ? 'Mouse 1' : binding.button === 1 ? 'Mouse 3' : binding.button === 2 ? 'Mouse 2' : `Mouse ${binding.button + 1}`;
     case 'mouse-wheel': return binding.direction < 0 ? 'Wheel Up' : 'Wheel Down';
-    case 'gamepad-button': return `Gamepad ${binding.button}`;
-    case 'gamepad-axis': return `Axis ${binding.axis} ${binding.direction < 0 ? '-' : '+'}`;
+    case 'gamepad-button': return `Button ${binding.button + 1}`;
+    case 'gamepad-axis': return `Axis ${binding.axis + 1} ${binding.direction < 0 ? '-' : '+'}`;
   }
+}
+
+function bindingFamily(binding: InputBinding): 'keyboard' | 'mouse' | 'gamepad' {
+  if (binding.device === 'keyboard') return 'keyboard';
+  if (binding.device === 'mouse-button' || binding.device === 'mouse-wheel') return 'mouse';
+  return 'gamepad';
 }
 
 function deduplicate(bindings: readonly InputBinding[]): InputBinding[] {
@@ -237,7 +244,12 @@ export class InputBindings {
         }
       }
     }
-    const previous = options.append ? this.values.get(action) ?? [] : [];
+    const current = this.values.get(action) ?? [];
+    const previous = options.append
+      ? current
+      : options.preserveOtherDeviceFamilies
+        ? current.filter((candidate) => bindingFamily(candidate) !== bindingFamily(binding))
+        : [];
     this.values.set(action, deduplicate([...previous, cloneBinding(binding)]));
     this.persist();
     return { action, binding: cloneBinding(binding), removedFrom };
@@ -256,7 +268,10 @@ export class InputBindings {
     if (!this.captureAction) return undefined;
     const action = this.captureAction;
     this.captureAction = undefined;
-    return { captured: true, ...this.rebind(action, binding, options) };
+    return {
+      captured: true,
+      ...this.rebind(action, binding, { preserveOtherDeviceFamilies: true, ...options }),
+    };
   }
 
   reset(action?: InputAction): void {

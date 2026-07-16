@@ -142,6 +142,29 @@ export function menuAxisEngaged(value: number, wasEngaged: boolean): boolean {
   return wasEngaged ? value > .22 : value >= .4;
 }
 
+export const MENU_REPEAT_DELAY_MS = 340;
+export const MENU_REPEAT_INTERVAL_MS = 90;
+
+export interface MenuRepeatState {
+  down: boolean;
+  nextAt: number;
+}
+
+export function advanceMenuRepeat(
+  down: boolean,
+  now: number,
+  state: Readonly<MenuRepeatState>,
+  delay = MENU_REPEAT_DELAY_MS,
+  interval = MENU_REPEAT_INTERVAL_MS,
+): { state: MenuRepeatState; fire: boolean; repeat: boolean } {
+  if (!down) return { state: { down: false, nextAt: 0 }, fire: false, repeat: false };
+  if (!state.down) {
+    return { state: { down: true, nextAt: now + delay }, fire: true, repeat: false };
+  }
+  if (now < state.nextAt) return { state: { ...state }, fire: false, repeat: false };
+  return { state: { down: true, nextAt: now + interval }, fire: true, repeat: true };
+}
+
 export interface InputActionEvent {
   action: InputAction;
   source: 'keyboard' | 'mouse' | 'gamepad' | 'touch';
@@ -188,8 +211,11 @@ export class InputSystem {
   private menuNavigationEnabled = true;
   private menuGamepadButtons: boolean[] = [];
   private menuAxisActions: boolean[] = [];
+  private menuDirectionStates: MenuRepeatState[] = [];
   private captureGamepadAxes: boolean[] = [];
   private menuPollFrame = 0;
+  private controllerConnected = false;
+  private lastInputDevice?: InputActionEvent['source'];
   private touchLookPointer?: number;
   private controllerDeadzone = DEFAULT_INPUT_PREFERENCES.controllerDeadzone;
   private readonly keyPressedAt = new Map<string, number>();
@@ -308,6 +334,7 @@ export class InputSystem {
       this.menuNavigation.length = 0;
       this.menuGamepadButtons = [];
       this.menuAxisActions = [];
+      this.menuDirectionStates = [];
       this.captureGamepadAxes = [];
       if (this.menuPollFrame) cancelAnimationFrame(this.menuPollFrame);
       this.menuPollFrame = 0;
@@ -409,15 +436,18 @@ export class InputSystem {
   pollGamepad(): void {
     const gamepad = navigator.getGamepads?.().find((candidate) => candidate?.connected) ?? null;
     if (!gamepad) {
+      this.updateControllerConnection(false);
       this.gamepadMove = { x: 0, y: 0 };
       this.gamepadLook = { x: 0, y: 0 };
       this.gamepadFire = false;
       this.gamepadAxisActions.clear();
       this.menuGamepadButtons = [];
       this.menuAxisActions = [];
+      this.menuDirectionStates = [];
       this.captureGamepadAxes = [];
       return;
     }
+    this.updateControllerConnection(true);
     this.gamepadMove = {
       x: this.controllerAxisValue('strafe-right', gamepad.axes) - this.controllerAxisValue('strafe-left', gamepad.axes),
       y: this.controllerAxisValue('move-backward', gamepad.axes) - this.controllerAxisValue('move-forward', gamepad.axes),
@@ -429,6 +459,10 @@ export class InputSystem {
     this.gamepadFire = this.bindings.isGamepadButtonDown('fire', gamepad.buttons)
       || this.controllerAxisValue('fire', gamepad.axes) > 0;
     const pressed = gamepad.buttons.map((button) => button.pressed);
+    if (this.gamepadFire || pressed.some(Boolean)
+      || Math.max(Math.abs(this.gamepadMove.x), Math.abs(this.gamepadMove.y), Math.abs(this.gamepadLook.x), Math.abs(this.gamepadLook.y)) > .08) {
+      this.notifyInputDevice('gamepad');
+    }
     const edge = (index: number) => pressed[index] && !this.gamepadButtons[index];
     const released = (index: number) => !pressed[index] && this.gamepadButtons[index];
     for (let index = 0; index < pressed.length; index += 1) {
@@ -452,6 +486,7 @@ export class InputSystem {
     source: 'keyboard' | 'mouse' | 'gamepad' | 'touch',
     includeMenu = true,
   ): void {
+    if (actions.length) this.notifyInputDevice(source);
     const pauseOwnsSharedBack = actions.includes('pause') && actions.includes('menu-back');
     for (const action of actions) {
       const canonical = CANONICAL_KEY[action];
@@ -522,14 +557,17 @@ export class InputSystem {
     }
   }
 
-  private pollMenuAxes(axes: readonly number[]): void {
+  private pollMenuDirections(axes: readonly number[], buttons: readonly GamepadButton[], now: number): void {
     const menuActions: InputAction[] = ['menu-up', 'menu-down', 'menu-left', 'menu-right'];
     menuActions.forEach((action, index) => {
-      const pressed = menuAxisEngaged(this.controllerAxisValue(action, axes), this.menuAxisActions[index] ?? false);
-      if (pressed && !this.menuAxisActions[index] && this.menuNavigationEnabled) {
-        this.emitMenuNavigation(MENU_ACTIONS[action]!, 'gamepad', false);
+      const axisDown = menuAxisEngaged(this.controllerAxisValue(action, axes), this.menuAxisActions[index] ?? false);
+      this.menuAxisActions[index] = axisDown;
+      const down = axisDown || this.bindings.isGamepadButtonDown(action, buttons);
+      const transition = advanceMenuRepeat(down, now, this.menuDirectionStates[index] ?? { down: false, nextAt: 0 });
+      this.menuDirectionStates[index] = transition.state;
+      if (transition.fire && this.menuNavigationEnabled) {
+        this.emitMenuNavigation(MENU_ACTIONS[action]!, 'gamepad', transition.repeat);
       }
-      this.menuAxisActions[index] = pressed;
     });
   }
 
@@ -547,12 +585,16 @@ export class InputSystem {
   private pollMenuGamepad(): void {
     const gamepad = navigator.getGamepads?.().find((candidate) => candidate?.connected) ?? null;
     if (!gamepad) {
+      this.updateControllerConnection(false);
       this.menuGamepadButtons = [];
       this.menuAxisActions = [];
+      this.menuDirectionStates = [];
       this.captureGamepadAxes = [];
       return;
     }
+    this.updateControllerConnection(true);
     const pressed = gamepad.buttons.map((button) => button.pressed);
+    if (pressed.some(Boolean) || gamepad.axes.some((value) => Math.abs(value) >= .4)) this.notifyInputDevice('gamepad');
     if (this.bindings.capturing) {
       const button = pressed.findIndex((value, index) => value && !this.menuGamepadButtons[index]);
       if (button >= 0) this.finishCapture({ device: 'gamepad-button', button });
@@ -567,10 +609,12 @@ export class InputSystem {
         if (!value || this.menuGamepadButtons[index]) return;
         for (const action of this.bindings.gamepadButtonActions(index)) {
           const menuAction = MENU_ACTIONS[action];
-          if (menuAction) this.emitMenuNavigation(menuAction, 'gamepad', false);
+          if (menuAction && menuAction !== 'up' && menuAction !== 'down' && menuAction !== 'left' && menuAction !== 'right') {
+            this.emitMenuNavigation(menuAction, 'gamepad', false);
+          }
         }
       });
-      this.pollMenuAxes(gamepad.axes);
+      this.pollMenuDirections(gamepad.axes, gamepad.buttons, performance.now());
     }
     this.menuGamepadButtons = pressed;
     this.captureGamepadAxes = gamepad.axes.map((value) => Math.abs(value) >= .65);
@@ -580,6 +624,22 @@ export class InputSystem {
     const detail = { action, source, repeat } satisfies MenuNavigationEvent;
     this.menuNavigation.push(detail);
     window.dispatchEvent(new CustomEvent<MenuNavigationEvent>('input-menu-navigation', { detail }));
+  }
+
+  private notifyInputDevice(source: InputActionEvent['source']): void {
+    if (source === this.lastInputDevice) return;
+    this.lastInputDevice = source;
+    window.dispatchEvent(new CustomEvent('input-device-change', { detail: { source } }));
+  }
+
+  private updateControllerConnection(connected: boolean): void {
+    if (connected) {
+      this.controllerConnected = true;
+      return;
+    }
+    if (!this.controllerConnected) return;
+    this.controllerConnected = false;
+    window.dispatchEvent(new Event('input-controller-disconnected'));
   }
 
   private finishCapture(binding: InputBinding): void {

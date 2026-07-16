@@ -35,7 +35,26 @@ await page.locator('#touch-sensitivity').fill('1.7');
 await page.selectOption('#touch-size', 'large');
 await page.locator('#touch-opacity').fill('0.62');
 await page.selectOption('#touch-handedness', 'left');
+const standardHudFonts = await page.evaluate(() => ({
+  objective: parseFloat(getComputedStyle(document.querySelector('#objective')).fontSize),
+  status: parseFloat(getComputedStyle(document.querySelector('#status')).fontSize),
+}));
+await page.selectOption('#text-scale', 'large');
+const largeHudFonts = await page.evaluate(() => ({
+  objective: parseFloat(getComputedStyle(document.querySelector('#objective')).fontSize),
+  status: parseFloat(getComputedStyle(document.querySelector('#status')).fontSize),
+}));
 await page.selectOption('#text-scale', 'largest');
+const largestHudFonts = await page.evaluate(() => ({
+  objective: parseFloat(getComputedStyle(document.querySelector('#objective')).fontSize),
+  status: parseFloat(getComputedStyle(document.querySelector('#status')).fontSize),
+}));
+assert(largeHudFonts.objective > standardHudFonts.objective
+  && largestHudFonts.objective > largeHudFonts.objective,
+  `Objective text scale is not progressive: ${JSON.stringify({ standardHudFonts, largeHudFonts, largestHudFonts })}`);
+assert(largeHudFonts.status > standardHudFonts.status
+  && largestHudFonts.status > largeHudFonts.status,
+  `Status text scale is not progressive: ${JSON.stringify({ standardHudFonts, largeHudFonts, largestHudFonts })}`);
 await page.screenshot({ path: 'output/mobile-ux/options-390x844.png' });
 
 await page.click('#controls-button');
@@ -54,17 +73,24 @@ assert(await page.locator('#controls-menu').isVisible(), 'Cancelling confirmatio
 await page.screenshot({ path: 'output/mobile-ux/controls-390x844.png' });
 
 await page.evaluate(() => {
+  window.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 91, pointerType: 'touch' }));
   document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
   document.querySelector('#hud').classList.add('active');
   window.__touchEvents = [];
   window.addEventListener('input-action', (event) => window.__touchEvents.push(`press:${event.detail.action}:${event.detail.source}`));
   window.addEventListener('input-action-release', (event) => window.__touchEvents.push(`release:${event.detail.action}:${event.detail.source}`));
 });
+assert(await page.locator('#game-shell').getAttribute('data-input-device') === 'touch', 'Touch activity did not become the active input device');
 for (const selector of ['#touch-stick', '#touch-look', '#touch-fire', '#touch-use', '#touch-weapon', '#touch-map', '#touch-pause']) {
   assert(await page.locator(selector).isVisible(), `${selector} is not visible in the portrait control deck`);
   const box = await page.locator(selector).boundingBox();
   assert(box && box.x >= 0 && box.y >= 0 && box.x + box.width <= 390 && box.y + box.height <= 844, `${selector} escapes the portrait viewport`);
 }
+await page.evaluate(() => window.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 92, pointerType: 'mouse' })));
+assert(await page.locator('#game-shell').getAttribute('data-input-device') === 'desktop', 'Mouse activity did not become the active input device');
+assert(!(await page.locator('#touch-controls').isVisible()), 'A coarse primary pointer forced the touch deck over active mouse input');
+await page.evaluate(() => window.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 93, pointerType: 'touch' })));
+assert(await page.locator('#touch-controls').isVisible(), 'Touch activity did not restore the touch deck');
 const personalizedDeck = await page.evaluate(() => {
   const geometry = (selector) => {
     const element = document.querySelector(selector);
@@ -121,7 +147,7 @@ assert(await orientationDifficulty.getAttribute('aria-pressed') === 'true', 'Tou
 assert(await page.locator('#difficulty-confirm').isVisible(), 'Touch difficulty preview did not reveal an explicit Continue command');
 assert((await page.locator('#difficulty-confirm').innerText()).includes('Orientation'), 'Touch confirmation does not name the selected difficulty');
 await page.locator('#difficulty-confirm').tap();
-await page.click('#begin-episode');
+await page.locator('#begin-episode').tap();
 assert(await page.locator('#ready-overlay').isVisible(), 'Touch entry briefing is not visible');
 assert(await page.locator('#ready-overlay').getAttribute('data-input') === 'touch', 'Entry briefing did not select touch guidance');
 const touchBriefing = await page.locator('#entry-controls').innerText();
@@ -144,7 +170,7 @@ assert(!touchBriefing.includes('WEAPON') && !touchBriefing.includes('MAP'), 'Tou
 assert((await page.locator('#entry-objective').innerText()).includes('Red credential'), 'Touch orientation has no contextual objective');
 assert((await page.evaluate(() => JSON.parse(window.render_game_to_text()).mode)) === 'paused', 'Touch briefing did not freeze simulation');
 await page.screenshot({ path: 'output/mobile-ux/entry-briefing-390x844.png' });
-await page.click('#enter-file');
+await page.locator('#enter-file').tap();
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 await page.waitForTimeout(300);
 await page.waitForFunction(() => document.querySelector('#message').textContent.trim().length > 0);
@@ -160,18 +186,67 @@ assert(Math.abs((portraitHudCopy.message.left + portraitHudCopy.message.right) /
 assert(portraitHudCopy.message.bottom <= portraitHudCopy.objective.top
   || portraitHudCopy.objective.bottom <= portraitHudCopy.message.top,
   'Largest text message overlaps the objective in portrait gameplay');
+const acquiredCredential = await page.evaluate(() => {
+  window.__redLedger.defeatMandatory('entry');
+  window.__redLedger.defeatMandatory('transformation');
+  window.__redLedger.defeatMandatory('climax');
+  if (!window.__redLedger.teleportToPickup('credential', 'red')) return false;
+  window.advanceTime(70);
+  return JSON.parse(window.render_game_to_text()).player.credentials.includes('red');
+});
+assert(acquiredCredential, 'Mobile HUD fixture could not acquire the route-critical red credential');
+const credentialGeometry = await page.evaluate(() => {
+  const keys = document.querySelector('#keys').getBoundingClientRect();
+  const icon = document.querySelector('#keys img')?.getBoundingClientRect();
+  const status = document.querySelector('#status').getBoundingClientRect();
+  return icon && {
+    visible: getComputedStyle(document.querySelector('#keys')).display !== 'none',
+    icon: { left: icon.left, right: icon.right, top: icon.top, bottom: icon.bottom },
+    status: { left: status.left, right: status.right, top: status.top, bottom: status.bottom },
+  };
+});
+assert(credentialGeometry?.visible, 'Mobile HUD hides acquired route credentials');
+assert(credentialGeometry.icon.left >= credentialGeometry.status.left
+  && credentialGeometry.icon.right <= credentialGeometry.status.right
+  && credentialGeometry.icon.top >= credentialGeometry.status.top
+  && credentialGeometry.icon.bottom <= credentialGeometry.status.bottom,
+  'Mobile credential icon escapes the status bar');
+const statusCopyFits = await page.locator('#status > span').evaluateAll((items) => items.every((item) => item.scrollWidth <= item.clientWidth + 1));
+assert(statusCopyFits, 'Largest mobile status text overflows its compact HUD columns');
+await page.screenshot({ path: 'output/mobile-ux/credential-hud-390x844.png' });
 const readState = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 const beforeMove = await readState();
 const drag = async (selector, dx, dy, duration = 300) => {
-  const box = await page.locator(selector).boundingBox();
-  assert(box, `${selector} has no bounds`);
-  const x = box.x + box.width / 2;
-  const y = box.y + box.height / 2;
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.mouse.move(x + dx, y + dy, { steps: 4 });
+  const pointerId = selector === '#touch-stick' ? 95 : 96;
+  await page.locator(selector).evaluate((control, detail) => {
+    let captured;
+    control.setPointerCapture = (id) => { captured = id; };
+    control.hasPointerCapture = (id) => captured === id;
+    control.releasePointerCapture = (id) => { if (captured === id) captured = undefined; };
+    const rect = control.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const pointer = (type, clientX, clientY) => control.dispatchEvent(new PointerEvent(type, {
+      bubbles: true,
+      pointerId: detail.pointerId,
+      pointerType: 'touch',
+      clientX,
+      clientY,
+    }));
+    pointer('pointerdown', x, y);
+    for (let step = 1; step <= 4; step += 1) pointer('pointermove', x + detail.dx * step / 4, y + detail.dy * step / 4);
+  }, { dx, dy, pointerId });
   await page.waitForTimeout(duration);
-  await page.mouse.up();
+  await page.locator(selector).evaluate((control, detail) => {
+    const rect = control.getBoundingClientRect();
+    control.dispatchEvent(new PointerEvent('pointerup', {
+      bubbles: true,
+      pointerId: detail.pointerId,
+      pointerType: 'touch',
+      clientX: rect.left + rect.width / 2 + detail.dx,
+      clientY: rect.top + rect.height / 2 + detail.dy,
+    }));
+  }, { dx, dy, pointerId });
 };
 await drag('#touch-stick', 0, -34);
 const afterMove = await readState();
@@ -220,10 +295,10 @@ assert(Math.abs(sparsePitch - densePitch) < .001,
 await page.screenshot({ path: 'output/mobile-ux/gameplay-sticks-390x844.png' });
 
 await page.locator('#touch-pause').tap();
-await page.click('#record-replay');
+await page.locator('#record-replay').tap();
 await page.waitForTimeout(200);
 await page.locator('#touch-pause').tap();
-await page.click('#record-replay');
+await page.locator('#record-replay').tap();
 assert(await page.locator('#replay-library').isVisible(), 'Stopping a touch replay did not open the replay library');
 const replayNameGeometry = await page.locator('.replay-row input').first().evaluate((input) => {
   const style = getComputedStyle(input);
@@ -234,6 +309,31 @@ const replayNameGeometry = await page.locator('.replay-row input').first().evalu
 });
 assert(replayNameGeometry.clientWidth >= replayNameGeometry.textWidth + 8, 'The default replay name is truncated on portrait mobile');
 await page.screenshot({ path: 'output/mobile-ux/replay-library-390x844.png' });
+
+const landscapeContext = await browser.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+const landscapePage = await landscapeContext.newPage();
+landscapePage.on('pageerror', (error) => errors.push(String(error)));
+await landscapePage.goto(url, { waitUntil: 'networkidle' });
+await landscapePage.evaluate(() => {
+  window.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 94, pointerType: 'touch' }));
+  document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active'));
+  document.querySelector('#hud').classList.add('active');
+});
+assert(await landscapePage.locator('#game-shell').getAttribute('data-input-device') === 'touch', 'Landscape touch activity did not select the touch deck');
+const landscapeShell = await landscapePage.locator('#game-shell').boundingBox();
+assert(landscapeShell, 'Landscape game shell has no layout bounds');
+for (const selector of ['#touch-stick', '#touch-look', '#touch-fire', '#touch-use', '#touch-weapon', '#touch-map', '#touch-pause']) {
+  assert(await landscapePage.locator(selector).isVisible(), `${selector} is not visible in the landscape control deck`);
+  const box = await landscapePage.locator(selector).boundingBox();
+  assert(box
+    && box.x >= landscapeShell.x
+    && box.y >= landscapeShell.y
+    && box.x + box.width <= landscapeShell.x + landscapeShell.width
+    && box.y + box.height <= landscapeShell.y + landscapeShell.height,
+  `${selector} escapes the landscape game shell`);
+}
+await landscapePage.screenshot({ path: 'output/mobile-ux/control-deck-844x390.png' });
+await landscapeContext.close();
 
 const hybridContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 const hybridPage = await hybridContext.newPage();

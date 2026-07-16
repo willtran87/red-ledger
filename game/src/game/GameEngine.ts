@@ -885,6 +885,7 @@ export class GameEngine {
     this.demoRecorder = undefined;
     this.demoTick = 0;
     if (!preserveInventory) this.resetInventory();
+    this.resetMapScopedPlayerState();
     this.clearAnimatedEffects();
     this.assets.disposeTextures();
     this.particles.clearTextureBindings();
@@ -4309,6 +4310,10 @@ export class GameEngine {
     this.weaponTransition = 0;
     this.pendingWeapon = undefined;
     this.player.credentials.clear();
+    this.resetMapScopedPlayerState();
+  }
+
+  private resetMapScopedPlayerState(): void {
     this.player.floorPlan = false;
     this.player.powerups = { binder: 0, hazard: 0, rapid: 0, forensic: 0, goggles: 0 };
   }

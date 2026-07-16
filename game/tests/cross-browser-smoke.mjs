@@ -20,10 +20,36 @@ const pressTouchControl = async (page, selector, holdMs = 100) => {
   const control = page.locator(selector);
   const bounds = await control.boundingBox();
   assert(bounds, `${selector} has no touch target`);
-  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-  await page.mouse.down();
+  const pointerId = selector === '#touch-fire' ? 41 : 42;
+  await control.evaluate((element, id) => {
+    let captured;
+    element.setPointerCapture = (candidate) => { captured = candidate; };
+    element.hasPointerCapture = (candidate) => captured === candidate;
+    element.releasePointerCapture = (candidate) => { if (captured === candidate) captured = undefined; };
+    const rect = element.getBoundingClientRect();
+    element.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerId: id,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+    }));
+  }, pointerId);
   await page.waitForTimeout(holdMs);
-  await page.mouse.up();
+  await control.evaluate((element, id) => {
+    const rect = element.getBoundingClientRect();
+    element.dispatchEvent(new PointerEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      pointerId: id,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+    }));
+  }, pointerId);
 };
 
 const pause = async (page) => {
@@ -34,9 +60,9 @@ const pause = async (page) => {
 };
 
 const resume = async (page) => {
-  await page.click('#resume-game');
+  await page.locator('#resume-game').tap();
   const ready = page.locator('#ready-overlay:not([hidden]) #enter-file');
-  if (await ready.isVisible().catch(() => false)) await ready.click();
+  if (await ready.isVisible().catch(() => false)) await ready.tap();
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 };
 
@@ -58,12 +84,13 @@ for (const [name, type] of Object.entries(engines)) {
     page.setDefaultTimeout(8000);
     const errors = monitor(page);
     await page.goto(url, { waitUntil: 'networkidle' });
-    await page.click('#new-game');
-    await page.locator('.episode-card').first().click();
-    await page.locator('#difficulty-actions button').nth(1).click();
+    await page.locator('#new-game').tap();
+    await page.locator('.episode-card').first().tap();
+    await page.locator('#difficulty-actions button').nth(1).tap();
+    await page.locator('#difficulty-confirm').tap();
     await page.locator('#episode-intro.active').waitFor();
-    await page.click('#begin-episode');
-    if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+    await page.locator('#begin-episode').tap();
+    if (await page.locator('#ready-overlay').isVisible()) await page.locator('#enter-file').tap();
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
     const audioCapable = await page.evaluate(() => Boolean(window.AudioContext || window.webkitAudioContext));
     if (audioCapable) {
@@ -82,19 +109,20 @@ for (const [name, type] of Object.entries(engines)) {
     }
     await page.waitForTimeout(250);
 
+    const beforeTouchFire = await state(page);
+    assert(await page.locator('#touch-fire').isVisible(), `${name}: touch fire control is not visible`);
+    await pressTouchControl(page, '#touch-fire', 130);
+    await page.waitForTimeout(80);
     const initial = await state(page);
+    assert(initial.player.ammo.staples < beforeTouchFire.player.ammo.staples,
+      `${name}: touch fire did not consume ammunition`);
+
     await page.keyboard.down('ArrowUp');
     await page.waitForTimeout(220);
     await page.keyboard.up('ArrowUp');
     const moved = await state(page);
     assert(Math.hypot(moved.player.x - initial.player.x, moved.player.z - initial.player.z) > .05,
       `${name}: keyboard movement did not advance the player`);
-    const ammoBeforeTouchFire = moved.player.ammo.staples;
-
-    assert(await page.locator('#touch-fire').isVisible(), `${name}: touch fire control is not visible`);
-    await pressTouchControl(page, '#touch-fire', 130);
-    await page.waitForTimeout(80);
-    assert((await state(page)).player.ammo.staples < ammoBeforeTouchFire, `${name}: touch fire did not consume ammunition`);
 
     await pause(page);
     const paused = await state(page);

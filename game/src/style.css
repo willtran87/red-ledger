@@ -52,6 +52,13 @@ dialog:focus-visible { outline: 0; }
   container-type: size;
 }
 
+@supports (height: 100dvh) and (width: 100dvw) {
+  #game-shell {
+    width: min(100dvw, 160dvh);
+    height: min(100dvh, 62.5dvw);
+  }
+}
+
 #game-shell[data-touch-size="small"] {
   --touch-stick-size: 78px;
   --touch-knob-size: 30px;
@@ -203,6 +210,8 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 .options-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
 .controls-screen { inset: 3% 16%; justify-content: flex-start; }
 .controls-list { width: min(680px, 96%); display: grid; gap: 4px; }
+#controls-feedback { min-height: 1.25em; color: #ffe17a; font-size: .625rem; }
+#controls-feedback:empty { visibility: hidden; }
 .control-row { min-height: 34px; display: grid; grid-template-columns: 1fr minmax(180px, 1.4fr); align-items: center; gap: 8px; padding: 3px 7px; border-bottom: 1px solid #34383d; }
 .control-row button { width: 100%; min-width: 0; min-height: 29px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .control-row button.capturing { border-color: #d9232e; color: #ffe17a; }
@@ -298,6 +307,14 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
   #weapon-view[data-weapon="umbra-saw"] { bottom: 16%; height: 32%; }
 }
 #status { position: absolute; left: 0; right: 0; bottom: 0; height: 16%; display: grid; grid-template-columns: minmax(70px, 1fr) minmax(70px, 1fr) minmax(70px, 1fr) 1fr auto; align-items: center; gap: 1.2cqw; padding: 0 2.2cqw; background: #34383d url('/public_runtime/ui/status-bar.png') center / auto 100% repeat-x; border-top: 2px solid #b7b8b4; font-size: clamp(.75rem, 2.6cqh, 1.5625rem); text-shadow: 2px 2px #08090a; }
+#sound-caption { position: absolute; z-index: 19; left: 50%; bottom: calc(16% + 12px); max-width: min(76%, 680px); min-width: min(180px, 70%); transform: translateX(-50%); padding: 5px 9px; color: #fffdf7; background: rgba(8,9,10,.9); border: 1px solid #b7b8b4; border-left: 4px solid #47bcd1; border-radius: 2px; font-size: .6875rem; line-height: 1.35; text-align: center; text-shadow: 1px 1px #08090a; pointer-events: none; }
+#sound-caption[data-priority="important"] { border-left-color: #e2b93b; }
+#sound-caption[data-priority="critical"] { border-left-color: #d9232e; }
+#sound-caption[hidden] { display: none; }
+html[data-ui-text-scale="large"] #objective { font-size: clamp(.625rem, 1.75cqh, 1rem); }
+html[data-ui-text-scale="largest"] #objective { font-size: clamp(.6875rem, 2cqh, 1.125rem); }
+html[data-ui-text-scale="large"] #status { font-size: clamp(.8125rem, 3cqh, 1.75rem); }
+html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 1.875rem); }
 #portrait { position: absolute; left: 50%; bottom: 4%; width: auto; height: 88%; transform: translateX(-50%); image-rendering: pixelated; }
 #health::before { content: 'HLT '; color: #d9232e; } #armor::before { content: 'ARM '; color: #47bcd1; } #ammo::before { content: 'AMM '; color: #e2b93b; }
 #keys img { width: 18px; image-rendering: pixelated; margin-right: 3px; }
@@ -416,23 +433,27 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 .touch-stick::after { position: absolute; inset: 7px 0 auto; color: #fffdf7; font-size: .5rem; line-height: 1; text-align: center; text-shadow: 1px 1px #08090a; }
 #touch-stick::after { content: "MOVE"; }
 #touch-look::after { content: "LOOK"; }
-#touch-stick { left: var(--touch-move-edge); bottom: var(--touch-move-bottom); }
-#touch-look { right: var(--touch-look-edge); bottom: var(--touch-move-bottom); }
+#touch-stick { left: max(var(--touch-move-edge), calc(env(safe-area-inset-left, 0px) + 8px)); bottom: max(var(--touch-move-bottom), calc(env(safe-area-inset-bottom, 0px) + 8px)); }
+#touch-look { right: max(var(--touch-look-edge), calc(env(safe-area-inset-right, 0px) + 8px)); bottom: max(var(--touch-move-bottom), calc(env(safe-area-inset-bottom, 0px) + 8px)); }
 .touch-round { width: var(--touch-round-size); height: var(--touch-round-size); min-width: 0; border-radius: 50%; }
-#touch-fire { right: var(--touch-fire-edge); bottom: var(--touch-fire-bottom); color: #fff; background: rgba(217,35,46,.74); }
+#touch-fire { right: max(var(--touch-fire-edge), calc(env(safe-area-inset-right, 0px) + 8px)); bottom: max(var(--touch-fire-bottom), calc(env(safe-area-inset-bottom, 0px) + 8px)); color: #fff; background: rgba(217,35,46,.74); }
 .touch-command { min-width: var(--touch-command-size); width: var(--touch-command-size); min-height: var(--touch-command-size); height: var(--touch-command-size); padding: 0; background: rgba(52,56,61,.82); }
-#touch-use { right: var(--touch-use-edge); bottom: var(--touch-use-bottom); }
-#touch-weapon { right: var(--touch-weapon-edge); bottom: var(--touch-command-bottom); }
-#touch-map { left: var(--touch-map-edge); bottom: var(--touch-command-bottom); }
-#touch-pause { right: var(--touch-pause-edge); top: var(--touch-pause-top); }
+#touch-use { right: max(var(--touch-use-edge), calc(env(safe-area-inset-right, 0px) + 8px)); bottom: max(var(--touch-use-bottom), calc(env(safe-area-inset-bottom, 0px) + 8px)); }
+#touch-weapon { right: max(var(--touch-weapon-edge), calc(env(safe-area-inset-right, 0px) + 8px)); bottom: max(var(--touch-command-bottom), calc(env(safe-area-inset-bottom, 0px) + 8px)); }
+#touch-map { left: max(var(--touch-map-edge), calc(env(safe-area-inset-left, 0px) + 8px)); bottom: max(var(--touch-command-bottom), calc(env(safe-area-inset-bottom, 0px) + 8px)); }
+#touch-pause { right: max(var(--touch-pause-edge), calc(env(safe-area-inset-right, 0px) + 8px)); top: max(var(--touch-pause-top), calc(env(safe-area-inset-top, 0px) + 8px)); }
 
-#game-shell[data-touch-handedness="left"] #touch-stick { right: var(--touch-move-edge); left: auto; }
-#game-shell[data-touch-handedness="left"] #touch-look { right: auto; left: var(--touch-look-edge); }
-#game-shell[data-touch-handedness="left"] #touch-fire { right: auto; left: var(--touch-fire-edge); }
-#game-shell[data-touch-handedness="left"] #touch-use { right: auto; left: var(--touch-use-edge); }
-#game-shell[data-touch-handedness="left"] #touch-weapon { right: auto; left: var(--touch-weapon-edge); }
-#game-shell[data-touch-handedness="left"] #touch-map { right: var(--touch-map-edge); left: auto; }
-#game-shell[data-touch-handedness="left"] #touch-pause { right: auto; left: var(--touch-pause-edge); }
+#game-shell[data-touch-handedness="left"] #touch-stick { right: max(var(--touch-move-edge), calc(env(safe-area-inset-right, 0px) + 8px)); left: auto; }
+#game-shell[data-touch-handedness="left"] #touch-look { right: auto; left: max(var(--touch-look-edge), calc(env(safe-area-inset-left, 0px) + 8px)); }
+#game-shell[data-touch-handedness="left"] #touch-fire { right: auto; left: max(var(--touch-fire-edge), calc(env(safe-area-inset-left, 0px) + 8px)); }
+#game-shell[data-touch-handedness="left"] #touch-use { right: auto; left: max(var(--touch-use-edge), calc(env(safe-area-inset-left, 0px) + 8px)); }
+#game-shell[data-touch-handedness="left"] #touch-weapon { right: auto; left: max(var(--touch-weapon-edge), calc(env(safe-area-inset-left, 0px) + 8px)); }
+#game-shell[data-touch-handedness="left"] #touch-map { right: max(var(--touch-map-edge), calc(env(safe-area-inset-right, 0px) + 8px)); left: auto; }
+#game-shell[data-touch-handedness="left"] #touch-pause { right: auto; left: max(var(--touch-pause-edge), calc(env(safe-area-inset-left, 0px) + 8px)); }
+
+#game-shell[data-input-device="touch"] #hud.active ~ #touch-controls { display: block; }
+#game-shell[data-input-device="touch"] #hud.active ~ #ready-overlay:not([hidden]) ~ #touch-controls,
+#game-shell[data-input-device="touch"] #hud.active.full-automap ~ #touch-controls { display: none; }
 
 #confirm-dialog { width: min(420px, calc(100vw - 28px)); padding: 20px; color: #f4f1ea; border: 2px solid #b7b8b4; border-radius: 2px; background: #111214; }
 #confirm-dialog::backdrop { background: rgba(8,9,10,.8); }
@@ -479,13 +500,15 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
     --ui-episode-width: 105px;
     --ui-episode-height: 66px;
   }
-  #hud.active ~ #touch-controls { display: block; }
-  #hud.active ~ #ready-overlay:not([hidden]) ~ #touch-controls { display: none; }
-  #hud.active.full-automap ~ #touch-controls { display: none; }
-  #status { grid-template-columns: repeat(3, 1fr); height: 54px; font-size: .75rem; }
-  #keys, #map-name { display: none; }
+  #status { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(42px, auto); height: 54px; gap: max(3px, .8cqw); padding-inline: max(8px, 2.2cqw); font-size: .75rem; }
+  html[data-ui-text-scale="large"] #status { font-size: .7778rem; }
+  html[data-ui-text-scale="largest"] #status { font-size: .8rem; }
+  #keys { min-width: 42px; display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+  #keys img { width: 14px; height: 14px; margin: 0; }
+  #map-name { display: none; }
   #portrait { width: 44px; height: 44px; }
   #weapon-view { bottom: 54px; }
+  #sound-caption { bottom: 29%; max-width: 86%; font-size: .625rem; }
   #ready-overlay { display: grid; }
   #ready-overlay[hidden] { display: none; }
   .screen { gap: 6px; }
@@ -516,12 +539,10 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
   #episode-intro p, #epilogue p { font-size: .625rem; line-height: 1.2; }
 }
 
-#game-shell[data-input-device="gamepad"] #touch-controls { display: none !important; }
-
 @media (pointer: coarse) and (orientation: portrait) {
   body { display: block; }
   #game-shell {
-    width: 100vw;
+    width: 100dvw;
     height: 100dvh;
     aspect-ratio: auto;
     --touch-move-edge: 18px;
@@ -538,7 +559,7 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
     --touch-pause-top: 64px;
   }
   #game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; }
-  .screen { padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)); justify-content: flex-start; overflow-y: auto; }
+  .screen { padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); justify-content: flex-start; overflow-y: auto; }
   .screen.compact, .controls-screen, .slot-screen { inset: 0; width: 100%; max-height: none; padding-top: max(18px, env(safe-area-inset-top)); border: 0; }
   #runtime-warning { top: max(6px, env(safe-area-inset-top)); font-size: .6875rem; }
   #runtime-warning:not([hidden]) ~ .screen.active { padding-top: max(68px, calc(env(safe-area-inset-top) + 58px)); }
@@ -596,5 +617,5 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 }
 
 @media (pointer: coarse) and (max-height: 540px) and (orientation: landscape) {
-  .screen { justify-content: flex-start; padding: 8px 14px; overflow-y: auto; overscroll-behavior: contain; }
+  .screen { justify-content: flex-start; padding: max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); overflow-y: auto; overscroll-behavior: contain; }
 }

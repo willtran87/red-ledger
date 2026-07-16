@@ -7,8 +7,8 @@
     <meta name="description" content="A retro first-person action campaign through a surreal claims facility." />
     <link rel="icon" type="image/png" href="./public_runtime/ui/title-screen.png" />
     <title>Red Ledger</title>
-    <script type="module" crossorigin src="./assets/index-DpTO4A4_.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Dm5icapR.css">
+    <script type="module" crossorigin src="./assets/index-kbW9Uzxu.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D9L8raFI.css">
   </head>
   <body>
     <main id="game-shell" aria-busy="true">
@@ -124,6 +124,7 @@
             <label><span>Effects volume</span><span class="range-control"><input id="sfx-volume" type="range" min="0" max="1" value="0.8" step="0.05" /><output id="sfx-volume-value" for="sfx-volume">80%</output></span></label>
             <label>Playback <select id="audio-profile"><option value="speakers">Speakers</option><option value="headphones">Headphones</option><option value="night">Night</option><option value="mono">Mono</option></select></label>
             <label class="option-check"><input id="mute-audio" type="checkbox" /> Mute audio</label>
+            <label class="option-check"><input id="sound-captions" type="checkbox" /> Sound captions</label>
           </section>
         </div>
         <div class="options-actions">
@@ -134,6 +135,7 @@
       <section id="controls-menu" class="screen compact controls-screen" aria-label="Controls">
         <h1>Controls</h1>
         <div id="controls-list" class="controls-list"></div>
+        <p id="controls-feedback" class="screen-copy" role="status" aria-live="polite"></p>
         <div class="controls-actions">
           <button id="reset-controls">Reset</button>
           <button id="cancel-binding" hidden>Cancel</button>
@@ -240,6 +242,7 @@
         <div id="weapon-radial" hidden aria-label="Weapon selector"></div>
         <div id="damage-flash" aria-hidden="true"></div>
       </div>
+      <div id="sound-caption" role="status" aria-live="polite" aria-atomic="true" hidden></div>
       <div id="ready-overlay" role="dialog" aria-modal="true" aria-labelledby="ready-map ready-briefing-kind" aria-describedby="entry-objective" hidden>
         <header>
           <img src="./public_runtime/ui/icons/minimal-terminal.png" alt="" aria-hidden="true" />
