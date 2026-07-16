@@ -87,6 +87,7 @@ function initializeGame(activeGame: GameEngine): void {
     defeatEncounter: (id) => game.debugDefeatEncounter(id),
     defeatMandatory: (id) => game.debugDefeatMandatory(id),
     teleportToPickup: (kind, id) => game.debugTeleportToPickup(kind, id),
+    teleportToSecretReward: (secretId) => game.debugTeleportToSecretReward(secretId),
     teleportToDoor: (credential) => game.debugTeleportToDoor(credential),
     teleportToExit: () => game.debugTeleportToExit(),
     use: () => game.debugUse(),
@@ -103,6 +104,9 @@ function initializeGame(activeGame: GameEngine): void {
     startDemo: () => game.startDemoRecording(),
     finishDemo: () => game.finishDemoRecording(),
     playDemo: (demo) => game.playDemo(demo),
+    startReplay: (demo) => game.startDemoPlayback(demo),
+    stopReplay: () => game.stopDemoPlayback(),
+    setVerticalAutoAim: (enabled) => { game.verticalAutoAim = enabled; },
     teleportNearLandmark: (index, distance) => game.debugTeleportNearLandmark(index, distance),
     failRuntime: () => requestAnimationFrame(() => {
       throw new Error('Injected runtime frame failure');
@@ -131,6 +135,7 @@ declare global {
       defeatEncounter: (id: string) => number;
       defeatMandatory: (id: string) => number;
       teleportToPickup: (kind: 'pickup' | 'weapon' | 'credential', id?: string) => boolean;
+      teleportToSecretReward: (secretId: string) => boolean;
       teleportToDoor: (credential?: import('./data').Credential) => boolean;
       teleportToExit: () => void;
       use: () => void;
@@ -147,6 +152,9 @@ declare global {
       startDemo: () => boolean;
       finishDemo: () => unknown;
       playDemo: (demo: unknown) => boolean;
+      startReplay: (demo: unknown) => boolean;
+      stopReplay: () => void;
+      setVerticalAutoAim: (enabled: boolean) => void;
       teleportNearLandmark: (index?: number, distance?: number) => boolean;
       failRuntime: () => number;
       radial: (x: number, y: number, active: boolean) => void;

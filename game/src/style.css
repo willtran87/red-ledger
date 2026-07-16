@@ -108,7 +108,7 @@ dialog:focus-visible { outline: 0; }
 .screen h1 { margin: 0 0 12px; color: #fffdf7; font-size: clamp(1.25rem, 4vh, var(--ui-heading-max)); letter-spacing: 0; }
 .title-art { width: min(78%, 960px); max-height: 58%; object-fit: contain; image-rendering: pixelated; }
 #menu .game-title { margin: 0; color: #fffdf7; font-size: 4rem; line-height: 1; text-shadow: 4px 4px #7a1018; }
-.menu-actions { display: flex; gap: 8px; }
+.menu-actions { width: min(980px, calc(100% - 24px)); display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .menu-feedback { min-height: 1.2em; max-width: 480px; margin: 0; color: #ffe17a; text-align: center; }
 .replay-screen { justify-content: flex-start; }
 .replay-list { width: min(760px, 96%); display: grid; gap: 5px; }
@@ -161,6 +161,8 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 .episode-card:disabled { opacity: .72; filter: grayscale(.55); }
 .episode-card:disabled span { color: #fffdf7; }
 #difficulty-actions { display: grid; gap: 6px; }
+#difficulty-actions button.selected { color: #fffdf7; border-color: #ffe17a; background: #7a1018; }
+#difficulty-confirm { border-color: #ffe17a; }
 #difficulty-detail { min-height: 2.8em; }
 #options-menu { justify-content: flex-start; }
 #options-menu > * { flex-shrink: 0; }
@@ -169,7 +171,10 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 .option-section { min-width: 0; display: grid; align-content: start; gap: 7px; padding-top: 7px; border-top: 1px solid #4b5055; }
 .option-section h2 { margin: 0 0 2px; color: #ffe17a; font-size: .6875rem; text-transform: uppercase; }
 #options-menu label { display: flex; width: 100%; min-width: 0; min-height: 30px; align-items: center; justify-content: space-between; gap: 12px; }
-#options-menu label > input[type="range"] { width: min(148px, 48%); min-width: 96px; }
+#options-menu label > span:first-child { min-width: 0; }
+#options-menu .range-control { width: min(190px, 58%); min-width: 132px; display: grid; grid-template-columns: minmax(88px, 1fr) 4ch; align-items: center; gap: 5px; }
+#options-menu .range-control input[type="range"] { width: 100%; min-width: 0; }
+#options-menu .range-control output { color: #ffe17a; font-size: .625rem; text-align: right; }
 #options-menu label > select { max-width: 56%; }
 #options-menu .option-check { justify-content: flex-start; }
 .options-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
@@ -279,6 +284,9 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #hud.minimal #portrait, #hud.minimal #map-name { display: none; }
 #game-shell.reduced-motion * { scroll-behavior: auto !important; }
 #game-shell.reduced-motion #weapon-view { transition: none !important; }
+#game-shell.reduced-motion #recording-indicator,
+#game-shell.reduced-motion #hit-marker.active { animation: none !important; }
+#game-shell.reduced-motion #hit-marker.active { opacity: 1; transform: translate(-50%, -50%); }
 #game-shell.high-contrast-attacks #damage-flash { border-color: #fff; }
 #boss-bar { position: absolute; z-index: 6; top: 2.5%; left: 25%; width: 50%; display: grid; gap: 2px; color: #fffdf7; text-align: center; text-shadow: 1px 1px #08090a; }
 #boss-bar[hidden] { display: none; }
@@ -382,6 +390,9 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 .touch-stick, #touch-controls button { opacity: var(--touch-control-opacity); }
 .touch-stick { width: var(--touch-stick-size); height: var(--touch-stick-size); border: 2px solid rgba(244,241,234,.5); border-radius: 50%; background: rgba(8,9,10,.28); }
 .touch-stick span { position: absolute; width: var(--touch-knob-size); height: var(--touch-knob-size); left: var(--touch-knob-offset); top: var(--touch-knob-offset); border-radius: 50%; background: rgba(71,188,209,.68); }
+.touch-stick::after { position: absolute; inset: 7px 0 auto; color: #fffdf7; font-size: .5rem; line-height: 1; text-align: center; text-shadow: 1px 1px #08090a; }
+#touch-stick::after { content: "MOVE"; }
+#touch-look::after { content: "LOOK"; }
 #touch-stick { left: var(--touch-move-edge); bottom: var(--touch-move-bottom); }
 #touch-look { right: var(--touch-look-edge); bottom: var(--touch-move-bottom); }
 .touch-round { width: var(--touch-round-size); height: var(--touch-round-size); min-width: 0; border-radius: 50%; }
@@ -405,6 +416,29 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #confirm-dialog h2 { margin: 0 0 10px; font-size: 1.375rem; }
 #confirm-dialog p { min-height: 44px; margin: 0 0 18px; color: #d4d2cb; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+@media (max-width: 700px), (max-height: 500px) {
+  #game-shell {
+    --ui-button-min-width: 100px;
+    --ui-button-min-height: 32px;
+    --ui-button-font-size: .75rem;
+    --ui-screen-gap: 6px;
+    --ui-heading-max: 1.125rem;
+    --ui-episode-width: 105px;
+    --ui-episode-height: 66px;
+  }
+  .screen { justify-content: flex-start; gap: 6px; padding: 8px; overflow-x: hidden; overflow-y: auto; }
+  .screen.compact, .controls-screen, .slot-screen { inset: 2% 3%; }
+  .screen h1 { margin-bottom: 4px; font-size: 1.125rem; }
+  #menu .game-title { font-size: 1.75rem; text-shadow: 2px 2px #7a1018; }
+  #menu .title-art { width: min(60%, 420px); max-height: min(84px, 26vh); }
+  .menu-actions { width: min(560px, 100%); display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 6px; }
+  #episode-cards { flex-wrap: wrap; justify-content: center; }
+  .episode-card { width: var(--ui-episode-width); height: var(--ui-episode-height); }
+  #difficulty-actions { width: min(380px, 100%); }
+  #options-menu label { flex-wrap: wrap; gap: 5px 8px; }
+  #options-menu .range-control { flex: 1 1 132px; }
+}
 
 @media (pointer: coarse) {
   #game-shell {

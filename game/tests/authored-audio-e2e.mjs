@@ -47,12 +47,15 @@ try {
   await page.waitForTimeout(650);
   await page.keyboard.up('ArrowUp');
   await page.evaluate(() => {
-    window.__redLedger.teleportNearActor('returned-mail', 5);
+    window.__redLedger.teleportNearActor('returned-mail', 3);
     window.__redLedger.fire();
+    window.advanceTime(300);
   });
   await page.waitForFunction((previous) => {
     const audio = JSON.parse(window.render_game_to_text()).audio;
-    return audio.authoredPlays > previous && audio.loadedSfxShards >= 4;
+    return audio.authoredPlays > previous
+      && audio.loadedSfxShards >= 4
+      && audio.recentSpatialCues.some((cue) => cue.kind.startsWith('enemy:') || cue.kind.startsWith('attack:'));
   }, beforeFeedback);
   const gameplayAudio = (await state(page)).audio;
   assert(gameplayAudio.source === 'authored', 'Gameplay feedback did not use authored SFX');

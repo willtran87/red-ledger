@@ -36,7 +36,8 @@ describe('campaign data', () => {
     maps.forEach((map) => {
       const normalEnemies = map.actors.filter((actor) => actor.type === 'enemy'
         && (!actor.difficulties || actor.difficulties.includes('normal'))).length;
-      const [minimum, maximum] = map.index <= 3 ? [18, 28] : map.index <= 6 || map.index === 9 ? [28, 42] : [40, 64];
+      const [minimum, maximum] = map.index <= 3 ? [35, 65] : map.index <= 6 || map.index === 9 ? [60, 110] : [90, 160];
+      expect(normalEnemies, map.id).toBe(map.standardEnemyBudget);
       expect(normalEnemies, map.id).toBeGreaterThanOrEqual(minimum);
       expect(normalEnemies, map.id).toBeLessThanOrEqual(maximum);
       expect(map.parSeconds, map.id).toBeGreaterThanOrEqual(15 * 60);
@@ -62,7 +63,7 @@ describe('campaign data', () => {
         .filter((trigger) => map.mechanisms.some((mechanism) => trigger.targets.includes(mechanism.id)))
         .map((trigger) => trigger.targets.find((target) => map.mechanisms.some((mechanism) => mechanism.id === target)));
       expect(authoredTriggerOrder, `${map.id} mechanism trigger order`).toEqual(map.mechanisms.map((mechanism) => mechanism.id));
-      expect(map.secrets.every((secret) => Boolean(secret.clueProp && secret.rewardPickup))).toBe(true);
+      expect(map.secrets.every((secret) => Boolean(secret.clueProp && secret.reward && secret.rewardPlacement))).toBe(true);
       expect(new Set(map.mechanisms.map((mechanism) => mechanism.activationOrder)).size).toBe(map.mechanisms.length);
       expect(map.secrets.every((secret) => secret.persistState && secret.concealedCells.length > 0)).toBe(true);
       map.secrets.forEach((secret) => {

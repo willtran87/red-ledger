@@ -7,8 +7,8 @@
     <meta name="description" content="A retro first-person action campaign through a surreal claims facility." />
     <link rel="icon" type="image/png" href="./public_runtime/ui/title-screen.png" />
     <title>Red Ledger</title>
-    <script type="module" crossorigin src="./assets/index-CIdywydh.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-zjNTfBTL.css">
+    <script type="module" crossorigin src="./assets/index-CaElIiws.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DhOn4lwA.css">
   </head>
   <body>
     <main id="game-shell" aria-busy="true">
@@ -64,6 +64,7 @@
         <h1>Response Level</h1>
         <div id="difficulty-actions"></div>
         <p id="difficulty-detail" class="screen-copy" aria-live="polite"></p>
+        <button id="difficulty-confirm" hidden>Continue</button>
         <button data-back>Back</button>
       </section>
       <section id="episode-intro" class="screen" aria-label="Episode introduction">
@@ -79,13 +80,14 @@
         <div class="options-grid">
           <section class="option-section" aria-labelledby="input-options-heading">
             <h2 id="input-options-heading">Input</h2>
-            <label>Mouse sensitivity <input id="sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /></label>
-            <label>Controller sensitivity <input id="controller-sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /></label>
-            <label>Controller deadzone <input id="controller-deadzone" type="range" min="0.05" max="0.45" value="0.18" step="0.01" /></label>
-            <label>Touch sensitivity <input id="touch-sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /></label>
+            <label><span>Mouse sensitivity</span><span class="range-control"><input id="sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /><output id="sensitivity-value" for="sensitivity">1.2x</output></span></label>
+            <label><span>Controller sensitivity</span><span class="range-control"><input id="controller-sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /><output id="controller-sensitivity-value" for="controller-sensitivity">1.2x</output></span></label>
+            <label><span>Controller deadzone</span><span class="range-control"><input id="controller-deadzone" type="range" min="0.05" max="0.45" value="0.18" step="0.01" /><output id="controller-deadzone-value" for="controller-deadzone">18%</output></span></label>
+            <label><span>Touch sensitivity</span><span class="range-control"><input id="touch-sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /><output id="touch-sensitivity-value" for="touch-sensitivity">1.2x</output></span></label>
             <label class="option-check"><input id="invert-y" type="checkbox" /> Invert look Y</label>
+            <label class="option-check"><input id="vertical-auto-aim" type="checkbox" checked /> Vertical auto-aim</label>
             <label>Touch size <select id="touch-size"><option value="small">Small</option><option value="standard" selected>Standard</option><option value="large">Large</option></select></label>
-            <label>Touch opacity <input id="touch-opacity" type="range" min="0.45" max="1" value="0.78" step="0.01" /></label>
+            <label><span>Touch opacity</span><span class="range-control"><input id="touch-opacity" type="range" min="0.45" max="1" value="0.78" step="0.01" /><output id="touch-opacity-value" for="touch-opacity">78%</output></span></label>
             <label>Touch handedness <select id="touch-handedness"><option value="right" selected>Right-handed</option><option value="left">Left-handed</option></select></label>
           </section>
           <section class="option-section" aria-labelledby="display-options-heading">
@@ -102,9 +104,9 @@
           </section>
           <section class="option-section" aria-labelledby="audio-options-heading">
             <h2 id="audio-options-heading">Audio</h2>
-            <label>Master volume <input id="master-volume" type="range" min="0" max="1" value="0.8" step="0.05" /></label>
-            <label>Music volume <input id="music-volume" type="range" min="0" max="1" value="0.65" step="0.05" /></label>
-            <label>Effects volume <input id="sfx-volume" type="range" min="0" max="1" value="0.8" step="0.05" /></label>
+            <label><span>Master volume</span><span class="range-control"><input id="master-volume" type="range" min="0" max="1" value="0.8" step="0.05" /><output id="master-volume-value" for="master-volume">80%</output></span></label>
+            <label><span>Music volume</span><span class="range-control"><input id="music-volume" type="range" min="0" max="1" value="0.65" step="0.05" /><output id="music-volume-value" for="music-volume">65%</output></span></label>
+            <label><span>Effects volume</span><span class="range-control"><input id="sfx-volume" type="range" min="0" max="1" value="0.8" step="0.05" /><output id="sfx-volume-value" for="sfx-volume">80%</output></span></label>
             <label>Playback <select id="audio-profile"><option value="speakers">Speakers</option><option value="headphones">Headphones</option><option value="night">Night</option><option value="mono">Mono</option></select></label>
             <label class="option-check"><input id="mute-audio" type="checkbox" /> Mute audio</label>
           </section>
@@ -223,13 +225,13 @@
         <div id="weapon-radial" hidden aria-label="Weapon selector"></div>
         <div id="damage-flash" aria-hidden="true"></div>
       </div>
-      <div id="ready-overlay" hidden>
+      <div id="ready-overlay" role="dialog" aria-modal="true" aria-labelledby="ready-map ready-briefing-kind" aria-describedby="entry-objective" hidden>
         <header>
           <img src="./public_runtime/ui/icons/minimal-terminal.png" alt="" aria-hidden="true" />
           <div><strong id="ready-map"></strong><span id="ready-briefing-kind">FIELD BRIEFING</span></div>
         </header>
         <p id="entry-objective"></p>
-        <div id="entry-controls" class="entry-controls" aria-label="Essential controls"></div>
+        <div id="entry-controls" class="entry-controls" role="list" aria-label="Essential controls"></div>
         <button id="enter-file">Enter File</button>
       </div>
       <div id="announcer" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>

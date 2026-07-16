@@ -1,4 +1,12 @@
-import type { CampaignDefinition, CampaignMap, Credential, GridPoint, MapId } from './types';
+import type {
+  CampaignDefinition,
+  CampaignMap,
+  Credential,
+  GridPoint,
+  MapId,
+  PickupId,
+  SecretRewardCategory,
+} from './types';
 
 export interface CampaignValidationIssue {
   readonly map?: MapId;
@@ -9,6 +17,24 @@ const at = (map: CampaignMap, point: GridPoint): string | undefined =>
   map.grid[Math.floor(point.z)]?.[Math.floor(point.x)];
 
 const credentialForCell: Readonly<Record<string, Credential | undefined>> = { R: 'red', Y: 'yellow', C: 'cyan' };
+
+type PickupSecretRewardCategory = Exclude<SecretRewardCategory, 'weapon'>;
+
+const PICKUPS_BY_SECRET_CATEGORY: Readonly<Record<PickupSecretRewardCategory, ReadonlySet<PickupId>>> = {
+  armor: new Set(['loss-control-vest', 'catastrophe-suit', 'emergency-reserve']),
+  ammo: new Set([
+    'staples-small', 'staples-large', 'fasteners-small', 'fasteners-large',
+    'canister', 'canister-crate', 'toner-cell', 'toner-pack',
+  ]),
+  map: new Set(['floor-plan']),
+  powerup: new Set([
+    'temporary-binder', 'night-inspection-goggles', 'hazard-endorsement',
+    'rapid-authority', 'forensic-lens',
+  ]),
+};
+
+const humanizeRewardId = (id: string): string =>
+  id.split('-').map((word) => `${word[0].toUpperCase()}${word.slice(1)}`).join(' ');
 
 const canOccupy = (
   map: CampaignMap,
@@ -167,9 +193,24 @@ const validateMap = (map: CampaignMap): CampaignValidationIssue[] => {
     if (!reachable.has(`${Math.floor(secret.revealAt.x)},${Math.floor(secret.revealAt.z)}`)) report(`secret ${secret.id} clue-side reveal is unreachable`);
     const revealedRoute = statefulReachableCells(map, new Set([secret.id]));
     if (!revealedRoute.has(`${Math.floor(secret.at.x)},${Math.floor(secret.at.z)}`)) report(`secret ${secret.id} reward remains unreachable after reveal`);
-    if (!secret.clueProp || !secret.rewardPickup) report(`secret ${secret.id} has no visible clue or concrete reward`);
-    if (!map.actors.some((actor) => actor.type === 'pickup' && actor.secret && actor.pickup === secret.rewardPickup
-      && Math.floor(actor.x) === Math.floor(secret.at.x) && Math.floor(actor.z) === Math.floor(secret.at.z))) {
+    const rewardId = secret.rewardPlacement.type === 'pickup'
+      ? secret.rewardPlacement.pickup
+      : secret.rewardPlacement.weapon;
+    if (!secret.clueProp || secret.reward !== humanizeRewardId(rewardId)) {
+      report(`secret ${secret.id} has no visible clue or exact concrete reward label`);
+    }
+    const categoryMatches = secret.rewardPlacement.type === 'weapon'
+      ? secret.rewardCategory === 'weapon'
+      : secret.rewardCategory !== 'weapon'
+        && PICKUPS_BY_SECRET_CATEGORY[secret.rewardCategory].has(secret.rewardPlacement.pickup);
+    if (!categoryMatches) report(`secret ${secret.id} reward category does not match its concrete reward`);
+    if (!map.actors.some((actor) => {
+      if (!('secret' in actor) || !actor.secret
+        || Math.floor(actor.x) !== Math.floor(secret.at.x) || Math.floor(actor.z) !== Math.floor(secret.at.z)) return false;
+      return secret.rewardPlacement.type === 'pickup'
+        ? actor.type === 'pickup' && actor.pickup === secret.rewardPlacement.pickup
+        : actor.type === 'weapon' && actor.weapon === secret.rewardPlacement.weapon;
+    })) {
       report(`secret ${secret.id} reward is not placed in its revealed space`);
     }
   });
@@ -250,9 +291,10 @@ const validateMap = (map: CampaignMap): CampaignValidationIssue[] => {
 
   if (!map.triggers.some((trigger) => trigger.action === 'complete-map')) report('map has no completion trigger');
   const normalEnemies = map.actors.filter((actor) => actor.type === 'enemy' && (!actor.difficulties || actor.difficulties.includes('normal'))).length;
-  const minEnemies = map.index <= 3 ? 18 : map.index <= 6 || map.index === 9 ? 28 : 40;
-  const maxEnemies = map.index <= 3 ? 28 : map.index <= 6 || map.index === 9 ? 42 : 64;
+  const minEnemies = map.index <= 3 ? 35 : map.index <= 6 || map.index === 9 ? 60 : 90;
+  const maxEnemies = map.index <= 3 ? 65 : map.index <= 6 || map.index === 9 ? 110 : 160;
   if (normalEnemies < minEnemies || normalEnemies > maxEnemies) report(`normal enemy budget ${normalEnemies} is outside ${minEnemies}-${maxEnemies}`);
+  if (normalEnemies !== map.standardEnemyBudget) report(`normal enemy budget ${normalEnemies} does not realize declared ${map.standardEnemyBudget}`);
   if (map.parSeconds < 900 || map.parSeconds > 2100) report(`experienced par ${map.parSeconds}s is outside 15-35 minutes`);
   return issues;
 };

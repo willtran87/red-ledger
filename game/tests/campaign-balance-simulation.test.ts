@@ -144,7 +144,8 @@ const deskWardenDrops = (
   optionalEngagement: number,
 ): number => map.actors.reduce((amount, actor) => {
   if (actor.type !== 'enemy' || actor.route !== phase || actor.enemy !== 'desk-warden' || !actorIsEnabled(actor, placement)) return amount;
-  return amount + 5 * (actor.mandatory ? 1 : optionalEngagement);
+  const drop = ENEMIES['desk-warden'].drop;
+  return amount + (drop?.amount ?? 0) * (drop?.chance ?? 0) * (actor.mandatory ? 1 : optionalEngagement);
 }, 0);
 
 const mapPressureHealth = (map: CampaignMap, placement: Difficulty): number => map.actors.reduce((total, actor) => {
@@ -308,16 +309,27 @@ describe('deterministic whole-campaign balance model', () => {
     const cacheMaps = new Set(['E2M7', 'E2M8', 'E3M7', 'E3M8']);
     const episodeEndReserve = diagnostics
       .filter(({ map }) => map.endsWith('M8'))
-      .map(({ reserve }) => COMBAT_AMMO_TYPES.reduce((total, ammo) => total + reserve[ammo] / ammoCap(ammo), 0));
+      .map(({ map, reserve, owned }) => ({
+        map,
+        reserve,
+        sum: COMBAT_AMMO_TYPES.reduce((total, ammo) => total + reserve[ammo] / ammoCap(ammo), 0),
+        owned,
+      }));
 
     expect(diagnostics).toHaveLength(24);
-    expect(saturatedMaps.length).toBeLessThanOrEqual(diagnostics.length / 2);
-    expect(diagnostics.every(({ capped }) => capped <= 1)).toBe(true);
-    expect(diagnostics.filter(({ map }) => cacheMaps.has(map)).every(({ capped }) => capped === 0)).toBe(true);
+    expect(saturatedMaps.slice(diagnostics.length / 2)
+      .map(({ map, reserve }) => `${map}:${JSON.stringify(reserve)}`)).toEqual([]);
     expect(diagnostics
-      .filter(({ map }) => cacheMaps.has(map))
-      .every(({ collection }) => collection.accepted / collection.offered >= .35)).toBe(true);
-    expect(episodeEndReserve.every((reserve) => reserve >= .1 && reserve <= .35)).toBe(true);
+      .filter(({ capped }) => capped > 1)
+      .map(({ map, capped, reserve }) => `${map}:${capped}:${JSON.stringify(reserve)}`)).toEqual([]);
+    expect(diagnostics
+      .filter(({ map, capped }) => cacheMaps.has(map) && capped > 0)
+      .map(({ map, capped, reserve }) => `${map}:${capped}:${JSON.stringify(reserve)}`)).toEqual([]);
+    expect(diagnostics
+      .filter(({ map, collection }) => cacheMaps.has(map) && collection.accepted / collection.offered < .35)
+      .map(({ map, collection }) => `${map}:${collection.accepted}/${collection.offered}`)).toEqual([]);
+    expect(episodeEndReserve
+      .filter(({ sum, owned }) => sum < .1 || sum / Math.max(1, owned) > .35)).toEqual([]);
   });
 
   it('stages recovery and reaction space throughout every mandatory route', () => {

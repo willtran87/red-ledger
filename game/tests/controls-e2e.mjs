@@ -13,10 +13,15 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 await page.goto(url, { waitUntil: 'networkidle' });
 await page.click('#options-button');
 
+assert(await page.locator('#vertical-auto-aim').isChecked(), 'Vertical auto-aim did not default on');
+await page.locator('#vertical-auto-aim').uncheck();
+
 await page.locator('#sensitivity').evaluate((element) => { element.value = '1.2'; });
 await page.locator('#sensitivity').focus();
 await page.keyboard.press('ArrowRight');
 assert(await page.locator('#sensitivity').inputValue() === '1.3', 'A single settings arrow press changed sensitivity more than one step');
+assert(await page.locator('#sensitivity-value').textContent() === '1.3x', 'Sensitivity output did not follow the slider');
+assert(await page.locator('#sensitivity').getAttribute('aria-valuetext') === '1.3x', 'Sensitivity did not expose its formatted value');
 await page.selectOption('#render-scale', '1');
 await page.locator('#render-scale').focus();
 await page.keyboard.press('ArrowRight');
@@ -49,7 +54,13 @@ await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
 await page.click('#begin-episode');
-if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+if (await page.locator('#ready-overlay').isVisible()) {
+  assert(await page.locator('#ready-overlay').getAttribute('role') === 'dialog', 'Entry briefing is not exposed as a dialog');
+  assert((await page.locator('#ready-overlay').getAttribute('aria-labelledby'))?.includes('ready-map'), 'Entry briefing has no map label');
+  assert(await page.locator('#entry-controls').getAttribute('role') === 'list', 'Essential controls are not exposed as a list');
+  assert(await page.locator('#entry-controls [role="listitem"]').count() === 4, 'Initial orientation did not expose four essential controls');
+  await page.click('#enter-file');
+}
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
 await page.evaluate(() => window.__redLedger.radial(0, -1, true));
@@ -69,12 +80,33 @@ assert(!(await page.locator('#automap').isVisible()), 'Remapped automap action d
 await page.keyboard.press('Tab');
 assert(!(await page.locator('#automap').isVisible()), 'Replaced default automap key remained active');
 
+await page.evaluate(() => {
+  const checkbox = document.querySelector('#reduced-motion');
+  checkbox.checked = true;
+  checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+  window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { kind: 'actor', killed: false } }));
+});
+const reducedMotionFeedback = await page.evaluate(() => {
+  const recording = document.querySelector('#recording-indicator');
+  const marker = document.querySelector('#hit-marker');
+  recording.hidden = false;
+  return {
+    recordingAnimations: recording.getAnimations().length,
+    markerAnimations: marker.getAnimations().length,
+    markerOpacity: getComputedStyle(marker).opacity,
+  };
+});
+assert(reducedMotionFeedback.recordingAnimations === 0, 'Reduced motion left the recording pulse active');
+assert(reducedMotionFeedback.markerAnimations === 0, 'Reduced motion left the hit-marker scale animation active');
+assert(reducedMotionFeedback.markerOpacity === '1', 'Reduced motion removed semantic hit confirmation');
+
 await page.reload({ waitUntil: 'networkidle' });
 await page.click('#options-button');
 assert(await page.locator('#controller-sensitivity').inputValue() === '2.3', 'Controller sensitivity did not persist independently');
 assert(await page.locator('#touch-sensitivity').inputValue() === '0.7', 'Touch sensitivity did not persist independently');
 assert(await page.locator('#controller-deadzone').inputValue() === '0.22', 'Controller deadzone did not persist');
 assert(await page.locator('#invert-y').isChecked(), 'Y inversion did not persist');
+assert(!(await page.locator('#vertical-auto-aim').isChecked()), 'Vertical auto-aim preference did not persist');
 assert(await page.locator('#text-scale').inputValue() === 'largest', 'Text size did not persist');
 await page.click('#controls-button');
 const restoredRow = page.locator('.control-row', { has: page.getByText('Automap', { exact: true }) }).first();

@@ -42,12 +42,14 @@ export interface RuntimeActor {
   uid: string;
   kind: 'enemy' | 'boss';
   id: EnemyId | BossId;
+  readonly authoredKey?: string;
   sprite: Sprite;
   position: Vector3;
   health: number;
   maxHealth: number;
   cooldown: number;
   awake: boolean;
+  readonly authoredDormant: boolean;
   dead: boolean;
   scoreEligible: boolean;
   attackFlash: number;
@@ -75,6 +77,68 @@ export interface RuntimePickup {
   ammoDrop?: { ammoId: AmmoType; amount: number };
 }
 
+export interface SavedActorIdentity {
+  readonly uid?: string;
+  readonly kind?: RuntimeActor['kind'];
+  readonly id?: RuntimeActor['id'];
+  readonly authoredKey?: string;
+}
+
+export interface SavedPickupIdentity {
+  readonly uid?: string;
+  readonly collected?: boolean;
+  readonly phaseLocked?: boolean;
+  readonly kind?: RuntimePickup['kind'];
+  readonly id?: RuntimePickup['id'];
+  readonly position?: readonly [number, number, number];
+}
+
+export const isDynamicSummonUid = (uid: string): boolean => /^summoned-.+-\d+$/.test(uid);
+
+export const savedActorMatchesRuntime = (saved: SavedActorIdentity, actor: RuntimeActor): boolean => {
+  if (saved.kind === undefined || saved.id === undefined || saved.kind !== actor.kind || saved.id !== actor.id) return false;
+  if (saved.uid && isDynamicSummonUid(saved.uid)) return saved.uid === actor.uid && actor.authoredKey === undefined;
+  return saved.authoredKey !== undefined && saved.authoredKey === actor.authoredKey;
+};
+
+export const findMatchingRuntimeActorIdentity = (
+  saved: SavedActorIdentity,
+  actors: readonly RuntimeActor[],
+): RuntimeActor | undefined => {
+  const positional = saved.uid ? actors.find((actor) => actor.uid === saved.uid) : undefined;
+  if (positional && savedActorMatchesRuntime(saved, positional)) return positional;
+  const stableMatches = actors.filter((actor) => savedActorMatchesRuntime(saved, actor));
+  return stableMatches.length === 1 ? stableMatches[0] : undefined;
+};
+
+export const findUniqueRuntimeActorIdentity = (
+  saved: SavedActorIdentity,
+  actors: readonly RuntimeActor[],
+): RuntimeActor | undefined => {
+  if (saved.kind === undefined || saved.id === undefined) return undefined;
+  const matches = actors.filter((actor) => actor.kind === saved.kind && actor.id === saved.id);
+  return matches.length === 1 ? matches[0] : undefined;
+};
+
+export const savedPickupMatchesRuntime = (saved: SavedPickupIdentity, pickup: RuntimePickup): boolean => {
+  if (saved.kind === undefined || saved.id === undefined || saved.position === undefined
+    || saved.kind !== pickup.kind || saved.id !== pickup.id) return false;
+  return Math.hypot(
+    saved.position[0] - pickup.position.x,
+    saved.position[2] - pickup.position.z,
+  ) <= .01;
+};
+
+export const findMatchingRuntimePickupIdentity = (
+  saved: SavedPickupIdentity,
+  pickups: readonly RuntimePickup[],
+): RuntimePickup | undefined => {
+  const positional = saved.uid ? pickups.find((pickup) => pickup.uid === saved.uid) : undefined;
+  if (positional && savedPickupMatchesRuntime(saved, positional)) return positional;
+  const stableMatches = pickups.filter((pickup) => savedPickupMatchesRuntime(saved, pickup));
+  return stableMatches.length === 1 ? stableMatches[0] : undefined;
+};
+
 export interface AmmoDropState {
   uid: string;
   position: [number, number, number];
@@ -82,6 +146,10 @@ export interface AmmoDropState {
   amount: number;
   collected: boolean;
 }
+
+/** Legacy saves omitted awake; unlocked actors in those saves retain the original all-awake behavior. */
+export const resolveRestoredActorAwake = (savedAwake: boolean | undefined, phaseLocked: boolean): boolean =>
+  savedAwake ?? !phaseLocked;
 
 export interface RuntimeDoor {
   key: string;
@@ -474,12 +542,14 @@ export class World {
         sprite.position.copy(position);
         const phaseLocked = Boolean(placement.encounter && placement.encounter !== 'entry')
           || (this.map.id === 'E3M8' && id === 'uninsurable');
+        const authoredDormant = placement.type === 'enemy' && Boolean(placement.dormant);
+        const authoredKey = [kind, id, placement.encounter ?? 'entry', placement.x.toFixed(3), placement.z.toFixed(3)].join(':');
         sprite.visible = !phaseLocked;
         this.root.add(sprite);
         const facing = ({ north: Math.PI, east: -Math.PI / 2, south: 0, west: Math.PI / 2 })[placement.facing ?? 'south'];
         this.actors.push({
-          uid: `${kind}-${index}`, kind, id, sprite, position, health: definition.health, maxHealth: definition.health,
-          cooldown: 0, awake: phaseLocked ? false : Boolean('dormant' in placement && !placement.dormant), dead: false,
+          uid: `${kind}-${index}`, kind, id, authoredKey, sprite, position, health: definition.health, maxHealth: definition.health,
+          cooldown: 0, awake: !phaseLocked && !authoredDormant, authoredDormant, dead: false,
           scoreEligible: true, attackFlash: 0, facing, animationTime: 0, moving: false, visualKey: '', visualState: 'idle', phaseLocked,
           encounter: placement.encounter,
           mandatory: placement.type === 'enemy' ? Boolean(placement.mandatory) : true,
@@ -538,6 +608,7 @@ export class World {
       maxHealth: definition.health,
       cooldown: 0,
       awake: true,
+      authoredDormant: false,
       dead: false,
       scoreEligible: true,
       attackFlash: 0,
@@ -798,7 +869,7 @@ export class World {
     let unlocked = 0;
     this.actors.filter((actor) => actor.encounter === id && actor.phaseLocked).forEach((actor) => {
       actor.phaseLocked = false;
-      actor.awake = true;
+      actor.awake = !actor.authoredDormant;
       actor.sprite.visible = true;
       unlocked += 1;
     });

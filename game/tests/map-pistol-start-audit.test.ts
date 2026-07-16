@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { CAMPAIGN } from '../src/data/campaign';
 import { ENEMIES, WEAPONS, type AmmoType } from '../src/game/definitions';
 import type { PickupId, WeaponId } from '../src/data/types';
+import {
+  COMBAT_AMMO_TYPES,
+  addAmmoWithinCap,
+  pickupAmmoGrant,
+  weaponAcquisitionAmmoGrant,
+  type CombatAmmo,
+} from '../src/game/EconomyPolicy';
 import { actorIsEnabled, cellKey, credentialAwareReachableCells } from './audit-helpers';
 
 const starterWeapons = new Set<WeaponId>(['claim-stamp', 'staple-driver']);
@@ -14,16 +21,11 @@ const ammoForPickup = (pickup: PickupId): AmmoType | undefined => {
   return undefined;
 };
 
-const ammoAmount = (pickup: PickupId): number => {
-  if (pickup === 'staples-small') return 16;
-  if (pickup === 'staples-large') return 40;
-  if (pickup === 'fasteners-small') return 8;
-  if (pickup === 'fasteners-large') return 24;
-  if (pickup === 'canister') return 1;
-  if (pickup === 'canister-crate') return 5;
-  if (pickup === 'toner-cell') return 30;
-  if (pickup === 'toner-pack') return 80;
-  return 0;
+const expectedDamagePerAmmo = (weapon: WeaponId): number => {
+  const definition = WEAPONS[weapon];
+  if (definition.ammo === 'none') return 0;
+  const direct = ((definition.damageMin + definition.damageMax) / 2) * definition.pellets;
+  return (direct + (definition.splashDamage ?? 0) * .5) / definition.ammoCost;
 };
 
 describe('Field Adjuster pistol-start static reachability', () => {
@@ -63,20 +65,49 @@ describe('Field Adjuster pistol-start static reachability', () => {
     expect(failures).toEqual([]);
   });
 
-  it('budgets expected ranged damage for every mandatory encounter route', () => {
+  it('budgets compatible reachable ranged damage for every mandatory encounter route', () => {
     const failures: string[] = [];
     for (const map of Object.values(CAMPAIGN.maps)) {
       const reachable = credentialAwareReachableCells(map);
+      const weapons = new Set(starterWeapons);
+      const ammo: Record<CombatAmmo, number> = { staples: 50, fasteners: 0, canisters: 0, 'toner-cells': 0 };
       for (const route of ['entry', 'transformation', 'climax']) {
+        map.actors
+          .filter((actor) => actor.type === 'weapon' && actor.route === route && !actor.secret && actorIsEnabled(actor, 'normal') && reachable.has(cellKey(actor)))
+          .forEach((actor) => {
+            weapons.add(actor.weapon);
+            const grant = weaponAcquisitionAmmoGrant(WEAPONS[actor.weapon]);
+            if (grant) ammo[grant.ammo] = addAmmoWithinCap(ammo[grant.ammo], grant);
+          });
+        map.actors
+          .filter((actor) => actor.type === 'pickup' && actor.route === route && !actor.secret && actorIsEnabled(actor, 'normal') && reachable.has(cellKey(actor)))
+          .forEach((actor) => {
+            const grant = pickupAmmoGrant(actor.pickup);
+            if (grant) ammo[grant.ammo] = addAmmoWithinCap(ammo[grant.ammo], grant);
+          });
+
         const mandatoryHealth = map.actors
           .filter((actor) => actor.type === 'enemy' && actorIsEnabled(actor, 'normal') && actor.mandatory && actor.route === route)
           .reduce((health, actor) => health + ENEMIES[actor.enemy].health, 0);
-        const staples = (route === 'entry' ? 50 : 0) + map.actors
-          .filter((actor) => actor.type === 'pickup' && !actor.secret && actor.route === route && reachable.has(cellKey(actor)))
-          .reduce((amount, actor) => amount + (ammoForPickup(actor.pickup) === 'staples' ? ammoAmount(actor.pickup) : 0), 0);
-        const expectedDamage = staples * WEAPONS['staple-driver'].damage;
-        if (expectedDamage < mandatoryHealth * 1.2) {
-          failures.push(`${map.id}:${route} has ${expectedDamage} expected damage for ${mandatoryHealth} mandatory health`);
+
+        let remaining = mandatoryHealth * 1.2;
+        const choices = [...weapons]
+          .map((weapon) => ({ weapon, definition: WEAPONS[weapon], efficiency: expectedDamagePerAmmo(weapon) }))
+          .filter((choice) => choice.definition.ammo !== 'none' && choice.efficiency > 0)
+          .sort((left, right) => right.efficiency - left.efficiency || left.weapon.localeCompare(right.weapon));
+        for (const choice of choices) {
+          if (remaining <= 0) break;
+          const ammoType = choice.definition.ammo as CombatAmmo;
+          const shots = Math.min(
+            Math.floor(ammo[ammoType] / choice.definition.ammoCost),
+            Math.ceil(remaining / (choice.efficiency * choice.definition.ammoCost)),
+          );
+          ammo[ammoType] -= shots * choice.definition.ammoCost;
+          remaining -= shots * choice.efficiency * choice.definition.ammoCost;
+        }
+        if (remaining > 0) {
+          const reserve = COMBAT_AMMO_TYPES.map((type) => `${type}:${ammo[type]}`).join(',');
+          failures.push(`${map.id}:${route} lacks ${Math.ceil(remaining)} expected damage after reachable reserves (${reserve})`);
         }
       }
     }

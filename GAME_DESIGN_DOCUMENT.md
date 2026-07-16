@@ -329,7 +329,7 @@ AI does not need sophisticated navigation. It needs reliable line-of-sight, sect
 - **Hazard Endorsement:** temporary environmental-damage immunity.
 - **Rapid Authority:** temporary increased weapon cadence.
 - **Floor Plan:** reveals map geometry; optional hidden upgrade reveals secrets.
-- **Forensic Lens:** partial invisibility/targeting disruption, represented by a jittering signature outline.
+- **Forensic Lens:** partial invisibility/targeting disruption, represented by a static cyan additive signature on live hostiles.
 
 ### 10.3 Interactive props
 
@@ -479,7 +479,11 @@ Secret rewards include ammunition efficiency, early weapon access, armor, map in
 | Major transformations | 1 | 1-2 | 2-3 |
 | Distinct landmarks | 2 | 3 | 3-5 |
 
-Counts are starting budgets, not quotas. Encounter quality wins over density.
+Each map declares one normal-tier standard-enemy budget inside its phase range, and the realized normal placement must match it exactly. Entry, transformation, and climax profiles distribute that total while keeping ordinary phases to two or three combat roles; easier and harder placement masks scale monotonically without replacing the authored profile. Episode openings and other relief maps are explicit valleys that must rebuild into the following pressure beat.
+
+Mandatory-route ammunition and recovery are allocated in proportion to phase pressure and the weapons available on that map. Optional reward pockets may improve the economy, but the deterministic route simulation must remain viable without counting secret supplies.
+
+The table ranges are starting design budgets rather than pressure quotas. Once a map's normal-tier count is declared, however, its generated placement must realize that count exactly; encounter quality is tuned through composition, space, activation, and difficulty masks rather than silent underfill.
 
 ---
 
@@ -757,6 +761,9 @@ ActorDefinition
 - Persist full simulation state: actors, corpses, projectiles, sector movers, switches, player inventory, RNG state, elapsed time, and secrets.
 - Version the save schema from day one.
 - Loading a save must not replay pickup sounds, awaken enemies, or move lifts by a tick.
+- Persist authored actors with stable placement identities rather than runtime array positions; keep dynamic summons in a distinct identity namespace. A supported legacy save must never apply mutable actor, behavior, or pickup state to an ambiguous placement.
+- Persist the exact unlocked encounter set. For older supported saves without that field, reconstruct only progression proven by completed encounters and activated mechanisms, with the current explicit field authoritative whenever present.
+- Demo schemas include checksummed gameplay-affecting playback settings. Reject incompatible simulation versions without mutating them, and keep each active replay-library generation in a distinct storage namespace so legacy libraries remain untouched.
 
 ### 18.5 Performance targets
 

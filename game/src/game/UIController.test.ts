@@ -6,6 +6,7 @@ import {
   boundedReplayEntries,
   entryBriefingLabels,
   entryObjectiveCue,
+  formatRangeSetting,
   masteryPresentation,
   normalizeInterfacePreferences,
   resolveReducedMotionSetting,
@@ -125,6 +126,12 @@ describe('reduced motion preference', () => {
 });
 
 describe('interface personalization', () => {
+  it('formats continuous settings as visible and assistive values', () => {
+    expect(formatRangeSetting('sensitivity', 1.2)).toBe('1.2x');
+    expect(formatRangeSetting('controller-deadzone', .18)).toBe('18%');
+    expect(formatRangeSetting('music-volume', .65)).toBe('65%');
+  });
+
   it('keeps valid touch layout and text choices', () => {
     expect(normalizeInterfacePreferences({
       touchControlSize: 'large',

@@ -9,7 +9,14 @@ export interface ShotSpread {
   pitch: number;
 }
 
+export interface VerticalAimCylinder {
+  base: CombatVector3;
+  radius: number;
+  height: number;
+}
+
 const EPSILON = 1e-8;
+export const VERTICAL_AUTO_AIM_RADIANS = Math.PI / 30;
 
 export function sampleShotSpread(spread: number, random: () => number): ShotSpread {
   return {
@@ -26,6 +33,40 @@ export function directionFromView(yaw: number, pitch: number, yawOffset = 0, pit
     y: -Math.sin(resolvedPitch),
     z: -Math.cos(yaw + yawOffset) * cosPitch,
   };
+}
+
+export function verticalAutoAimCylinder(
+  base: CombatVector3,
+  radius: number,
+  height: number,
+  horizontalDistance: number,
+  tolerance: number,
+): VerticalAimCylinder {
+  const distance = Number.isFinite(horizontalDistance) ? Math.max(0, horizontalDistance) : 0;
+  const angle = Number.isFinite(tolerance)
+    ? Math.max(0, Math.min(Math.PI / 2 - .001, tolerance))
+    : 0;
+  const verticalPadding = Math.tan(angle) * distance;
+  return {
+    base: { x: base.x, y: base.y - verticalPadding, z: base.z },
+    radius,
+    height: height + verticalPadding * 2,
+  };
+}
+
+export function verticalAutoAimDirection(
+  origin: CombatVector3,
+  direction: CombatVector3,
+  target: CombatVector3,
+): CombatVector3 {
+  const horizontalDirection = Math.hypot(direction.x, direction.z);
+  const horizontalDistance = Math.hypot(target.x - origin.x, target.z - origin.z);
+  if (horizontalDirection <= EPSILON || horizontalDistance <= EPSILON) return { ...direction };
+  const x = direction.x / horizontalDirection * horizontalDistance;
+  const y = target.y - origin.y;
+  const z = direction.z / horizontalDirection * horizontalDistance;
+  const magnitude = Math.hypot(x, y, z);
+  return magnitude <= EPSILON ? { ...direction } : { x: x / magnitude, y: y / magnitude, z: z / magnitude };
 }
 
 export function rayVerticalCylinderDistance(

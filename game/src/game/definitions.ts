@@ -77,7 +77,7 @@ export interface EnemyDefinition {
 
 const enemyDefinitions: Record<EnemyId | BossId, Omit<EnemyDefinition, 'audio'>> = {
   'returned-mail': { health: 30, speed: 2.6, damage: 10, attackRange: 1.6, cooldown: .8, radius: .32, height: 1.25, faction: 'bureaucracy', painChance: .7, painDuration: .18, windup: .16, recovery: .32 },
-  'desk-warden': { health: 50, speed: 1.7, damage: 7, attackRange: 20, cooldown: 1.15, radius: .38, height: 1.5, faction: 'bureaucracy', painChance: .5, painDuration: .2, windup: .3, recovery: .35, drop: { kind: 'ammo', id: 'staples', amount: 5, chance: 1 } },
+  'desk-warden': { health: 50, speed: 1.7, damage: 7, attackRange: 20, cooldown: 1.15, radius: .38, height: 1.5, faction: 'bureaucracy', painChance: .5, painDuration: .2, windup: .3, recovery: .35, drop: { kind: 'ammo', id: 'staples', amount: 1, chance: .15 } },
   'ember-clerk': { health: 60, speed: 2, damage: 8, attackRange: 15, cooldown: .9, radius: .34, height: 1.35, faction: 'bureaucracy', painChance: .58, painDuration: .22, windup: .28, recovery: .35 },
   'exposure-hound': { health: 75, speed: 3.3, damage: 12, attackRange: 1.5, cooldown: .75, radius: .44, height: 1.1, faction: 'bureaucracy', painChance: .45, painDuration: .16, windup: .32, recovery: .28 },
   'coverage-drone': { health: 50, speed: 2.4, damage: 9, attackRange: 22, cooldown: 1.25, radius: .42, height: 1.2, faction: 'bureaucracy', painChance: .6, painDuration: .16, windup: .24, recovery: .3 },

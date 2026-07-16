@@ -3,7 +3,18 @@ import { InstancedMesh, Matrix4, PerspectiveCamera, Scene, Texture, Vector3 } fr
 import { CAMPAIGN_MAPS } from '../data';
 import { resolveMaterialAsset, resolveSkyAsset } from '../data/tiles';
 import type { AssetCatalog } from './AssetCatalog';
-import { World } from './World';
+import { EnemyBehaviorSystem, reconcileEnemyBehaviorSnapshot, type EnemyBehaviorSnapshot } from './EnemyBehaviorSystem';
+import { PRE_PROFILE_E1M1_RUNTIME_FIXTURE } from './__fixtures__/runtimeCompatibilityFixtures';
+import {
+  findMatchingRuntimeActorIdentity,
+  findMatchingRuntimePickupIdentity,
+  findUniqueRuntimeActorIdentity,
+  isDynamicSummonUid,
+  resolveRestoredActorAwake,
+  savedActorMatchesRuntime,
+  savedPickupMatchesRuntime,
+  World,
+} from './World';
 
 const assets = {
   texture(url: string): Texture {
@@ -115,13 +126,137 @@ describe('authored world content', () => {
     expect(pumps.mechanismOpens(reversed.at(-1)!.id)).toContain('climax');
   });
 
-  it('holds climax actors outside runtime until the signature mechanism opens them', () => {
+  it('unlocks climax actors while preserving their authored ambush dormancy', () => {
     const world = worldFor('E1M4');
+    const entry = world.actors.filter((actor) => actor.encounter === 'entry');
     const climax = world.actors.filter((actor) => actor.encounter === 'climax');
+    const dormant = climax.filter((actor) => actor.authoredDormant);
+    const immediate = climax.filter((actor) => !actor.authoredDormant);
+    expect(entry.every((actor) => actor.awake === !actor.authoredDormant)).toBe(true);
     expect(climax.length).toBeGreaterThan(0);
-    expect(climax.every((actor) => actor.phaseLocked && !actor.sprite.visible)).toBe(true);
+    expect(dormant.length).toBeGreaterThan(0);
+    expect(immediate.length).toBeGreaterThan(0);
+    expect(climax.every((actor) => actor.phaseLocked && !actor.sprite.visible && !actor.awake)).toBe(true);
     expect(world.unlockEncounter('climax')).toBe(climax.length);
-    expect(climax.every((actor) => !actor.phaseLocked && actor.sprite.visible && actor.awake)).toBe(true);
+    expect(climax.every((actor) => !actor.phaseLocked && actor.sprite.visible)).toBe(true);
+    expect(dormant.every((actor) => !actor.awake)).toBe(true);
+    expect(immediate.every((actor) => actor.awake)).toBe(true);
+  });
+
+  it('restores explicit awake state while keeping legacy unlocked saves compatible', () => {
+    expect(resolveRestoredActorAwake(false, false)).toBe(false);
+    expect(resolveRestoredActorAwake(true, true)).toBe(true);
+    expect(resolveRestoredActorAwake(undefined, true)).toBe(false);
+    expect(resolveRestoredActorAwake(undefined, false)).toBe(true);
+  });
+
+  it('discards incompatible public-save actor and behavior identities without halting', () => {
+    const world = worldFor('E1M1');
+    const published = PRE_PROFILE_E1M1_RUNTIME_FIXTURE;
+    const current = world.actors.find((actor) => actor.uid === published.actor.uid)!;
+    expect(current.id).toBe('ember-clerk');
+    expect(savedActorMatchesRuntime(published.actor, current)).toBe(false);
+
+    const reconciled = reconcileEnemyBehaviorSnapshot(
+      structuredClone(published.behavior) as unknown as EnemyBehaviorSnapshot,
+      [],
+    );
+    expect(reconciled.actors).toEqual([]);
+    expect(reconciled.projectiles).toEqual([]);
+    expect(reconciled.hazards).toEqual([]);
+    expect(reconciled.pendingSounds).toEqual([]);
+    expect(reconciled.pendingDamage).toEqual([]);
+    const system = new EnemyBehaviorSystem({ rng: () => .5 });
+    system.restore(reconciled);
+    expect(() => system.step({
+      dt: .01,
+      actors: [{
+        uid: current.uid,
+        kind: current.kind,
+        id: current.id,
+        position: current.position,
+        health: current.health,
+        maxHealth: current.maxHealth,
+        radius: .34,
+        awake: current.awake,
+        dead: current.dead,
+        phaseLocked: current.phaseLocked,
+      }],
+      target: { uid: 'player', position: { x: 0, y: 0, z: 0 }, velocity: { x: 0, y: 0, z: 0 }, radius: .32 },
+    })).not.toThrow();
+  });
+
+  it('rewrites accepted saved behavior references to the restored runtime actor UID', () => {
+    const published = PRE_PROFILE_E1M1_RUNTIME_FIXTURE;
+    const reconciled = reconcileEnemyBehaviorSnapshot(
+      structuredClone(published.behavior) as unknown as EnemyBehaviorSnapshot,
+      [{ savedUid: published.actor.uid, runtimeUid: 'summoned-returned-mail-12', id: 'returned-mail' }],
+    );
+    expect(reconciled.actors[0]?.uid).toBe('summoned-returned-mail-12');
+    expect(reconciled.projectiles[0]?.ownerUid).toBe('summoned-returned-mail-12');
+    expect(reconciled.hazards[0]?.ownerUid).toBe('summoned-returned-mail-12');
+    expect(reconciled.pendingSounds?.[0]?.sourceUid).toBe('summoned-returned-mail-12');
+    expect(reconciled.pendingDamage?.[0]?.sourceUid).toBe('summoned-returned-mail-12');
+  });
+
+  it('rejects ambiguous legacy pickup UIDs and requires new saves to match stable identity', () => {
+    const world = worldFor('E1M1');
+    const published = PRE_PROFILE_E1M1_RUNTIME_FIXTURE;
+    const shifted = world.pickups.find((pickup) => pickup.uid === published.pickup.uid)!;
+    expect(shifted.id).not.toBe(published.pickupPlacement.id);
+    expect(savedPickupMatchesRuntime(published.pickup, shifted)).toBe(false);
+    expect(savedPickupMatchesRuntime(published.pickupPlacement, shifted)).toBe(false);
+
+    const current = world.pickups.find((pickup) => pickup.kind === 'weapon' && pickup.id === 'twin-bore-riveter')!;
+    expect(savedPickupMatchesRuntime({
+      kind: current.kind,
+      id: current.id,
+      position: current.position.toArray(),
+    }, current)).toBe(true);
+  });
+
+  it('restores only explicit dynamic summons when a saved actor UID is absent', () => {
+    expect(isDynamicSummonUid('enemy-22')).toBe(false);
+    expect(isDynamicSummonUid('boss-38')).toBe(false);
+    expect(isDynamicSummonUid('summoned-returned-mail-12')).toBe(true);
+  });
+
+  it('does not treat a coincidental authored UID and hostile ID as a stable placement', () => {
+    const world = worldFor('E1M1');
+    const current = world.actors.find((actor) => actor.uid === 'enemy-6')!;
+    expect(savedActorMatchesRuntime({ uid: current.uid, kind: current.kind, id: current.id }, current)).toBe(false);
+    expect(savedActorMatchesRuntime({
+      uid: current.uid,
+      kind: current.kind,
+      id: current.id,
+      authoredKey: current.authoredKey,
+    }, current)).toBe(true);
+  });
+
+  it('finds current authored actors and pickups by stable identity after positional UIDs shift', () => {
+    const world = worldFor('E1M1');
+    const actor = world.actors.find((candidate) => candidate.authoredKey)!;
+    const pickup = world.pickups.find((candidate) => candidate.kind === 'pickup')!;
+
+    expect(findMatchingRuntimeActorIdentity({
+      uid: 'enemy-former-position',
+      kind: actor.kind,
+      id: actor.id,
+      authoredKey: actor.authoredKey,
+    }, world.actors)).toBe(actor);
+    expect(findMatchingRuntimePickupIdentity({
+      uid: 'pickup-former-position',
+      kind: pickup.kind,
+      id: pickup.id,
+      position: pickup.position.toArray(),
+    }, world.pickups)).toBe(pickup);
+  });
+
+  it('remaps a shifted authored boss by its unique identity', () => {
+    const world = worldFor('E1M8');
+    const boss = findUniqueRuntimeActorIdentity({ kind: 'boss', id: 'regional-director' }, world.actors);
+    expect(boss?.id).toBe('regional-director');
+    expect(findUniqueRuntimeActorIdentity({ kind: 'enemy', id: 'returned-mail' }, world.actors)).toBeUndefined();
   });
 
   it('holds route recovery and weapons until their encounter begins', () => {

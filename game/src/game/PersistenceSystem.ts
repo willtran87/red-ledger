@@ -2,7 +2,7 @@ export const SAVE_SCHEMA_VERSION = 1;
 export const CAMPAIGN_SCHEMA_VERSION = 2;
 export const OLDEST_SUPPORTED_SAVE_SCHEMA_VERSION = 1;
 export const OLDEST_SUPPORTED_CAMPAIGN_SCHEMA_VERSION = 1;
-export const DEMO_SCHEMA_VERSION = 3;
+export const DEMO_SCHEMA_VERSION = 4;
 /** Leaves room for the replay-library wrapper inside its 3.5 MB UTF-16 budget. */
 export const DEMO_STORAGE_BUDGET_BYTES = 3_000_000;
 export const MANUAL_SLOT_COUNT = 8;
@@ -268,6 +268,10 @@ export interface DemoFrame<TCommand> {
   readonly duration?: number;
 }
 
+export interface DemoPlaybackSettings {
+  readonly verticalAutoAim: boolean;
+}
+
 export interface DemoData<TInitialState, TCommand> {
   readonly schema: 'red-ledger-demo';
   readonly version: number;
@@ -276,6 +280,8 @@ export interface DemoData<TInitialState, TCommand> {
   readonly mapId: string;
   readonly createdAt: number;
   readonly initialState: TInitialState;
+  /** Gameplay-affecting preferences captured and signed at record time. */
+  readonly playbackSettings: DemoPlaybackSettings;
   readonly frames: readonly DemoFrame<TCommand>[];
   readonly totalTicks: number;
   readonly checksum: string;
@@ -290,6 +296,7 @@ export interface DemoRecorderOptions<TInitialState> {
   readonly seed: number;
   readonly mapId: string;
   readonly initialState: TInitialState;
+  readonly playbackSettings: DemoPlaybackSettings;
   readonly createdAt?: number;
   /** Maximum JSON storage footprint, measured as UTF-16 bytes like localStorage. */
   readonly maxSerializedBytes?: number;
@@ -1613,6 +1620,7 @@ export class DemoRecorder<TInitialState, TCommand> {
     const tickRate = options.tickRate ?? 35;
     if (!Number.isSafeInteger(tickRate) || tickRate <= 0) throw new RangeError('Demo tick rate must be a positive integer');
     if (!Number.isSafeInteger(options.seed) || options.seed < 0) throw new RangeError('Demo seed must be a non-negative integer');
+    if (typeof options.playbackSettings?.verticalAutoAim !== 'boolean') throw new TypeError('Demo playback settings are required');
     stableStringify(options.initialState);
     if (options.maxSerializedBytes !== undefined
       && (!Number.isSafeInteger(options.maxSerializedBytes) || options.maxSerializedBytes <= 0)) {
@@ -1628,6 +1636,7 @@ export class DemoRecorder<TInitialState, TCommand> {
       mapId: options.mapId,
       createdAt: this.createdAt,
       initialState: options.initialState,
+      playbackSettings: options.playbackSettings,
       frames: [] as readonly DemoFrame<TCommand>[],
       totalTicks: 0,
     })).length;
@@ -1672,6 +1681,7 @@ export class DemoRecorder<TInitialState, TCommand> {
       mapId: this.options.mapId,
       createdAt: this.createdAt,
       initialState: this.options.initialState,
+      playbackSettings: this.options.playbackSettings,
       frames: this.frames.map((frame) => ({
         tick: frame.tick,
         commands: [...frame.commands],
@@ -1747,6 +1757,9 @@ export function validateDemo<TInitialState, TCommand>(
     if (!Number.isSafeInteger(value.tickRate) || (value.tickRate as number) <= 0) return { valid: false, reason: 'Invalid tick rate' };
     if (!Number.isSafeInteger(value.seed) || (value.seed as number) < 0) return { valid: false, reason: 'Invalid seed' };
     if (typeof value.mapId !== 'string' || !Number.isFinite(value.createdAt)) return { valid: false, reason: 'Invalid demo metadata' };
+    if (!isRecord(value.playbackSettings) || typeof value.playbackSettings.verticalAutoAim !== 'boolean') {
+      return { valid: false, reason: 'Invalid playback settings' };
+    }
     if (!Number.isSafeInteger(value.totalTicks) || (value.totalTicks as number) < 0) return { valid: false, reason: 'Invalid duration' };
     if (validators.validateInitialState && !validators.validateInitialState(value.initialState)) {
       return { valid: false, reason: 'Invalid initial state' };

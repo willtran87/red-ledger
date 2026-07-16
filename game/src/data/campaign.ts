@@ -8,6 +8,8 @@ import type {
   Credential,
   Difficulty,
   EnemyId,
+  EnemyEncounterRole,
+  EncounterRole,
   EpisodeDefinition,
   EpisodeId,
   Facing,
@@ -20,6 +22,8 @@ import type {
   MapTrigger,
   PickupId,
   SecretDefinition,
+  SecretRewardCategory,
+  SecretRewardPlacement,
   TriggerAction,
   WeaponId,
 } from './types';
@@ -160,8 +164,9 @@ const specs: readonly MapSpec[] = [
   },
   {
     id: 'E1M8', title: 'Regional Authority', location: 'Fortress atrium and binding arena', layout: 'arena',
-    parSeconds: 390, normalEnemies: 76, enemies: E1_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
+    parSeconds: 390, normalEnemies: 90, enemies: E1_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
     transformation: 'spawn-wave', nextMap: 'E2M1', bosses: ['regional-director'],
+    recoverySupplies: [{ pickup: 'toner-pack', route: 'boss-1' }],
     signatureBeat: 'Meeting-room shutters feed adds into the Regional Director canister barrage.',
     secretClues: ['A cracked authority seal beneath the entry stairs', 'A dark meeting room overlooking the arena', 'A maintenance hatch behind a canister rack'],
   },
@@ -174,43 +179,43 @@ const specs: readonly MapSpec[] = [
   },
   {
     id: 'E2M1', title: 'Catastrophe Staging', location: 'Storm logistics yard and response hangar', layout: 'loop',
-    parSeconds: 270, normalEnemies: 68, enemies: E2_OPEN, weapons: ['catastrophe-launcher', 'twin-bore-riveter', 'audit-repeater'], credentials: ['yellow'],
+    parSeconds: 270, normalEnemies: 52, enemies: E2_OPEN, weapons: ['catastrophe-launcher', 'twin-bore-riveter', 'audit-repeater'], credentials: ['yellow'],
     transformation: 'move-walls', nextMap: 'E2M2',
     signatureBeat: 'Lightning silhouettes long-range threats between shifting container lanes.',
     secretClues: ['A container with inward-facing locks', 'A warning beacon blinking out of sequence', 'A painted loading number visible only in lightning'],
   },
   {
     id: 'E2M2', title: 'Waterline', location: 'Flood-damaged hotel around a submerged lobby', layout: 'bays',
-    parSeconds: 390, normalEnemies: 82, enemies: E2_HEAVY, weapons: ['plasma-copier'], credentials: ['red', 'cyan'],
+    parSeconds: 390, normalEnemies: 58, enemies: E2_HEAVY, weapons: ['plasma-copier'], credentials: ['red', 'cyan'],
     transformation: 'drain-liquid', nextMap: 'E2M3',
     signatureBeat: 'Changing water levels reconnect guest-room loops and reveal the drowned lobby route.',
     secretClues: ['A room-service bell ringing underwater', 'A dry carpet seam above the waterline', 'A guest-room number repeated twice', 'A luggage cart blocking a narrow stair'],
   },
   {
     id: 'E2M3', title: 'Server Farm', location: 'Claims data center and redundant power halls', layout: 'lanes',
-    parSeconds: 430, normalEnemies: 94, enemies: E2_FULL, weapons: ['plasma-copier'], credentials: ['cyan', 'yellow'],
+    parSeconds: 430, normalEnemies: 65, enemies: E2_FULL, weapons: ['plasma-copier'], credentials: ['cyan', 'yellow'],
     transformation: 'blackout', nextMap: 'E2M4',
     signatureBeat: 'Power routing wakes one enemy-filled wing while blacking out the other.',
     secretClues: ['A cyan status light on a dead rack', 'A cable run disappearing through the floor', 'A fan noise behind an unvented wall', 'A mirrored server label'],
   },
   {
     id: 'E2M4', title: 'Claims Express', location: 'Armored records train and switching depot', layout: 'descent',
-    parSeconds: 450, normalEnemies: 104, enemies: E2_FULL, weapons: ['umbra-saw'], credentials: ['red', 'yellow'],
-    transformation: 'move-walls', nextMap: 'E2M5',
+    parSeconds: 450, normalEnemies: 90, enemies: E2_FULL, weapons: ['twin-bore-riveter', 'umbra-saw'], credentials: ['red', 'yellow'],
+    transformation: 'move-walls', nextMap: 'E2M5', recoverySupplies: [{ pickup: 'fasteners-large', route: 'climax' }],
     signatureBeat: 'Train cars shift between platforms and create new cross-car routes during combat.',
     secretClues: ['A timetable with an impossible platform', 'A silent carriage with warm lights', 'A switch lever pointing between labels', 'A maintenance crawlspace beneath the consist'],
   },
   {
     id: 'E2M5', title: 'Salvage Rights', location: 'Vehicle and equipment salvage district', layout: 'showroom',
-    parSeconds: 500, normalEnemies: 112, enemies: E2_FULL, weapons: ['catastrophe-launcher'], credentials: ['red', 'yellow', 'cyan'],
+    parSeconds: 500, normalEnemies: 100, enemies: E2_FULL, weapons: ['catastrophe-launcher'], credentials: ['red', 'yellow', 'cyan'],
     transformation: 'move-walls', nextMap: 'E2M6', secretExitTo: 'E2M9',
     signatureBeat: 'Crushers reshape sightlines and reveal buried routes through the salvage blocks.',
     secretClues: ['A pristine door on a flattened vehicle', 'A crusher control with a second detent', 'A salvage tag matching the automap outline', 'An engine still ticking in a silent yard'],
   },
   {
     id: 'E2M6', title: 'Pump Station', location: 'Municipal flood-control plant', layout: 'channels',
-    parSeconds: 530, normalEnemies: 120, enemies: E2_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
-    transformation: 'toggle-sectors', nextMap: 'E2M7',
+    parSeconds: 530, normalEnemies: 110, enemies: E2_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
+    transformation: 'toggle-sectors', nextMap: 'E2M7', recoverySupplies: [{ pickup: 'toner-cell', route: 'climax' }],
     signatureBeat: 'Three pumps redirect liquid, enemy access, and the player return route.',
     secretClues: ['A pressure gauge with a fourth mark', 'A ladder shadow with no ladder', 'A dry culvert carrying enemy sound', 'A red valve among yellow controls', 'A flood map with one raised contour'],
   },
@@ -219,15 +224,17 @@ const specs: readonly MapSpec[] = [
     parSeconds: 560, normalEnemies: 128, enemies: E2_FULL, weapons: ['binding-engine'], credentials: ['red', 'cyan'],
     transformation: 'teleport', nextMap: 'E2M8', recoverySupplies: [
       { pickup: 'toner-pack', route: 'transformation' }, { pickup: 'canister', route: 'climax' },
+      { pickup: 'toner-cell', route: 'climax' }, { pickup: 'canister', route: 'climax' },
+      { pickup: 'canister', route: 'climax' }, { pickup: 'fasteners-small', route: 'climax' },
     ],
     signatureBeat: 'Deposition rooms teleport between contradictory versions of the same floor.',
     secretClues: ['Two clocks disagree by exactly one minute', 'A deposition lamp casting two shadows', 'An evidence seal applied backward', 'A window showing the room from outside', 'A court reporter key heard through stone'],
   },
   {
     id: 'E2M8', title: 'The Aggregate', location: 'Flooded data hall and joined-loss arena', layout: 'arena',
-    parSeconds: 480, normalEnemies: 90, enemies: E2_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
+    parSeconds: 480, normalEnemies: 130, enemies: E2_FULL, weapons: ['plasma-copier', 'binding-engine'], credentials: [],
     transformation: 'lower-floor', nextMap: 'E3M1', bosses: ['aggregate'],
-    recoverySupplies: [{ pickup: 'toner-pack', route: 'boss-1' }, { pickup: 'toner-pack', route: 'boss-1' }],
+    recoverySupplies: [{ pickup: 'toner-pack', route: 'boss-1' }, { pickup: 'toner-cell', route: 'boss-1' }],
     signatureBeat: 'Cover islands sink while the Aggregate alternates independent attack emitters.',
     secretClues: ['A submerged console still accepting input', 'A narrow dry ledge behind an emitter', 'A reflected doorway absent from the wall'],
   },
@@ -235,47 +242,48 @@ const specs: readonly MapSpec[] = [
     id: 'E2M9', title: 'Tabletop Exercise', location: 'Cheerful catastrophe training simulation', layout: 'hub',
     parSeconds: 420, normalEnemies: 108, enemies: E2_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'cyan'],
     transformation: 'move-walls', nextMap: 'E2M6', secretMap: true,
+    recoverySupplies: [{ pickup: 'toner-cell', route: 'climax' }],
     signatureBeat: 'Bright modular scenery collapses and exposes the observers and machinery behind it.',
     secretClues: ['A cardboard cloud hanging too low', 'A smiling cutout facing the wall', 'A training prompt whose buttons all work', 'A painted evacuation door with a real handle'],
   },
   {
     id: 'E3M1', title: 'Earned Premium', location: 'Brass premium foundry at the underworld edge', layout: 'loop',
-    parSeconds: 420, normalEnemies: 92, enemies: E3_OPEN, weapons: ['plasma-copier', 'twin-bore-riveter', 'catastrophe-launcher'], credentials: ['yellow'],
+    parSeconds: 420, normalEnemies: 52, enemies: E3_OPEN, weapons: ['plasma-copier', 'twin-bore-riveter', 'catastrophe-launcher'], credentials: ['yellow'],
     transformation: 'open-door', nextMap: 'E3M2',
     signatureBeat: 'Currency channels power the foundry doors and release Reserve Eaters in return.',
     secretClues: ['A coin channel flowing uphill', 'A silent calculator wheel', 'A brass tile colder than the surrounding floor'],
   },
   {
     id: 'E3M2', title: 'Mortality Table', location: 'Sliding calculation-table labyrinth', layout: 'lanes',
-    parSeconds: 500, normalEnemies: 108, enemies: E3_FULL, weapons: ['umbra-saw'], credentials: ['red', 'cyan'],
+    parSeconds: 500, normalEnemies: 58, enemies: E3_FULL, weapons: ['umbra-saw'], credentials: ['red', 'cyan'],
     transformation: 'move-walls', nextMap: 'E3M3',
     signatureBeat: 'Row and column switches realign combat lanes around fixed brass landmarks.',
     secretClues: ['A column total that does not balance', 'A movable row with no switch', 'A zero embossed beneath a stair', 'A probability grid with one red square'],
   },
   {
     id: 'E3M3', title: 'Treaty Vault', location: 'Layered reinsurance vaults and transfer machinery', layout: 'hub',
-    parSeconds: 540, normalEnemies: 118, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
+    parSeconds: 540, normalEnemies: 65, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow', 'cyan'],
     transformation: 'teleport', nextMap: 'E3M4',
     signatureBeat: 'Opening one vault transfers its monsters and resources into another layer.',
     secretClues: ['A vault dial with an ultraviolet number', 'A transfer tube carrying an item silhouette', 'A contract stack arranged as a stair', 'A locked room visible in two layers'],
   },
   {
     id: 'E3M4', title: 'Probability Chapel', location: 'Ritual calculation chamber over a white void', layout: 'rings',
-    parSeconds: 570, normalEnemies: 124, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['cyan', 'yellow'],
+    parSeconds: 570, normalEnemies: 100, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['cyan', 'yellow'],
     transformation: 'toggle-sectors', nextMap: 'E3M5',
     signatureBeat: 'Prediction zones mark future impacts across rotating floor sectors.',
     secretClues: ['A prediction circle that never activates', 'A chant audible only beside the void', 'A brass lectern facing away from the altar', 'A white tile casting a black reflection', 'A broken probability sequence'],
   },
   {
     id: 'E3M5', title: 'Reserve Pits', location: 'Deep storage wells filled with wax and toner', layout: 'descent',
-    parSeconds: 610, normalEnemies: 134, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow'],
+    parSeconds: 610, normalEnemies: 90, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'yellow'],
     transformation: 'lower-floor', nextMap: 'E3M6',
     signatureBeat: 'Lifts descend past optional ledges while enemies fire across the central shaft.',
     secretClues: ['A lift call light below the lowest floor', 'A wax spill shaped like a credential', 'A ledge visible only during descent', 'A chain moving without a counterweight', 'A toner ripple against the current'],
   },
   {
     id: 'E3M6', title: 'Redaction Court', location: 'Abstract courtrooms and sealed evidence halls', layout: 'showroom',
-    parSeconds: 640, normalEnemies: 142, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'cyan'],
+    parSeconds: 640, normalEnemies: 110, enemies: E3_FULL, weapons: ['binding-engine'], credentials: ['red', 'cyan'],
     transformation: 'move-walls', nextMap: 'E3M7', secretExitTo: 'E3M9',
     signatureBeat: 'Black redaction walls erase and restore routes in a readable courtroom sequence.',
     secretClues: ['An objection light beneath the defense table', 'A redaction bar with a visible hinge', 'A witness microphone carrying distant combat', 'A sealed exhibit casting no shadow', 'A verdict form matching the map shape'],
@@ -293,21 +301,153 @@ const specs: readonly MapSpec[] = [
     transformation: 'open-door', bosses: ['chief-actuary', 'uninsurable'],
     recoverySupplies: [
       { pickup: 'toner-pack', route: 'boss-1' }, { pickup: 'toner-pack', route: 'boss-1' },
-      { pickup: 'toner-cell', route: 'climax' },
-      { pickup: 'toner-pack', route: 'boss-2' }, { pickup: 'toner-pack', route: 'boss-2' },
-      { pickup: 'canister-crate', route: 'boss-2' }, { pickup: 'toner-cell', route: 'boss-2' },
+      { pickup: 'toner-pack', route: 'boss-2' },
+      { pickup: 'canister-crate', route: 'boss-2' },
     ],
     signatureBeat: 'Defeat the mobile gatekeeper, open three binding gates, then fire into the exposed reserve core.',
     secretClues: ['A prediction terminal showing a safe sector', 'A binding gate with a fourth maintenance latch', 'A void ledge behind the reserve feed', 'A silent wave alcove beneath the arena'],
   },
   {
     id: 'E3M9', title: 'Orientation Day', location: 'Cheerful onboarding-video soundstage', layout: 'bays',
-    parSeconds: 480, normalEnemies: 126, enemies: E3_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'yellow', 'cyan'],
+    parSeconds: 480, normalEnemies: 110, enemies: E3_FULL, weapons: ['binding-engine', 'umbra-saw'], credentials: ['red', 'yellow', 'cyan'],
     transformation: 'move-walls', nextMap: 'E3M7', secretMap: true,
     signatureBeat: 'Painted smiles and perfect offices peel away to reveal a hostile soundstage.',
     secretClues: ['An applause sign that responds to gunfire', 'A camera filming an empty mark', 'A painted window with depth behind it', 'A teleprompter displaying a switch sequence', 'A break-room clock running backward'],
   },
 ] as const;
+
+interface AuthoredEncounterPhase {
+  readonly normalBudget: number;
+  readonly mandatoryRoles: readonly EnemyEncounterRole[];
+  readonly optionalPattern: readonly EnemyEncounterRole[];
+  readonly reward: boolean;
+}
+
+export interface CampaignEncounterProfile {
+  readonly beat: 'opening' | 'build' | 'relief' | 'boss' | 'secret';
+  readonly intent: string;
+  readonly phases: Readonly<Record<'entry' | 'transformation' | 'climax', AuthoredEncounterPhase>>;
+}
+
+const MANDATORY = {
+  entry2: ['pressure', 'shape'],
+  entry3: ['pressure', 'shape', 'anchor'],
+  entry4: ['pressure', 'shape', 'pressure', 'anchor'],
+  contest2: ['anchor', 'pressure'],
+  contest3: ['anchor', 'pressure', 'shape'],
+  contest4: ['anchor', 'pressure', 'shape', 'pressure'],
+  climax3: ['shape', 'pressure', 'anchor'],
+  climax4: ['shape', 'pressure', 'anchor', 'pressure'],
+  climax5: ['shape', 'pressure', 'punish', 'pressure', 'shape'],
+} as const satisfies Readonly<Record<string, readonly EnemyEncounterRole[]>>;
+
+const ROLE_PATTERN = {
+  rush: ['pressure', 'pressure', 'shape'],
+  crossfire: ['shape', 'pressure', 'punish', 'pressure'],
+  siege: ['anchor', 'shape', 'pressure', 'shape'],
+  ambush: ['punish', 'pressure', 'pressure', 'shape'],
+  attrition: ['anchor', 'pressure', 'shape', 'punish'],
+  mobile: ['pressure', 'shape', 'pressure', 'punish', 'shape'],
+} as const satisfies Readonly<Record<string, readonly EnemyEncounterRole[]>>;
+
+const phase = (
+  normalBudget: number,
+  mandatoryRoles: readonly EnemyEncounterRole[],
+  optionalPattern: readonly EnemyEncounterRole[],
+  reward = false,
+): AuthoredEncounterPhase => {
+  const allowedRoles = new Set<EnemyEncounterRole>(mandatoryRoles);
+  optionalPattern.forEach((role) => { if (allowedRoles.size < 3) allowedRoles.add(role); });
+  const focusedPattern = optionalPattern.filter((role) => allowedRoles.has(role));
+  return { normalBudget, mandatoryRoles, optionalPattern: focusedPattern, reward };
+};
+
+// Main-route pressure builds inside each episode. E2M1 and E3M1 deliberately
+// reset the tempo after a boss, E3M5 is the sole mid-episode traversal valley,
+// and the lower add budgets on M8 reserve headroom for their authored bosses.
+export const CAMPAIGN_ENCOUNTER_PROFILES = {
+  E1M1: { beat: 'opening', intent: 'Teach short-range pressure before introducing a compact crossfire.', phases: {
+    entry: phase(5, MANDATORY.entry2, ROLE_PATTERN.rush), transformation: phase(6, MANDATORY.contest2, ROLE_PATTERN.mobile, true), climax: phase(7, MANDATORY.climax3, ROLE_PATTERN.crossfire),
+  } },
+  E1M2: { beat: 'build', intent: 'Add lane-shaping fire around the shutter transformation.', phases: {
+    entry: phase(7, MANDATORY.entry2, ROLE_PATTERN.mobile), transformation: phase(8, MANDATORY.contest2, ROLE_PATTERN.ambush, true), climax: phase(9, MANDATORY.climax3, ROLE_PATTERN.crossfire),
+  } },
+  E1M3: { beat: 'build', intent: 'Introduce a durable anchor while the raised bays change firing lanes.', phases: {
+    entry: phase(8, MANDATORY.entry3, ROLE_PATTERN.rush), transformation: phase(9, MANDATORY.contest3, ROLE_PATTERN.siege, true), climax: phase(11, MANDATORY.climax3, ROLE_PATTERN.attrition),
+  } },
+  E1M4: { beat: 'build', intent: 'Alternate mobile channel pressure with anchored pump defense.', phases: {
+    entry: phase(9, MANDATORY.entry3, ROLE_PATTERN.mobile), transformation: phase(11, MANDATORY.contest3, ROLE_PATTERN.siege, true), climax: phase(12, MANDATORY.climax4, ROLE_PATTERN.crossfire),
+  } },
+  E1M5: { beat: 'build', intent: 'Use moving shelves to trade ambushes for longer attrition fights.', phases: {
+    entry: phase(10, MANDATORY.entry3, ROLE_PATTERN.rush), transformation: phase(12, MANDATORY.contest3, ROLE_PATTERN.mobile, true), climax: phase(15, MANDATORY.climax4, ROLE_PATTERN.crossfire),
+  } },
+  E1M6: { beat: 'build', intent: 'Escalate balcony crossfire without front-loading the route.', phases: {
+    entry: phase(12, MANDATORY.entry3, ROLE_PATTERN.attrition), transformation: phase(14, MANDATORY.contest3, ROLE_PATTERN.attrition, true), climax: phase(16, MANDATORY.climax4, ROLE_PATTERN.attrition),
+  } },
+  E1M7: { beat: 'build', intent: 'Sustain the episode high point through mixed machinery-floor roles.', phases: {
+    entry: phase(14, MANDATORY.entry4, ROLE_PATTERN.mobile), transformation: phase(17, MANDATORY.contest3, ROLE_PATTERN.attrition, true), climax: phase(21, MANDATORY.climax5, ROLE_PATTERN.siege),
+  } },
+  E1M8: { beat: 'boss', intent: 'Reduce add density so the Regional Director remains the episode peak.', phases: {
+    entry: phase(11, MANDATORY.entry4, ROLE_PATTERN.crossfire), transformation: phase(13, MANDATORY.contest4, ROLE_PATTERN.ambush, true), climax: phase(18, MANDATORY.climax5, ROLE_PATTERN.mobile, true),
+  } },
+  E1M9: { beat: 'secret', intent: 'Offer a dense optional remix without changing main-route cadence.', phases: {
+    entry: phase(11, MANDATORY.entry4, ROLE_PATTERN.ambush), transformation: phase(13, MANDATORY.contest3, ROLE_PATTERN.mobile, true), climax: phase(16, MANDATORY.climax5, ROLE_PATTERN.attrition),
+  } },
+  E2M1: { beat: 'relief', intent: 'Reset after the first boss while previewing the new ranged roster.', phases: {
+    entry: phase(7, MANDATORY.entry2, ROLE_PATTERN.mobile, true), transformation: phase(8, MANDATORY.contest2, ROLE_PATTERN.crossfire), climax: phase(9, MANDATORY.climax3, ROLE_PATTERN.siege),
+  } },
+  E2M2: { beat: 'build', intent: 'Let the waterline separate rush pressure from durable anchors.', phases: {
+    entry: phase(8, MANDATORY.entry2, ROLE_PATTERN.rush), transformation: phase(9, MANDATORY.contest2, ROLE_PATTERN.mobile, true), climax: phase(10, MANDATORY.climax3, ROLE_PATTERN.attrition),
+  } },
+  E2M3: { beat: 'build', intent: 'Pair blackout ambushes with deliberate long-lane shaping.', phases: {
+    entry: phase(8, MANDATORY.entry3, ROLE_PATTERN.crossfire), transformation: phase(9, MANDATORY.contest3, ROLE_PATTERN.ambush, true), climax: phase(11, MANDATORY.climax3, ROLE_PATTERN.siege),
+  } },
+  E2M4: { beat: 'build', intent: 'Increase mobile pressure as train cars repeatedly redraw cover.', phases: {
+    entry: phase(10, MANDATORY.entry3, ROLE_PATTERN.mobile), transformation: phase(11, MANDATORY.contest3, ROLE_PATTERN.rush, true), climax: phase(13, MANDATORY.climax4, ROLE_PATTERN.crossfire),
+  } },
+  E2M5: { beat: 'build', intent: 'Layer punishing salvage ambushes behind crusher sightline changes.', phases: {
+    entry: phase(11, MANDATORY.entry3, ROLE_PATTERN.ambush), transformation: phase(13, MANDATORY.contest3, ROLE_PATTERN.attrition, true), climax: phase(14, MANDATORY.climax4, ROLE_PATTERN.siege),
+  } },
+  E2M6: { beat: 'build', intent: 'Hold the pump network with mixed anchors and flanking pressure.', phases: {
+    entry: phase(12, MANDATORY.entry3, ROLE_PATTERN.mobile), transformation: phase(14, MANDATORY.contest3, ROLE_PATTERN.siege, true), climax: phase(16, MANDATORY.climax4, ROLE_PATTERN.attrition),
+  } },
+  E2M7: { beat: 'build', intent: 'Reach the episode add-density peak through teleporting crossfires.', phases: {
+    entry: phase(16, MANDATORY.entry4, ROLE_PATTERN.crossfire), transformation: phase(19, MANDATORY.contest4, ROLE_PATTERN.ambush, true), climax: phase(23, MANDATORY.climax5, ROLE_PATTERN.attrition),
+  } },
+  E2M8: { beat: 'boss', intent: 'Trade add volume for space to read the Aggregate emitters.', phases: {
+    entry: phase(12, MANDATORY.entry4, ROLE_PATTERN.mobile), transformation: phase(14, MANDATORY.contest3, ROLE_PATTERN.siege, true), climax: phase(20, MANDATORY.climax5, ROLE_PATTERN.crossfire, true),
+  } },
+  E2M9: { beat: 'secret', intent: 'Compress the episode roster into an optional scenery-collapse remix.', phases: {
+    entry: phase(12, MANDATORY.entry4, ROLE_PATTERN.rush), transformation: phase(14, MANDATORY.contest3, ROLE_PATTERN.ambush, true), climax: phase(15, MANDATORY.climax5, ROLE_PATTERN.attrition),
+  } },
+  E3M1: { beat: 'relief', intent: 'Reset after the Aggregate while exposing the late-game roster in layers.', phases: {
+    entry: phase(8, MANDATORY.entry2, ROLE_PATTERN.rush, true), transformation: phase(9, MANDATORY.contest2, ROLE_PATTERN.siege), climax: phase(11, MANDATORY.climax3, ROLE_PATTERN.crossfire),
+  } },
+  E3M2: { beat: 'build', intent: 'Use the matrix to alternate shaped lanes and close punishers.', phases: {
+    entry: phase(8, MANDATORY.entry2, ROLE_PATTERN.mobile), transformation: phase(9, MANDATORY.contest2, ROLE_PATTERN.crossfire, true), climax: phase(11, MANDATORY.climax3, ROLE_PATTERN.ambush),
+  } },
+  E3M3: { beat: 'build', intent: 'Make vault transfers readable by limiting required anchors.', phases: {
+    entry: phase(8, MANDATORY.entry3, ROLE_PATTERN.siege), transformation: phase(9, MANDATORY.contest4, ROLE_PATTERN.mobile, true), climax: phase(11, MANDATORY.climax3, ROLE_PATTERN.attrition),
+  } },
+  E3M4: { beat: 'build', intent: 'Escalate predictive-floor pressure with distant shaping fire.', phases: {
+    entry: phase(11, MANDATORY.entry3, ROLE_PATTERN.crossfire), transformation: phase(13, MANDATORY.contest3, ROLE_PATTERN.siege, true), climax: phase(16, MANDATORY.climax5, ROLE_PATTERN.attrition),
+  } },
+  E3M5: { beat: 'relief', intent: 'Create a traversal-led breathing valley before the final ascent.', phases: {
+    entry: phase(12, MANDATORY.entry3, ROLE_PATTERN.rush, true), transformation: phase(14, MANDATORY.contest3, ROLE_PATTERN.rush), climax: phase(16, MANDATORY.climax5, ROLE_PATTERN.mobile),
+  } },
+  E3M6: { beat: 'build', intent: 'Restore full pressure as redaction walls sequence layered ambushes.', phases: {
+    entry: phase(12, MANDATORY.entry3, ROLE_PATTERN.ambush), transformation: phase(14, MANDATORY.contest3, ROLE_PATTERN.attrition, true), climax: phase(16, MANDATORY.climax5, ROLE_PATTERN.siege),
+  } },
+  E3M7: { beat: 'build', intent: 'Deliver the campaign add-density peak across returning landmarks.', phases: {
+    entry: phase(18, MANDATORY.entry4, ROLE_PATTERN.mobile), transformation: phase(21, MANDATORY.contest3, ROLE_PATTERN.crossfire, true), climax: phase(25, MANDATORY.climax5, ROLE_PATTERN.attrition),
+  } },
+  E3M8: { beat: 'boss', intent: 'Reserve the final arena budget for two sequential authorities.', phases: {
+    entry: phase(12, MANDATORY.entry4, ROLE_PATTERN.crossfire), transformation: phase(14, MANDATORY.contest3, ROLE_PATTERN.siege, true), climax: phase(20, MANDATORY.climax5, ROLE_PATTERN.mobile, true),
+  } },
+  E3M9: { beat: 'secret', intent: 'Run an optional high-pressure remix of the full hostile roster.', phases: {
+    entry: phase(12, MANDATORY.entry4, ROLE_PATTERN.ambush), transformation: phase(14, MANDATORY.contest3, ROLE_PATTERN.mobile, true), climax: phase(16, MANDATORY.climax5, ROLE_PATTERN.attrition),
+  } },
+} as const satisfies Readonly<Record<MapId, CampaignEncounterProfile>>;
 
 const episodeFor = (id: MapId): { id: EpisodeId; number: 1 | 2 | 3 } => {
   const number = Number(id[1]) as 1 | 2 | 3;
@@ -444,13 +584,6 @@ const makeMechanisms = (spec: MapSpec, grid: readonly string[], landmarks: reado
 
 const distance = (a: GridPoint, b: GridPoint): number => Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
 
-const phaseEnemyBudget = (spec: MapSpec): number => {
-  const index = Number(spec.id[3]);
-  const minimum = index <= 3 ? 18 : index <= 6 || index === 9 ? 28 : 40;
-  const maximum = index <= 3 ? 28 : index <= 6 || index === 9 ? 42 : 64;
-  return Math.max(minimum, Math.min(maximum, Math.round(spec.normalEnemies * .55)));
-};
-
 // Preserve the authored relative pars while scaling the classic-speed estimates
 // to the campaign's deliberate exploration and combat target.
 const experiencedPar = (spec: MapSpec): number => Math.max(900, Math.min(2100, spec.parSeconds * 2));
@@ -521,29 +654,48 @@ const chooseStartExit = (spec: MapSpec, grid: readonly string[]): { start: GridP
 const ENCOUNTER_PHASES = ['entry', 'transformation', 'climax'] as const;
 type EncounterPhase = typeof ENCOUNTER_PHASES[number];
 
-const splitPhaseCounts = (total: number): Readonly<Record<EncounterPhase, number>> => {
-  const entry = Math.ceil(total * .34);
-  const transformationEnd = Math.ceil(total * .72);
-  return {
-    entry,
-    transformation: transformationEnd - entry,
-    climax: total - transformationEnd,
-  };
+const totalNormalBudget = (profile: CampaignEncounterProfile): number => ENCOUNTER_PHASES
+  .reduce((total, encounter) => total + profile.phases[encounter].normalBudget, 0);
+
+export const scaleEncounterPhaseBudgets = (
+  profile: CampaignEncounterProfile,
+  targetTotal: number,
+): Readonly<Record<EncounterPhase, number>> => {
+  const normalTotal = totalNormalBudget(profile);
+  const shares = ENCOUNTER_PHASES.map((encounter, index) => {
+    const exact = profile.phases[encounter].normalBudget * targetTotal / normalTotal;
+    return { encounter, index, count: Math.floor(exact), remainder: exact - Math.floor(exact) };
+  });
+  let remaining = targetTotal - shares.reduce((total, share) => total + share.count, 0);
+  const distribution = [...shares].sort((left, right) => right.remainder - left.remainder || left.index - right.index);
+  for (let index = 0; remaining > 0; index += 1, remaining -= 1) {
+    distribution[index % distribution.length].count += 1;
+  }
+  return Object.fromEntries(shares.map(({ encounter, count }) => [encounter, count])) as Readonly<Record<EncounterPhase, number>>;
 };
 
-const mandatoryAnchorCount = (spec: MapSpec, phase: EncounterPhase): number => {
-  const mapIndex = Number(spec.id[3]);
-  const episode = Number(spec.id[1]);
-  if (phase === 'entry') return mapIndex <= 2 ? 2 : mapIndex >= 7 ? 4 : 3;
-  if (phase === 'transformation') {
-    if (spec.transformation === 'spawn-wave' || spec.transformation === 'teleport') return 4;
-    return mapIndex <= 2 ? 2 : 3;
-  }
-  // Treaty Vault's first four climax placements are all high-health support or
-  // anchor roles. Keeping three mandatory preserves the mixed fight without
-  // turning the nominally optional pair into a required 92% of phase health.
-  if (spec.id === 'E3M3') return 3;
-  return Math.min(5, 2 + Math.ceil(mapIndex / 3) + (episode === 3 ? 1 : 0));
+const ENEMY_ROLE_ORDER: Readonly<Record<EnemyEncounterRole, readonly EnemyId[]>> = {
+  anchor: ['liability-mass', 'denial-officer', 'reserve-eater', 'cat-model', 'bad-faith-counsel', 'ember-clerk', 'subrogator', 'coverage-drone', 'fraud-apparition', 'exposure-hound', 'returned-mail', 'desk-warden'],
+  pressure: ['returned-mail', 'exposure-hound', 'fraud-apparition', 'subrogator', 'ember-clerk', 'coverage-drone', 'denial-officer', 'bad-faith-counsel', 'liability-mass', 'reserve-eater', 'cat-model', 'desk-warden'],
+  shape: ['coverage-drone', 'denial-officer', 'subrogator', 'bad-faith-counsel', 'ember-clerk', 'cat-model', 'returned-mail', 'exposure-hound', 'fraud-apparition', 'liability-mass', 'reserve-eater', 'desk-warden'],
+  punish: ['reserve-eater', 'cat-model', 'bad-faith-counsel', 'liability-mass', 'denial-officer', 'fraud-apparition', 'exposure-hound', 'subrogator', 'ember-clerk', 'coverage-drone', 'returned-mail', 'desk-warden'],
+};
+
+const enemyForRole = (spec: MapSpec, role: EnemyEncounterRole, occurrence: number): EnemyId => {
+  const candidates = ENEMY_ROLE_ORDER[role].filter((enemy) => spec.enemies.includes(enemy));
+  if (candidates.length === 0) throw new Error(`${spec.id} has no enemy candidate for ${role}`);
+  return candidates[occurrence % candidates.length];
+};
+
+const roleForPhaseSlot = (profile: AuthoredEncounterPhase, phaseIndex: number): EnemyEncounterRole => {
+  if (phaseIndex < profile.mandatoryRoles.length) return profile.mandatoryRoles[phaseIndex];
+  return profile.optionalPattern[(phaseIndex - profile.mandatoryRoles.length) % profile.optionalPattern.length];
+};
+
+const encounterRoles = (profile: AuthoredEncounterPhase): readonly EncounterRole[] => {
+  const roles = new Set<EncounterRole>([...profile.mandatoryRoles, ...profile.optionalPattern]);
+  if (profile.reward) roles.add('reward');
+  return [...roles];
 };
 
 const difficultyMask = (phaseIndex: number, easyCount: number, normalCount: number): readonly Difficulty[] => {
@@ -555,21 +707,75 @@ const difficultyMask = (phaseIndex: number, easyCount: number, normalCount: numb
 const supplyFor = (episode: 1 | 2 | 3): readonly PickupId[] => episode === 1
   ? ['staples-small', 'fasteners-small', 'adhesive-bandage', 'goodwill-token', 'staples-large', 'field-medical-case', 'loss-control-vest', 'canister', 'night-inspection-goggles']
   : episode === 2
-    ? ['staples-large', 'fasteners-large', 'canister', 'toner-cell', 'adhesive-bandage', 'field-medical-case', 'loss-control-vest', 'hazard-endorsement', 'forensic-lens']
-    : ['staples-large', 'fasteners-large', 'canister-crate', 'toner-cell', 'toner-pack', 'field-medical-case', 'catastrophe-suit', 'rapid-authority', 'emergency-reserve', 'temporary-binder'];
+    ? ['fasteners-large', 'fasteners-large', 'canister', 'canister-crate', 'adhesive-bandage', 'field-medical-case', 'loss-control-vest', 'hazard-endorsement', 'forensic-lens']
+    : ['toner-cell', 'fasteners-large', 'canister-crate', 'toner-cell', 'toner-pack', 'field-medical-case', 'catastrophe-suit', 'rapid-authority', 'emergency-reserve', 'temporary-binder'];
+
+type PickupSecretRewardCategory = Exclude<SecretRewardCategory, 'weapon'>;
+
+const SECRET_REWARD_CATEGORIES: readonly SecretRewardCategory[] = ['armor', 'ammo', 'map', 'weapon', 'powerup'];
+
+const SECRET_PICKUP_REWARDS: Readonly<Record<1 | 2 | 3, Readonly<Record<PickupSecretRewardCategory, readonly PickupId[]>>>> = {
+  1: {
+    armor: ['loss-control-vest'],
+    ammo: ['fasteners-large', 'staples-large'],
+    map: ['floor-plan'],
+    powerup: ['night-inspection-goggles', 'temporary-binder'],
+  },
+  2: {
+    armor: ['loss-control-vest', 'catastrophe-suit'],
+    ammo: ['canister-crate', 'fasteners-large'],
+    map: ['floor-plan'],
+    powerup: ['hazard-endorsement', 'forensic-lens'],
+  },
+  3: {
+    armor: ['catastrophe-suit', 'emergency-reserve'],
+    ammo: ['toner-pack', 'canister-crate'],
+    map: ['floor-plan'],
+    powerup: ['rapid-authority', 'temporary-binder', 'forensic-lens'],
+  },
+};
+
+const rewardLabel = (placement: SecretRewardPlacement): string => {
+  const id = placement.type === 'pickup' ? placement.pickup : placement.weapon;
+  return id.split('-').map((word) => `${word[0].toUpperCase()}${word.slice(1)}`).join(' ');
+};
+
+const secretRewardFor = (
+  spec: MapSpec,
+  episode: 1 | 2 | 3,
+  secretIndex: number,
+): Pick<SecretDefinition, 'rewardCategory' | 'reward' | 'rewardPlacement'> => {
+  const mapIndex = Number(spec.id[3]) - 1;
+  const rewardCategory = SECRET_REWARD_CATEGORIES[(mapIndex + secretIndex) % SECRET_REWARD_CATEGORIES.length];
+  const rewardPlacement: SecretRewardPlacement = rewardCategory === 'weapon'
+    ? { type: 'weapon', weapon: spec.weapons[(mapIndex + secretIndex) % spec.weapons.length] }
+    : {
+      type: 'pickup',
+      pickup: SECRET_PICKUP_REWARDS[episode][rewardCategory][
+        (mapIndex + secretIndex) % SECRET_PICKUP_REWARDS[episode][rewardCategory].length
+      ],
+    };
+  return { rewardCategory, reward: rewardLabel(rewardPlacement), rewardPlacement };
+};
 
 const credentialDoorSymbol: Readonly<Record<Credential, string>> = { red: 'R', yellow: 'Y', cyan: 'C' };
 
-const makeEncounterBlueprint = (spec: MapSpec, grid: readonly string[]): EncounterBlueprint => {
+const makeEncounterBlueprint = (spec: MapSpec, grid: readonly string[], start: GridPoint, exit: GridPoint): EncounterBlueprint => {
   const cells = actorRoutePoints(grid);
   const authored = ENCOUNTER_BLUEPRINTS[spec.id];
   const point = (index: number): GridPoint => cells[index % cells.length];
+  const safeInfightingPoint = authored.infighting === undefined ? undefined : (() => {
+    const preferred = point(authored.infighting);
+    if (distance(preferred, start) > 4 && distance(preferred, exit) > 2) return preferred;
+    const candidates = cells.filter((candidate) => distance(candidate, start) > 4 && distance(candidate, exit) > 2);
+    return candidates.reduce((best, candidate) => distance(candidate, preferred) < distance(best, preferred) ? candidate : best, candidates[0]);
+  })();
   return {
     entryAnchor: point(authored.anchors[0]),
     transformationAnchor: point(authored.anchors[1]),
     climaxAnchor: point(authored.anchors[2]),
     ambushFacing: authored.facing,
-    infightingPocket: authored.infighting === undefined ? undefined : point(authored.infighting),
+    infightingPocket: safeInfightingPoint,
     rewardPocket: point(authored.reward),
   };
 };
@@ -588,17 +794,15 @@ const makeActors = (
     transformation: [...available].sort((a, b) => distance(a, blueprint.transformationAnchor) - distance(b, blueprint.transformationAnchor)),
     climax: [...available].sort((a, b) => distance(a, blueprint.climaxAnchor) - distance(b, blueprint.climaxAnchor)),
   };
-  const normalCount = phaseEnemyBudget(spec);
+  const encounterProfile = CAMPAIGN_ENCOUNTER_PROFILES[spec.id];
+  const normalCount = spec.normalEnemies;
   const easyCount = Math.ceil(normalCount * .72);
   const hardCount = normalCount + Math.ceil(normalCount * 0.25);
   const phaseCounts = {
-    easy: splitPhaseCounts(easyCount),
-    normal: splitPhaseCounts(normalCount),
-    hard: splitPhaseCounts(hardCount),
+    easy: scaleEncounterPhaseBudgets(encounterProfile, easyCount),
+    normal: scaleEncounterPhaseBudgets(encounterProfile, normalCount),
+    hard: scaleEncounterPhaseBudgets(encounterProfile, hardCount),
   } as const;
-  const mandatoryCounts = Object.fromEntries(
-    ENCOUNTER_PHASES.map((phase) => [phase, mandatoryAnchorCount(spec, phase)]),
-  ) as Readonly<Record<EncounterPhase, number>>;
   const actors: ActorPlacement[] = [];
   const occupancy = new Map<string, number>();
   const hostileOccupancy = new Map<string, number>();
@@ -615,14 +819,25 @@ const makeActors = (
     return { x: point.x + offsetX, z: point.z + offsetZ };
   };
   const reserveHostile = (zone: readonly GridPoint[], preferredIndex: number, preferred?: GridPoint): GridPoint => {
-    const safePreferred = preferred && !DOOR_CELLS.includes(grid[Math.floor(preferred.z)]?.[Math.floor(preferred.x)] ?? '')
+    const preferredDistanceFromStart = preferred ? distance(preferred, start) : Number.POSITIVE_INFINITY;
+    const openingPreferred = spec.id === 'E1M1' && Math.abs(preferredDistanceFromStart - 3) <= .01;
+    const preferredCell = preferred ? grid[Math.floor(preferred.z)]?.[Math.floor(preferred.x)] : undefined;
+    const safePreferred = preferred
+      && preferredDistanceFromStart > (openingPreferred ? 2 : 4)
+      && distance(preferred, exit) > 2
+      && preferredCell !== undefined
+      && preferredCell !== '#'
+      && preferredCell !== 's'
+      && !DOOR_CELLS.includes(preferredCell)
       ? preferred
       : undefined;
     const preferredKey = safePreferred && cellKey(safePreferred);
-    const candidates = safePreferred
-      ? [safePreferred, ...zone.filter((point) => cellKey(point) !== preferredKey)]
-      : zone;
-    const startIndex = safePreferred ? 0 : preferredIndex % candidates.length;
+    if (safePreferred && (hostileOccupancy.get(preferredKey!) ?? 0) < 2) {
+      hostileOccupancy.set(preferredKey!, (hostileOccupancy.get(preferredKey!) ?? 0) + 1);
+      return occupy(safePreferred);
+    }
+    const candidates = zone.filter((point) => cellKey(point) !== preferredKey);
+    const startIndex = preferredIndex % candidates.length;
     for (let offset = 0; offset < candidates.length; offset += 1) {
       const point = candidates[(startIndex + offset) % candidates.length];
       const key = cellKey(point);
@@ -636,24 +851,32 @@ const makeActors = (
   let enemyIndex = 0;
   for (const encounter of ENCOUNTER_PHASES) {
     const zone = authoredZones[encounter];
+    const profile = encounterProfile.phases[encounter];
+    const pocketRole: EnemyEncounterRole = [...profile.mandatoryRoles, ...profile.optionalPattern].includes('punish') ? 'punish' : 'shape';
+    const roleOccurrences: Record<EnemyEncounterRole, number> = { anchor: 0, pressure: 0, shape: 0, punish: 0 };
     for (let phaseIndex = 0; phaseIndex < phaseCounts.hard[encounter]; phaseIndex += 1) {
+      const role = roleForPhaseSlot(profile, phaseIndex);
+      const roleOccurrence = roleOccurrences[role];
+      roleOccurrences[role] += 1;
       const preferred = spec.id === 'E1M1' && enemyIndex === 0
         ? { x: start.x + 3, z: start.z }
-        : blueprint.infightingPocket && enemyIndex > 0 && enemyIndex % 19 === 0
+        : role === pocketRole && blueprint.infightingPocket && roleOccurrence % 2 === 0
           ? blueprint.infightingPocket
           : undefined;
-      const point = reserveHostile(zone, enemyIndex * 7 + hash(`${spec.id}:${encounter}`), preferred);
-      const enemy = spec.enemies[(enemyIndex * 5 + hash(`${spec.id}:${enemyIndex}`)) % spec.enemies.length];
+      const roleDepth = { anchor: 0, pressure: .24, shape: .52, punish: .76 }[role];
+      const point = reserveHostile(zone, Math.floor(zone.length * roleDepth) + phaseIndex * 7, preferred);
+      const enemy = enemyForRole(spec, role, roleOccurrence);
       actors.push({
         ...point,
         type: 'enemy',
         enemy,
+        role,
         difficulties: difficultyMask(phaseIndex, phaseCounts.easy[encounter], phaseCounts.normal[encounter]),
-        dormant: enemyIndex % 5 === 0,
+        dormant: role === 'punish' || (role === 'shape' && roleOccurrence % 3 === 2),
         encounter,
-        mandatory: phaseIndex < mandatoryCounts[encounter],
+        mandatory: phaseIndex < profile.mandatoryRoles.length,
         route: encounter,
-        facing: enemyIndex % 4 === 0 ? blueprint.ambushFacing : (['north', 'east', 'south', 'west'] as const)[enemyIndex % 4],
+        facing: role === 'anchor' || role === 'punish' ? blueprint.ambushFacing : (['north', 'east', 'south', 'west'] as const)[enemyIndex % 4],
       });
       enemyIndex += 1;
     }
@@ -662,19 +885,39 @@ const makeActors = (
   const supply = supplyFor(episode);
   const routeBundles: Readonly<Record<1 | 2 | 3, readonly PickupId[]>> = {
     1: ['staples-large', 'adhesive-bandage', 'staples-large', 'staples-large', 'staples-large'],
-    2: ['staples-large', 'field-medical-case', 'staples-large', 'staples-large', 'staples-large'],
-    3: ['staples-large', 'field-medical-case', 'staples-large', 'staples-large', 'staples-large'],
+    2: ['fasteners-large', 'field-medical-case', 'fasteners-large', 'canister-crate', 'fasteners-large'],
+    3: ['staples-large', 'field-medical-case', 'toner-pack', 'canister-crate', 'toner-cell'],
   };
-  const pickupCount = 18 + episode * 2 + Math.floor(normalCount / 25);
-  for (let i = 0; i < pickupCount; i += 1) {
-    const routeId = (['entry', 'transformation', 'climax'] as const)[i % 3];
+  const episodeTwoRouteBundle: readonly PickupId[] = spec.weapons.some((weapon) => weapon === 'plasma-copier' || weapon === 'binding-engine')
+    ? ['toner-cell', 'field-medical-case', 'fasteners-large', 'canister-crate', 'toner-cell']
+    : spec.weapons.includes('catastrophe-launcher')
+      ? ['canister-crate', 'field-medical-case', 'fasteners-large', 'canister', 'canister-crate']
+      : spec.weapons.includes('audit-repeater') || spec.weapons.includes('twin-bore-riveter')
+        ? ['fasteners-large', 'field-medical-case', 'fasteners-large', 'fasteners-large', 'fasteners-large']
+        : ['staples-large', 'field-medical-case', 'fasteners-large', 'canister', 'staples-large'];
+  const routeBundle = episode === 2
+    ? episodeTwoRouteBundle
+    : episode === 3 && spec.id !== 'E3M2'
+      ? ['toner-cell', 'field-medical-case', 'canister-crate', 'toner-cell', 'toner-cell'] as const
+      : routeBundles[episode];
+  const pickupScale = episode === 1 ? .55
+    : episode === 2 ? (Number(spec.id[3]) >= 7 && Number(spec.id[3]) <= 8 ? .4 : .5)
+      : Number(spec.id[3]) >= 7 && Number(spec.id[3]) <= 8 ? .25 : .35;
+  const pickupCount = 18 + episode * 2 + Math.ceil(normalCount * pickupScale);
+  const pickupPhaseCounts = scaleEncounterPhaseBudgets(encounterProfile, pickupCount);
+  let pickupIndex = 0;
+  for (const routeId of ENCOUNTER_PHASES) {
     const route = authoredZones[routeId];
-    const point = i % 5 === 0 ? blueprint.rewardPocket : route[(hardCount + i * 11) % route.length];
-    const routeSlot = Math.floor(i / 3);
-    const pickup = routeSlot < routeBundles[episode].length
-      ? routeBundles[episode][routeSlot]
-      : supply[i % supply.length];
-    actors.push({ ...occupy(point), type: 'pickup', pickup, route: routeId });
+    for (let routeSlot = 0; routeSlot < pickupPhaseCounts[routeId]; routeSlot += 1) {
+      const point = encounterProfile.phases[routeId].reward && routeSlot === 0
+        ? blueprint.rewardPocket
+        : route[(hardCount + pickupIndex * 11) % route.length];
+      const pickup = routeSlot < routeBundle.length
+        ? routeBundle[routeSlot]
+        : supply[pickupIndex % supply.length];
+      actors.push({ ...occupy(point), type: 'pickup', pickup, route: routeId });
+      pickupIndex += 1;
+    }
   }
 
   spec.recoverySupplies?.forEach(({ pickup, route: routeId }, index) => {
@@ -720,6 +963,7 @@ const makeActors = (
 };
 
 const makeSecrets = (spec: MapSpec, grid: readonly string[], start: GridPoint): readonly SecretDefinition[] => {
+  const episode = episodeFor(spec.id).number;
   const baseKeys = new Set(baseRoutePoints(grid).map((point) => `${Math.floor(point.x)},${Math.floor(point.z)}`));
   const secretPoints = pointsFor(grid, 's').filter((secret) => [
     { x: secret.x + 1, z: secret.z }, { x: secret.x - 1, z: secret.z },
@@ -745,8 +989,7 @@ const makeSecrets = (spec: MapSpec, grid: readonly string[], start: GridPoint): 
     return {
       id: `${spec.id.toLowerCase()}-secret-${index + 1}`,
       clue,
-      reward: index % 4 === 0 ? 'armor or over-heal' : index % 4 === 1 ? 'ammunition efficiency' : index % 4 === 2 ? 'shortcut or map information' : 'early weapon or powerup',
-      rewardPickup: (['goodwill-token', 'staples-large', 'floor-plan', 'hazard-endorsement'] as const)[index % 4],
+      ...secretRewardFor(spec, episode, index),
       clueProp: clueProps[(hash(`${spec.id}:secret-props`) + index) % clueProps.length],
       at,
       revealAt: revealPoint(at, index),
@@ -850,9 +1093,10 @@ const skies = {
 
 const buildMap = (spec: MapSpec): CampaignMap => {
   const episode = episodeFor(spec.id);
+  const encounterProfile = CAMPAIGN_ENCOUNTER_PROFILES[spec.id];
   const grid = getLayout(spec.layout, episode.number);
   const { start, exit } = chooseStartExit(spec, grid);
-  const encounterBlueprint = makeEncounterBlueprint(spec, grid);
+  const encounterBlueprint = makeEncounterBlueprint(spec, grid, start, exit);
   const secrets = makeSecrets(spec, grid, start);
   const landmarks = makeLandmarks(spec, grid);
   const breakables = makeBreakables(spec, grid, episode.number, landmarks);
@@ -862,8 +1106,7 @@ const buildMap = (spec: MapSpec): CampaignMap => {
     ...secrets.map((secret, index) => ({
       x: secret.at.x + (index % 2 === 0 ? -.12 : .12),
       z: secret.at.z + (index % 3 === 0 ? -.12 : .12),
-      type: 'pickup' as const,
-      pickup: secret.rewardPickup,
+      ...secret.rewardPlacement,
       secret: true,
     })),
   ];
@@ -885,6 +1128,7 @@ const buildMap = (spec: MapSpec): CampaignMap => {
     music: spec.id,
     sky: skies[episode.number],
     parSeconds: experiencedPar(spec),
+    standardEnemyBudget: spec.normalEnemies,
     secretMap: spec.secretMap,
     secretExitTo: spec.secretExitTo,
     nextMap: spec.nextMap,
@@ -909,9 +1153,9 @@ const buildMap = (spec: MapSpec): CampaignMap => {
     mechanisms,
     triggers: makeTriggers(spec, grid, exit, secrets, mechanisms),
     encounters: [
-      { id: 'entry', label: 'Approach pressure', zones: ['entry'], roles: ['pressure', 'shape'], completion: 'clear', opens: ['transformation'] },
-      { id: 'transformation', label: 'Signature mechanism contest', zones: ['transformation'], roles: ['anchor', 'pressure', 'reward'], completion: 'switch', opens: ['climax'] },
-      { id: 'climax', label: 'Exit-route crossfire', zones: ['climax'], roles: ['anchor', 'pressure', 'shape', 'punish'], completion: 'clear', opens: spec.bosses?.length ? ['boss-1'] : ['map-exit'] },
+      { id: 'entry', label: 'Approach pressure', zones: ['entry'], roles: encounterRoles(encounterProfile.phases.entry), completion: 'clear', opens: ['transformation'] },
+      { id: 'transformation', label: 'Signature mechanism contest', zones: ['transformation'], roles: encounterRoles(encounterProfile.phases.transformation), completion: 'switch', opens: ['climax'] },
+      { id: 'climax', label: 'Exit-route crossfire', zones: ['climax'], roles: encounterRoles(encounterProfile.phases.climax), completion: 'clear', opens: spec.bosses?.length ? ['boss-1'] : ['map-exit'] },
       ...bossEncounters,
     ],
     encounterBlueprint,

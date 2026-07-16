@@ -18,20 +18,62 @@ await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode =
 
 const result = await page.evaluate(() => {
   const api = window.__redLedger;
-  if (!api?.startDemo()) throw new Error('Demo recording did not start');
+  if (!api) throw new Error('Development game API unavailable');
+  api.setVerticalAutoAim(true);
+  if (!api.startDemo()) throw new Error('Demo recording did not start');
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight' }));
+  document.querySelector('#game-canvas').dispatchEvent(new MouseEvent('mousedown', { button: 0, bubbles: true }));
   window.advanceTime(200);
+  window.dispatchEvent(new MouseEvent('mouseup', { button: 0 }));
   window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
   window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowRight' }));
   const demo = api.finishDemo();
   const recorded = JSON.parse(window.render_game_to_text());
+
+  api.setVerticalAutoAim(false);
+  if (!api.startDemo()) throw new Error('Second demo recording did not start');
+  window.advanceTime(40);
+  const autoAimOffDemo = api.finishDemo();
+
+  api.setVerticalAutoAim(false);
+  const onReplayAccepted = api.startReplay(demo);
+  const onDuringPlayback = JSON.parse(window.render_game_to_text()).demo.verticalAutoAim;
+  document.querySelector('#replay-pause').click();
+  for (let step = 0; step < 12; step += 1) window.advanceTime(30);
+  const onFinishedState = JSON.parse(window.render_game_to_text());
+  api.stopReplay();
+  const onRestoredAfterStop = JSON.parse(window.render_game_to_text()).demo.verticalAutoAim;
+
+  api.setVerticalAutoAim(true);
+  const offReplayAccepted = api.startReplay(autoAimOffDemo);
+  const offDuringPlayback = JSON.parse(window.render_game_to_text()).demo.verticalAutoAim;
+  api.stopReplay();
+  const offRestoredAfterStop = JSON.parse(window.render_game_to_text()).demo.verticalAutoAim;
+
+  api.setVerticalAutoAim(false);
   const accepted = api.playDemo(demo);
   const replayed = JSON.parse(window.render_game_to_text());
+  const restoredAfterSynchronousPlayback = replayed.demo.verticalAutoAim;
   const corrupted = structuredClone(demo);
   corrupted.checksum = '00000000';
   const corruptAccepted = api.playDemo(corrupted);
-  return { demo, recorded, replayed, accepted, corruptAccepted };
+  return {
+    demo,
+    autoAimOffDemo,
+    recorded,
+    replayed,
+    accepted,
+    corruptAccepted,
+    onReplayAccepted,
+    onDuringPlayback,
+    onFinishedState,
+    onRestoredAfterStop,
+    offReplayAccepted,
+    offDuringPlayback,
+    offRestoredAfterStop,
+    restoredAfterSynchronousPlayback,
+  };
 });
 
 assert(result.accepted, 'Valid deterministic demo was rejected');
@@ -39,6 +81,15 @@ assert(!result.corruptAccepted, 'Checksum-tampered demo was accepted');
 assert(result.demo.tickRate === 35 && result.demo.totalTicks === 7, `Expected seven 35 Hz ticks, got ${result.demo.totalTicks}`);
 assert(result.demo.frames.length > 0 && result.demo.frames.length < result.demo.totalTicks, 'Recorder did not compress repeated command ticks');
 assert(result.demo.frames.reduce((ticks, frame) => ticks + (frame.duration ?? 1), 0) === result.demo.totalTicks, 'Compressed demo spans do not cover every simulated tick');
+assert(result.demo.frames.some((frame) => frame.commands.some((command) => command.fire)), 'Demo regression did not exercise a recorded shot');
+assert(result.demo.playbackSettings?.verticalAutoAim === true, 'Recording did not capture enabled vertical auto-aim');
+assert(result.autoAimOffDemo.playbackSettings?.verticalAutoAim === false, 'Recording did not capture disabled vertical auto-aim');
+assert(result.onReplayAccepted && result.onDuringPlayback === true, 'Enabled recording did not override a disabled viewer preference during playback');
+assert(result.onFinishedState.demo.playback.finished && result.onFinishedState.demo.verticalAutoAim === false, 'Natural replay completion did not restore the disabled viewer preference');
+assert(result.onRestoredAfterStop === false, 'Stopping the completed replay changed the restored disabled viewer preference');
+assert(result.offReplayAccepted && result.offDuringPlayback === false, 'Disabled recording did not override an enabled viewer preference during playback');
+assert(result.offRestoredAfterStop === true, 'Stopping replay did not restore the enabled viewer preference');
+assert(result.restoredAfterSynchronousPlayback === false, 'Synchronous playback did not restore the viewer preference');
 
 const terminal = (state) => ({
   map: state.map,

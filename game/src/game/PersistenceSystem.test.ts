@@ -1083,7 +1083,7 @@ describe('deterministic demos', () => {
     && typeof (value as Partial<Command>).value === 'number';
 
   it('records ordered commands by fixed simulation tick with a stable checksum', () => {
-    const options = { seed: 1234, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 77, tickRate: 35 };
+    const options = { seed: 1234, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 77, tickRate: 35, playbackSettings: { verticalAutoAim: true } };
     const first = new DemoRecorder<TestState, Command>(options);
     first.record(0, { action: 'move', value: 1 });
     first.record(0, { action: 'fire', value: 1 });
@@ -1104,8 +1104,33 @@ describe('deterministic demos', () => {
     expect(demo.version).toBe(DEMO_SCHEMA_VERSION);
   });
 
+  it('requires signed gameplay-affecting playback settings', () => {
+    const recorder = new DemoRecorder<TestState, Command>({
+      seed: 21,
+      mapId: 'E1M1',
+      initialState: state('E1M1'),
+      createdAt: 78,
+      playbackSettings: { verticalAutoAim: false },
+    });
+    recorder.record(0, { action: 'fire', value: 1 });
+    const demo = recorder.finish(1);
+
+    expect(demo.playbackSettings).toEqual({ verticalAutoAim: false });
+    expect(recorder.estimatedSerializedBytes(1)).toBe(JSON.stringify(demo).length * 2);
+    expect(validateDemo(demo, { validateInitialState: isTestState, validateCommand: isCommand })).toMatchObject({ valid: true });
+
+    const { checksum: _checksum, playbackSettings: _settings, ...legacyUnsigned } = demo;
+    const legacy = { ...legacyUnsigned, checksum: checksum(legacyUnsigned) };
+    expect(validateDemo(legacy, { validateInitialState: isTestState, validateCommand: isCommand }))
+      .toEqual({ valid: false, reason: 'Invalid playback settings' });
+
+    const malformedUnsigned = { ...legacyUnsigned, playbackSettings: { verticalAutoAim: 'sometimes' } };
+    const malformed = { ...malformedUnsigned, checksum: checksum(malformedUnsigned) };
+    expect(validateDemo(malformed)).toEqual({ valid: false, reason: 'Invalid playback settings' });
+  });
+
   it('rejects a checksum-valid replay from the previous deterministic simulation version', () => {
-    const recorder = new DemoRecorder<TestState, Command>({ seed: 7, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 9 });
+    const recorder = new DemoRecorder<TestState, Command>({ seed: 7, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 9, playbackSettings: { verticalAutoAim: true } });
     recorder.record(0, { action: 'fire', value: 1 });
     const current = recorder.finish(1);
     const { checksum: _currentChecksum, ...currentUnsigned } = current;
@@ -1116,7 +1141,7 @@ describe('deterministic demos', () => {
   });
 
   it('plays commands at exact ticks and supports deterministic reset and seek', () => {
-    const recorder = new DemoRecorder<TestState, Command>({ seed: 1, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 1 });
+    const recorder = new DemoRecorder<TestState, Command>({ seed: 1, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 1, playbackSettings: { verticalAutoAim: true } });
     recorder.record(1, { action: 'move', value: 1 });
     recorder.record(3, { action: 'fire', value: 1 });
     const playback = new DemoPlayback(recorder.finish(4));
@@ -1131,7 +1156,7 @@ describe('deterministic demos', () => {
   });
 
   it('run-length encodes full-map command streams and seeks inside repeated spans', () => {
-    const recorder = new DemoRecorder<TestState, Command>({ seed: 12, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 4 });
+    const recorder = new DemoRecorder<TestState, Command>({ seed: 12, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 4, playbackSettings: { verticalAutoAim: true } });
     const twentyMinutes = 35 * 60 * 20;
     for (let tick = 0; tick < twentyMinutes; tick += 1) recorder.record(tick, { action: 'move', value: 1 });
     const demo = recorder.finish(twentyMinutes);
@@ -1156,6 +1181,7 @@ describe('deterministic demos', () => {
       mapId: 'E1M1',
       initialState: state('E1M1'),
       createdAt: 6,
+      playbackSettings: { verticalAutoAim: true },
       maxSerializedBytes: DEMO_STORAGE_BUDGET_BYTES,
     });
     const maximumTicks = 35 * 60 * 45;
@@ -1184,12 +1210,12 @@ describe('deterministic demos', () => {
     expect(acceptedTicks).toBeLessThan(maximumTicks);
     expect(actualBytes).toBeLessThanOrEqual(DEMO_STORAGE_BUDGET_BYTES);
     expect(recorder.estimatedSerializedBytes(demo.totalTicks)).toBe(actualBytes);
-    expect(demo.version).toBe(3);
+    expect(demo.version).toBe(DEMO_SCHEMA_VERSION);
     expect(validateDemo(demo)).toMatchObject({ valid: true });
   });
 
   it('preserves a second command added after a repeated single-command tick', () => {
-    const recorder = new DemoRecorder<TestState, Command>({ seed: 13, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 5 });
+    const recorder = new DemoRecorder<TestState, Command>({ seed: 13, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 5, playbackSettings: { verticalAutoAim: true } });
     recorder.record(0, { action: 'move', value: 1 });
     recorder.record(1, { action: 'move', value: 1 });
     recorder.record(1, { action: 'fire', value: 1 });
@@ -1205,7 +1231,7 @@ describe('deterministic demos', () => {
   });
 
   it('rejects out-of-order recording and checksum-tampered playback documents', () => {
-    const recorder = new DemoRecorder<TestState, Command>({ seed: 1, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 1 });
+    const recorder = new DemoRecorder<TestState, Command>({ seed: 1, mapId: 'E1M1', initialState: state('E1M1'), createdAt: 1, playbackSettings: { verticalAutoAim: true } });
     recorder.record(2, { action: 'fire', value: 1 });
     expect(() => recorder.record(1, { action: 'move', value: 1 })).toThrow(RangeError);
     const demo = recorder.finish(3) as unknown as Record<string, unknown>;

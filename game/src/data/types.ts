@@ -44,6 +44,8 @@ export type PickupId =
 export type Credential = 'red' | 'yellow' | 'cyan';
 export type Difficulty = 'easy' | 'normal' | 'hard';
 export type Facing = 'north' | 'east' | 'south' | 'west';
+export type EncounterRole = 'anchor' | 'pressure' | 'shape' | 'punish' | 'reward';
+export type EnemyEncounterRole = Exclude<EncounterRole, 'reward'>;
 
 export interface GridPoint {
   readonly x: number;
@@ -65,6 +67,7 @@ export interface SectorTile {
 export interface EnemyPlacement extends GridPoint {
   readonly type: 'enemy';
   readonly enemy: EnemyId;
+  readonly role: EnemyEncounterRole;
   readonly facing?: Facing;
   readonly difficulties?: readonly Difficulty[];
   readonly dormant?: boolean;
@@ -175,7 +178,7 @@ export interface EncounterDefinition {
   readonly id: string;
   readonly label: string;
   readonly zones: readonly string[];
-  readonly roles: readonly ('anchor' | 'pressure' | 'shape' | 'punish' | 'reward')[];
+  readonly roles: readonly EncounterRole[];
   readonly completion: 'clear' | 'switch' | 'survive' | 'boss-phase';
   readonly opens?: readonly string[];
 }
@@ -189,11 +192,19 @@ export interface EncounterBlueprint {
   readonly rewardPocket: GridPoint;
 }
 
+export type SecretRewardCategory = 'armor' | 'ammo' | 'map' | 'weapon' | 'powerup';
+
+export type SecretRewardPlacement =
+  | { readonly type: 'pickup'; readonly pickup: PickupId }
+  | { readonly type: 'weapon'; readonly weapon: WeaponId };
+
 export interface SecretDefinition {
   readonly id: string;
   readonly clue: string;
+  readonly rewardCategory: SecretRewardCategory;
+  /** Human-readable name derived from the concrete reward placement. */
   readonly reward: string;
-  readonly rewardPickup: PickupId;
+  readonly rewardPlacement: SecretRewardPlacement;
   readonly clueProp: string;
   readonly at: GridPoint;
   /** The clue-side switch is distinct from the concealed reward sector. */
@@ -211,6 +222,8 @@ export interface CampaignMap {
   readonly music: string;
   readonly sky: string;
   readonly parSeconds: number;
+  /** Realized enemy count on the standard placement tier. */
+  readonly standardEnemyBudget: number;
   readonly secretMap?: boolean;
   readonly secretExitTo?: MapId;
   readonly nextMap?: MapId;

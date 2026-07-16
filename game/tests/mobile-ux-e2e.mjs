@@ -111,7 +111,16 @@ assert(await page.locator('#text-scale').inputValue() === 'largest', 'Mobile tex
 await page.locator('#options-menu [data-back]').click();
 await page.click('#new-game');
 await page.locator('.episode-card').first().click();
-await page.locator('#difficulty-actions button').first().click();
+const orientationDifficulty = page.locator('#difficulty-actions button').first();
+assert((await orientationDifficulty.getAttribute('aria-describedby'))?.includes('difficulty-orientation-description'),
+  'Difficulty choice does not own a stable accessible description');
+await orientationDifficulty.tap();
+assert(await page.locator('#difficulty-menu').isVisible(), 'A touch preview committed the difficulty immediately');
+assert((await page.locator('#difficulty-detail').innerText()).includes('Story-focused'), 'Touch preview did not expose the selected difficulty detail');
+assert(await orientationDifficulty.getAttribute('aria-pressed') === 'true', 'Touch preview did not synchronize the selected difficulty state');
+assert(await page.locator('#difficulty-confirm').isVisible(), 'Touch difficulty preview did not reveal an explicit Continue command');
+assert((await page.locator('#difficulty-confirm').innerText()).includes('Orientation'), 'Touch confirmation does not name the selected difficulty');
+await page.locator('#difficulty-confirm').tap();
 await page.click('#begin-episode');
 assert(await page.locator('#ready-overlay').isVisible(), 'Touch entry briefing is not visible');
 assert(await page.locator('#ready-overlay').getAttribute('data-input') === 'touch', 'Entry briefing did not select touch guidance');
@@ -125,6 +134,12 @@ const touchBriefingValues = await page.locator('#entry-controls > span').evaluat
 ])));
 assert(touchBriefingValues.MOVE === 'Right pad' && touchBriefingValues.LOOK === 'Left pad',
   `Left-handed briefing did not mirror its pad labels: ${JSON.stringify(touchBriefingValues)}`);
+assert(touchBriefingValues.FIRE === 'FIRE control', 'Touch briefing identifies Fire by color instead of its command label');
+const touchPadLabels = await page.evaluate(() => ({
+  move: getComputedStyle(document.querySelector('#touch-stick'), '::after').content,
+  look: getComputedStyle(document.querySelector('#touch-look'), '::after').content,
+}));
+assert(touchPadLabels.move.includes('MOVE') && touchPadLabels.look.includes('LOOK'), 'Touch pads lack persistent Move/Look labels');
 assert(!touchBriefing.includes('WEAPON') && !touchBriefing.includes('MAP'), 'Touch orientation repeats advanced controls');
 assert((await page.locator('#entry-objective').innerText()).includes('Red credential'), 'Touch orientation has no contextual objective');
 assert((await page.evaluate(() => JSON.parse(window.render_game_to_text()).mode)) === 'paused', 'Touch briefing did not freeze simulation');
@@ -235,7 +250,7 @@ await hybridPage.locator('#ready-overlay').waitFor({ state: 'visible' });
 assert(await hybridPage.locator('#game-shell').getAttribute('data-input-device') === 'gamepad', 'Hybrid input did not retain the controller as the active device');
 assert(await hybridPage.locator('#ready-overlay').getAttribute('data-input') === 'gamepad', 'Hybrid entry briefing showed touch guidance after controller navigation');
 const gamepadBriefing = await hybridPage.locator('#entry-controls').innerText();
-for (const binding of ['Left stick', 'Right stick', 'RT', 'A']) {
+for (const binding of ['Left stick', 'Right stick', 'Button 8', 'Button 1']) {
   assert(gamepadBriefing.includes(binding), `Hybrid controller briefing omits ${binding}`);
 }
 await dispatchMenu(hybridPage, 'confirm');

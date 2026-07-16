@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CAMPAIGN } from '../src/data/campaign';
-import type { MapId, PickupId, WeaponId } from '../src/data/types';
+import type { MapId, PickupId, SecretRewardCategory, WeaponId } from '../src/data/types';
 import { WEAPONS, type AmmoType } from '../src/game/definitions';
 
 const authoredSecretCounts: Readonly<Record<MapId, number>> = {
@@ -16,6 +16,11 @@ const ammoForPickup = (pickup: PickupId): Exclude<AmmoType, 'none'> | undefined 
   if (pickup === 'toner-cell' || pickup === 'toner-pack') return 'toner-cells';
   return undefined;
 };
+
+const secretRewardCategories: readonly SecretRewardCategory[] = ['armor', 'ammo', 'map', 'weapon', 'powerup'];
+
+const humanizeRewardId = (id: string): string =>
+  id.split('-').map((word) => `${word[0].toUpperCase()}${word.slice(1)}`).join(' ');
 
 describe('campaign authored-content contracts', () => {
   it('varies safe map starts and never stages a secret interaction under the player', () => {
@@ -62,6 +67,35 @@ describe('campaign authored-content contracts', () => {
       expect(new Set(map.secrets.map((secret) => secret.clueProp)).size)
         .toBeGreaterThanOrEqual(Math.min(3, map.secrets.length));
     });
+  });
+
+  it('realizes every concrete secret reward category in every episode', () => {
+    CAMPAIGN.episodes.forEach((episode) => {
+      const categories = new Set(episode.maps.flatMap((id) =>
+        CAMPAIGN.maps[id].secrets.map((secret) => secret.rewardCategory)));
+      expect(categories, episode.id).toEqual(new Set(secretRewardCategories));
+    });
+  });
+
+  it('labels each secret reward exactly and places that typed actor in its concealed cell', () => {
+    const failures: string[] = [];
+    Object.values(CAMPAIGN.maps).forEach((map) => map.secrets.forEach((secret) => {
+      const rewardId = secret.rewardPlacement.type === 'pickup'
+        ? secret.rewardPlacement.pickup
+        : secret.rewardPlacement.weapon;
+      if (secret.reward !== humanizeRewardId(rewardId)) {
+        failures.push(`${map.id}:${secret.id} labels ${secret.reward} instead of ${rewardId}`);
+      }
+      const rewardActor = map.actors.find((actor) => {
+        if (!('secret' in actor) || !actor.secret
+          || Math.floor(actor.x) !== Math.floor(secret.at.x) || Math.floor(actor.z) !== Math.floor(secret.at.z)) return false;
+        return secret.rewardPlacement.type === 'pickup'
+          ? actor.type === 'pickup' && actor.pickup === secret.rewardPlacement.pickup
+          : actor.type === 'weapon' && actor.weapon === secret.rewardPlacement.weapon;
+      });
+      if (!rewardActor) failures.push(`${map.id}:${secret.id} is missing its ${rewardId} actor`);
+    }));
+    expect(failures).toEqual([]);
   });
 
   it('provides a matching obtainable weapon for every ammo family placed in each episode', () => {

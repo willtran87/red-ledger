@@ -21,7 +21,10 @@ const persistentGameplay = () => page.evaluate(() => Object.fromEntries(Object.k
   .sort().map((key) => [key, localStorage.getItem(key)])));
 
 await page.goto(url, { waitUntil: 'networkidle' });
-await page.evaluate(() => localStorage.setItem('red-ledger-replays-v1', JSON.stringify([{ name: 'Legacy replay' }])));
+await page.evaluate(() => {
+  localStorage.setItem('red-ledger-replays-v1', JSON.stringify([{ name: 'Legacy replay v1' }]));
+  localStorage.setItem('red-ledger-replays-v2', JSON.stringify([{ name: 'Legacy replay v2' }]));
+});
 await page.click('#replays-button');
 assert((await page.locator('#replay-feedback').textContent()).includes('incompatible simulation version'), 'Legacy replay incompatibility is not explained');
 await dispatchMenu('back');
@@ -48,11 +51,21 @@ await page.evaluate(() => window.dispatchEvent(new CustomEvent('input-action', {
   detail: { action: 'pause', source: 'keyboard', repeat: false },
 })));
 assert(await page.locator('#record-replay').textContent() === 'Stop & Save Replay', 'Pause menu did not expose recording completion');
+await page.click('#pause-options');
+assert(await page.locator('#vertical-auto-aim').isDisabled(), 'Gameplay-affecting auto-aim remained editable during recording');
+await page.evaluate(() => {
+  const input = document.querySelector('#vertical-auto-aim');
+  input.disabled = false;
+  input.checked = false;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+});
+assert(await page.locator('#vertical-auto-aim').isChecked(), 'Programmatic settings change bypassed the recording lock');
+await page.locator('#options-menu [data-back]').click();
 await page.evaluate(() => {
   const original = Storage.prototype.setItem;
   window.__restoreReplayStorage = () => { Storage.prototype.setItem = original; };
   Storage.prototype.setItem = function setItem(key, value) {
-    if (key === 'red-ledger-replays-v2') throw new DOMException('Replay quota denied', 'QuotaExceededError');
+    if (key === 'red-ledger-replays-v3') throw new DOMException('Replay quota denied', 'QuotaExceededError');
     return original.call(this, key, value);
   };
 });
@@ -61,7 +74,8 @@ assert(await page.locator('#replay-library').isVisible(), 'Stopping did not open
 assert(await page.locator('#replay-list .replay-row').count() === 1, 'Quota-denied replay was discarded');
 assert((await page.locator('#replay-feedback').textContent()).includes('kept in this tab only'), 'Manual stop falsely claimed a quota-denied replay was saved');
 assert((await page.locator('#replay-list .replay-row small').textContent()).includes('This tab only'), 'Manual fallback replay was not visibly identified');
-assert(await page.evaluate(() => localStorage.getItem('red-ledger-replays-v2')) === null, 'Session-only replay leaked into persistent storage');
+assert(await page.evaluate(() => localStorage.getItem('red-ledger-replays-v3')) === null, 'Session-only replay leaked into persistent storage');
+assert(await page.evaluate(() => JSON.parse(localStorage.getItem('red-ledger-replays-v2'))[0].name === 'Legacy replay v2'), 'Schema-v3 replay library was modified during migration');
 
 const downloadPromise = page.waitForEvent('download');
 await page.locator('#replay-list .replay-row button').filter({ hasText: 'Export' }).click();
@@ -69,7 +83,7 @@ const download = await downloadPromise;
 const exported = 'output/replays/exported-replay.json';
 await download.saveAs(exported);
 assert(fs.statSync(exported).size > 100, 'Exported replay is empty');
-assert(JSON.parse(fs.readFileSync(exported, 'utf8')).version === 3, 'Exported replay did not use the current deterministic schema');
+assert(JSON.parse(fs.readFileSync(exported, 'utf8')).version === 4, 'Exported replay did not use the current deterministic schema');
 await page.evaluate(() => window.__restoreReplayStorage?.());
 await page.locator('#replay-list .replay-delete').click();
 await page.click('#confirm-accept');
@@ -140,7 +154,7 @@ await page.evaluate(() => {
   const original = Storage.prototype.setItem;
   window.__restoreReplayStorage = () => { Storage.prototype.setItem = original; };
   Storage.prototype.setItem = function setItem(key, value) {
-    if (key === 'red-ledger-replays-v2') throw new DOMException('Replay quota denied', 'QuotaExceededError');
+    if (key === 'red-ledger-replays-v3') throw new DOMException('Replay quota denied', 'QuotaExceededError');
     return original.call(this, key, value);
   };
 });
@@ -158,7 +172,7 @@ await page.evaluate((demo) => {
   }
 }, exportedDemo);
 assert(await page.locator('#replay-list .replay-row').count() === 6, 'Session replay fallback exceeded its bounded library size');
-assert(await page.evaluate(() => localStorage.getItem('red-ledger-replays-v2')) === null, 'Bounded session replays leaked into persistent storage');
+assert(await page.evaluate(() => localStorage.getItem('red-ledger-replays-v3')) === null, 'Bounded session replays leaked into persistent storage');
 await page.screenshot({ path: 'output/replays/session-only-library.png' });
 
 const sessionDownloadPromise = page.waitForEvent('download');
@@ -166,7 +180,7 @@ await page.locator('#replay-list .replay-row button').filter({ hasText: 'Export'
 const sessionDownload = await sessionDownloadPromise;
 const sessionExport = 'output/replays/session-only-replay.json';
 await sessionDownload.saveAs(sessionExport);
-assert(JSON.parse(fs.readFileSync(sessionExport, 'utf8')).version === 3, 'Session-only replay could not be exported intact');
+assert(JSON.parse(fs.readFileSync(sessionExport, 'utf8')).version === 4, 'Session-only replay could not be exported intact');
 await page.locator('#replay-list .replay-row button').filter({ hasText: 'Play' }).first().click();
 assert((await state()).demo.playback?.currentTick === 0, 'Session-only replay could not be played');
 await page.click('#replay-exit');

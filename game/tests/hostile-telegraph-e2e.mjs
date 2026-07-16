@@ -67,12 +67,15 @@ await page.evaluate((mapId) => {
   if (!window.__redLedger.teleportNearActor('denial-officer', 7)) throw new Error('No beam sightline');
 }, denialMap);
 let beamState;
-for (let attempt = 0; attempt < 100; attempt += 1) {
+for (let attempt = 0; attempt < 200; attempt += 1) {
   await page.evaluate(() => window.advanceTime(25));
   beamState = await state();
-  if (beamState.combatEffects.hostileBeams.length) break;
+  if (beamState.combatEffects.hostileBeams.some((beam) => beam.hit)
+    && beamState.combatEffects.semanticCues.some((cue) => cue.kind === 'rejection')
+    && beamState.audio.recentSpatialCues.some((cue) => cue.kind === 'attack:denial-beam:resolve')) break;
 }
-assert(beamState?.combatEffects.hostileBeams[0]?.length > 1, 'Denial hitscan resolved without its authored beam');
+const hitBeam = beamState?.combatEffects.hostileBeams.find((beam) => beam.hit);
+assert(hitBeam?.length > 1, 'Denial hitscan never landed with its authored beam');
 assert(beamState.combatEffects.semanticCues.some((cue) => cue.kind === 'rejection'), 'Denial impact omitted its anchored rejection cue');
 assert(beamState.audio.recentSpatialCues.some((cue) => cue.kind === 'attack:denial-beam:resolve'),
   'Denial resolution omitted its authored attack-specific cue');

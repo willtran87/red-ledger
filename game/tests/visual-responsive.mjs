@@ -6,7 +6,47 @@ fs.mkdirSync('output/responsive', { recursive: true });
 const browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader'] });
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
+async function inspectNarrowPointerFine(viewport, name) {
+  const context = await browser.newContext({ viewport, isMobile: false, hasTouch: false });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error)));
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  await page.goto(url, { waitUntil: 'networkidle' });
+  const geometry = await page.evaluate(() => {
+    const shell = document.querySelector('#game-shell').getBoundingClientRect();
+    const menu = document.querySelector('#menu');
+    const title = document.querySelector('#menu .game-title').getBoundingClientRect();
+    const art = document.querySelector('#menu .title-art').getBoundingClientRect();
+    const buttons = [...document.querySelectorAll('#menu button')].map((button) => {
+      const rect = button.getBoundingClientRect();
+      return { id: button.id, left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+    });
+    return {
+      shell: { left: shell.left, top: shell.top, right: shell.right, bottom: shell.bottom },
+      title: { left: title.left, top: title.top, right: title.right, bottom: title.bottom },
+      art: { left: art.left, top: art.top, right: art.right, bottom: art.bottom },
+      buttons,
+      menuClientWidth: menu.clientWidth,
+      menuScrollWidth: menu.scrollWidth,
+      pageClientWidth: document.documentElement.clientWidth,
+      pageScrollWidth: document.documentElement.scrollWidth,
+    };
+  });
+  const withinShell = (rect) => rect.left >= geometry.shell.left - 1 && rect.top >= geometry.shell.top - 1
+    && rect.right <= geometry.shell.right + 1 && rect.bottom <= geometry.shell.bottom + 1;
+  assert(withinShell(geometry.title), `${name}: title escaped the stage`);
+  assert(withinShell(geometry.art), `${name}: title art escaped the stage`);
+  assert(geometry.buttons.every(withinShell), `${name}: menu commands escaped the stage`);
+  assert(geometry.menuScrollWidth <= geometry.menuClientWidth + 1, `${name}: menu has horizontal overflow`);
+  assert(geometry.pageScrollWidth <= geometry.pageClientWidth + 1, `${name}: page has horizontal overflow`);
+  assert(errors.length === 0, `${name}: ${errors.join(' | ')}`);
+  await page.screenshot({ path: `output/responsive/${name}-pointer-fine-menu.png` });
+  await context.close();
+}
+
 async function inspectAutomap(page, name, mobile) {
+  const compactViewport = (page.viewportSize()?.width ?? 0) <= 700 || (page.viewportSize()?.height ?? 0) <= 500;
   if (mobile) await page.locator('#touch-map').tap();
   else await page.keyboard.press('Tab');
   await page.waitForFunction(() => {
@@ -44,7 +84,7 @@ async function inspectAutomap(page, name, mobile) {
   assert(metrics.full, `${name}: automap did not enter full-map presentation`);
   assert(metrics.backingPixels <= 4_050_000, `${name}: automap backing store exceeds its pixel budget`);
   assert(Math.abs(metrics.ratioX - metrics.ratioY) < .02, `${name}: automap backing store stretches square cells`);
-  assert(metrics.cellSize >= (mobile ? 16 : 24), `${name}: automap cells are too small to read (${metrics.cellSize}px)`);
+  assert(metrics.cellSize >= (mobile || compactViewport ? 16 : 24), `${name}: automap cells are too small to read (${metrics.cellSize}px)`);
   assert(metrics.viewportCellsX <= (mobile ? 22 : 36), `${name}: automap shows too much horizontal world span`);
   assert(metrics.viewportCellsZ <= 41, `${name}: automap shows too much vertical world span`);
   assert(Math.abs(metrics.playerX - metrics.rect.width / 2) < 1, `${name}: automap is not centered horizontally on the player`);
@@ -122,7 +162,7 @@ async function inspectCompactOptions(viewport, name, mobile = false) {
     const panel = element.getBoundingClientRect();
     const heading = element.querySelector('h1').getBoundingClientRect();
     const firstSetting = element.querySelector('label').getBoundingClientRect();
-    const controlsContained = [...element.querySelectorAll('label > input, label > select')].every((control) => {
+    const controlsContained = [...element.querySelectorAll('label input, label select, label output')].every((control) => {
       const label = control.closest('label').getBoundingClientRect();
       const rect = control.getBoundingClientRect();
       return rect.left >= label.left - 1 && rect.right <= label.right + 1 && rect.top >= label.top - 1 && rect.bottom <= label.bottom + 1;
@@ -160,6 +200,9 @@ async function inspectShortLandscapeDifficulty() {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.click('#new-game');
   await page.locator('.episode-card').first().click();
+  await page.waitForFunction(() => document.activeElement?.getAttribute('data-difficulty') === 'field-adjuster');
+  assert((await page.locator('#difficulty-detail').innerText()).startsWith('Recommended.'),
+    'mobile-landscape-568: Difficulty detail does not match the retained Field Adjuster selection');
   const initial = await page.locator('#difficulty-menu').evaluate((screen) => {
     screen.scrollTop = 0;
     const panel = screen.getBoundingClientRect();
@@ -274,7 +317,7 @@ async function run(viewport, name, mobile = false) {
       const rect = element.getBoundingClientRect(); const style = getComputedStyle(element);
       return { width: rect.width, height: rect.height, fontSize: Number.parseFloat(style.fontSize) };
     };
-    return { title: geometry(document.querySelector('#difficulty-menu h1')), buttons: [...document.querySelectorAll('#difficulty-menu button')].map(geometry) };
+    return { title: geometry(document.querySelector('#difficulty-menu h1')), buttons: [...document.querySelectorAll('#difficulty-menu button:not([hidden])')].map(geometry) };
   });
   if (!mobile && viewport.width >= 1920) {
     assert(difficultyPresentation.title.fontSize >= 44, `${name}: difficulty heading is undersized at high resolution`);
@@ -369,12 +412,15 @@ async function run(viewport, name, mobile = false) {
 }
 
 await inspectCompactOptions({ width: 1280, height: 500 }, 'desktop-short-1280');
+await inspectNarrowPointerFine({ width: 640, height: 400 }, 'desktop-zoom-200');
+await inspectNarrowPointerFine({ width: 568, height: 320 }, 'desktop-narrow-568');
 await inspectCompactOptions({ width: 568, height: 320 }, 'mobile-landscape-568', true);
 await inspectShortLandscapeDifficulty();
 await inspectSmallPersonalizedDeck('right');
 await inspectSmallPersonalizedDeck('left');
 await run({ width: 2560, height: 1600 }, 'desktop-2560');
 await run({ width: 1280, height: 720 }, 'desktop-1280');
+await run({ width: 640, height: 400 }, 'desktop-zoom-200-flow');
 await run({ width: 390, height: 844 }, 'mobile-390', true);
 console.log('Responsive visual geometry passed');
 await browser.close();

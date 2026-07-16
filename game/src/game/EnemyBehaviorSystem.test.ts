@@ -51,7 +51,7 @@ describe('EnemyBehaviorSystem definitions', () => {
     expect(ENEMY_BEHAVIOR_PROFILES['returned-mail'].attacks[0].kind).toBe('melee');
     expect(ENEMY_BEHAVIOR_PROFILES['fraud-apparition'].attacks[0].kind).toBe('melee');
     expect(ENEMY_BEHAVIOR_PROFILES.subrogator.attacks[0]).toMatchObject({ kind: 'projectile', pattern: { count: 3 } });
-    expect(ENEMIES['desk-warden'].drop).toEqual({ kind: 'ammo', id: 'staples', amount: 5, chance: 1 });
+    expect(ENEMIES['desk-warden'].drop).toEqual({ kind: 'ammo', id: 'staples', amount: 1, chance: .15 });
     bossIds.forEach((id) => expect(ENEMY_BEHAVIOR_PROFILES[id].phases).toHaveLength(3));
   });
 
@@ -185,14 +185,165 @@ describe('EnemyBehaviorSystem state machine', () => {
     expect(system.getActorState(sleeper.uid)?.action).toBe('acquire');
   });
 
-  it('attributes a provoker and permits same-faction infighting', () => {
+  it('lets an intervening actor absorb hitscan fire and naturally provoke retaliation', () => {
     const system = new EnemyBehaviorSystem({ rng: () => 0 });
-    const attacker = actor('desk-warden', { uid: 'warden-a', position: { x: 0, y: 0, z: 3 } });
-    const victim = actor('desk-warden', { uid: 'warden-b', awake: false });
-    system.registerDamage(victim.uid, attacker.uid, 3);
-    const events = runFor(system, { actors: [attacker, victim], target: target(30), world: { hasLineOfSight: () => true } }, 1.4);
-    expect(system.getActorState(victim.uid)?.provokerUid).toBe(attacker.uid);
-    expect(eventsOf(events, 'damage')).toContainEqual(expect.objectContaining({ sourceUid: victim.uid, targetUid: attacker.uid }));
+    const attacker = actor('desk-warden', { uid: 'warden-a' });
+    const intervening = actor('desk-warden', { uid: 'warden-b', awake: false, position: { x: 0, y: 0, z: 5 } });
+    const firstVolley = runFor(system, {
+      actors: [attacker, intervening],
+      target: target(10),
+      world: { hasLineOfSight: () => true },
+    }, .8);
+    const intercepted = eventsOf(firstVolley, 'damage').filter((event) => event.sourceUid === attacker.uid);
+    expect(intercepted.length).toBeGreaterThan(0);
+    expect(intercepted.every((event) => event.targetUid === intervening.uid)).toBe(true);
+
+    system.registerDamage(intervening.uid, attacker.uid, intercepted.reduce((total, event) => total + event.amount, 0));
+    const retaliation = runFor(system, {
+      actors: [attacker, intervening],
+      target: target(10),
+      world: { hasLineOfSight: () => true },
+    }, 1.4);
+    expect(system.getActorState(intervening.uid)?.provokerUid).toBe(attacker.uid);
+    expect(eventsOf(retaliation, 'damage')).toContainEqual(expect.objectContaining({
+      sourceUid: intervening.uid,
+      targetUid: attacker.uid,
+    }));
+  });
+});
+
+describe('Forensic Lens targeting disruption', () => {
+  it('reduces visual acquisition range and lengthens a successful sight acquisition', () => {
+    const hiddenNormal = new EnemyBehaviorSystem({ rng: () => 0 });
+    const hiddenLens = new EnemyBehaviorSystem({ rng: () => 0 });
+    const distant = actor('desk-warden', { awake: false });
+    const normalWake = hiddenNormal.step({
+      dt: .01,
+      actors: [distant],
+      target: target(18),
+      world: { hasLineOfSight: () => true },
+    });
+    const disruptedWake = hiddenLens.step({
+      dt: .01,
+      actors: [distant],
+      target: target(18, { targetingDisrupted: true }),
+      world: { hasLineOfSight: () => true },
+    });
+    expect(eventsOf(normalWake.events, 'wake')).toHaveLength(1);
+    expect(eventsOf(disruptedWake.events, 'wake')).toHaveLength(0);
+
+    const nearNormal = new EnemyBehaviorSystem({ rng: () => 0 });
+    const nearLens = new EnemyBehaviorSystem({ rng: () => 0 });
+    nearNormal.step({ dt: .01, actors: [distant], target: target(10), world: { hasLineOfSight: () => true } });
+    nearLens.step({ dt: .01, actors: [distant], target: target(10, { targetingDisrupted: true }), world: { hasLineOfSight: () => true } });
+    expect(nearLens.getActorState(distant.uid)?.stateTimer).toBeGreaterThan(nearNormal.getActorState(distant.uid)?.stateTimer ?? 0);
+  });
+
+  it('degrades hitscan and projectile aim without changing deterministic simulation', () => {
+    const normalHitscan = new EnemyBehaviorSystem({ rng: () => .5 });
+    const disruptedHitscan = new EnemyBehaviorSystem({ rng: () => .5 });
+    const warden = actor('desk-warden', { uid: 'accuracy-12' });
+    const normalVolley = runFor(normalHitscan, {
+      actors: [warden], target: target(7), world: { hasLineOfSight: () => true },
+    }, .9);
+    const disruptedVolley = runFor(disruptedHitscan, {
+      actors: [warden], target: target(7, { targetingDisrupted: true }), world: { hasLineOfSight: () => true },
+    }, .9);
+    expect(eventsOf(normalVolley, 'damage').length).toBeGreaterThan(0);
+    expect(eventsOf(disruptedVolley, 'attack')[0]).toMatchObject({ resolved: true, hitCount: 0 });
+    expect(eventsOf(disruptedVolley, 'damage')).toHaveLength(0);
+
+    const normalProjectile = new EnemyBehaviorSystem({ rng: () => .5 });
+    const disruptedProjectile = new EnemyBehaviorSystem({ rng: () => .5 });
+    const drone = actor('coverage-drone', { uid: 'accuracy-12' });
+    const normalFan = eventsOf(runFor(normalProjectile, {
+      actors: [drone], target: target(12), world: { hasLineOfSight: () => true },
+    }, 1.1), 'spawn-projectile');
+    const disruptedFan = eventsOf(runFor(disruptedProjectile, {
+      actors: [drone], target: target(12, { targetingDisrupted: true }), world: { hasLineOfSight: () => true },
+    }, 1.1), 'spawn-projectile');
+    expect(normalFan).toHaveLength(3);
+    expect(disruptedFan).toHaveLength(3);
+    expect(normalFan[1].projectile.velocity.x).toBeCloseTo(0, 6);
+    expect(Math.abs(disruptedFan[1].projectile.velocity.x)).toBeGreaterThan(.1);
+  });
+
+  it('displaces predictive hazards away from their undisrupted aim point', () => {
+    const normal = new EnemyBehaviorSystem({ rng: () => 0 });
+    const disrupted = new EnemyBehaviorSystem({ rng: () => 0 });
+    const cat = actor('cat-model', { uid: 'forensic-hazard' });
+    const normalHazard = eventsOf(runFor(normal, {
+      actors: [cat],
+      target: target(12),
+      world: { hasLineOfSight: () => true, canPlaceHazard: () => true },
+    }, 1.5), 'spawn-hazard')[0].hazard;
+    const disruptedHazard = eventsOf(runFor(disrupted, {
+      actors: [cat],
+      target: target(12, { targetingDisrupted: true }),
+      world: { hasLineOfSight: () => true, canPlaceHazard: () => true },
+    }, 1.5), 'spawn-hazard')[0].hazard;
+
+    expect(normalHazard.position).toMatchObject({ x: 0, z: 12 });
+    expect(Math.hypot(
+      disruptedHazard.position.x - normalHazard.position.x,
+      disruptedHazard.position.z - normalHazard.position.z,
+    )).toBeGreaterThan(.25);
+  });
+
+  it('suspends projectile homing for a disrupted target', () => {
+    const snapshot = {
+      version: 1 as const,
+      elapsed: 0,
+      nextEntityId: 2,
+      actors: [],
+      projectiles: [{
+        id: 'homing-test',
+        ownerUid: 'subrogator-1',
+        ownerId: 'subrogator' as const,
+        kind: 'subrogation-packet',
+        position: { x: 0, y: 1, z: 0 },
+        velocity: { x: 10, y: 0, z: 0 },
+        radius: .2,
+        damage: 10,
+        damageKind: 'redaction' as const,
+        remaining: 2,
+        targetUid: 'player',
+        homing: .7,
+      }],
+      hazards: [],
+    };
+    const normal = new EnemyBehaviorSystem({ rng: () => 0 });
+    const disrupted = new EnemyBehaviorSystem({ rng: () => 0 });
+    normal.restore(structuredClone(snapshot));
+    disrupted.restore(structuredClone(snapshot));
+
+    normal.step({ dt: .1, actors: [], target: target(10) });
+    disrupted.step({ dt: .1, actors: [], target: target(10, { targetingDisrupted: true }) });
+    const normalVelocity = normal.serialize().projectiles[0].velocity;
+    const disruptedVelocity = disrupted.serialize().projectiles[0].velocity;
+    expect(normalVelocity.z).toBeGreaterThan(0);
+    expect(normalVelocity.x).toBeLessThan(10);
+    expect(disruptedVelocity).toEqual({ x: 10, y: 0, z: 0 });
+  });
+
+  it('breaks an established ranged lock on a stable per-enemy cadence', () => {
+    const quietProfile = {
+      ...ENEMY_BEHAVIOR_PROFILES,
+      'desk-warden': { ...ENEMY_BEHAVIOR_PROFILES['desk-warden'], initialCooldown: 100, cooldownJitter: 0 },
+    };
+    const normal = new EnemyBehaviorSystem({ rng: () => .5, profiles: quietProfile });
+    const disrupted = new EnemyBehaviorSystem({ rng: () => .5, profiles: quietProfile });
+    const warden = actor('desk-warden');
+    const normalStates = eventsOf(runFor(normal, { actors: [warden], target: target(8) }, 2.5), 'state');
+    const disruptedStates = eventsOf(runFor(disrupted, {
+      actors: [warden], target: target(8, { targetingDisrupted: true }),
+    }, 2.5), 'state');
+    expect(normalStates.filter((event) => event.state === 'acquire')).toHaveLength(0);
+    expect(disruptedStates).toContainEqual(expect.objectContaining({
+      actorUid: warden.uid,
+      state: 'acquire',
+      duration: .32,
+    }));
   });
 });
 

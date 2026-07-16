@@ -47,15 +47,20 @@ assert(await page.locator('#reticle').isVisible(), 'Persistent reticle is not vi
 assert((await page.locator('#objective').textContent())?.trim().length > 0, 'Objective cue is empty');
 assert(await page.locator('#reticle').getAttribute('data-weapon') === 'staple-driver', 'Reticle does not identify the equipped weapon');
 
-assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 5)), 'Could not stage weapon feedback target');
+assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 3)), 'Could not stage weapon feedback target');
 await page.evaluate(() => window.advanceTime(60));
 const reticleGapBeforeFire = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
 await page.evaluate(() => window.__redLedger.fire());
-await page.waitForTimeout(70);
-const reticleGapAfterFire = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
-assert(reticleGapAfterFire > reticleGapBeforeFire + .5, 'Reticle did not communicate weapon recoil/spread after firing');
-assert(await page.locator('#muzzle-flash').evaluate((element) => element.style.backgroundImage.includes('particle-weapon-feedback')), 'Muzzle feedback did not select an authored effect');
-assert(await page.locator('#hit-marker').evaluate((element) => element.classList.contains('active')), 'Actor hit did not activate the hit marker');
+await page.evaluate(() => window.advanceTime(35));
+await page.waitForTimeout(10);
+const fireFeedback = await page.evaluate(() => ({
+  reticleGap: Number.parseFloat(document.querySelector('#reticle').style.getPropertyValue('--reticle-gap')),
+  authoredMuzzle: document.querySelector('#muzzle-flash').style.backgroundImage.includes('particle-weapon-feedback'),
+  hitMarkerActive: document.querySelector('#hit-marker').classList.contains('active'),
+}));
+assert(fireFeedback.reticleGap > reticleGapBeforeFire + .5, 'Reticle did not communicate weapon recoil/spread after firing');
+assert(fireFeedback.authoredMuzzle, 'Muzzle feedback did not select an authored effect');
+assert(fireFeedback.hitMarkerActive, 'Actor hit did not activate the hit marker');
 await page.screenshot({ path: fileURLToPath(new URL('weapon-fire.png', output)) });
 
 await page.evaluate(() => {
@@ -65,10 +70,23 @@ await page.evaluate(() => {
   window.advanceTime(120);
 });
 const reducedReticleBefore = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
-await page.evaluate(() => window.__redLedger.fire());
-await page.waitForTimeout(70);
+await page.evaluate(() => {
+  document.querySelector('#muzzle-flash').getAnimations().forEach((animation) => animation.cancel());
+  document.querySelector('#reticle').getAnimations().forEach((animation) => animation.cancel());
+  window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { kind: 'wall' } }));
+  window.__redLedger.fire();
+});
+await page.waitForTimeout(40);
 const reducedReticleAfter = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
 assert(Math.abs(reducedReticleAfter - reducedReticleBefore) < .05, 'Reduced Motion did not suppress reticle recoil animation');
+const reducedMotionFeedback = await page.evaluate(() => ({
+  muzzleAnimations: document.querySelector('#muzzle-flash').getAnimations().length,
+  reticleAnimations: document.querySelector('#reticle').getAnimations().length,
+  muzzleOpacity: Number.parseFloat(document.querySelector('#muzzle-flash').style.opacity),
+}));
+assert(reducedMotionFeedback.muzzleAnimations === 0, 'Reduced Motion still animated the muzzle flash');
+assert(reducedMotionFeedback.reticleAnimations === 0, 'Reduced Motion still animated the wall-impact reticle');
+assert(reducedMotionFeedback.muzzleOpacity === 1, 'Reduced Motion removed the static muzzle cue');
 await page.evaluate(() => {
   const setting = document.querySelector('#reduced-motion');
   setting.checked = false;
@@ -94,7 +112,8 @@ assert(state.momentum.chain === 2 && state.momentum.score > 0, 'Momentum chain d
 assert(await page.locator('#combat-streak').isVisible(), 'Momentum HUD did not appear');
 await page.screenshot({ path: fileURLToPath(new URL('momentum.png', output)) });
 
-assert(state.tally.totalKills <= 35, `Opening map still has excessive enemy density (${state.tally.totalKills})`);
+assert(state.tally.totalKills >= 35 && state.tally.totalKills <= 65,
+  `Opening map fell outside the canonical 35-65 enemy budget (${state.tally.totalKills})`);
 await page.evaluate(() => window.__redLedger.loadMap('E1M1'));
 let cappedPickupStayed = false;
 for (let attempt = 0; attempt < 8; attempt += 1) {

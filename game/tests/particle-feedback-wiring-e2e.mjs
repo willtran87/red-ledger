@@ -99,6 +99,20 @@ const secret = await state();
 assert(secret.message.startsWith('Anomaly confirmed: ') && secret.message !== 'Reveal Secret', `Secret clue prose was overwritten: ${secret.message}`);
 
 await page.evaluate(() => {
+  window.__redLedger.loadMap('E1M2');
+  if (window.__redLedger.teleportToSecretReward('e1m2-secret-3')) throw new Error('Concealed weapon secret was collectible before reveal');
+  if (!window.__redLedger.teleportToTrigger('reveal-secret', 'e1m2-secret-3')) throw new Error('Weapon-secret clue trigger missing');
+  window.__redLedger.use();
+  window.advanceTime(35);
+  if (!window.__redLedger.teleportToSecretReward('e1m2-secret-3')) throw new Error('Revealed Audit Repeater secret was not spawned at its concealed cell');
+  window.advanceTime(250);
+  window.advanceTime(250);
+  window.advanceTime(250);
+});
+const weaponSecret = await state();
+assert(weaponSecret.player.weapon === 'audit-repeater', 'Revealed secret weapon did not enter and select from the player inventory');
+
+await page.evaluate(() => {
   window.__redLedger.loadMap('E1M8');
   if (!window.__redLedger.damageActor('regional-director', 700)) throw new Error('Regional Director could not be damaged into summon phase');
   if (!window.__redLedger.activateActor('regional-director')) throw new Error('Regional Director could not be activated');

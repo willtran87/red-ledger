@@ -35,8 +35,8 @@ interface ReplayLibraryEntry {
 
 type ReplayStoreResult = 'persistent' | 'session-only' | 'invalid';
 
-const REPLAY_LIBRARY_KEY = 'red-ledger-replays-v2';
-const LEGACY_REPLAY_LIBRARY_KEY = 'red-ledger-replays-v1';
+const REPLAY_LIBRARY_KEY = 'red-ledger-replays-v3';
+const LEGACY_REPLAY_LIBRARY_KEYS = ['red-ledger-replays-v2', 'red-ledger-replays-v1'] as const;
 const REPLAY_LIBRARY_BYTES = 3_500_000;
 const REPLAY_LIBRARY_LIMIT = 6;
 
@@ -160,6 +160,11 @@ export const resolveScreenShakeSetting = (
   ? settings['screen-shake']
   : !systemPrefersReducedMotion;
 
+const SENSITIVITY_RANGE_IDS = new Set(['sensitivity', 'controller-sensitivity', 'touch-sensitivity']);
+
+export const formatRangeSetting = (id: string, value: number): string =>
+  SENSITIVITY_RANGE_IDS.has(id) ? `${value.toFixed(1)}x` : `${Math.round(value * 100)}%`;
+
 export const entryBriefingLabels = (initialOrientation: boolean): readonly string[] => initialOrientation
   ? ['MOVE', 'LOOK', 'FIRE', 'USE']
   : ['USE', 'WEAPON', 'MAP'];
@@ -255,6 +260,8 @@ export class UIController {
   private slotReturn = 'pause-menu';
   private lastAnnouncedMessage = '';
   private useFeedbackTimer?: number;
+  private hitMarkerTimer?: number;
+  private muzzleFlashTimer?: number;
   private weaponVisualToken = 0;
   private weaponBobPhase = 0;
   private weaponBob = { x: 0, y: 0 };
@@ -339,6 +346,8 @@ export class UIController {
       if (button.disabled) button.title = `${title} - locked`;
       button.addEventListener('click', () => {
         this.pendingEpisode = index;
+        $<HTMLButtonElement>('#difficulty-confirm').toggleAttribute('hidden', true);
+        this.syncDifficultySelection();
         this.showScreen('difficulty-menu');
       });
       container.append(button);
@@ -348,20 +357,50 @@ export class UIController {
   private buildDifficulties(): void {
     const container = $('#difficulty-actions');
     const detail = $('#difficulty-detail');
+    const confirmation = $<HTMLButtonElement>('#difficulty-confirm');
     const describe = (copy: string) => { detail.textContent = copy; };
     DIFFICULTY_OPTIONS.forEach(({ id, label, detail: copy }) => {
       const button = document.createElement('button');
+      const description = document.createElement('span');
+      let activationPointer = '';
       button.textContent = id === 'field-adjuster' ? `${label} - Recommended` : label;
+      button.dataset.difficulty = id;
+      button.setAttribute('aria-pressed', String(id === this.pendingDifficulty));
+      description.id = `difficulty-${id}-description`;
+      description.className = 'visually-hidden';
+      description.textContent = copy;
+      button.setAttribute('aria-describedby', description.id);
       button.addEventListener('focus', () => describe(copy));
       button.addEventListener('mouseenter', () => describe(copy));
+      button.addEventListener('pointerdown', (event) => { activationPointer = event.pointerType; });
+      button.addEventListener('keydown', () => { activationPointer = 'keyboard'; });
       button.addEventListener('click', () => {
         this.game.audio.unlock();
         this.pendingDifficulty = id;
+        this.syncDifficultySelection();
+        if (activationPointer === 'touch') {
+          confirmation.toggleAttribute('hidden', false);
+          activationPointer = '';
+          return;
+        }
+        activationPointer = '';
         this.showEpisodeIntro();
       });
-      container.append(button);
+      button.classList.toggle('selected', id === this.pendingDifficulty);
+      container.append(button, description);
     });
-    describe(DIFFICULTY_OPTIONS.find(({ id }) => id === 'field-adjuster')!.detail);
+    this.syncDifficultySelection();
+  }
+
+  private syncDifficultySelection(): void {
+    const selected = DIFFICULTY_OPTIONS.find(({ id }) => id === this.pendingDifficulty) ?? DIFFICULTY_OPTIONS[2];
+    $('#difficulty-actions').querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      const active = button.dataset.difficulty === selected.id;
+      button.setAttribute('aria-pressed', String(active));
+      button.classList.toggle('selected', active);
+    });
+    $('#difficulty-detail').textContent = selected.detail;
+    $<HTMLButtonElement>('#difficulty-confirm').textContent = `Continue: ${selected.label}`;
   }
 
   private bindActions(): void {
@@ -380,6 +419,10 @@ export class UIController {
       this.game.audio.uiCue(isBack ? 'menu-back' : 'menu-accept');
     }, { capture: true });
     $('#new-game').addEventListener('click', () => { this.updateEpisodeLocks(); this.showScreen('episode-menu'); });
+    $('#difficulty-confirm').addEventListener('click', () => {
+      this.game.audio.unlock();
+      this.showEpisodeIntro();
+    });
     $('#continue-game').addEventListener('click', () => {
       this.game.audio.unlock();
       if (this.game.load()) {
@@ -496,7 +539,7 @@ export class UIController {
       this.updateContinue();
       this.showScreen('menu');
     });
-    ['sensitivity', 'controller-sensitivity', 'touch-sensitivity', 'invert-y', 'controller-deadzone',
+    ['sensitivity', 'controller-sensitivity', 'touch-sensitivity', 'invert-y', 'vertical-auto-aim', 'controller-deadzone',
       'touch-size', 'touch-opacity', 'touch-handedness', 'text-scale', 'render-scale', 'hud-mode', 'classic-input',
       'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects',
       'master-volume', 'music-volume', 'sfx-volume', 'audio-profile', 'mute-audio'].forEach((id) => {
@@ -657,6 +700,9 @@ export class UIController {
     const recording = this.game.isDemoRecording();
     $('#recording-indicator').toggleAttribute('hidden', !recording);
     updateText($<HTMLButtonElement>('#record-replay'), recording ? 'Stop & Save Replay' : 'Record Replay');
+    const verticalAutoAim = $<HTMLInputElement>('#vertical-auto-aim');
+    verticalAutoAim.disabled = recording;
+    verticalAutoAim.title = recording ? 'Locked while recording a replay' : '';
     const replayControls = $('#replay-controls');
     replayControls.toggleAttribute('hidden', !snapshot.replay);
     if (snapshot.replay) {
@@ -716,11 +762,12 @@ export class UIController {
     const grid = snapshot.map.grid;
     const full = this.automapMode === 'full';
     const portrait = height > width;
+    const compactLandscape = !portrait && height <= 500;
     const legendHeight = full ? Math.max(30, Math.min(44, Math.round(height * .065))) : 0;
     const mapHeight = height - legendHeight;
     const padding = Math.max(10, Math.min(24, Math.round(Math.min(width, mapHeight) * .04)));
     const targetColumns = portrait ? 18 : full ? 30 : 24;
-    const targetRows = portrait ? 34 : full ? 16 : 18;
+    const targetRows = portrait ? 34 : full ? (compactLandscape ? 15 : 16) : 18;
     const baseScale = Math.max(6, Math.min(
       (width - padding * 2) / targetColumns,
       (mapHeight - padding * 2) / targetRows,
@@ -923,9 +970,10 @@ export class UIController {
     const screen = $('#intermission');
     screen.querySelectorAll('.completion-particle').forEach((element) => element.remove());
     const texture = runtimeUrl('public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_08.png');
+    const reducedMotion = $<HTMLInputElement>('#reduced-motion').checked;
     const restrained = $<HTMLInputElement>('#reduced-effects').checked
       || !$<HTMLInputElement>('#flash-effects').checked
-      || $<HTMLInputElement>('#reduced-motion').checked;
+      || reducedMotion;
     const count = restrained ? 1 : 10;
     for (let index = 0; index < count; index += 1) {
       const particle = document.createElement('i');
@@ -933,6 +981,12 @@ export class UIController {
       particle.setAttribute('aria-hidden', 'true');
       particle.style.backgroundImage = `url('${texture}')`;
       screen.append(particle);
+      if (reducedMotion) {
+        particle.style.opacity = '1';
+        particle.style.transform = 'translate(-50%, -50%)';
+        window.setTimeout(() => particle.remove(), 180);
+        continue;
+      }
       if (restrained) {
         const animation = particle.animate([
           { opacity: 0, transform: 'translate(-50%, -50%) scale(.72)' },
@@ -995,9 +1049,15 @@ export class UIController {
       if (detail.killed) marker.classList.add('kill');
       void (marker as HTMLElement).offsetWidth;
       marker.classList.add('active');
+      if (this.hitMarkerTimer) window.clearTimeout(this.hitMarkerTimer);
+      this.hitMarkerTimer = window.setTimeout(() => {
+        marker.classList.remove('active', 'kill');
+        this.hitMarkerTimer = undefined;
+      }, 160);
       return;
     }
     if ($<HTMLInputElement>('#reduced-effects').checked || !$<HTMLInputElement>('#flash-effects').checked) return;
+    if ($<HTMLInputElement>('#reduced-motion').checked) return;
     $<HTMLElement>('#reticle').animate([
       { opacity: .68, transform: 'translate(-50%, -50%) scale(1.16)' },
       { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
@@ -1027,7 +1087,21 @@ export class UIController {
     flash.style.left = `${left}%`;
     flash.style.bottom = `${presentationBottom}%`;
     flash.style.backgroundImage = `url('${runtimeUrl(`public_runtime/effects/particle-weapon-feedback/fx_particle-weapon-feedback_F_${String(frame).padStart(2, '0')}.png`)}')`;
+    if (this.muzzleFlashTimer) window.clearTimeout(this.muzzleFlashTimer);
+    this.muzzleFlashTimer = undefined;
     flash.getAnimations().forEach((animation) => animation.cancel());
+    flash.style.opacity = '0';
+    flash.style.transform = '';
+    if ($<HTMLInputElement>('#reduced-motion').checked) {
+      flash.style.opacity = '1';
+      flash.style.transform = 'translate(-50%, 0)';
+      this.muzzleFlashTimer = window.setTimeout(() => {
+        flash.style.opacity = '0';
+        flash.style.transform = '';
+        this.muzzleFlashTimer = undefined;
+      }, 180);
+      return;
+    }
     flash.animate([
       { opacity: 0, transform: 'translate(-50%, 30%) scale(.45) rotate(-8deg)' },
       { opacity: 1, transform: 'translate(-50%, 0) scale(1.25) rotate(4deg)' },
@@ -1098,10 +1172,7 @@ export class UIController {
     const raw = this.entryBinding(action, 'gamepad-button');
     const button = /^Gamepad (\d+)$/.exec(raw)?.[1];
     if (button === undefined) return raw;
-    return ({
-      0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'LB', 5: 'RB', 6: 'LT', 7: 'RT',
-      8: 'View', 9: 'Menu', 10: 'L3', 11: 'R3',
-    } as Record<string, string>)[button] ?? raw;
+    return `Button ${Number(button) + 1}`;
   }
 
   private buildEntryBriefing(): void {
@@ -1116,7 +1187,7 @@ export class UIController {
     const touchHandedness = $<HTMLSelectElement>('#touch-handedness').value === 'left' ? 'left' : 'right';
     const touchPads = touchBriefingPadLabels(touchHandedness);
     const values = device === 'touch' ? {
-      MOVE: touchPads.move, LOOK: touchPads.look, FIRE: 'Red control', USE: 'Use control', WEAPON: 'WPN control', MAP: 'Map control',
+      MOVE: touchPads.move, LOOK: touchPads.look, FIRE: 'FIRE control', USE: 'USE control', WEAPON: 'WPN control', MAP: 'MAP control',
     } : device === 'gamepad' ? {
       MOVE: 'Left stick', LOOK: 'Right stick', FIRE: this.entryGamepadBinding('fire'), USE: this.entryGamepadBinding('use'),
       WEAPON: this.entryGamepadBinding('weapon-radial'), MAP: this.entryGamepadBinding('automap'),
@@ -1127,6 +1198,7 @@ export class UIController {
     const entries = entryBriefingLabels(initialOrientation).map((label) => [label, values[label as keyof typeof values]]);
     container.replaceChildren(...entries.map(([label, value]) => {
       const item = document.createElement('span');
+      item.setAttribute('role', 'listitem');
       const title = document.createElement('b');
       const binding = document.createElement('small');
       title.textContent = label;
@@ -1592,8 +1664,10 @@ export class UIController {
 
   private hasLegacyReplayLibrary(): boolean {
     try {
-      const value: unknown = JSON.parse(localStorage.getItem(LEGACY_REPLAY_LIBRARY_KEY) ?? '[]');
-      return Array.isArray(value) && value.length > 0;
+      return LEGACY_REPLAY_LIBRARY_KEYS.some((key) => {
+        const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
+        return Array.isArray(value) && value.length > 0;
+      });
     } catch {
       return false;
     }
@@ -1925,7 +1999,7 @@ export class UIController {
       $<HTMLSelectElement>('#text-scale').value = presentation.uiTextScale;
       if (typeof settings.renderScale === 'number') $<HTMLSelectElement>('#render-scale').value = String(settings.renderScale);
       if (settings.hudMode === 'minimal') $<HTMLSelectElement>('#hud-mode').value = 'minimal';
-      for (const id of ['classic-input', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects']) {
+      for (const id of ['classic-input', 'vertical-auto-aim', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects']) {
         if (typeof settings[id] === 'boolean') $<HTMLInputElement>(`#${id}`).checked = Boolean(settings[id]);
       }
     } catch {
@@ -1966,6 +2040,9 @@ export class UIController {
     const renderScale = Number($<HTMLSelectElement>('#render-scale').value);
     const hudMode = $<HTMLSelectElement>('#hud-mode').value;
     this.game.classicInput = $<HTMLInputElement>('#classic-input').checked;
+    const verticalAutoAim = $<HTMLInputElement>('#vertical-auto-aim');
+    if (this.game.isDemoRecording()) verticalAutoAim.checked = this.game.verticalAutoAim;
+    else this.game.verticalAutoAim = verticalAutoAim.checked;
     this.game.setRenderScale(renderScale);
     const shell = $<HTMLElement>('#game-shell');
     shell.dataset.touchSize = presentation.touchControlSize;
@@ -1982,6 +2059,7 @@ export class UIController {
     this.game.audio.setSfxVolume(Number($<HTMLInputElement>('#sfx-volume').value));
     this.game.audio.setPlaybackProfile($<HTMLSelectElement>('#audio-profile').value as AudioPlaybackProfile);
     this.game.audio.setMuted($<HTMLInputElement>('#mute-audio').checked);
+    this.updateRangeOutputs();
     window.dispatchEvent(new CustomEvent('accessibility-settings-change', { detail: {
       reducedMotion: $<HTMLInputElement>('#reduced-motion').checked,
       highContrast: $<HTMLInputElement>('#high-contrast').checked,
@@ -2005,6 +2083,7 @@ export class UIController {
         renderScale,
         hudMode,
         'classic-input': $<HTMLInputElement>('#classic-input').checked,
+        'vertical-auto-aim': $<HTMLInputElement>('#vertical-auto-aim').checked,
         'screen-shake': $<HTMLInputElement>('#screen-shake').checked,
         'reduced-motion': $<HTMLInputElement>('#reduced-motion').checked,
         'high-contrast': $<HTMLInputElement>('#high-contrast').checked,
@@ -2013,6 +2092,16 @@ export class UIController {
       }));
     } catch {
       this.showRuntimeWarning('Browser storage is unavailable. Settings apply for this session only.');
+    }
+  }
+
+  private updateRangeOutputs(): void {
+    for (const id of ['sensitivity', 'controller-sensitivity', 'controller-deadzone', 'touch-sensitivity',
+      'touch-opacity', 'master-volume', 'music-volume', 'sfx-volume']) {
+      const input = $<HTMLInputElement>(`#${id}`);
+      const value = formatRangeSetting(id, Number(input.value));
+      input.setAttribute('aria-valuetext', value);
+      $<HTMLOutputElement>(`#${id}-value`).value = value;
     }
   }
 
@@ -2050,7 +2139,12 @@ export class UIController {
     const screen = $<HTMLElement>(`#${id}`);
     screen.classList.add('active');
     requestAnimationFrame(() => {
-      screen.querySelector<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled)')?.focus({ preventScroll: true });
+      const selectedDifficulty = id === 'difficulty-menu'
+        ? screen.querySelector<HTMLElement>(`button[data-difficulty="${this.pendingDifficulty}"]:not(:disabled)`)
+        : undefined;
+      (selectedDifficulty
+        ?? screen.querySelector<HTMLElement>('button:not(:disabled), select:not(:disabled), input:not(:disabled)'))
+        ?.focus({ preventScroll: true });
       screen.scrollTop = 0;
     });
   }

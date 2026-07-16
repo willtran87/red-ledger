@@ -20,7 +20,14 @@ import { CAMPAIGN, type CampaignMap, type Credential, type MapId, type PickupId,
 import { AssetCatalog } from './AssetCatalog';
 import { AudioSystem } from './AudioSystem';
 import { ambientAudioGroups, pickupAudioFeedbackCue, surfaceAudioFeedbackGroup } from './AudioSemantics';
-import { directionFromView, rayVerticalCylinderDistance, sampleShotSpread } from './CombatMath';
+import {
+  directionFromView,
+  rayVerticalCylinderDistance,
+  sampleShotSpread,
+  verticalAutoAimDirection,
+  verticalAutoAimCylinder,
+  VERTICAL_AUTO_AIM_RADIANS,
+} from './CombatMath';
 import { DIFFICULTY, ENEMIES, WEAPONS, type AmmoType, type GameDifficulty } from './definitions';
 import { addAmmoWithinCap, ammoCap, pickupAmmoGrant, weaponAcquisitionAmmoGrant } from './EconomyPolicy';
 import {
@@ -36,6 +43,7 @@ import {
   EnemyBehaviorSystem,
   buildNavigationDistanceField,
   navigationDirectionFromField,
+  reconcileEnemyBehaviorSnapshot,
   type ActorBehaviorState,
   type BehaviorActor,
   type BehaviorEvent,
@@ -48,6 +56,7 @@ import {
   type NavigationDistanceField,
   type NavigationGridAdapter,
   type ProjectileState,
+  type RestoredBehaviorActorIdentity,
 } from './EnemyBehaviorSystem';
 import {
   DEFAULT_INPUT_PREFERENCES,
@@ -72,6 +81,11 @@ import {
   type SaveThumbnail,
 } from './PersistenceSystem';
 import {
+  findMatchingRuntimeActorIdentity,
+  findMatchingRuntimePickupIdentity,
+  findUniqueRuntimeActorIdentity,
+  isDynamicSummonUid,
+  resolveRestoredActorAwake,
   World,
   type AmmoDropState,
   type BossMechanismState,
@@ -79,6 +93,7 @@ import {
   type LandmarkState,
   type MoverCompletion,
   type RuntimeActor,
+  type RuntimePickup,
   type SectorMoverState,
 } from './World';
 
@@ -108,6 +123,95 @@ export interface MapTally {
   totalSecrets: number;
   elapsed: number;
 }
+
+export interface RestoredEncounterEvidence {
+  readonly unlockedEncounters?: readonly string[];
+  readonly triggered: readonly string[];
+  readonly mechanisms?: readonly string[];
+  readonly bossMechanisms?: BossMechanismState;
+}
+
+export const resolveRestoredUnlockedEncounters = (
+  map: CampaignMap,
+  evidence: RestoredEncounterEvidence,
+): readonly string[] => {
+  const encounterIds = new Set(map.encounters.map((encounter) => encounter.id));
+  const unlocked = new Set<string>(['entry']);
+  const addTargets = (targets: readonly string[] | undefined): void => {
+    targets?.forEach((target) => { if (encounterIds.has(target)) unlocked.add(target); });
+  };
+
+  if (evidence.unlockedEncounters !== undefined) {
+    evidence.unlockedEncounters.forEach((id) => { if (encounterIds.has(id)) unlocked.add(id); });
+    return [...unlocked];
+  }
+  const activatedMechanisms = new Set(
+    (evidence.mechanisms ?? []).filter((id) => map.mechanisms.some((mechanism) => mechanism.id === id)),
+  );
+  evidence.triggered.forEach((token) => {
+    if (token.startsWith('encounter-complete:')) {
+      const id = token.slice('encounter-complete:'.length);
+      if (encounterIds.has(id)) unlocked.add(id);
+      const encounter = map.encounters.find((candidate) => candidate.id === id);
+      const targets = map.id === 'E3M8' && id === 'boss-1'
+        ? encounter?.opens?.filter((target) => target !== 'boss-2')
+        : encounter?.opens;
+      addTargets(targets);
+    }
+    const trigger = map.triggers.find((candidate) => candidate.id === token);
+    if (!trigger) return;
+    addTargets(trigger.targets);
+    trigger.targets.forEach((target) => {
+      if (map.mechanisms.some((mechanism) => mechanism.id === target)) activatedMechanisms.add(target);
+    });
+  });
+  const independentFamily = map.mechanisms.filter((mechanism) => mechanism.independent);
+  map.mechanisms.filter((mechanism) => activatedMechanisms.has(mechanism.id)).forEach((mechanism) => {
+    if (mechanism.independent) {
+      if (independentFamily.every((member) => activatedMechanisms.has(member.id))) {
+        independentFamily.forEach((member) => addTargets(member.opens));
+      }
+      return;
+    }
+    if (mechanism.requires.every((required) => activatedMechanisms.has(required))) addTargets(mechanism.opens);
+  });
+  if (map.id === 'E3M8' && (evidence.bossMechanisms?.bindingGates ?? 0) >= 3) unlocked.add('boss-2');
+  return [...unlocked];
+};
+
+export const resolveLegacyCompletedEncounters = (
+  map: CampaignMap,
+  evidence: RestoredEncounterEvidence,
+): readonly string[] => {
+  if (evidence.unlockedEncounters !== undefined) return [];
+  const encounterIds = new Set(map.encounters.map((encounter) => encounter.id));
+  const completed = new Set<string>();
+  evidence.triggered.forEach((token) => {
+    if (token.startsWith('encounter-complete:')) {
+      const id = token.slice('encounter-complete:'.length);
+      if (encounterIds.has(id)) completed.add(id);
+    }
+    const requirement = map.triggers.find((trigger) => trigger.id === token)?.requiresEncounter;
+    if (requirement && encounterIds.has(requirement)) completed.add(requirement);
+  });
+  return [...completed];
+};
+
+export const reconcileRestoredTally = (
+  saved: MapTally,
+  actors: readonly Pick<RuntimeActor, 'dead'>[],
+  pickups: readonly Pick<RuntimePickup, 'collected' | 'counted'>[],
+  discoveredSecrets: number,
+  totalSecrets: number,
+): MapTally => ({
+  kills: actors.filter((actor) => actor.dead).length,
+  totalKills: actors.length,
+  items: pickups.filter((pickup) => pickup.counted && pickup.collected).length,
+  totalItems: pickups.filter((pickup) => pickup.counted).length,
+  secrets: Math.min(discoveredSecrets, totalSecrets),
+  totalSecrets,
+  elapsed: saved.elapsed,
+});
 
 export interface CombatMomentum {
   chain: number;
@@ -153,15 +257,19 @@ interface SaveData {
     ammo: PlayerState['ammo']; weapons: WeaponId[]; weapon: WeaponId; credentials: Credential[]; floorPlan: boolean; powerups: PlayerState['powerups'];
   };
   actors: Array<{
-    uid: string; kind?: 'enemy' | 'boss'; id?: RuntimeActor['id']; health: number; dead: boolean; scoreEligible?: boolean; phaseLocked: boolean;
+    uid: string; kind?: 'enemy' | 'boss'; id?: RuntimeActor['id']; authoredKey?: string; health: number; dead: boolean; scoreEligible?: boolean; phaseLocked: boolean;
     position: [number, number, number]; awake?: boolean; facing?: number; animationTime?: number; attackFlash?: number; redacted?: boolean;
   }>;
-  pickups: Array<{ uid: string; collected: boolean; phaseLocked?: boolean }>;
+  pickups: Array<{
+    uid: string; collected: boolean; phaseLocked?: boolean;
+    kind?: RuntimePickup['kind']; id?: RuntimePickup['id']; position?: [number, number, number];
+  }>;
   doors: Array<string | { key: string; open: boolean; progress: number }>;
   secrets: string[];
   visited: string[];
   triggered: string[];
   mechanisms?: string[];
+  unlockedEncounters?: string[];
   hazardsEnabled: boolean;
   tally: MapTally;
   momentum?: CombatMomentum;
@@ -238,6 +346,7 @@ interface HostileBeamVisual {
 interface ActiveDemoPlayback {
   readonly demo: DemoData<SaveData, GameplayCommand>;
   readonly playback: DemoPlayback<GameplayCommand>;
+  readonly userVerticalAutoAim: boolean;
   paused: boolean;
   finished: boolean;
   speed: number;
@@ -354,6 +463,14 @@ export const pickupParticleFeedbackKind = (pickup: ParticlePickupDescriptor): Pa
 };
 
 export type TimedPowerupKey = keyof PlayerState['powerups'];
+
+const FORENSIC_SIGNATURE_TINT = 0x47bcd1;
+const REDACTED_ACTOR_TINT = 0xc93434;
+
+export const hostileSignatureTint = (forensicActive: boolean, redacted: boolean, dead: boolean): number => {
+  if (forensicActive && !dead) return FORENSIC_SIGNATURE_TINT;
+  return redacted ? REDACTED_ACTOR_TINT : 0xffffff;
+};
 
 export const statusExpiryParticleFeedbackKind = (powerup: TimedPowerupKey): ParticleKind => ({
   binder: 'deflection',
@@ -510,15 +627,20 @@ const isSaveData = (value: unknown): value is SaveData => {
     || (player.pitch !== undefined && !isFiniteNumber(player.pitch))) return false;
   if (!Array.isArray(value.actors) || !value.actors.every((entry) => isRecord(entry) && typeof entry.uid === 'string'
     && isFiniteRecord(entry, ['health']) && typeof entry.dead === 'boolean' && typeof entry.phaseLocked === 'boolean' && isVector3(entry.position)
-    && (entry.id === undefined || (typeof entry.id === 'string' && entry.id in ENEMIES)))) return false;
+    && (entry.id === undefined || (typeof entry.id === 'string' && entry.id in ENEMIES))
+    && (entry.authoredKey === undefined || typeof entry.authoredKey === 'string'))) return false;
   if (!Array.isArray(value.pickups) || !value.pickups.every((entry) => isRecord(entry)
     && typeof entry.uid === 'string'
     && typeof entry.collected === 'boolean'
-    && (entry.phaseLocked === undefined || typeof entry.phaseLocked === 'boolean'))) return false;
+    && (entry.phaseLocked === undefined || typeof entry.phaseLocked === 'boolean')
+    && (entry.kind === undefined || entry.kind === 'pickup' || entry.kind === 'weapon' || entry.kind === 'credential')
+    && (entry.id === undefined || typeof entry.id === 'string')
+    && (entry.position === undefined || isVector3(entry.position)))) return false;
   if (!Array.isArray(value.doors) || !value.doors.every((entry) => typeof entry === 'string' || (isRecord(entry) && typeof entry.key === 'string'
     && typeof entry.open === 'boolean' && isFiniteNumber(entry.progress)))) return false;
   if (!isStringArray(value.secrets) || !isStringArray(value.visited) || !isStringArray(value.triggered)
     || (value.mechanisms !== undefined && !isStringArray(value.mechanisms)) || typeof value.hazardsEnabled !== 'boolean'
+    || (value.unlockedEncounters !== undefined && !isStringArray(value.unlockedEncounters))
     || !isFiniteRecord(value.tally, ['kills', 'totalKills', 'items', 'totalItems', 'secrets', 'totalSecrets', 'elapsed']) || !isFiniteNumber(value.rng)) return false;
   if (value.momentum !== undefined && !isFiniteRecord(value.momentum, ['chain', 'best', 'score', 'timer'])) return false;
   if (value.enemyBehavior !== undefined && !isEnemyBehaviorSnapshot(value.enemyBehavior)) return false;
@@ -584,6 +706,7 @@ export class GameEngine {
   invertLookY = DEFAULT_INPUT_PREFERENCES.invertY;
   controllerDeadzone = DEFAULT_INPUT_PREFERENCES.controllerDeadzone;
   classicInput = false;
+  verticalAutoAim = true;
   accessibility = { highContrast: false, reducedEffects: false, reducedMotion: false, flashEffects: true, screenShake: true };
   onChange?: (snapshot: GameSnapshot) => void;
   onIntermission?: (nextMap?: MapId) => void;
@@ -731,6 +854,7 @@ export class GameEngine {
     this.hostileNavigationFields.clear();
     this.hostileNavigationTopology = '';
     this.audio.clearSpatialDiagnostics();
+    if (this.activeDemo) this.verticalAutoAim = this.activeDemo.userVerticalAutoAim;
     this.activeDemo = undefined;
     this.lastMapResult = undefined;
     this.player.position.set(map.playerStart.x * map.cellSize, 0, map.playerStart.z * map.cellSize);
@@ -1101,8 +1225,8 @@ export class GameEngine {
     window.dispatchEvent(new CustomEvent('view-recoil', { detail: { amount: weapon.recoil, weapon: weapon.id } }));
     if (weapon.id === 'catastrophe-launcher' || weapon.id === 'plasma-copier') {
       let direction = this.aimDirection();
-      const autoTarget = this.findTarget(direction, weapon.range, Math.PI / 30);
-      if (autoTarget) direction = autoTarget.position.clone().add(new Vector3(0, ENEMIES[autoTarget.id].height * .5, 0)).sub(this.player.position).normalize();
+      const autoTarget = this.findTarget(direction, weapon.range, this.verticalAutoAimTolerance());
+      if (autoTarget && this.verticalAutoAim) direction = this.verticalAssistedDirection(direction, autoTarget);
       const position = this.player.position.clone().addScaledVector(direction, .7).setY(this.player.position.y - .2);
       const projectile: PlayerProjectile = {
         id: `player-projectile-${this.projectileSequence++}`,
@@ -1128,7 +1252,7 @@ export class GameEngine {
     for (let pellet = 0; pellet < weapon.pellets; pellet += 1) {
       const spread = sampleShotSpread(weapon.spread, () => this.random());
       const direction = this.aimDirection(spread.yaw, spread.pitch);
-      const aimAssist = weapon.pellets === 1 ? .025 : 0;
+      const aimAssist = this.verticalAutoAimTolerance();
       const target = this.findTarget(direction, weapon.range, aimAssist);
       if (!target) {
         const breakable = this.findBreakableTarget(direction, weapon.range, aimAssist);
@@ -1195,16 +1319,16 @@ export class GameEngine {
     this.bindingBeam.timer -= dt;
     while (this.bindingBeam && this.bindingBeam.timer <= 0 && this.bindingBeam.pulses > 0) {
       const direction = this.aimDirection();
-      const target = this.findTarget(direction, WEAPONS['binding-engine'].range, .055);
+      const target = this.findTarget(direction, WEAPONS['binding-engine'].range, this.verticalAutoAimTolerance());
       let endpoint = this.traceWorldImpact(direction, WEAPONS['binding-engine'].range);
       if (target) {
         this.damageActor(target, this.rollWeaponDamage('binding-engine'), 'player');
-        endpoint = target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0));
+        endpoint = this.targetRayPoint(direction, target);
         this.emitParticles('energy', endpoint, 2, impactParticleDirection(direction));
         window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: 'binding-engine', kind: 'actor', targetUid: target.uid, killed: target.dead } }));
       }
       else {
-        const breakable = this.findBreakableTarget(direction, WEAPONS['binding-engine'].range, .055);
+        const breakable = this.findBreakableTarget(direction, WEAPONS['binding-engine'].range, this.verticalAutoAimTolerance());
         if (breakable) {
           endpoint = breakable.position.clone().add(new Vector3(0, .6, 0));
           this.damageBreakable(breakable.key, this.rollWeaponDamage('binding-engine'), impactParticleDirection(direction));
@@ -1217,9 +1341,9 @@ export class GameEngine {
     }
     if (this.bindingBeam) {
       const direction = this.aimDirection();
-      const target = this.findTarget(direction, WEAPONS['binding-engine'].range, .055);
+      const target = this.findTarget(direction, WEAPONS['binding-engine'].range, this.verticalAutoAimTolerance());
       const endpoint = target
-        ? target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0))
+        ? this.targetRayPoint(direction, target)
         : this.traceWorldImpact(direction, WEAPONS['binding-engine'].range);
       this.updateBindingBeamVisual(endpoint, dt);
       if (this.bindingBeam.pulses <= 0 && this.bindingBeam.timer <= 0) {
@@ -1578,12 +1702,20 @@ export class GameEngine {
       if (actor.dead || actor.phaseLocked) continue;
       const definition = ENEMIES[actor.id];
       const center = actor.position.clone().add(new Vector3(0, definition.height * .5, 0));
-      const centerDistance = center.distanceTo(this.player.position);
-      const assistance = Math.tan(tolerance) * centerDistance;
-      const base = actor.position.clone().add(new Vector3(0, -assistance, 0));
+      const horizontalDistance = Math.hypot(
+        center.x - this.player.position.x,
+        center.z - this.player.position.z,
+      );
+      const volume = verticalAutoAimCylinder(
+        actor.position,
+        definition.radius,
+        definition.height,
+        horizontalDistance,
+        tolerance,
+      );
       const distance = rayVerticalCylinderDistance(
-        this.player.position, direction, base,
-        definition.radius + assistance, definition.height + assistance * 2, bestDistance,
+        this.player.position, direction, volume.base,
+        volume.radius, volume.height, bestDistance,
       );
       if (distance === undefined || !this.world.hasLineOfSight(this.player.position, center)) continue;
       result = actor;
@@ -1598,17 +1730,47 @@ export class GameEngine {
     for (const breakable of this.world.breakables.values()) {
       if (breakable.destroyed) continue;
       const center = breakable.position.clone().add(new Vector3(0, .6, 0));
-      const centerDistance = center.distanceTo(this.player.position);
-      const assistance = Math.tan(tolerance) * centerDistance;
-      const base = breakable.position.clone().add(new Vector3(0, -assistance, 0));
+      const horizontalDistance = Math.hypot(
+        center.x - this.player.position.x,
+        center.z - this.player.position.z,
+      );
+      const volume = verticalAutoAimCylinder(
+        breakable.position,
+        .35,
+        1.2,
+        horizontalDistance,
+        tolerance,
+      );
       const distance = rayVerticalCylinderDistance(
-        this.player.position, direction, base, .35 + assistance, 1.2 + assistance * 2, bestDistance,
+        this.player.position, direction, volume.base, volume.radius, volume.height, bestDistance,
       );
       if (distance === undefined || !this.world.hasLineOfSight(this.player.position, center)) continue;
       result = breakable;
       bestDistance = distance;
     }
     return result;
+  }
+
+  private verticalAssistedDirection(direction: Vector3, target: RuntimeActor): Vector3 {
+    const center = target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0));
+    const assisted = verticalAutoAimDirection(this.player.position, direction, center);
+    return new Vector3(assisted.x, assisted.y, assisted.z);
+  }
+
+  private targetRayPoint(direction: Vector3, target: RuntimeActor): Vector3 {
+    const center = target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .5, 0));
+    const ray = this.verticalAutoAim ? this.verticalAssistedDirection(direction, target) : direction;
+    const horizontalRay = Math.hypot(ray.x, ray.z);
+    if (horizontalRay <= 1e-8) return center;
+    const horizontalDistance = Math.hypot(
+      center.x - this.player.position.x,
+      center.z - this.player.position.z,
+    );
+    return this.player.position.clone().addScaledVector(ray, horizontalDistance / horizontalRay);
+  }
+
+  private verticalAutoAimTolerance(): number {
+    return this.verticalAutoAim ? VERTICAL_AUTO_AIM_RADIANS : 0;
   }
 
   private damageBreakable(key: string, damage: number, impactDirection?: Readonly<Vector3>): void {
@@ -1764,6 +1926,7 @@ export class GameEngine {
         velocity: this.playerVelocity,
         radius: .32,
         alive: this.player.health > 0,
+        targetingDisrupted: this.player.powerups.forensic > 0,
       },
       world: {
         hasLineOfSight: (from, to) => this.world.hasLineOfSight(
@@ -1923,7 +2086,7 @@ export class GameEngine {
         }
         break;
       case 'damage': {
-        const adjusted = event.amount * damageScale * (this.player.powerups.forensic > 0 ? .62 : 1);
+        const adjusted = event.amount * damageScale;
         if (event.targetUid === 'player') this.damagePlayer(adjusted, event.sourceUid, event.damageKind);
         else {
           const target = this.world.actors.find((candidate) => candidate.uid === event.targetUid);
@@ -2348,6 +2511,14 @@ export class GameEngine {
   }
 
   private updateActorVisual(actor: RuntimeActor, refreshVisibility = true): void {
+    const redacted = Boolean((actor as RuntimeActor & { redacted?: boolean }).redacted);
+    const forensicSignature = this.player.powerups.forensic > 0 && !actor.dead;
+    actor.sprite.material.color.set(hostileSignatureTint(forensicSignature, redacted, actor.dead));
+    const signatureBlending = forensicSignature ? AdditiveBlending : NormalBlending;
+    if (actor.sprite.material.blending !== signatureBlending) {
+      actor.sprite.material.blending = signatureBlending;
+      actor.sprite.material.needsUpdate = true;
+    }
     if (actor.phaseLocked) {
       actor.sprite.visible = false;
       return;
@@ -2358,8 +2529,8 @@ export class GameEngine {
     }
     if (!actor.sprite.visible) return;
     const behaviorState = this.enemyBehavior.getActorState(actor.uid);
-    actor.sprite.material.opacity = this.player.powerups.forensic > 0 ? 1 : behaviorState?.visible === false ? .18 : 1;
-    actor.sprite.material.depthWrite = actor.sprite.material.opacity >= 1;
+    actor.sprite.material.opacity = forensicSignature ? .82 : behaviorState?.visible === false ? .18 : 1;
+    actor.sprite.material.depthWrite = !forensicSignature && actor.sprite.material.opacity >= 1;
     let state = this.actorVisualState(actor, behaviorState);
     let frameRate = state === 'attack' ? 10 : 7;
     if (actor.dead) {
@@ -2861,15 +3032,28 @@ export class GameEngine {
       },
       actors: this.world.actors.map((actor) => ({
         uid: actor.uid, kind: actor.kind, id: actor.id, health: actor.health, dead: actor.dead, scoreEligible: actor.scoreEligible, phaseLocked: actor.phaseLocked,
+        ...(actor.authoredKey ? { authoredKey: actor.authoredKey } : {}),
         position: actor.position.toArray(), awake: actor.awake, facing: actor.facing, animationTime: actor.animationTime, attackFlash: actor.attackFlash,
         ...((actor as RuntimeActor & { redacted?: boolean }).redacted ? { redacted: true } : {}),
       })),
-      pickups: this.world.pickups.map((pickup) => ({ uid: pickup.uid, collected: pickup.collected, phaseLocked: pickup.phaseLocked })),
+      pickups: this.world.pickups.map((pickup) => ({
+        uid: pickup.uid,
+        kind: pickup.kind,
+        id: pickup.id,
+        position: pickup.position.toArray(),
+        collected: pickup.collected,
+        phaseLocked: pickup.phaseLocked,
+      })),
       doors: [...this.world.doors.values()].map((door) => ({ key: door.key, open: door.open, progress: door.progress })),
       secrets: [...this.world.discoveredSecrets],
       visited: [...this.world.visitedTiles],
       triggered: [...this.triggered],
       mechanisms: [...this.world.activatedMechanisms],
+      unlockedEncounters: this.world.map.encounters
+        .filter((encounter) => encounter.id === 'entry'
+          || this.world.actors.some((actor) => actor.encounter === encounter.id && !actor.phaseLocked)
+          || this.world.pickups.some((pickup) => pickup.route === encounter.id && !pickup.phaseLocked))
+        .map((encounter) => encounter.id),
       hazardsEnabled: this.world.hazardsEnabled,
       tally: { ...this.tally },
       momentum: { ...this.momentum },
@@ -3057,17 +3241,24 @@ export class GameEngine {
       Object.assign(this.momentum, save.momentum ?? { chain: 0, best: 0, score: 0, timer: 0 });
       this.rngState = save.rng;
       this.world.restoreAmmoDrops(save.ammoDrops ?? []);
+      resolveRestoredUnlockedEncounters(this.world.map, save).forEach((id) => this.world.unlockEncounter(id));
+      const restoredActorUids = new Set<string>();
+      const restoredBehaviorActors: RestoredBehaviorActorIdentity[] = [];
       for (const saved of save.actors) {
-        let actor = this.world.actors.find((candidate) => candidate.uid === saved.uid);
-        if (!actor && saved.kind === 'enemy' && saved.id && saved.id in ENEMIES) {
+        const uidActor = this.world.actors.find((candidate) => candidate.uid === saved.uid);
+        let actor = findMatchingRuntimeActorIdentity(saved, this.world.actors);
+        if (!actor && saved.kind === 'boss') actor = findUniqueRuntimeActorIdentity(saved, this.world.actors);
+        if (!actor && !uidActor && isDynamicSummonUid(saved.uid) && saved.kind === 'enemy' && saved.id && saved.id in ENEMIES) {
           actor = this.world.summonEnemy(saved.id as Exclude<RuntimeActor['id'], 'regional-director' | 'aggregate' | 'chief-actuary' | 'uninsurable'>, new Vector3().fromArray(saved.position), saved.uid);
         }
-        if (!actor) continue;
+        if (!actor || restoredActorUids.has(actor.uid)) continue;
+        restoredActorUids.add(actor.uid);
+        restoredBehaviorActors.push({ savedUid: saved.uid, runtimeUid: actor.uid, id: actor.id });
         actor.health = saved.health;
         actor.dead = saved.dead;
         actor.scoreEligible = saved.scoreEligible ?? !saved.dead;
         actor.phaseLocked = saved.phaseLocked ?? false;
-        actor.awake = saved.awake ?? actor.awake;
+        actor.awake = resolveRestoredActorAwake(saved.awake, actor.phaseLocked);
         actor.facing = saved.facing ?? actor.facing;
         actor.animationTime = saved.animationTime ?? actor.animationTime;
         actor.attackFlash = saved.attackFlash ?? 0;
@@ -3078,15 +3269,25 @@ export class GameEngine {
         actor.sprite.position.copy(actor.position);
         if (actor.dead) this.setActorDeadVisual(actor, false);
       }
+      const completedLegacyEncounters = new Set(resolveLegacyCompletedEncounters(this.world.map, save));
+      this.world.actors.forEach((actor) => {
+        if (restoredActorUids.has(actor.uid) || !actor.mandatory || !actor.encounter
+          || !completedLegacyEncounters.has(actor.encounter)) return;
+        actor.health = 0;
+        actor.dead = true;
+        actor.scoreEligible = false;
+        actor.phaseLocked = false;
+        actor.sprite.visible = true;
+        this.setActorDeadVisual(actor, false);
+      });
+      const restoredPickupUids = new Set<string>();
       for (const saved of save.pickups) {
-        const pickup = this.world.pickups.find((candidate) => candidate.uid === saved.uid);
-        if (pickup) {
-          pickup.collected = saved.collected;
-          // Saves written before route-gated pickups existed omitted this field; preserving their
-          // original exposed behavior avoids permanently locking rewards after restored triggers.
-          pickup.phaseLocked = saved.phaseLocked ?? false;
-          pickup.sprite.visible = !pickup.collected && !pickup.phaseLocked;
-        }
+        const pickup = findMatchingRuntimePickupIdentity(saved, this.world.pickups);
+        if (!pickup || restoredPickupUids.has(pickup.uid)) continue;
+        restoredPickupUids.add(pickup.uid);
+        pickup.collected = saved.collected;
+        pickup.phaseLocked = saved.phaseLocked ?? false;
+        pickup.sprite.visible = !pickup.collected && !pickup.phaseLocked;
       }
       this.world.restoreBossMechanisms(save.bossMechanisms);
       save.doors.forEach((saved) => {
@@ -3098,11 +3299,20 @@ export class GameEngine {
       this.world.restoreLandmarks(save.landmarks ?? []);
       this.world.restoreBreakables(save.breakables ?? []);
       this.world.restoreSecrets(save.secrets);
+      this.tally = reconcileRestoredTally(
+        save.tally,
+        this.world.actors,
+        this.world.pickups,
+        this.world.discoveredSecrets.size,
+        this.world.map.secrets.length,
+      );
       save.visited?.forEach((key) => this.world.visitedTiles.add(key));
       save.triggered?.forEach((key) => this.triggered.add(key));
       this.world.restoreActivatedMechanisms(save.mechanisms ?? []);
       if (save.hazardsEnabled === false && this.world.hazardsEnabled) this.world.applyTransformation('drain-liquid');
-      if (save.enemyBehavior) this.enemyBehavior.restore(save.enemyBehavior);
+      if (save.enemyBehavior) {
+        this.enemyBehavior.restore(reconcileEnemyBehaviorSnapshot(save.enemyBehavior, restoredBehaviorActors));
+      }
       for (const actor of this.world.actors) {
         const state = this.enemyBehavior.getActorState(actor.uid);
         actor.sprite.material.opacity = state?.visible === false ? .18 : 1;
@@ -3184,6 +3394,7 @@ export class GameEngine {
       seed: initialState.rng,
       mapId: initialState.mapId,
       initialState,
+      playbackSettings: { verticalAutoAim: this.verticalAutoAim },
       maxSerializedBytes: DEMO_STORAGE_BUDGET_BYTES,
     });
     this.demoTick = 0;
@@ -3230,15 +3441,23 @@ export class GameEngine {
     if (!validation.valid) return false;
     const demo = structuredClone(validation.demo);
     if (!this.demoSummary(demo)) return false;
+    const userVerticalAutoAim = this.activeDemo?.userVerticalAutoAim ?? this.verticalAutoAim;
     this.demoRecorder = undefined;
     this.demoTick = 0;
     this.activeDemo = undefined;
-    if (!this.restoreSave(structuredClone(demo.initialState), true)) return false;
+    if (!this.restoreSave(structuredClone(demo.initialState), true)) {
+      this.verticalAutoAim = userVerticalAutoAim;
+      return false;
+    }
+    const playbackVerticalAutoAim = demo.playbackSettings.verticalAutoAim;
+    const finished = demo.totalTicks === 0;
+    this.verticalAutoAim = finished ? userVerticalAutoAim : playbackVerticalAutoAim;
     this.activeDemo = {
       demo,
       playback: new DemoPlayback<GameplayCommand>(demo),
+      userVerticalAutoAim,
       paused: true,
-      finished: demo.totalTicks === 0,
+      finished,
       speed: 1,
       tickCredit: 0,
     };
@@ -3275,6 +3494,7 @@ export class GameEngine {
 
   stopDemoPlayback(): void {
     if (!this.activeDemo) return;
+    this.verticalAutoAim = this.activeDemo.userVerticalAutoAim;
     this.activeDemo = undefined;
     this.mode = 'menu';
     this.audio.stopMusic();
@@ -3297,6 +3517,7 @@ export class GameEngine {
     }
     if (active.playback.finished) active.finished = true;
     if (active.finished) {
+      this.verticalAutoAim = active.userVerticalAutoAim;
       active.paused = true;
       this.audio.suspend();
       document.exitPointerLock();
@@ -3312,10 +3533,15 @@ export class GameEngine {
     if (!validation.valid) return false;
     const demo = structuredClone(validation.demo);
     if (demo.tickRate !== 35 || demo.mapId !== demo.initialState.mapId || demo.seed !== demo.initialState.rng) return false;
+    const userVerticalAutoAim = this.activeDemo?.userVerticalAutoAim ?? this.verticalAutoAim;
     this.demoRecorder = undefined;
     this.demoTick = 0;
     this.activeDemo = undefined;
-    if (!this.restoreSave(structuredClone(demo.initialState), true)) return false;
+    if (!this.restoreSave(structuredClone(demo.initialState), true)) {
+      this.verticalAutoAim = userVerticalAutoAim;
+      return false;
+    }
+    this.verticalAutoAim = demo.playbackSettings.verticalAutoAim;
     const playback = new DemoPlayback<GameplayCommand>(demo);
     this.demoReadOnly = true;
     try {
@@ -3325,6 +3551,7 @@ export class GameEngine {
       }
     } finally {
       this.demoReadOnly = false;
+      this.verticalAutoAim = userVerticalAutoAim;
     }
     this.mode = 'paused';
     this.audio.suspend();
@@ -3458,6 +3685,24 @@ export class GameEngine {
       && (!id || candidate.id === id));
     if (!pickup) return false;
     this.debugTeleport(pickup.position.x, pickup.position.z);
+    return true;
+  }
+
+  debugTeleportToSecretReward(secretId: string): boolean {
+    const secret = this.world.map.secrets.find((candidate) => candidate.id === secretId);
+    if (!secret) return false;
+    const rewardId = secret.rewardPlacement.type === 'pickup'
+      ? secret.rewardPlacement.pickup
+      : secret.rewardPlacement.weapon;
+    const reward = this.world.pickups.find((candidate) => !candidate.collected
+      && !candidate.phaseLocked
+      && candidate.kind === secret.rewardPlacement.type
+      && candidate.id === rewardId
+      && Math.floor(candidate.position.x / this.world.map.cellSize) === Math.floor(secret.at.x)
+      && Math.floor(candidate.position.z / this.world.map.cellSize) === Math.floor(secret.at.z)
+      && !this.world.isConcealedAt(candidate.position));
+    if (!reward) return false;
+    this.debugTeleport(reward.position.x, reward.position.z);
     return true;
   }
 
@@ -3647,6 +3892,7 @@ export class GameEngine {
       demo: {
         recording: Boolean(this.demoRecorder),
         tick: this.demoTick,
+        verticalAutoAim: this.verticalAutoAim,
         playback: this.activeDemo ? {
           currentTick: this.activeDemo.playback.currentTick,
           totalTicks: this.activeDemo.demo.totalTicks,

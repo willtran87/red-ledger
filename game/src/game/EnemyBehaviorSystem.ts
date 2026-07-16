@@ -1,4 +1,5 @@
 import type { BossId, EnemyId } from '../data/types';
+import { rayVerticalCylinderDistance } from './CombatMath';
 import { ENEMIES } from './definitions';
 
 export type HostileId = EnemyId | BossId;
@@ -31,6 +32,7 @@ export interface BehaviorTarget {
   velocity: BehaviorVector;
   radius: number;
   alive?: boolean;
+  targetingDisrupted?: boolean;
 }
 
 export interface ProjectileTraceHit {
@@ -85,6 +87,42 @@ const navigationTieOffset = (uid: string): number => {
   let hash = 2166136261;
   for (let index = 0; index < uid.length; index += 1) hash = Math.imul(hash ^ uid.charCodeAt(index), 16777619);
   return (hash >>> 0) % NAVIGATION_STEPS.length;
+};
+
+const FORENSIC_SIGHT_RANGE = 12;
+const FORENSIC_ACQUIRE_DELAY_MULTIPLIER = 1.8;
+const FORENSIC_HITSCAN_ACCURACY_MULTIPLIER = .55;
+const FORENSIC_AIM_ERROR_RADIANS = .1;
+const FORENSIC_RETARGET_PERIOD = 2.4;
+const FORENSIC_RETARGET_DELAY = .32;
+const FORENSIC_CLOSE_REVEAL_RANGE = 2.5;
+
+const stableHashUnit = (value: string): number => {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
+  return (hash >>> 0) / 0x100000000;
+};
+
+const disruptedAimPoint = (
+  actorUid: string,
+  attackCursor: number,
+  origin: BehaviorVector,
+  intended: BehaviorVector,
+): BehaviorVector => {
+  const forward = normalize({ x: intended.x - origin.x, y: 0, z: intended.z - origin.z });
+  if (length(forward) <= 1e-6) return copyVector(intended);
+  const distance = horizontalDistance(origin, intended);
+  const sample = stableHashUnit(`${actorUid}:${attackCursor}:forensic-aim`) * 2 - 1;
+  const minimumError = sample < 0 ? -.45 : .45;
+  const signedError = Math.abs(sample) < .45 ? minimumError : sample;
+  const lateral = { x: -forward.z, y: 0, z: forward.x };
+  return add(intended, scale(lateral, Math.tan(FORENSIC_AIM_ERROR_RADIANS) * distance * signedError));
+};
+
+const crossedDisruptionBoundary = (actorUid: string, elapsed: number, dt: number): boolean => {
+  const phase = stableHashUnit(`${actorUid}:forensic-retarget`) * FORENSIC_RETARGET_PERIOD;
+  return Math.floor((Math.max(0, elapsed - dt) + phase) / FORENSIC_RETARGET_PERIOD)
+    < Math.floor((elapsed + phase) / FORENSIC_RETARGET_PERIOD);
 };
 
 export function buildNavigationDistanceField(goal: NavigationCell, grid: NavigationGridAdapter): NavigationDistanceField {
@@ -366,6 +404,66 @@ export interface EnemyBehaviorSnapshot {
   pendingDamage?: Array<{ targetUid: string; sourceUid: string; amount: number }>;
   rngState?: number;
 }
+
+export interface RestoredBehaviorActorIdentity {
+  readonly savedUid: string;
+  readonly runtimeUid: string;
+  readonly id: HostileId;
+}
+
+/** Remaps only state whose saved actor identity was accepted by the world restore. */
+export const reconcileEnemyBehaviorSnapshot = (
+  snapshot: EnemyBehaviorSnapshot,
+  actors: readonly RestoredBehaviorActorIdentity[],
+): EnemyBehaviorSnapshot => {
+  const identities = new Map(actors.map((actor) => [actor.savedUid, actor]));
+  const remapReference = (uid: string): string | undefined => uid === 'player' ? uid : identities.get(uid)?.runtimeUid;
+  const remapOwner = (uid: string, id: HostileId): string | undefined => {
+    const identity = identities.get(uid);
+    return identity?.id === id ? identity.runtimeUid : undefined;
+  };
+
+  const compatibleStates: ActorBehaviorState[] = [];
+  snapshot.actors.forEach((state) => {
+    const identity = identities.get(state.uid);
+    if (!identity || identity.id !== state.hostileId) return;
+    compatibleStates.push({
+      ...state,
+      uid: identity.runtimeUid,
+      targetUid: remapReference(state.targetUid) ?? 'player',
+      provokerUid: state.provokerUid ? remapReference(state.provokerUid) : undefined,
+    });
+  });
+  const projectiles: ProjectileState[] = [];
+  snapshot.projectiles.forEach((projectile) => {
+    const ownerUid = remapOwner(projectile.ownerUid, projectile.ownerId);
+    const targetUid = remapReference(projectile.targetUid);
+    if (ownerUid && targetUid) projectiles.push({ ...projectile, ownerUid, targetUid });
+  });
+  const hazards: HazardState[] = [];
+  snapshot.hazards.forEach((hazard) => {
+    const ownerUid = remapOwner(hazard.ownerUid, hazard.ownerId);
+    if (ownerUid) hazards.push({ ...hazard, ownerUid });
+  });
+  const pendingSounds = snapshot.pendingSounds?.flatMap((sound) => {
+    const sourceUid = remapReference(sound.sourceUid);
+    return sourceUid ? [{ ...sound, sourceUid }] : [];
+  });
+  const pendingDamage = snapshot.pendingDamage?.flatMap((pending) => {
+    const sourceUid = remapReference(pending.sourceUid);
+    const targetUid = remapReference(pending.targetUid);
+    return sourceUid && targetUid ? [{ ...pending, sourceUid, targetUid }] : [];
+  });
+
+  return {
+    ...snapshot,
+    actors: compatibleStates,
+    projectiles,
+    hazards,
+    pendingSounds,
+    pendingDamage,
+  };
+};
 
 export type BehaviorEvent =
   | { type: 'move'; actorUid: string; velocity: BehaviorVector; mode: MovementKind | 'lunge'; duration?: number }
@@ -691,7 +789,7 @@ export class EnemyBehaviorSystem {
 
     for (const actor of actors) {
       const profile = this.profiles[actor.id];
-      const state = this.stateFor(actor, profile);
+      const state = this.stateFor(actor, profile, input.target);
       state.cooldown -= input.dt;
       state.bobClock += input.dt;
       state.revealRemaining = Math.max(0, state.revealRemaining - input.dt);
@@ -704,6 +802,7 @@ export class EnemyBehaviorSystem {
       this.applyPendingDamage(actor, profile, state, actorByUid, events);
       this.applyAwareness(actor, state, input.target, world, events);
       if (!actor.awake && state.action === 'dormant') continue;
+      this.applyTargetingDisruption(actor, profile, state, input.target, input.dt, events);
 
       const selected = targets.get(state.targetUid);
       const combatTarget = selected?.alive === false || !selected ? input.target : selected;
@@ -841,7 +940,7 @@ export class EnemyBehaviorSystem {
     return clamp01(this.randomSource.next());
   }
 
-  private stateFor(actor: BehaviorActor, profile: BehaviorProfile): ActorBehaviorState {
+  private stateFor(actor: BehaviorActor, profile: BehaviorProfile, target: BehaviorTarget): ActorBehaviorState {
     const existing = this.actorStates.get(actor.uid);
     if (existing) {
       if (existing.hostileId !== actor.id) throw new Error(`Actor ${actor.uid} changed hostile id from ${existing.hostileId} to ${actor.id}`);
@@ -860,8 +959,10 @@ export class EnemyBehaviorSystem {
       revealRemaining: 0,
       strafeSign: this.random() < .5 ? -1 : 1,
       action: actor.awake ? 'acquire' : 'dormant',
-      stateTimer: actor.awake ? (profile.reactionTime ?? .18) : 0,
-      targetUid: 'player',
+      stateTimer: actor.awake
+        ? (profile.reactionTime ?? .18) * (target.targetingDisrupted ? FORENSIC_ACQUIRE_DELAY_MULTIPLIER : 1)
+        : 0,
+      targetUid: target.uid,
       redacted: actor.redacted ?? false,
       lungeRemaining: 0,
     };
@@ -908,7 +1009,8 @@ export class EnemyBehaviorSystem {
     if (state.action !== 'dormant') return;
     let sourceUid: string | undefined;
     let through: 'sight' | 'sound' = 'sight';
-    if (actor.awake || (horizontalDistance(actor.position, player.position) <= 25 && (world.hasLineOfSight?.(actor.position, player.position) ?? true))) {
+    const sightRange = player.targetingDisrupted ? FORENSIC_SIGHT_RANGE : 25;
+    if (actor.awake || (horizontalDistance(actor.position, player.position) <= sightRange && (world.hasLineOfSight?.(actor.position, player.position) ?? true))) {
       sourceUid = player.uid;
     } else {
       const sound = this.pendingSounds.find((item) => horizontalDistance(actor.position, item.position) <= item.radius);
@@ -919,9 +1021,30 @@ export class EnemyBehaviorSystem {
     }
     if (!sourceUid) return;
     state.targetUid = sourceUid;
-    const reaction = ENEMIES[actor.id].windup * .5;
+    const reaction = ENEMIES[actor.id].windup * .5
+      * (sourceUid === player.uid && player.targetingDisrupted ? FORENSIC_ACQUIRE_DELAY_MULTIPLIER : 1);
     this.setAction(actor.uid, state, 'acquire', reaction, events);
     events.push({ type: 'wake', actorUid: actor.uid, sourceUid, through });
+  }
+
+  private applyTargetingDisruption(
+    actor: BehaviorActor,
+    profile: BehaviorProfile,
+    state: ActorBehaviorState,
+    target: BehaviorTarget,
+    dt: number,
+    events: BehaviorEvent[],
+  ): void {
+    if (!target.targetingDisrupted || state.targetUid !== target.uid) return;
+    if (horizontalDistance(actor.position, target.position) <= FORENSIC_CLOSE_REVEAL_RANGE) return;
+    if (state.action !== 'chase' && state.action !== 'windup') return;
+    if (!crossedDisruptionBoundary(actor.uid, this.elapsed, dt)) return;
+    if (state.action === 'windup') {
+      const pending = profile.attacks.find((attack) => attack.id === state.pendingAttackId);
+      if (!pending || pending.kind === 'melee' || pending.kind === 'resurrect' || pending.kind === 'summon') return;
+      state.pendingAttackId = undefined;
+    }
+    this.setAction(actor.uid, state, 'acquire', FORENSIC_RETARGET_DELAY, events);
   }
 
   private applyPendingDamage(
@@ -1075,7 +1198,7 @@ export class EnemyBehaviorSystem {
     events.push(attackEvent);
     switch (attack.kind) {
       case 'hitscan': {
-        const resolution = this.executeHitscan(actor, target, distance, attack, world, events);
+        const resolution = this.executeHitscan(actor, target, actors, attack, world, events);
         attackEvent.resolved = resolution.resolved;
         attackEvent.blocked = resolution.blocked;
         attackEvent.hitCount = resolution.hitCount;
@@ -1084,26 +1207,69 @@ export class EnemyBehaviorSystem {
       case 'melee': this.executeMelee(actor, target, distance, attack, state, world, events); break;
       case 'projectile': this.executeProjectile(actor, target, state, attack, events, projectileSpeed); break;
       case 'hazard':
-      case 'prediction': attackEvent.resolved = this.executeHazard(actor, target, attack, world, events); break;
+      case 'prediction': attackEvent.resolved = this.executeHazard(actor, target, state, attack, world, events); break;
       case 'resurrect': this.executeResurrection(actor, actors, attack, events); break;
       case 'summon': this.executeSummon(actor, attack, events); break;
     }
   }
 
-  private executeHitscan(actor: BehaviorActor, target: BehaviorTarget, distance: number, attack: HitscanAttack, world: BehaviorWorldAdapter, events: BehaviorEvent[]): { resolved: boolean; blocked: boolean; hitCount: number } {
+  private executeHitscan(
+    actor: BehaviorActor,
+    target: BehaviorTarget,
+    actors: readonly BehaviorActor[],
+    attack: HitscanAttack,
+    world: BehaviorWorldAdapter,
+    events: BehaviorEvent[],
+  ): { resolved: boolean; blocked: boolean; hitCount: number } {
     const currentDistance = horizontalDistance(actor.position, target.position);
     if (currentDistance > attack.range || currentDistance < (attack.minRange ?? 0)) return { resolved: false, blocked: false, hitCount: 0 };
     if (attack.requiresLineOfSight && !(world.hasLineOfSight?.(actor.position, target.position) ?? true)) return { resolved: false, blocked: true, hitCount: 0 };
     const pellets = attack.pellets ?? 1;
     const rangeFactor = 1 - .45 * clamp01(currentDistance / Math.max(attack.range, 1));
+    const disruptionFactor = target.targetingDisrupted ? FORENSIC_HITSCAN_ACCURACY_MULTIPLIER : 1;
+    const intercepted = this.hitscanIntercept(actor, target, actors);
     let hitCount = 0;
     for (let index = 0; index < pellets; index += 1) {
-      if (this.random() > attack.accuracy * rangeFactor) continue;
+      if (this.random() > attack.accuracy * rangeFactor * disruptionFactor) continue;
       const amount = attack.damage * (.85 + this.random() * .3);
-      events.push({ type: 'damage', sourceUid: actor.uid, targetUid: target.uid, amount, damageKind: attack.damageKind });
+      events.push({ type: 'damage', sourceUid: actor.uid, targetUid: intercepted?.uid ?? target.uid, amount, damageKind: attack.damageKind });
       hitCount += 1;
     }
     return { resolved: true, blocked: false, hitCount };
+  }
+
+  private hitscanIntercept(
+    actor: BehaviorActor,
+    target: BehaviorTarget,
+    actors: readonly BehaviorActor[],
+  ): BehaviorActor | undefined {
+    const origin = {
+      x: actor.position.x,
+      y: actor.position.y + (actor.height ?? ENEMIES[actor.id].height) * .5,
+      z: actor.position.z,
+    };
+    const towardTarget = subtract(target.position, origin);
+    const targetDistance = length(towardTarget);
+    if (targetDistance <= 1e-6) return undefined;
+    const direction = scale(towardTarget, 1 / targetDistance);
+    let bestDistance = Math.max(0, targetDistance - target.radius);
+    let result: BehaviorActor | undefined;
+
+    for (const candidate of actors) {
+      if (candidate.uid === actor.uid || candidate.uid === target.uid || candidate.dead || candidate.phaseLocked) continue;
+      const hitDistance = rayVerticalCylinderDistance(
+        origin,
+        direction,
+        candidate.position,
+        candidate.radius,
+        candidate.height ?? ENEMIES[candidate.id].height,
+        bestDistance,
+      );
+      if (hitDistance === undefined || hitDistance >= bestDistance - 1e-6) continue;
+      bestDistance = hitDistance;
+      result = candidate;
+    }
+    return result;
   }
 
   private executeMelee(actor: BehaviorActor, target: BehaviorTarget, distance: number, attack: MeleeAttack, state: ActorBehaviorState, world: BehaviorWorldAdapter, events: BehaviorEvent[]): void {
@@ -1119,8 +1285,11 @@ export class EnemyBehaviorSystem {
   private executeProjectile(actor: BehaviorActor, target: BehaviorTarget, state: ActorBehaviorState, attack: ProjectileAttack, events: BehaviorEvent[], speedScale = 1): void {
     const template = attack.projectile;
     const lead = template.leadSeconds ?? 0;
-    const aimPoint = add(target.position, scale(target.velocity, lead));
     const origin = { x: actor.position.x, y: actor.position.y + (template.originHeight ?? 1), z: actor.position.z };
+    const intendedAimPoint = add(target.position, scale(target.velocity, lead));
+    const aimPoint = target.targetingDisrupted
+      ? disruptedAimPoint(actor.uid, state.attackCursor, origin, intendedAimPoint)
+      : intendedAimPoint;
     const baseDirection = normalize(subtract(aimPoint, origin));
     const count = Math.max(1, attack.pattern.count);
 
@@ -1160,10 +1329,13 @@ export class EnemyBehaviorSystem {
     }
   }
 
-  private executeHazard(actor: BehaviorActor, target: BehaviorTarget, attack: HazardAttack, world: BehaviorWorldAdapter, events: BehaviorEvent[]): boolean {
+  private executeHazard(actor: BehaviorActor, target: BehaviorTarget, state: ActorBehaviorState, attack: HazardAttack, world: BehaviorWorldAdapter, events: BehaviorEvent[]): boolean {
     if (horizontalDistance(actor.position, target.position) > attack.range) return false;
     if (attack.requiresLineOfSight && !(world.hasLineOfSight?.(actor.position, target.position) ?? true)) return false;
-    const position = add(target.position, scale(target.velocity, attack.leadSeconds ?? 0));
+    const intendedPosition = add(target.position, scale(target.velocity, attack.leadSeconds ?? 0));
+    const position = target.targetingDisrupted
+      ? disruptedAimPoint(actor.uid, state.attackCursor, actor.position, intendedPosition)
+      : intendedPosition;
     position.y = 0;
     const predictedSightline = { ...position, y: target.position.y };
     if (attack.requiresLineOfSight && !(world.hasLineOfSight?.(actor.position, predictedSightline) ?? true)) return false;
@@ -1207,7 +1379,7 @@ export class EnemyBehaviorSystem {
     for (const item of this.projectiles) {
       const target = targets.get(item.targetUid);
       const from = copyVector(item.position);
-      if (target && item.homing > 0 && target.alive !== false) {
+      if (target && item.homing > 0 && target.alive !== false && !target.targetingDisrupted) {
         const speed = length(item.velocity);
         const desired = normalize(subtract(target.position, item.position));
         const current = normalize(item.velocity);

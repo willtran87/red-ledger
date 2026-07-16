@@ -1,6 +1,6 @@
 # Red Ledger
 
-A complete retro first-person action campaign set inside a surreal insurance operation. The browser game contains three episodes, 27 maps, eight weapons, twelve standard enemies, four bosses, authored mechanisms, secrets, deterministic demos, save slots, touch controls, and five difficulty levels.
+A complete retro first-person action campaign set inside a surreal insurance operation. The browser game contains three episodes, 27 maps, eight weapons, twelve standard enemies, four bosses, canonical enemy budgets, authored encounter roles and mechanisms, varied secret rewards, deterministic demos, compatibility-aware save slots, touch controls, and five difficulty levels.
 
 ![Red Ledger title screen](assets/public_runtime/ui/title-screen.png)
 
@@ -16,7 +16,11 @@ npm run dev
 
 Open the local URL printed by Vite. Keyboard, mouse, controller, and touch input are supported. Controls can be remapped from Options.
 
-Options also provide independent mouse, controller, and touch look sensitivity, Y-axis inversion, controller deadzone, touch size/opacity/handedness, three interface text scales, reduced-motion/effects controls, and persisted speakers/headphones/night/mono audio profiles.
+Options also provide independent mouse, controller, and touch look sensitivity, Y-axis inversion, controller deadzone, default-on vertical-only auto-aim, touch size/opacity/handedness, three interface text scales, reduced-motion/effects controls, and persisted speakers/headphones/night/mono audio profiles.
+
+Normal placement realizes each map's declared early (`35-65`), mid/secret (`60-110`), or late (`90-160`) standard-enemy budget. Eighty-one authored phase profiles distribute those totals across two or three combat roles, preserve documented episode relief valleys, and place route ammunition and recovery in proportion to each phase's pressure.
+
+Current deterministic demos use schema 4 and sign the recorded vertical-auto-aim setting as required playback state. The active browser replay library uses its own v3 storage key; incompatible v2/v1 libraries remain untouched. Current saves persist explicit encounter unlocks and stable authored actor identities so content reordering cannot silently attach mutable state to the wrong placement.
 
 ## Authored Audio
 

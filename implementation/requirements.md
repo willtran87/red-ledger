@@ -168,6 +168,10 @@ Every main map must contain:
 
 Use early for M1-M3, mid for M4-M6 and secret M9, late for M7-M8. This resolves the broader `2-5` topology guidance in favor of the explicit late-map budget. At least one secret per map must be found through a visual clue rather than indiscriminate wall use. Secret rewards may grant ammo efficiency, early weapon, armor, map information, micro-scene, or shortcut; secrets never gate required story comprehension.
 
+Each map declares a `standardEnemyBudget` inside the applicable range, and its normal placement must realize that count exactly. Entry, transformation, and climax profiles allocate the declared total, use two or three combat roles per phase, and scale monotonically across placement difficulties. Documented relief beats at episode openings or other authored valleys must fall below the preceding peak and rebuild on the next main-route map.
+
+Mandatory-route ammunition and recovery are distributed in proportion to phase budgets and the map's available weapon mix. Optional and secret caches may improve efficiency, but deterministic fresh-start simulation cannot depend on them for mandatory completion.
+
 End-map results record kills, counted items, secrets, elapsed time, and par time. The map validator must reject unreachable mandatory credentials/switches, missing exits/starts/tags/materials/actors, invalid actor placement, unreachable secret triggers, items incorrectly counted toward 100%, and any difficulty with no ammunition path through mandatory combat.
 
 ## 9. Difficulty
@@ -228,9 +232,12 @@ All actions are remappable. Menus support keyboard and controller immediately, u
 | Schema | Versioned from first implementation; corrupted/incompatible saves fail clearly without destroying valid slots |
 | Persisted state | Map ID, difficulty, full player inventory, actor state/corpses, projectiles, movers, switches, breakables, credentials, RNG state, elapsed time, discovered secrets, tallies, boss phase, and campaign unlocks |
 | Load invariants | Loading does not advance simulation, replay pickup sounds, awaken enemies, move a sector by one tick, or consume RNG |
-| Demo | Record tick-indexed gameplay inputs plus version/map/difficulty/RNG seed; playback uses the deterministic simulation and rejects incompatible schemas |
+| Demo | Schema 4 records tick-indexed gameplay inputs plus version/map/difficulty/RNG seed and a required, checksummed `playbackSettings.verticalAutoAim`; playback uses the deterministic simulation and rejects every incompatible schema, including v3 |
+| Replay library | The active library uses `red-ledger-replays-v3`; v2/v1 keys are detected for truthful feedback but remain untouched rather than being migrated into an incompatible simulation |
 
 Save writes must be atomic. A map-entry autosave is captured after the map state and player inventory are initialized but before the first playable simulation tick.
+
+Current saves persist `unlockedEncounters` explicitly and treat that field as authoritative. Authored actors use stable placement keys independent of runtime array ordering; pickups require matching kind, content ID, and position; dynamic summons use a distinct runtime identity. Supported legacy saves may reconstruct encounter completion from trigger/mechanism evidence, but ambiguous actor, behavior, or pickup state is discarded rather than attached to coincidentally matching content.
 
 ## 12. Completion Gates
 
@@ -243,4 +250,3 @@ Save writes must be atomic. A map-entry autosave is captured after the map state
 - Active combat, projectiles, corpses, movers, switches, boss phases, RNG, and tallies restore exactly after save/load.
 - 60 displayed FPS at 1080p on integrated graphics while retaining the 35 Hz simulation; browser reaches stable play within 10 seconds after caching.
 - Public-build prohibited-name/mark scan and art-library validation both pass.
-
