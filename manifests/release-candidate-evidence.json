@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "recordedAtUtc": "2026-07-16T05:51:47Z",
+  "candidateCommit": "f5796564af6c142a13979cdc2852659797ce6ace",
+  "productionUrl": "https://willtran87.github.io/red-ledger/",
+  "toolchain": {
+    "node": "20.20.2",
+    "npm": "10.8.2",
+    "playwright": "1.61.1",
+    "chromium": "149.0.7827.55",
+    "firefox": "151.0",
+    "webkit": "26.5"
+  },
+  "preflight": {
+    "npmCi": "pass",
+    "releaseGate": "pass",
+    "nestedProductionPackage": "pass",
+    "pagesParity": "pass",
+    "dependencyAudit": {
+      "result": "pass",
+      "productionVulnerabilities": 0
+    },
+    "publicReleaseScan": {
+      "result": "pass",
+      "testFiles": 2,
+      "tests": 7
+    },
+    "log": {
+      "path": "manifests/release-candidate-preflight.txt",
+      "sha256": "cf187beae481621a96547a8aa4f11e1de1db0da5f352f3619bd490fd4eeb9a1c"
+    }
+  },
+  "automatedCoverage": {
+    "unitAndDataTestFiles": 28,
+    "unitAndDataTests": 233,
+    "registeredBrowserScenarios": 31,
+    "browserEngines": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "campaignMaps": 27,
+    "credentialRoutes": 24,
+    "maximumCampaignDrawCalls": 38
+  },
+  "performanceSample": {
+    "renderer": "Playwright Chromium SwiftShader",
+    "readyMilliseconds": 3337,
+    "activeHostiles": 16,
+    "frames": 435,
+    "meanFrameMilliseconds": 23.0,
+    "p95FrameMilliseconds": 49.9,
+    "residentTextures": 90,
+    "particleBaselineDrawCalls": 28,
+    "particleStressDrawCalls": 30
+  },
+  "publishedArtifact": {
+    "distFiles": 3659,
+    "publishedFilesIncludingNojekyll": 3660,
+    "publishedBytes": 74311712,
+    "sha256Manifest": "manifests/pages-artifact-sha256.txt",
+    "sha256": "89500920e02e591007600b171e1d425e7db5ff2d97b93e79b0cd898216e051e9"
+  },
+  "authoredAudio": {
+    "schema": 2,
+    "musicTracks": 33,
+    "uniqueCues": 347,
+    "semanticGroups": 189,
+    "sfxShards": 5,
+    "libraryManifestSha256": "e38315f30bbb6e3b9cc965bf9d49104827c315384311a9f44a9c895f1d77ab48",
+    "validationManifestSha256": "038be4b71c3572dc05ee149e06818bba251c463980cf95810437342cabb0b8ae"
+  },
+  "humanGates": [
+    "blind E1M1 onboarding with five independent players",
+    "continuous campaign and every-map fresh-start balance and duration",
+    "representative integrated GPU, discrete GPU, touch device, and audio listening matrix",
+    "formal rights and public-build review including audio provenance and sound resemblance"
+  ]
+}

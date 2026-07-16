@@ -1,0 +1,3 @@
+manifests/pages-artifact-sha256.txt text eol=lf
+manifests/release-candidate-preflight.txt text eol=lf
+manifests/release-candidate-evidence.json text eol=lf

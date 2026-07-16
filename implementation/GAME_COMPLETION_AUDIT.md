@@ -1,13 +1,13 @@
 # Game Completion Audit
 
-- Current evidence review: 2026-07-15
+- Current evidence review: 2026-07-16
 - Previous released software baseline: `804f837b70efbfa201ffa3a1be4b18908e2896e5` (`804f837`)
-- Current candidate: **Pending an immutable software commit and final evidence capture**
-- Release status: **The authored-audio target is implemented; candidate-wide automated evidence is pending, and four external human signoffs remain open.**
+- Current automated-release candidate: `f5796564af6c142a13979cdc2852659797ce6ace` (`f579656`)
+- Release status: **All automated promotion gates pass for the immutable candidate; four external human signoffs remain open.**
 
 ## Current Authority And Scope
 
-This section supersedes every count, status, and verdict in the archived 2026-07-10 audit below. Commit `804f837` remains the previous immutable software baseline, but the current source and runtime assets contain later authored-audio and accessibility work. Those changes are not a promoted release baseline until they have an immutable commit, a clean full release run, an exact Pages inventory, and the other preflight evidence required by `implementation/RELEASE_PLAYTEST_PROTOCOL.md`. Values that depend on that run are deliberately marked pending.
+This section supersedes every count, status, and verdict in the archived 2026-07-10 audit below. Commit `804f837` remains the previous released software baseline. Commit `f5796564af6c142a13979cdc2852659797ce6ace` is the current immutable automated-release candidate and includes the authored-audio, accessibility, input-personalization, and regression-hardening work. Its exact clean-install preflight is archived in `manifests/release-candidate-preflight.txt`, with structured evidence in `manifests/release-candidate-evidence.json` and a complete published-file inventory in `manifests/pages-artifact-sha256.txt`.
 
 Automated tests prove only the covered behavior on their recorded environments. They do not replace blind-player observations, full-campaign judgment, representative-device measurements, or formal rights review. The authored-audio content target is now implemented; listening, device, and provenance checks for that library are included inside the four remaining human gates rather than treated as a separate content gap.
 
@@ -15,9 +15,7 @@ Status meanings for this current section:
 
 | Status | Meaning |
 |---|---|
-| **Proven on previous baseline** | Direct automated or inspectable evidence passed on `804f837`; the current candidate still requires its full rerun. |
-| **Implemented in current candidate** | Direct source, asset, focused-test, or browser evidence covers the new work; candidate-wide promotion evidence is still pending. |
-| **Pending candidate evidence** | The final immutable commit or full candidate preflight has not yet been recorded. |
+| **Proven on current candidate** | Direct automated or inspectable evidence passed on immutable commit `f579656`. |
 | **Open human gate** | Automation is a prerequisite, but the requirement needs recorded external judgment or representative hardware. |
 | **Not applicable** | The product intentionally does not contain the feature. |
 
@@ -25,23 +23,23 @@ Status meanings for this current section:
 
 | Evidence surface | Status | Current evidence | Limit of the evidence |
 |---|---|---|---|
-| Full release command | **Pending candidate evidence** | The previous baseline passed 210 unit/data/public-release checks and 30 registered browser scenarios. The changed candidate has not yet recorded its final `npm run test:release` result. | No prior count may be reused as the current candidate's result. Automated success would still not provide human play, rights, or representative-device signoff. |
-| Campaign structure and runtime | **Proven on previous baseline** | All 27 maps and 24 credential-bearing routes passed the previous runtime and data gates, including encounter phases, mechanisms, starts, supplies, secrets, exits, phase-gated recovery, and the two-stage finale. | The current candidate requires the same gates again; full continuous and fresh-start human playthrough balance remains open. |
-| Gameplay, feedback, and progression | **Proven on previous baseline** | Focused browser suites cover combat feel, hostile telegraphs, weapon selection, optional encounters, intermission flow, mastery, milestones, replays, mechanisms, semantic animation, and 40 validated particle seeds. | The current candidate requires the full regression; subjective readability and long-session pacing require playtest records. |
-| Difficulty, goals, and replayability | **Proven on previous baseline** | Five response levels, pistol-start retry, records, grades, pars, secret discovery, milestones, mastery targets, deterministic demos, replay, and the deterministic campaign economy simulator passed their prior gates. | Human play remains necessary to judge difficulty curves, strategy variety, incoming-damage fairness, duration, and reward pacing. |
-| Visual and animation integration | **Proven on previous baseline** | Responsive visuals, particles, material/status feedback, transient effects, semantic animation, the Binding Engine, hostile telegraphs, and combat feedback passed focused checks. | The current candidate requires the full regression; beauty and long-session readability remain qualitative concerns. |
-| Authored audio content and runtime | **Implemented in current candidate** | The schema-2 library contains 33 original streamed tracks, including unique 154-236 second music and opening motifs for all 27 maps, plus 347 distinct cues in 189 semantic groups across five lazy SFX shards. Focused content contracts, 16 AudioSystem tests, failure/recovery browser coverage, and Chromium/Firefox/WebKit audio smoke pass. The 32-voice priority limiter, spatial mix, speakers/headphones/night/mono profiles, bounded retry, and deterministic procedural fallback are wired. | Candidate-wide release/package evidence is pending. Human sessions must still judge loop seams, mix and tell readability, profile behavior, device dropouts, and provenance/sound resemblance. |
-| Controls, onboarding, UI, and accessibility | **Implemented in current candidate** | Existing desktop, touch, controller/remapping, responsive layouts, reduced-motion/effects behavior, semantic meters, and entry guidance are joined by leak-free resume input, single-step settings navigation, controller-operable replay, accessible remap focus/names, one event-cadence-independent held-stick look model, handedness-aware briefing labels, configured menu/gameplay deadzone with menu hysteresis, compact-layout reachability, and hybrid-device guidance; 22 focused unit tests and the relevant browser checks pass for that remediation. Current source also exposes persisted independent look sensitivities, Y inversion, controller deadzone, touch size/opacity/handedness, and three text scales. Visual gates cover collision-free Large controls at 320x568 in both handedness modes, Largest-text Difficulty at 568x320, and exact long-message/objective separation. | The full candidate still requires its final recorded regression evidence. Blind E1M1 onboarding with five independent players remains an open human gate. |
-| Persistence and resilience | **Proven on previous baseline** | Fifty-nine persistence tests plus a two-tab browser journey cover fixtures, manual/quick/rotating auto saves, recovery fallback, bounded conflict copies, idempotent campaign journals, old writers, quota and removal failures, corrupt/future/empty byte preservation, repaired canonicals, storage denial, and exact paused restore. | The current candidate requires the full regression. Browser storage cannot guarantee durability when the platform denies or clears storage. |
-| Performance and lifecycle | **Proven on previous baseline** / **Implemented in current candidate** | The prior SwiftShader sample delivered 443 frames over ten seconds at 22.6 ms mean / 50.0 ms p95 with 90 resident textures. Current music streams without whole-track `AudioBuffer` decoding, and SFX decode by semantic shard rather than as one monolith. | New candidate measurements are pending. Representative integrated GPU, discrete GPU, and touch-device targets remain an open human gate. |
-| Browser portability | **Pending candidate evidence** | Focused authored-audio smoke passes in Chromium, Firefox, and WebKit; the previous baseline also passed its complete cross-engine and nested-production suites. | The full changed candidate has not yet recorded its final cross-engine and production-package result. |
-| Production package and Pages source | **Pending candidate evidence** | The previous baseline contained 3,620 build files with exact `dist`/`docs` SHA-256 parity and zero high-threshold production vulnerabilities. | Audio assets change the inventory. New build counts, hashes, dependency audit, deployment, and live smoke must be captured from the immutable candidate. |
-| Public-release scanning and provenance | **Pending candidate evidence** / **Open human gate** | The prior automated public-release scan covered restricted text/artifact references, licenses, notices, asset signatures, and package leakage. The audio generator, source specification, media hashes, and PCM fingerprints provide inspectable provenance inputs. | The changed public package needs a new automated scan; formal visual/audio/mark rights review and a signed provenance record remain open. |
+| Full release command | **Proven on current candidate** | Clean-install `npm run test:release` passes 233 tests across 28 files, the nested production package, and 31 registered browser scenarios. Exact output is archived with preflight-log SHA-256 `cf187beae481621a96547a8aa4f11e1de1db0da5f352f3619bd490fd4eeb9a1c`. | Automated success does not provide human play, rights, or representative-device signoff. |
+| Campaign structure and runtime | **Proven on current candidate** | All 27 maps and 24 credential-bearing routes pass, including encounter phases, mechanisms, starts, supplies, secrets, exits, phase-gated recovery, and the two-stage finale; the campaign sample peaks at 38 draw calls. | Full continuous and fresh-start human playthrough balance remains open. |
+| Gameplay, feedback, and progression | **Proven on current candidate** | Browser suites cover combat feel, hostile telegraphs, weapon selection, optional encounters, intermission flow, mastery, milestones, replays, mechanisms, semantic animation, and 40 validated particle seeds. | Subjective readability and long-session pacing require playtest records. |
+| Difficulty, goals, and replayability | **Proven on current candidate** | Five response levels, pistol-start retry, records, grades, pars, secret discovery, milestones, mastery targets, deterministic demos, replay, and the deterministic campaign economy simulator pass. | Human play remains necessary to judge difficulty curves, strategy variety, incoming-damage fairness, duration, and reward pacing. |
+| Visual and animation integration | **Proven on current candidate** | Responsive visuals, particles, material/status feedback, transient effects, semantic animation, the Binding Engine, hostile telegraphs, and aggregated combat feedback pass focused and integrated checks. | Beauty and long-session readability remain qualitative concerns. |
+| Authored audio content and runtime | **Proven on current candidate** | The schema-2 library contains 33 original streamed tracks, including unique 154-236 second music and opening motifs for all 27 maps, plus 347 distinct cues in 189 semantic groups across five lazy SFX shards. Content contracts, 16 AudioSystem tests, failure/recovery coverage, and Chromium/Firefox/WebKit smoke pass. The 32-voice limiter, spatial mix, four playback profiles, bounded retry, and deterministic fallback are wired. | Human sessions must still judge loop seams, mix and tell readability, profile behavior, device dropouts, provenance, and sound resemblance. |
+| Controls, onboarding, UI, and accessibility | **Proven on current candidate** | Desktop, touch, controller/remapping, responsive layouts, reduced-motion/effects behavior, semantic meters, and entry guidance pass. Persisted independent look sensitivities, Y inversion, deadzone, touch size/opacity/handedness, three text scales, leak-free resume, controller replay, stable menu hysteresis, collision-free 320x568 Large decks, 568x320 Largest text, and cadence-independent touch look are covered by 22 focused unit tests and integrated browser gates. | Blind E1M1 onboarding with five independent players remains an open human gate. |
+| Persistence and resilience | **Proven on current candidate** | Persistence contracts plus two-tab and fault-injection journeys cover fixtures, saves, recovery, bounded conflict copies, campaign journals, old writers, quota/removal failures, corrupt/future byte preservation, storage denial, context loss, fatal shutdown, catalog recovery, and exact paused restore. | Browser storage cannot guarantee durability when the platform denies or clears storage. |
+| Performance and lifecycle | **Proven on current candidate** / **Open human gate** | The archived SwiftShader active-combat sample delivered 435 frames at 23.0 ms mean / 49.9 ms p95 with 16 hostiles and 90 resident textures; particle stress moved from 28 to 30 draw calls. Music streams without long-form buffer decoding and SFX decode by semantic shard. | Representative integrated GPU, discrete GPU, and touch-device targets remain an open human gate. |
+| Browser portability | **Proven on current candidate** | The nested production package and complete smoke pass in Chromium 149.0.7827.55, Firefox 151.0, and WebKit 26.5. | Representative real-device behavior remains part of the hardware gate. |
+| Production package and Pages source | **Proven on current candidate** | `dist` contains 3,659 files; Pages contains 3,660 files including `.nojekyll`, totaling 74,311,712 bytes. Per-path SHA-256 parity passes, the archived artifact-manifest hash is `89500920e02e591007600b171e1d425e7db5ff2d97b93e79b0cd898216e051e9`, and the production audit reports zero vulnerabilities. | Live deployment smoke must still confirm GitHub Pages serves this committed artifact. |
+| Public-release scanning and provenance | **Proven on current candidate** / **Open human gate** | Seven focused public-release/audio contracts pass, covering restricted text/artifact references, licenses, notices, asset signatures, package leakage, audio specification, media hashes, and PCM fingerprints. | Formal visual/audio/mark rights review and a signed provenance record remain open. |
 | Monetization | **Not applicable** | No monetization, paid currency, advertising, or engagement purchase system is present. | Any future monetization would require a new design and release review. |
 
 ## Current Verdict
 
-The current candidate closes the authored-audio content target. Promotion still requires an immutable commit, a clean full release run, exact production/Pages inventory verification, dependency audit, deployment, and live smoke evidence. It is **not release-final** until the following four human records exist for that same immutable candidate:
+Commit `f5796564af6c142a13979cdc2852659797ce6ace` is promoted as the current **automated-release candidate**. Its clean-install release suite, exact production/Pages inventory, dependency audit, public scan, and evidence hashes pass. It is **not release-final** until deployment smoke passes and the following four human records exist for that same immutable candidate:
 
 1. Blind E1M1 onboarding signoff.
 2. Continuous-campaign and every-map fresh-start balance/duration signoff.
@@ -52,19 +50,22 @@ The current candidate closes the authored-audio content target. Promotion still 
 
 | Candidate field | Recorded value |
 |---|---|
-| Software commit | **Pending:** record the immutable candidate SHA after the software commit |
-| Full release gate | **Pending final candidate evidence** |
-| Cross-engine result | **Focused audio pass:** Chromium, Firefox, and WebKit; full candidate result pending |
-| Campaign runtime | **Previous baseline pass; current candidate rerun pending** |
-| Performance sample | **Previous baseline:** 443 frames / 10 seconds; 22.6 ms mean; 50.0 ms p95; 90 textures. Current candidate sample pending. |
-| Particle stress | **Previous baseline:** 28 baseline draw calls to 30 with 120+ active particles. Current candidate result pending. |
-| Production inventory | **Pending:** audio-inclusive build count and SHA-256 manifest |
-| Pages source | **Pending:** exact per-path SHA-256 verification for the immutable candidate |
-| Production dependency audit | **Pending final candidate evidence** |
-| Authored-audio content | **Implemented:** schema 2; 33 tracks; 347 cues; 189 groups; five lazy SFX shards |
+| Software commit | `f5796564af6c142a13979cdc2852659797ce6ace` (`f579656`) |
+| Full release gate | **Pass:** 233 tests / 28 files, nested production package, and 31 browser scenarios after clean `npm ci` |
+| Cross-engine result | **Pass:** Chromium 149.0.7827.55, Firefox 151.0, and WebKit 26.5 |
+| Campaign runtime | **Pass:** 27 maps, 24 credential routes, maximum 38 draw calls |
+| Performance sample | **Pass:** ready 3,337 ms; 16 hostiles; 435 frames; 23.0 ms mean; 49.9 ms p95; 90 textures |
+| Particle stress | **Pass:** 28 baseline draw calls to 30 under stress |
+| Production inventory | **Pass:** 3,659 `dist` files; 3,660 published files including `.nojekyll`; 74,311,712 bytes |
+| Pages source | **Pass:** exact per-path SHA-256 verification; manifest hash `89500920e02e591007600b171e1d425e7db5ff2d97b93e79b0cd898216e051e9` |
+| Production dependency audit | **Pass:** zero vulnerabilities after clean install |
+| Public-release scan | **Pass:** seven contracts across two focused test files |
+| Authored-audio content | **Pass:** schema 2; 33 tracks; 347 cues; 189 groups; five lazy SFX shards |
+| Evidence archive | `manifests/release-candidate-evidence.json`; preflight log SHA-256 `cf187beae481621a96547a8aa4f11e1de1db0da5f352f3619bd490fd4eeb9a1c` |
+| Live deployment smoke | **Pending publish of the evidence commits** |
 | Human signoffs | **All four remain open** |
 
-This table is not a promotion record until every pending field is replaced by evidence from one clean immutable candidate. Any later source, data, asset, dependency, or built-output change invalidates that evidence and requires the full candidate preflight again.
+This table records the automated promotion of the immutable software candidate. Any later source, data, asset, dependency, or built-output change invalidates that evidence and requires the full candidate preflight again. Documentation-only evidence corrections do not change the tested software SHA.
 
 ---
 
