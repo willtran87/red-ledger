@@ -79,7 +79,7 @@ Original prompt: implement the game
 - 2026-07-15: Hardened cross-tab persistence with checksum-valid mutation journals, idempotent campaign merging, bounded recovery checkpoints, versioned fallback rotation, exact corrupt/future-byte preservation, direct durable-baseline preflights, and eight bounded recoverable save conflicts. Quota denial, event-order races, failed removals, old writers, corrupt and empty records, repaired canonicals, and simultaneous campaign branches are covered by 59 persistence tests plus a real two-tab browser journey.
 - 2026-07-15: Route-tagged supplies and weapons now remain hidden until their encounter begins. The finale's third binding gate releases the entire second authority phase, including its recovery cache, and schema-1 saves without pickup-lock fields retain their original exposed-pickup behavior. Integrated progression, particle wiring, combat/save, and all-27-map runtime checks pass.
 - 2026-07-15: Final software candidate passes 210 unit/data/public-release checks and all 30 registered browser scenarios, including mobile, replay, persistence, resilience, particle/effect, all-map, and Chromium/Firefox/WebKit coverage. Isolated SwiftShader combat sampled 443 frames over ten seconds at 22.6 ms mean / 50.0 ms p95 with 90 textures; particle stress held at 28 to 30 draw calls. `pages:verify` matches all 3,620 production files and `npm audit --omit=dev --audit-level=high` reports zero vulnerabilities.
-- 2026-07-16: Promoted immutable automated-release candidate `f5796564af6c142a13979cdc2852659797ce6ace` after a clean lockfile install. The archived gate passes 233 tests across 28 files, the nested production package, 31 browser scenarios, all 27 maps and 24 credential routes, and Chromium/Firefox/WebKit. SwiftShader active combat delivered 435 frames at 23.0 ms mean / 49.9 ms p95 with 90 textures; particle stress held at 28 to 30 draw calls. Pages matches all 3,659 build files exactly, the 3,660-file published inventory includes `.nojekyll`, the production audit reports zero vulnerabilities, and the public-release/audio scan passes seven focused contracts.
+- 2026-07-16: Promoted immutable automated-release candidate `f5796564af6c142a13979cdc2852659797ce6ace` after a clean lockfile install. The archived gate passes 233 tests across 28 files, the nested production package, 31 browser scenarios, all 27 maps and 24 credential routes, and Chromium/Firefox/WebKit. SwiftShader active combat delivered 435 frames at 23.0 ms mean / 49.9 ms p95 with 90 textures; particle stress held at 28 to 30 draw calls. Pages matches all 3,659 build files exactly, the 3,660-file committed inventory includes `.nojekyll`, the production audit reports zero vulnerabilities, and the public-release/audio scan passes seven focused contracts. Deployment run `29475230094` succeeded; live HTML, bundle, audio, and particle bytes match the committed tree, while Chromium reaches E1M1 with authored audio and no console or network failures.
 
 ## Verified Baseline
 
@@ -88,8 +88,8 @@ Original prompt: implement the game
 - Desktop viewport: `1280x720`
 - Mobile viewport: `390x844`
 - Automated-release candidate: `f5796564af6c142a13979cdc2852659797ce6ace`
-- Production Pages package: 3,659 build files plus `.nojekyll`; 74,311,712 published bytes
-- Published artifact-manifest SHA-256: `89500920e02e591007600b171e1d425e7db5ff2d97b93e79b0cd898216e051e9`
+- Production Pages package: 3,659 build files plus `.nojekyll`; 74,290,908 committed bytes
+- Published artifact-manifest SHA-256: `6d1f765671e21bc84f85e686cb962e4a01644221fa898c1eb08e8a02926c9d68`
 
 ## External Signoff
 

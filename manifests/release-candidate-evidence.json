@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "recordedAtUtc": "2026-07-16T05:51:47Z",
+  "recordedAtUtc": "2026-07-16T06:04:39Z",
   "candidateCommit": "f5796564af6c142a13979cdc2852659797ce6ace",
   "productionUrl": "https://willtran87.github.io/red-ledger/",
   "toolchain": {
@@ -55,11 +55,13 @@
     "particleStressDrawCalls": 30
   },
   "publishedArtifact": {
+    "gitTreeCommit": "b741b855f1a597afeed8ce3a9e79ae0620dd88b2",
     "distFiles": 3659,
     "publishedFilesIncludingNojekyll": 3660,
-    "publishedBytes": 74311712,
+    "publishedBytes": 74290908,
     "sha256Manifest": "manifests/pages-artifact-sha256.txt",
-    "sha256": "89500920e02e591007600b171e1d425e7db5ff2d97b93e79b0cd898216e051e9"
+    "manifestAuthority": "raw committed Git tree bytes with checkout conversion disabled",
+    "sha256": "6d1f765671e21bc84f85e686cb962e4a01644221fa898c1eb08e8a02926c9d68"
   },
   "authoredAudio": {
     "schema": 2,
@@ -67,8 +69,34 @@
     "uniqueCues": 347,
     "semanticGroups": 189,
     "sfxShards": 5,
-    "libraryManifestSha256": "e38315f30bbb6e3b9cc965bf9d49104827c315384311a9f44a9c895f1d77ab48",
+    "sourceLibraryManifestSha256": "e38315f30bbb6e3b9cc965bf9d49104827c315384311a9f44a9c895f1d77ab48",
+    "publishedLibraryManifestSha256": "943be26b32095f00229cc8185048283bfc6a6460703c80e28601c4e3209d0478",
     "validationManifestSha256": "038be4b71c3572dc05ee149e06818bba251c463980cf95810437342cabb0b8ae"
+  },
+  "deployment": {
+    "result": "pass",
+    "pagesRunId": 29475230094,
+    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29475230094",
+    "deployedCommit": "b741b855f1a597afeed8ce3a9e79ae0620dd88b2",
+    "httpsEnforced": true,
+    "liveByteChecks": [
+      "index.html",
+      "assets/index-CIdywydh.js",
+      "assets/index-zjNTfBTL.css",
+      "audio/audio-library.json",
+      "audio/music/e1m1.mp3",
+      "public_runtime/effects/binding-beam/fx_binding-beam_impact_F_01.png"
+    ],
+    "liveBrowserSmoke": {
+      "browser": "chromium",
+      "map": "E1M1",
+      "mode": "playing",
+      "audioSource": "authored",
+      "loadedSfxShards": 4,
+      "decodedLongFormTracks": 0,
+      "consoleOrNetworkFailures": 0,
+      "developmentDebugApiExposed": false
+    }
   },
   "humanGates": [
     "blind E1M1 onboarding with five independent players",

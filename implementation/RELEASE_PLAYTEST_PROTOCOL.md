@@ -3,11 +3,11 @@
 - Protocol revision: 2026-07-16
 - Previous automated software baseline: `804f837b70efbfa201ffa3a1be4b18908e2896e5` (`804f837`)
 - Candidate under review: `f5796564af6c142a13979cdc2852659797ce6ace` (`f579656`)
-- Automated preflight: **Pass**; exact output, structured evidence, and published-file hashes are archived under `manifests/`
+- Automated preflight and live deployment: **Pass**; exact output, structured evidence, committed-file hashes, and Pages run `29475230094` are archived under `manifests/`
 
 This protocol closes the four release gates that cannot be truthfully certified by automated tests. Record raw observations and hardware details; do not replace failures with subjective summaries. Automated results are prerequisites, not substitutes for these records. The authored-audio content target is implemented; its subjective listening, device, and provenance checks are part of the representative-hardware and rights gates below.
 
-The current candidate passed a clean `npm ci`, 233 tests across 28 files, the nested production package, 31 registered browser scenarios, Chromium/Firefox/WebKit smoke, exact 3,659-file `dist`/Pages parity, a zero-vulnerability production audit, and the focused public-release scan. Use `manifests/release-candidate-evidence.json`, `manifests/release-candidate-preflight.txt`, and `manifests/pages-artifact-sha256.txt` as the candidate header evidence for every human record below.
+The current candidate passed a clean `npm ci`, 233 tests across 28 files, the nested production package, 31 registered browser scenarios, Chromium/Firefox/WebKit smoke, exact 3,659-file `dist`/Pages parity, a zero-vulnerability production audit, and the focused public-release scan. GitHub Pages then deployed the committed 3,660-file tree including `.nojekyll`; sampled live HTML, JS, CSS, audio, and particle bytes match that tree, and Chromium reaches E1M1 with authored audio and no console or network failures. Use `manifests/release-candidate-evidence.json`, `manifests/release-candidate-preflight.txt`, and `manifests/pages-artifact-sha256.txt` as the candidate header evidence for every human record below.
 
 ## Current Signoff Status
 

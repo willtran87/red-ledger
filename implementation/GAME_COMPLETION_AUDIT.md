@@ -33,13 +33,13 @@ Status meanings for this current section:
 | Persistence and resilience | **Proven on current candidate** | Persistence contracts plus two-tab and fault-injection journeys cover fixtures, saves, recovery, bounded conflict copies, campaign journals, old writers, quota/removal failures, corrupt/future byte preservation, storage denial, context loss, fatal shutdown, catalog recovery, and exact paused restore. | Browser storage cannot guarantee durability when the platform denies or clears storage. |
 | Performance and lifecycle | **Proven on current candidate** / **Open human gate** | The archived SwiftShader active-combat sample delivered 435 frames at 23.0 ms mean / 49.9 ms p95 with 16 hostiles and 90 resident textures; particle stress moved from 28 to 30 draw calls. Music streams without long-form buffer decoding and SFX decode by semantic shard. | Representative integrated GPU, discrete GPU, and touch-device targets remain an open human gate. |
 | Browser portability | **Proven on current candidate** | The nested production package and complete smoke pass in Chromium 149.0.7827.55, Firefox 151.0, and WebKit 26.5. | Representative real-device behavior remains part of the hardware gate. |
-| Production package and Pages source | **Proven on current candidate** | `dist` contains 3,659 files; Pages contains 3,660 files including `.nojekyll`, totaling 74,311,712 bytes. Per-path SHA-256 parity passes, the archived artifact-manifest hash is `89500920e02e591007600b171e1d425e7db5ff2d97b93e79b0cd898216e051e9`, and the production audit reports zero vulnerabilities. | Live deployment smoke must still confirm GitHub Pages serves this committed artifact. |
+| Production package and Pages source | **Proven on current candidate** | `dist` contains 3,659 files; Pages contains 3,660 committed files including `.nojekyll`, totaling 74,290,908 bytes. The raw Git-tree manifest hash is `6d1f765671e21bc84f85e686cb962e4a01644221fa898c1eb08e8a02926c9d68`, the production audit reports zero vulnerabilities, and deployment run `29475230094` succeeded. Live byte checks match the committed HTML, hashed JS/CSS, audio manifest, E1M1 MP3, and particle PNG. | Any later `docs` change requires a new committed-tree inventory and live smoke. |
 | Public-release scanning and provenance | **Proven on current candidate** / **Open human gate** | Seven focused public-release/audio contracts pass, covering restricted text/artifact references, licenses, notices, asset signatures, package leakage, audio specification, media hashes, and PCM fingerprints. | Formal visual/audio/mark rights review and a signed provenance record remain open. |
 | Monetization | **Not applicable** | No monetization, paid currency, advertising, or engagement purchase system is present. | Any future monetization would require a new design and release review. |
 
 ## Current Verdict
 
-Commit `f5796564af6c142a13979cdc2852659797ce6ace` is promoted as the current **automated-release candidate**. Its clean-install release suite, exact production/Pages inventory, dependency audit, public scan, and evidence hashes pass. It is **not release-final** until deployment smoke passes and the following four human records exist for that same immutable candidate:
+Commit `f5796564af6c142a13979cdc2852659797ce6ace` is promoted as the current **automated-release candidate**. Its clean-install release suite, exact committed Pages inventory, dependency audit, public scan, successful deployment, and live browser smoke pass. It is **not release-final** until the following four human records exist for that same immutable candidate:
 
 1. Blind E1M1 onboarding signoff.
 2. Continuous-campaign and every-map fresh-start balance/duration signoff.
@@ -56,13 +56,13 @@ Commit `f5796564af6c142a13979cdc2852659797ce6ace` is promoted as the current **a
 | Campaign runtime | **Pass:** 27 maps, 24 credential routes, maximum 38 draw calls |
 | Performance sample | **Pass:** ready 3,337 ms; 16 hostiles; 435 frames; 23.0 ms mean; 49.9 ms p95; 90 textures |
 | Particle stress | **Pass:** 28 baseline draw calls to 30 under stress |
-| Production inventory | **Pass:** 3,659 `dist` files; 3,660 published files including `.nojekyll`; 74,311,712 bytes |
-| Pages source | **Pass:** exact per-path SHA-256 verification; manifest hash `89500920e02e591007600b171e1d425e7db5ff2d97b93e79b0cd898216e051e9` |
+| Production inventory | **Pass:** 3,659 `dist` files; 3,660 committed published files including `.nojekyll`; 74,290,908 bytes |
+| Pages source | **Pass:** raw committed-tree SHA-256 inventory; manifest hash `6d1f765671e21bc84f85e686cb962e4a01644221fa898c1eb08e8a02926c9d68` |
 | Production dependency audit | **Pass:** zero vulnerabilities after clean install |
 | Public-release scan | **Pass:** seven contracts across two focused test files |
 | Authored-audio content | **Pass:** schema 2; 33 tracks; 347 cues; 189 groups; five lazy SFX shards |
 | Evidence archive | `manifests/release-candidate-evidence.json`; preflight log SHA-256 `cf187beae481621a96547a8aa4f11e1de1db0da5f352f3619bd490fd4eeb9a1c` |
-| Live deployment smoke | **Pending publish of the evidence commits** |
+| Live deployment smoke | **Pass:** Pages run `29475230094`; exact byte samples; Chromium E1M1 with authored audio and zero console/network failures |
 | Human signoffs | **All four remain open** |
 
 This table records the automated promotion of the immutable software candidate. Any later source, data, asset, dependency, or built-output change invalidates that evidence and requires the full candidate preflight again. Documentation-only evidence corrections do not change the tested software SHA.
