@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AssetCatalog, type RuntimeCatalog } from './AssetCatalog';
 
 const file = (url: string) => ({ url });
@@ -19,6 +19,29 @@ const catalog: RuntimeCatalog = {
   props: {},
   skies: {},
 };
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+describe('AssetCatalog loading resilience', () => {
+  it('aborts a catalog request that exceeds its deadline', async () => {
+    vi.useFakeTimers();
+    let signal: AbortSignal | undefined;
+    vi.stubGlobal('fetch', vi.fn((_url: RequestInfo | URL, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      signal = init?.signal ?? undefined;
+      signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+    })));
+
+    const pending = AssetCatalog.load(25);
+    const rejected = expect(pending).rejects.toThrow('Asset catalog request timed out after 1 seconds.');
+    await vi.advanceTimersByTimeAsync(25);
+
+    await rejected;
+    expect(signal?.aborted).toBe(true);
+  });
+});
 
 describe('AssetCatalog semantic actor states', () => {
   it('resolves an authored semantic state before generic fallbacks', () => {

@@ -81,7 +81,9 @@ describe('campaign combat-space integrity', () => {
 
   it('preserves mandatory and optional pressure in every phase at every placement tier', () => {
     const failures: string[] = [];
+    const phasePatterns = new Set<string>();
     for (const map of Object.values(CAMPAIGN.maps)) {
+      const mapPattern: number[] = [];
       for (const phase of phases) {
         const counts = placements.map((placement) => map.actors.filter((actor) =>
           actor.type === 'enemy' && actor.encounter === phase && actorIsEnabled(actor, placement)).length);
@@ -91,13 +93,17 @@ describe('campaign combat-space integrity', () => {
         if (!(counts[0] < counts[1] && counts[1] < counts[2])) {
           failures.push(`${map.id}:${phase} counts are not monotonic (${counts.join('/')})`);
         }
+        if (new Set(mandatory).size !== 1) failures.push(`${map.id}:${phase} changes mandatory anchors by placement (${mandatory.join('/')})`);
+        mapPattern.push(mandatory[1]);
         placements.forEach((placement, index) => {
-          if (mandatory[index] !== 3) failures.push(`${map.id}:${phase}:${placement} has ${mandatory[index]} mandatory anchors`);
+          if (mandatory[index] < 2 || mandatory[index] > 5) failures.push(`${map.id}:${phase}:${placement} has ${mandatory[index]} mandatory anchors`);
           if (counts[index] <= mandatory[index]) failures.push(`${map.id}:${phase}:${placement} lacks optional pressure`);
         });
       }
+      phasePatterns.add(mapPattern.join('/'));
     }
     expect(failures).toEqual([]);
+    expect(phasePatterns.size).toBeGreaterThanOrEqual(5);
   });
 
   it('stages later credentials in newly unlocked territory when the door graph supports it', () => {

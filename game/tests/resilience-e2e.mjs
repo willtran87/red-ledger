@@ -168,6 +168,68 @@ const activeGameplayContextLossScenario = async () => {
   }
 };
 
+const activeGameplayRuntimeFaultScenario = async () => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const page = await context.newPage();
+  const errors = monitorUnexpectedErrors(page);
+  try {
+    await page.goto(url, { waitUntil: 'networkidle' });
+    await waitForGame(page);
+    await startNewGame(page);
+    const before = await state(page);
+    assert(before.mode === 'playing', 'Runtime-fault fixture did not reach gameplay');
+
+    await page.evaluate(() => window.__redLedger.failRuntime());
+    await page.locator('#fatal-error').waitFor({ state: 'visible' });
+    await page.waitForFunction(() => {
+      const snapshot = JSON.parse(window.render_game_to_text());
+      return snapshot.runtime.halted
+        && snapshot.mode === 'paused'
+        && snapshot.audio.lifecycleSuspended
+        && document.pointerLockElement === null;
+    });
+    const copy = await page.locator('#fatal-error-copy').textContent();
+    assert(copy.includes('unexpected error interrupted the game'), `Runtime Fatal copy did not explain the interruption: ${copy}`);
+    assert(copy.includes('Injected runtime frame failure'), `Runtime Fatal copy omitted the fault reason: ${copy}`);
+    assert((await page.locator('.screen.active').count()) === 1, 'Runtime fault left another screen active with Fatal');
+    assert(await page.evaluate(() => document.activeElement?.id === 'fatal-reload'), 'Runtime fault did not focus Reload');
+
+    const frozen = await state(page);
+    await page.waitForTimeout(250);
+    const after = await state(page);
+    assert(after.tally.elapsed === frozen.tally.elapsed, 'Runtime fault continued simulating behind Fatal');
+    assert(after.player.x === frozen.player.x && after.player.z === frozen.player.z, 'Runtime fault continued moving behind Fatal');
+    expectNoUnexpectedErrors('Active gameplay runtime-fault scenario', errors);
+  } finally {
+    await context.close();
+  }
+};
+
+const deniedFullscreenScenario = async () => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  await context.addInitScript(() => {
+    Object.defineProperty(Element.prototype, 'requestFullscreen', {
+      configurable: true,
+      value: () => Promise.reject(new DOMException('Fullscreen denied by browser policy', 'NotAllowedError')),
+    });
+  });
+  const page = await context.newPage();
+  const errors = monitorUnexpectedErrors(page);
+  try {
+    await page.goto(url, { waitUntil: 'networkidle' });
+    await waitForGame(page);
+    await startNewGame(page);
+    await page.keyboard.press('KeyF');
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).message === 'Fullscreen unavailable');
+    const snapshot = await state(page);
+    assert(snapshot.mode === 'playing' && !snapshot.runtime.halted, 'Denied fullscreen halted active gameplay');
+    assert(!(await page.locator('#fatal-error').isVisible()), 'Denied fullscreen escalated to Fatal');
+    expectNoUnexpectedErrors('Denied-fullscreen scenario', errors);
+  } finally {
+    await context.close();
+  }
+};
+
 const deniedStorageScenario = async () => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   await context.addInitScript(() => {
@@ -356,6 +418,8 @@ const scenarios = [
   ['Ready-overlay context loss', readyContextLossScenario],
   ['Confirmation-dialog context loss', confirmationContextLossScenario],
   ['Active-gameplay context loss', activeGameplayContextLossScenario],
+  ['Active-gameplay runtime fault', activeGameplayRuntimeFaultScenario],
+  ['Denied fullscreen remains nonfatal', deniedFullscreenScenario],
   ['Denied localStorage fallback', deniedStorageScenario],
   ['Catalog failure and reload retry', catalogRetryScenario],
   ['Gameplay texture placeholder fallback', textureFallbackScenario],

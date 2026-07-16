@@ -49,6 +49,7 @@
           </select>
         </label>
         <div id="campaign-mastery" class="campaign-mastery" aria-live="polite"></div>
+        <div id="level-milestones" class="milestone-panel" aria-label="Milestones"></div>
         <div id="level-select-list" class="level-select-list"></div>
         <button data-back>Back</button>
       </section>
@@ -104,6 +105,7 @@
         <div id="tally"></div>
         <div id="result-bests" aria-live="polite"></div>
         <div id="intermission-mastery" class="mastery-panel" aria-label="Mastery target"></div>
+        <div id="intermission-milestones" class="milestone-panel" aria-label="Milestones"></div>
         <div id="episode-mastery" class="episode-mastery" aria-label="Episode mastery"></div>
         <div id="episode-progress" aria-label="Episode progress"></div>
         <div class="intermission-actions">
@@ -125,7 +127,7 @@
       <section id="death-menu" class="screen compact" aria-label="Claim denied">
         <h1>Claim Denied</h1>
         <p class="screen-copy">Choose where to reopen the file.</p>
-        <button id="restart-checkpoint">Restart Checkpoint</button>
+        <button id="restart-checkpoint">Restart Last Checkpoint</button>
         <button id="death-load">Load Game</button>
         <button id="death-menu-button">Main Menu</button>
       </section>
@@ -170,9 +172,9 @@
             <button id="replay-exit">Exit</button>
           </nav>
         </div>
-        <div id="objective" aria-hidden="true"></div>
-        <div id="message"></div>
-        <div id="boss-bar" hidden><div><strong></strong><small></small></div><i><span></span></i></div>
+        <div id="objective" role="note" aria-label="Current objective"></div>
+        <div id="message" aria-hidden="true"></div>
+        <div id="boss-bar" role="group" aria-label="Boss encounter" hidden><div><strong></strong><small></small></div><i role="progressbar" aria-label="Boss health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span aria-hidden="true"></span></i></div>
         <div id="combat-streak" aria-hidden="true" hidden>
           <strong></strong><span></span><i></i>
         </div>
@@ -186,11 +188,11 @@
           <span></span>
         </div>
         <div id="status">
-          <span id="health">100</span>
-          <span id="armor">0</span>
-          <span id="ammo">50</span>
+          <span id="health" role="meter" aria-label="Health" aria-valuemin="0" aria-valuemax="200" aria-valuenow="100" aria-valuetext="100 health">100</span>
+          <span id="armor" role="meter" aria-label="Armor" aria-valuemin="0" aria-valuemax="200" aria-valuenow="0" aria-valuetext="0 armor">0</span>
+          <span id="ammo" role="meter" aria-label="Ammunition" aria-valuemin="0" aria-valuemax="200" aria-valuenow="50" aria-valuetext="50 ammunition">50</span>
           <img id="portrait" src="/public_runtime/ui/portrait/ui_portrait_damage-0_neutral_F_00.png" alt="Player condition" />
-          <span id="keys"></span>
+          <span id="keys" role="group" aria-label="Credentials: none"></span>
           <span id="map-name"></span>
         </div>
         <canvas id="automap" width="320" height="200" hidden></canvas>
@@ -200,8 +202,9 @@
       <div id="ready-overlay" hidden>
         <header>
           <img src="/public_runtime/ui/icons/minimal-terminal.png" alt="" aria-hidden="true" />
-          <div><strong id="ready-map"></strong><span>FIELD BRIEFING</span></div>
+          <div><strong id="ready-map"></strong><span id="ready-briefing-kind">FIELD BRIEFING</span></div>
         </header>
+        <p id="entry-objective"></p>
         <div id="entry-controls" class="entry-controls" aria-label="Essential controls"></div>
         <button id="enter-file">Enter File</button>
       </div>

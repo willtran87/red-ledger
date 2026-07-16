@@ -12,6 +12,7 @@ interface ActorState { angles?: Record<string, CatalogFile[]> }
 interface ActorEntry { states: Record<string, ActorState> }
 
 export const ASSET_DEGRADED_EVENT = 'red-ledger-asset-degraded';
+export const ASSET_CATALOG_TIMEOUT_MS = 12_000;
 
 export interface AssetCatalogStatus {
   readonly mode: 'complete' | 'placeholder-fallback';
@@ -41,10 +42,26 @@ export class AssetCatalog {
 
   constructor(readonly data: RuntimeCatalog) {}
 
-  static async load(): Promise<AssetCatalog> {
-    const response = await fetch(runtimeUrl('data/game-assets.json'));
-    if (!response.ok) throw new Error(`Asset catalog failed: ${response.status}`);
-    return new AssetCatalog(await response.json() as RuntimeCatalog);
+  static async load(timeoutMs = ASSET_CATALOG_TIMEOUT_MS): Promise<AssetCatalog> {
+    const controller = new AbortController();
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, Math.max(0, timeoutMs));
+
+    try {
+      const response = await fetch(runtimeUrl('data/game-assets.json'), { signal: controller.signal });
+      if (!response.ok) throw new Error(`Asset catalog failed: ${response.status}`);
+      return new AssetCatalog(await response.json() as RuntimeCatalog);
+    } catch (error) {
+      if (timedOut) {
+        throw new Error(`Asset catalog request timed out after ${Math.ceil(timeoutMs / 1000)} seconds.`, { cause: error });
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   texture(url: string, repeat = false): Texture {

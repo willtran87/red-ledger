@@ -1,4 +1,7 @@
 export const SAVE_SCHEMA_VERSION = 1;
+export const CAMPAIGN_SCHEMA_VERSION = 2;
+export const OLDEST_SUPPORTED_SAVE_SCHEMA_VERSION = 1;
+export const OLDEST_SUPPORTED_CAMPAIGN_SCHEMA_VERSION = 1;
 export const DEMO_SCHEMA_VERSION = 3;
 /** Leaves room for the replay-library wrapper inside its 3.5 MB UTF-16 budget. */
 export const DEMO_STORAGE_BUDGET_BYTES = 3_000_000;
@@ -99,6 +102,8 @@ export interface ValidSlotResult<TState> {
   readonly defaultName: string;
   readonly metadata: SaveMetadata;
   readonly state: TState;
+  /** Persistent survives a new browser session; memory-only survives only in this tab. */
+  readonly persistence: 'persistent' | 'memory-only';
 }
 
 export interface InvalidSlotResult {
@@ -148,10 +153,33 @@ export interface PersistenceStorageFailure {
 export interface PersistenceStorageStatus {
   readonly mode: 'persistent' | 'memory-fallback';
   readonly failureCount: number;
+  readonly volatileKeyCount: number;
   readonly lastFailure?: PersistenceStorageFailure;
 }
 
 export const PERSISTENCE_DEGRADED_EVENT = 'red-ledger-persistence-degraded';
+
+/**
+ * Compatibility policy for durable player data.
+ *
+ * Save state is application-owned and therefore requires both schema 1 and the exact gameVersion.
+ * Campaign schema 1 is the original public format; schema 2 adds mastery records and secret-map
+ * discovery. Its migration only supplies empty defaults and never rewrites storage during a read.
+ * Unknown fields in supported envelopes are ignored. Corrupt, older, and future envelopes remain
+ * untouched so another build or a recovery tool can inspect them.
+ */
+export const PERSISTENCE_COMPATIBILITY_POLICY = Object.freeze({
+  saves: Object.freeze({
+    currentVersion: SAVE_SCHEMA_VERSION,
+    oldestSupportedVersion: OLDEST_SUPPORTED_SAVE_SCHEMA_VERSION,
+    requiresExactGameVersion: true,
+  }),
+  campaign: Object.freeze({
+    currentVersion: CAMPAIGN_SCHEMA_VERSION,
+    oldestSupportedVersion: OLDEST_SUPPORTED_CAMPAIGN_SCHEMA_VERSION,
+    legacyDefaults: Object.freeze({ discoveredSecretMaps: true, records: true }),
+  }),
+});
 
 interface SlotDescriptor {
   readonly id: string;
@@ -255,6 +283,44 @@ const isMapRecord = (value: unknown): value is MapRecord => isRecord(value)
   && isPerformanceGrade(value.bestGrade)
   && typeof value.parBeaten === 'boolean';
 
+const migrateCampaignEnvelope = (value: unknown): CampaignUnlocks | undefined => {
+  if (!isRecord(value)
+    || value.schema !== 'red-ledger-campaign'
+    || !Number.isSafeInteger(value.version)
+    || Number(value.version) < OLDEST_SUPPORTED_CAMPAIGN_SCHEMA_VERSION
+    || Number(value.version) > CAMPAIGN_SCHEMA_VERSION
+    || !verifyChecksum(value)
+    || !isRecord(value.progress)) return undefined;
+
+  const version = Number(value.version);
+  const progress = value.progress;
+  const hasLegacyOrValidSecretMaps = version === 1
+    ? progress.discoveredSecretMaps === undefined || Array.isArray(progress.discoveredSecretMaps)
+    : Array.isArray(progress.discoveredSecretMaps);
+  const hasLegacyOrValidRecords = version === 1
+    ? progress.records === undefined || isRecord(progress.records)
+    : isRecord(progress.records);
+  if (!Array.isArray(progress.unlockedEpisodes)
+    || !Array.isArray(progress.completedEpisodes)
+    || !Array.isArray(progress.completedMaps)
+    || !hasLegacyOrValidSecretMaps
+    || !hasLegacyOrValidRecords
+    || (isRecord(progress.records) && !Object.values(progress.records).every(isMapRecord))
+    || !Number.isFinite(progress.updatedAt)
+    || [...progress.unlockedEpisodes, ...progress.completedEpisodes, ...progress.completedMaps,
+      ...(progress.discoveredSecretMaps as unknown[] | undefined ?? [])]
+      .some((entry) => typeof entry !== 'string')) return undefined;
+
+  return {
+    unlockedEpisodes: normalizeStringList(progress.unlockedEpisodes as string[]),
+    completedEpisodes: normalizeStringList(progress.completedEpisodes as string[]),
+    completedMaps: normalizeStringList(progress.completedMaps as string[]),
+    discoveredSecretMaps: normalizeStringList(progress.discoveredSecretMaps as string[] | undefined ?? []),
+    records: { ...(progress.records as Record<string, MapRecord> | undefined ?? {}) },
+    updatedAt: progress.updatedAt as number,
+  };
+};
+
 export const mapRecordKey = (mapId: string, difficulty: string): string => `${mapId}:${difficulty}`;
 
 const mergeMapRecord = (previous: MapRecord | undefined, performance: MapPerformance, achievedAt: number): MapRecord => ({
@@ -327,6 +393,7 @@ export class PersistenceSystem<TState> {
   private readonly now: () => number;
   private readonly memoryFallback = new Map<string, string>();
   private readonly volatileKeys = new Set<string>();
+  private storageReadUnavailable = false;
   private storageFailureCount = 0;
   private lastStorageFailure?: PersistenceStorageFailure;
 
@@ -341,8 +408,9 @@ export class PersistenceSystem<TState> {
 
   storageStatus(): PersistenceStorageStatus {
     return {
-      mode: this.storageFailureCount > 0 ? 'memory-fallback' : 'persistent',
+      mode: this.storageReadUnavailable || this.volatileKeys.size > 0 ? 'memory-fallback' : 'persistent',
       failureCount: this.storageFailureCount,
+      volatileKeyCount: this.volatileKeys.size,
       ...(this.lastStorageFailure ? { lastFailure: { ...this.lastStorageFailure } } : {}),
     };
   }
@@ -423,31 +491,8 @@ export class PersistenceSystem<TState> {
     const raw = this.getItem(this.key('campaign'));
     if (raw) {
       try {
-        const parsed: unknown = JSON.parse(raw);
-        if (isRecord(parsed)
-          && parsed.schema === 'red-ledger-campaign'
-          && parsed.version === SAVE_SCHEMA_VERSION
-          && verifyChecksum(parsed)
-          && isRecord(parsed.progress)
-          && Array.isArray(parsed.progress.unlockedEpisodes)
-          && Array.isArray(parsed.progress.completedEpisodes)
-          && Array.isArray(parsed.progress.completedMaps)
-          && (parsed.progress.discoveredSecretMaps === undefined || Array.isArray(parsed.progress.discoveredSecretMaps))
-          && (parsed.progress.records === undefined || (isRecord(parsed.progress.records)
-            && Object.values(parsed.progress.records).every(isMapRecord)))
-          && Number.isFinite(parsed.progress.updatedAt)
-          && [...parsed.progress.unlockedEpisodes, ...parsed.progress.completedEpisodes, ...parsed.progress.completedMaps,
-            ...(parsed.progress.discoveredSecretMaps as unknown[] | undefined ?? [])]
-            .every((entry) => typeof entry === 'string')) {
-          return {
-            unlockedEpisodes: normalizeStringList(parsed.progress.unlockedEpisodes as string[]),
-            completedEpisodes: normalizeStringList(parsed.progress.completedEpisodes as string[]),
-            completedMaps: normalizeStringList(parsed.progress.completedMaps as string[]),
-            discoveredSecretMaps: normalizeStringList(parsed.progress.discoveredSecretMaps as string[] | undefined ?? []),
-            records: { ...(parsed.progress.records as Record<string, MapRecord> | undefined ?? {}) },
-            updatedAt: parsed.progress.updatedAt as number,
-          };
-        }
+        const migrated = migrateCampaignEnvelope(JSON.parse(raw));
+        if (migrated) return migrated;
       } catch {
         // A damaged campaign record falls back to defaults and remains available for diagnostics.
       }
@@ -504,7 +549,7 @@ export class PersistenceSystem<TState> {
 
   private writeCampaign(progress: Omit<CampaignUnlocks, 'updatedAt'> | CampaignUnlocks, updatedAt = this.now()): CampaignUnlocks {
     const next: CampaignUnlocks = { ...progress, updatedAt };
-    const unsigned = { schema: 'red-ledger-campaign' as const, version: SAVE_SCHEMA_VERSION, progress: next };
+    const unsigned = { schema: 'red-ledger-campaign' as const, version: CAMPAIGN_SCHEMA_VERSION, progress: next };
     const envelope: CampaignEnvelope = withChecksum(unsigned);
     this.setItem(this.key('campaign'), JSON.stringify(envelope));
     return next;
@@ -539,18 +584,31 @@ export class PersistenceSystem<TState> {
       state,
     };
     const envelope: SaveEnvelope<TState> = withChecksum(unsigned);
-    this.setItem(this.slotKey(descriptor), JSON.stringify(envelope));
-    return { status: 'valid', slotId: descriptor.id, kind: descriptor.kind, defaultName: descriptor.defaultName, metadata, state };
+    const persistence = this.setItem(this.slotKey(descriptor), JSON.stringify(envelope));
+    return {
+      status: 'valid',
+      slotId: descriptor.id,
+      kind: descriptor.kind,
+      defaultName: descriptor.defaultName,
+      metadata,
+      state,
+      persistence,
+    };
   }
 
   private readSlot(descriptor: SlotDescriptor): SaveSlotResult<TState> {
-    const raw = this.getItem(this.slotKey(descriptor));
+    const key = this.slotKey(descriptor);
+    const raw = this.getItem(key);
     if (raw === null) return { status: 'empty', slotId: descriptor.id, kind: descriptor.kind, defaultName: descriptor.defaultName };
     try {
       const parsed: unknown = JSON.parse(raw);
       if (!isRecord(parsed)) return this.invalid(descriptor, 'Save is not an object');
       if (parsed.schema !== 'red-ledger-save') return this.invalid(descriptor, 'Unknown save schema');
-      if (parsed.version !== SAVE_SCHEMA_VERSION) return this.invalid(descriptor, 'Unsupported save version');
+      if (!Number.isSafeInteger(parsed.version)) return this.invalid(descriptor, 'Unsupported save version');
+      if (Number(parsed.version) > SAVE_SCHEMA_VERSION) return this.invalid(descriptor, 'Save version is newer than this build');
+      if (Number(parsed.version) < OLDEST_SUPPORTED_SAVE_SCHEMA_VERSION) {
+        return this.invalid(descriptor, 'Save version is no longer supported');
+      }
       if (parsed.gameVersion !== this.gameVersion) return this.invalid(descriptor, 'Save belongs to a different game version');
       if (!verifyChecksum(parsed)) return this.invalid(descriptor, 'Checksum mismatch');
       if (!isSaveMetadata(parsed.metadata)) return this.invalid(descriptor, 'Invalid save metadata');
@@ -565,6 +623,7 @@ export class PersistenceSystem<TState> {
         defaultName: descriptor.defaultName,
         metadata: parsed.metadata,
         state: parsed.state as TState,
+        persistence: this.volatileKeys.has(key) ? 'memory-only' : 'persistent',
       };
     } catch (error) {
       return this.invalid(descriptor, error instanceof Error ? error.message : 'Unreadable save');
@@ -606,23 +665,27 @@ export class PersistenceSystem<TState> {
     if (this.volatileKeys.has(key)) return this.memoryFallback.get(key) ?? null;
     try {
       const value = this.storage.getItem(key);
+      this.storageReadUnavailable = false;
       if (value === null) this.memoryFallback.delete(key);
       else this.memoryFallback.set(key, value);
       return value;
     } catch (error) {
+      this.storageReadUnavailable = true;
       this.reportStorageFailure('read', key, error);
       return this.memoryFallback.get(key) ?? null;
     }
   }
 
-  private setItem(key: string, value: string): void {
+  private setItem(key: string, value: string): 'persistent' | 'memory-only' {
     this.memoryFallback.set(key, value);
     try {
       this.storage.setItem(key, value);
       this.volatileKeys.delete(key);
+      return 'persistent';
     } catch (error) {
       this.volatileKeys.add(key);
       this.reportStorageFailure('write', key, error);
+      return 'memory-only';
     }
   }
 

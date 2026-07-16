@@ -112,6 +112,16 @@ export interface SectorMoverState {
   targetHeight: number;
 }
 
+export interface MoverCompletion {
+  readonly kind: 'door' | 'sector';
+  readonly key: string;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly material: string;
+  readonly credential?: Credential;
+}
+
 export interface RuntimeLandmark {
   key: string;
   id: string;
@@ -220,7 +230,13 @@ export class World {
   private dropCounter = 0;
   private readonly bossMechanismActions = new Set<BossMechanismAction>();
   private readonly secretClues = new Map<string, Sprite>();
+  private readonly hazardCells: Array<{ x: number; z: number }> = [];
+  private hazardBatch?: InstancedMesh;
+  private readonly lineOfSightProbe = new Vector3();
+  private readonly moverCompletions: MoverCompletion[] = [];
   private bindingGates = 0;
+  private navigationRevision = 0;
+  private lineOfSightQueries = 0;
 
   constructor(
     readonly scene: Scene,
@@ -233,6 +249,8 @@ export class World {
   load(map: CampaignMap, placementDifficulty: Difficulty = 'normal'): void {
     this.dispose();
     this.map = map;
+    this.navigationRevision = 0;
+    this.lineOfSightQueries = 0;
     this.episode = Number(map.id[1]);
     const theme = THEMES[this.episode as 1 | 2 | 3];
     this.scene.background = new Color(theme.fog);
@@ -318,16 +336,25 @@ export class World {
       this.root.add(mesh);
     });
 
-    const hazardMaterial = new MeshBasicMaterial({ color: 0x7a1018, transparent: true, opacity: .72, side: DoubleSide });
+    const hazardCells: Array<{ x: number; z: number }> = [];
     for (let z = 0; z < this.map.grid.length; z += 1) {
       for (let x = 0; x < this.map.grid[z].length; x += 1) {
         if (!['h', 'w'].includes(this.map.grid[z][x])) continue;
-        const hazard = new Mesh(new PlaneGeometry(cell * .98, cell * .98), hazardMaterial);
-        hazard.rotation.x = -Math.PI / 2;
-        hazard.position.set((x + .5) * cell, (this.map.legend[this.map.grid[z][x]]?.floorHeight ?? 0) + .015, (z + .5) * cell);
-        this.root.add(hazard);
-        this.hazardMeshes.push(hazard);
+        hazardCells.push({ x, z });
       }
+    }
+    if (hazardCells.length > 0) {
+      const hazard = new InstancedMesh(
+        new PlaneGeometry(cell * .98, cell * .98),
+        new MeshBasicMaterial({ color: 0x7a1018, transparent: true, opacity: .72 }),
+        hazardCells.length,
+      );
+      this.hazardCells.push(...hazardCells);
+      this.hazardBatch = hazard;
+      hazard.frustumCulled = false;
+      this.syncHazardInstances();
+      this.root.add(hazard);
+      this.hazardMeshes.push(hazard);
     }
   }
 
@@ -565,67 +592,106 @@ export class World {
   openDoor(door: RuntimeDoor, instant = false): void {
     door.open = true;
     if (instant) {
+      const wasBlockingNavigation = door.progress < .72;
       door.progress = 1;
       door.mesh.position.y = door.baseY + 5.1;
       door.mesh.visible = false;
+      if (wasBlockingNavigation) this.bumpNavigationTopology();
     }
   }
 
-  updateMovers(dt: number): void {
+  updateMovers(dt: number): readonly MoverCompletion[] {
+    this.moverCompletions.length = 0;
+    let navigationChanged = false;
     for (const door of this.doors.values()) {
       if (!door.open || door.progress >= 1) continue;
+      const wasBlockingNavigation = door.progress < .72;
       door.progress = Math.min(1, door.progress + dt * 1.25);
       door.mesh.position.y = door.baseY + 1.7 + 3.4 * door.progress;
       door.mesh.visible = door.progress < 1;
+      if (wasBlockingNavigation && door.progress >= .72) navigationChanged = true;
+      if (door.progress >= 1) {
+        const tile = this.map.legend[this.map.grid[door.z]?.[door.x]];
+        this.moverCompletions.push({
+          kind: 'door',
+          key: door.key,
+          x: door.mesh.position.x,
+          y: door.baseY,
+          z: door.mesh.position.z,
+          material: tile?.wallMaterial ?? '',
+          ...(door.credential ? { credential: door.credential } : {}),
+        });
+      }
     }
     let changed = false;
     for (const sector of this.sectors.values()) {
       if (Math.abs(sector.height - sector.targetHeight) < .001) continue;
+      const previousNavigationHeight = Math.round(sector.height * 20);
       const direction = Math.sign(sector.targetHeight - sector.height);
       sector.height += direction * Math.min(Math.abs(sector.targetHeight - sector.height), dt * 1.25);
       this.syncSectorFloor(sector);
+      if (Math.round(sector.height * 20) !== previousNavigationHeight) navigationChanged = true;
+      if (Math.abs(sector.height - sector.targetHeight) < .001) {
+        this.moverCompletions.push({
+          kind: 'sector',
+          key: sector.key,
+          x: (sector.x + .5) * this.map.cellSize,
+          y: sector.height,
+          z: (sector.z + .5) * this.map.cellSize,
+          material: this.map.legend[sector.char]?.floorMaterial ?? '',
+        });
+      }
       changed = true;
     }
     if (changed) {
-      this.hazardMeshes.forEach((mesh) => { mesh.position.y = this.floorHeightAt(mesh.position) + .015; });
+      this.syncHazardInstances();
     }
     for (const landmark of this.landmarks.values()) {
       const floorY = this.floorHeightAt(landmark.sprite.position);
       landmark.targetPosition.y = floorY;
       landmark.sprite.position.lerp(landmark.targetPosition, Math.min(1, dt * 2.8));
     }
+    if (navigationChanged) this.bumpNavigationTopology();
+    return this.moverCompletions;
   }
 
   restoreDoor(door: RuntimeDoor, open: boolean, progress: number): void {
+    const wasBlockingNavigation = door.progress < .72;
     door.open = open;
     door.progress = Math.max(0, Math.min(1, progress));
     door.mesh.position.y = door.baseY + 1.7 + 3.4 * door.progress;
     door.mesh.visible = door.progress < 1;
+    if (wasBlockingNavigation !== (door.progress < .72)) this.bumpNavigationTopology();
   }
 
   closestDoor(position: Vector3, maxDistance = 2.6): RuntimeDoor | undefined {
-    return [...this.doors.values()].filter((door) => !door.open).sort((a, b) => {
-      const ad = position.distanceToSquared(a.mesh.position);
-      const bd = position.distanceToSquared(b.mesh.position);
-      return ad - bd;
-    }).find((door) => position.distanceTo(door.mesh.position) <= maxDistance);
+    let closest: RuntimeDoor | undefined;
+    let closestDistanceSquared = maxDistance * maxDistance;
+    for (const door of this.doors.values()) {
+      if (door.open) continue;
+      const distanceSquared = position.distanceToSquared(door.mesh.position);
+      if (distanceSquared > closestDistanceSquared || (closest && distanceSquared === closestDistanceSquared)) continue;
+      closest = door;
+      closestDistanceSquared = distanceSquared;
+    }
+    return closest;
   }
 
   isSolid(position: Vector3, radius = .28): boolean {
-    const probes = [[-radius, -radius], [radius, -radius], [-radius, radius], [radius, radius]];
-    return probes.some(([dx, dz]) => {
-      const x = Math.floor((position.x + dx) / this.map.cellSize);
-      const z = Math.floor((position.z + dz) / this.map.cellSize);
-      if (z < 0 || z >= this.map.grid.length || x < 0 || x >= this.map.grid[0].length) return true;
-      if (this.map.grid[z][x] === '#') return true;
-      if (this.isConcealedCell(`${x},${z}`)) return true;
-      const door = this.doors.get(`${x},${z}`);
-      if (door && door.progress < .72) return true;
-      return [...this.breakables.values()].some((breakable) =>
-        !breakable.destroyed && breakable.definition.blocksMovement
-        && Math.abs(breakable.position.x - (position.x + dx)) < .48
-        && Math.abs(breakable.position.z - (position.z + dz)) < .48);
-    });
+    const minX = position.x - radius;
+    const maxX = position.x + radius;
+    const minZ = position.z - radius;
+    const maxZ = position.z + radius;
+    if (this.isSolidCell(minX, minZ) || this.isSolidCell(maxX, minZ)
+      || this.isSolidCell(minX, maxZ) || this.isSolidCell(maxX, maxZ)) return true;
+    for (const breakable of this.breakables.values()) {
+      if (breakable.destroyed || !breakable.definition.blocksMovement) continue;
+      const nearX = Math.abs(breakable.position.x - minX) < .48 || Math.abs(breakable.position.x - maxX) < .48;
+      if (!nearX) continue;
+      const nearZ = Math.abs(breakable.position.z - minZ) < .48 || Math.abs(breakable.position.z - maxZ) < .48;
+      if (nearZ) return true;
+    }
+    return false;
   }
 
   floorHeightAt(position: Vector3): number {
@@ -640,9 +706,10 @@ export class World {
   }
 
   hasLineOfSight(from: Vector3, to: Vector3): boolean {
+    this.lineOfSightQueries += 1;
     const distance = from.distanceTo(to);
     const steps = Math.ceil(distance / .45);
-    const probe = new Vector3();
+    const probe = this.lineOfSightProbe;
     for (let i = 1; i < steps; i += 1) {
       probe.lerpVectors(from, to, i / steps);
       if (this.isSolid(probe, .05)) return false;
@@ -696,6 +763,7 @@ export class World {
     const secret = this.map.secrets.find((candidate) => candidate.id === id);
     if (!secret || this.discoveredSecrets.has(id)) return false;
     this.discoveredSecrets.add(id);
+    this.bumpNavigationTopology();
     const clue = this.secretClues.get(id);
     if (clue) clue.visible = false;
     return true;
@@ -775,13 +843,16 @@ export class World {
   }
 
   restoreSectorMovers(states: readonly SectorMoverState[]): void {
+    let navigationChanged = false;
     states.forEach((state) => {
       const sector = this.sectors.get(state.key);
       if (!sector) return;
+      if (Math.round(sector.height * 20) !== Math.round(state.height * 20)) navigationChanged = true;
       sector.height = state.height;
       sector.targetHeight = state.targetHeight;
       this.syncSectorFloor(sector);
     });
+    if (navigationChanged) this.bumpNavigationTopology();
   }
 
   private syncSectorFloor(sector: RuntimeSector): void {
@@ -795,10 +866,31 @@ export class World {
     sector.floorInstance.instanceMatrix.needsUpdate = true;
   }
 
+  private syncHazardInstances(): void {
+    if (!this.hazardBatch) return;
+    const cellSize = this.map.cellSize;
+    const matrix = new Matrix4().makeRotationX(-Math.PI / 2);
+    this.hazardCells.forEach((cell, index) => {
+      const height = this.sectors.get(`${cell.x},${cell.z}`)?.height
+        ?? this.map.legend[this.map.grid[cell.z]?.[cell.x]]?.floorHeight
+        ?? 0;
+      matrix.setPosition((cell.x + .5) * cellSize, height + .015, (cell.z + .5) * cellSize);
+      this.hazardBatch!.setMatrixAt(index, matrix);
+    });
+    this.hazardBatch.instanceMatrix.needsUpdate = true;
+  }
+
   closestBreakable(position: Vector3, maxDistance = 3): RuntimeBreakable | undefined {
-    return [...this.breakables.values()].filter((item) => !item.destroyed)
-      .sort((a, b) => position.distanceToSquared(a.position) - position.distanceToSquared(b.position))
-      .find((item) => position.distanceTo(item.position) <= maxDistance);
+    let closest: RuntimeBreakable | undefined;
+    let closestDistanceSquared = maxDistance * maxDistance;
+    for (const item of this.breakables.values()) {
+      if (item.destroyed) continue;
+      const distanceSquared = position.distanceToSquared(item.position);
+      if (distanceSquared > closestDistanceSquared || (closest && distanceSquared === closestDistanceSquared)) continue;
+      closest = item;
+      closestDistanceSquared = distanceSquared;
+    }
+    return closest;
   }
 
   damageBreakable(key: string, damage: number): { destroyed: boolean; reward?: PickupId } | undefined {
@@ -810,6 +902,7 @@ export class World {
     if (item.health > 0) return { destroyed: false };
     item.destroyed = true;
     item.sprite.material.opacity = .55;
+    this.bumpNavigationTopology();
     return { destroyed: true, reward: item.definition.reward };
   }
 
@@ -818,9 +911,11 @@ export class World {
   }
 
   restoreBreakables(states: readonly BreakableState[]): void {
+    let navigationChanged = false;
     states.forEach((state) => {
       const item = this.breakables.get(state.key);
       if (!item) return;
+      if (item.destroyed !== state.destroyed) navigationChanged = true;
       item.health = Math.max(0, state.health);
       item.destroyed = state.destroyed;
       const visual = state.destroyed ? 'wrecked' : state.health < item.definition.health ? 'damaged' : 'base';
@@ -828,6 +923,25 @@ export class World {
       item.sprite.material.opacity = state.destroyed ? .55 : 1;
       item.sprite.material.needsUpdate = true;
     });
+    if (navigationChanged) this.bumpNavigationTopology();
+  }
+
+  get navigationTopologyRevision(): number { return this.navigationRevision; }
+  get lineOfSightQueryCount(): number { return this.lineOfSightQueries; }
+
+  private bumpNavigationTopology(): void {
+    this.navigationRevision = (this.navigationRevision + 1) >>> 0;
+  }
+
+  private isSolidCell(worldX: number, worldZ: number): boolean {
+    const x = Math.floor(worldX / this.map.cellSize);
+    const z = Math.floor(worldZ / this.map.cellSize);
+    if (z < 0 || z >= this.map.grid.length || x < 0 || x >= this.map.grid[0].length) return true;
+    if (this.map.grid[z][x] === '#') return true;
+    const key = `${x},${z}`;
+    if (this.isConcealedCell(key)) return true;
+    const door = this.doors.get(key);
+    return Boolean(door && door.progress < .72);
   }
 
   applyBossMechanism(action: BossMechanismAction, contextId?: string): void {
@@ -942,6 +1056,9 @@ export class World {
     this.discoveredSecrets.clear();
     this.visitedTiles.clear();
     this.hazardMeshes.length = 0;
+    this.hazardCells.length = 0;
+    this.hazardBatch = undefined;
+    this.moverCompletions.length = 0;
     this.sectors.clear();
     this.landmarks.clear();
     this.breakables.clear();

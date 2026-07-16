@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PerspectiveCamera, Scene, Texture, Vector3 } from 'three';
+import { InstancedMesh, Matrix4, PerspectiveCamera, Scene, Texture, Vector3 } from 'three';
 import { CAMPAIGN_MAPS } from '../data';
 import { resolveMaterialAsset, resolveSkyAsset } from '../data/tiles';
 import type { AssetCatalog } from './AssetCatalog';
@@ -122,5 +122,103 @@ describe('authored world content', () => {
     expect(climax.every((actor) => actor.phaseLocked && !actor.sprite.visible)).toBe(true);
     expect(world.unlockEncounter('climax')).toBe(climax.length);
     expect(climax.every((actor) => !actor.phaseLocked && actor.sprite.visible && actor.awake)).toBe(true);
+  });
+
+  it('batches hazard surfaces and keeps their mover height and visibility synchronized', () => {
+    const world = worldFor('E2M6');
+    const hazardCells = world.map.grid.flatMap((row, z) => [...row].flatMap((tile, x) => ['h', 'w'].includes(tile) ? [{ x, z }] : []));
+    expect(world.hazardMeshes).toHaveLength(1);
+    const batch = world.hazardMeshes[0] as InstancedMesh;
+    expect(batch).toBeInstanceOf(InstancedMesh);
+    expect(batch.count).toBe(hazardCells.length);
+    expect(batch.frustumCulled).toBe(false);
+
+    world.applyTransformation('toggle-sectors');
+    expect(batch.visible).toBe(false);
+
+    const drainWorld = worldFor('E2M2');
+    const drainBatch = drainWorld.hazardMeshes[0] as InstancedMesh;
+    const drainCells = drainWorld.map.grid.flatMap((row, z) => [...row].flatMap((tile, x) => ['h', 'w'].includes(tile) ? [{ x, z }] : []));
+    const mechanism = drainWorld.map.mechanisms.find((candidate) => candidate.sectorTags.some((key) => {
+      const [x, z] = key.split(',').map(Number);
+      return ['h', 'w'].includes(drainWorld.map.grid[z]?.[x] ?? '');
+    }))!;
+    const movingKey = mechanism.sectorTags.find((key) => {
+      const [x, z] = key.split(',').map(Number);
+      return ['h', 'w'].includes(drainWorld.map.grid[z]?.[x] ?? '');
+    })!;
+    const [movingX, movingZ] = movingKey.split(',').map(Number);
+    const movingIndex = drainCells.findIndex((cell) => cell.x === movingX && cell.z === movingZ);
+    const before = new Matrix4();
+    const after = new Matrix4();
+    drainBatch.getMatrixAt(movingIndex, before);
+    drainWorld.applyTransformation(mechanism.action, mechanism.id);
+    drainWorld.updateMovers(.25);
+    drainBatch.getMatrixAt(movingIndex, after);
+    expect(after.elements[13]).not.toBe(before.elements[13]);
+  });
+
+  it('revisions hostile navigation only when traversability changes', () => {
+    const doors = worldFor('E1M1');
+    const credentialDoor = [...doors.doors.values()].find((door) => door.credential);
+    expect(credentialDoor).toBeDefined();
+    const closedRevision = doors.navigationTopologyRevision;
+    doors.openDoor(credentialDoor!);
+    doors.updateMovers(.5);
+    expect(doors.navigationTopologyRevision).toBe(closedRevision);
+    doors.updateMovers(.1);
+    expect(doors.navigationTopologyRevision).toBeGreaterThan(closedRevision);
+
+    const standardDoors = worldFor('E1M1');
+    const standardDoor = [...standardDoors.doors.values()].find((door) => !door.credential);
+    expect(standardDoor).toBeDefined();
+    const standardClosedRevision = standardDoors.navigationTopologyRevision;
+    standardDoors.openDoor(standardDoor!);
+    standardDoors.updateMovers(.5);
+    expect(standardDoors.navigationTopologyRevision).toBe(standardClosedRevision);
+    standardDoors.updateMovers(.1);
+    expect(standardDoors.navigationTopologyRevision).toBeGreaterThan(standardClosedRevision);
+
+    const restoredDoors = worldFor('E1M1');
+    const restoredDoor = [...restoredDoors.doors.values()].find((door) => !door.credential)!;
+    const beforeRestore = restoredDoors.navigationTopologyRevision;
+    restoredDoors.restoreDoor(restoredDoor, true, 1);
+    expect(restoredDoors.navigationTopologyRevision).toBeGreaterThan(beforeRestore);
+
+    const secretWorld = worldFor('E1M3');
+    const secretRevision = secretWorld.navigationTopologyRevision;
+    expect(secretWorld.revealSecret(secretWorld.map.secrets[0].id)).toBe(true);
+    expect(secretWorld.navigationTopologyRevision).toBeGreaterThan(secretRevision);
+
+    const breakableWorld = worldFor('E1M5');
+    const breakable = [...breakableWorld.breakables.values()].find((item) => item.definition.blocksMovement)!;
+    const breakableRevision = breakableWorld.navigationTopologyRevision;
+    expect(breakableWorld.damageBreakable(breakable.key, 1)?.destroyed).toBe(false);
+    expect(breakableWorld.navigationTopologyRevision).toBe(breakableRevision);
+    expect(breakableWorld.damageBreakable(breakable.key, breakable.definition.health)?.destroyed).toBe(true);
+    expect(breakableWorld.navigationTopologyRevision).toBeGreaterThan(breakableRevision);
+
+    const moverWorld = worldFor('E1M3');
+    const moverRevision = moverWorld.navigationTopologyRevision;
+    moverWorld.applyTransformation('raise-floor');
+    moverWorld.updateMovers(.1);
+    expect(moverWorld.navigationTopologyRevision).toBeGreaterThan(moverRevision);
+  });
+
+  it('reports door and sector completion once when movers settle', () => {
+    const doorWorld = worldFor('E1M1');
+    const door = [...doorWorld.doors.values()].find((candidate) => !candidate.credential)!;
+    doorWorld.openDoor(door);
+    const doorCompletions = [...doorWorld.updateMovers(1)];
+    expect(doorCompletions).toContainEqual(expect.objectContaining({ kind: 'door', key: door.key }));
+    expect(doorWorld.updateMovers(.1)).toHaveLength(0);
+
+    const sectorWorld = worldFor('E1M3');
+    const mechanism = sectorWorld.map.mechanisms.find((candidate) => candidate.sectorTags.length > 0)!;
+    sectorWorld.applyTransformation(mechanism.action, mechanism.id);
+    const sectorCompletions = [...sectorWorld.updateMovers(10)].filter((completion) => completion.kind === 'sector');
+    expect(sectorCompletions.length).toBeGreaterThan(0);
+    expect(sectorCompletions.every((completion) => completion.material.length > 0)).toBe(true);
+    expect(sectorWorld.updateMovers(.1)).toHaveLength(0);
   });
 });

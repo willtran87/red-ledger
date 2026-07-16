@@ -34,6 +34,9 @@ assert((await page.locator('#result-bests').innerText()).includes('First clear')
 const intermissionMastery = await page.locator('#intermission-mastery').innerText();
 assert(intermissionMastery.includes('Retry goal:') && intermissionMastery.includes('PB matched'), `Intermission lacks a concrete current-vs-PB retry target: ${intermissionMastery}`);
 assert((await page.locator('#episode-mastery').innerText()).includes('Episode 1/8 clear'), 'Intermission episode aggregate is missing or incorrect');
+const intermissionMilestones = await page.locator('#intermission-milestones').innerText();
+assert(intermissionMilestones.includes('Milestones') && /Closed Without Exception|Red Seal|Ahead of Schedule/.test(intermissionMilestones), `Intermission does not surface relevant earned milestones: ${intermissionMilestones}`);
+assert(intermissionMilestones.includes('Next:'), 'Intermission does not surface a relevant next milestone');
 assert((await page.locator('#retry-map').innerText()) === 'Retry Goal', 'Retry action is not tied to the visible mastery target');
 await page.screenshot({ path: shot('intermission.png') });
 
@@ -42,6 +45,8 @@ assert(await page.locator('#level-select').isVisible(), 'Level select did not op
 assert(await page.locator('.level-map-grid button', { hasText: 'E1M8' }).count() === 1, 'Completed map is missing from level select');
 assert(await page.locator('.level-map-grid button', { hasText: 'E1M9' }).count() === 0, 'Ordinary E1M8 completion leaked the secret map');
 assert((await page.locator('#campaign-mastery').innerText()).includes('Campaign 1/24 clear'), 'Campaign mastery aggregate is missing');
+const levelMilestones = await page.locator('#level-milestones').innerText();
+assert(levelMilestones.includes('Milestones') && /Closed Without Exception|Red Seal|Ahead of Schedule/.test(levelMilestones), `Level Select does not summarize earned milestones: ${levelMilestones}`);
 const completedMap = page.locator('.level-map-grid button', { hasText: 'E1M8' });
 assert((await completedMap.innerText()).includes('Target:'), 'Completed map has no next mastery target');
 assert((await page.locator('.level-episode h2').first().innerText()).includes('1/8 clear'), 'Episode mastery aggregate is missing from Level Select');

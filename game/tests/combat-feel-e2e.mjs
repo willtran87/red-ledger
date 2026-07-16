@@ -24,10 +24,13 @@ assert(state.mode === 'paused', 'Desktop entry did not freeze before pointer cap
 assert(await page.locator('#ready-overlay').isVisible(), 'Desktop entry overlay is not visible');
 assert(await page.locator('#ready-overlay').getAttribute('data-input') === 'desktop', 'Entry briefing did not select desktop guidance');
 const briefing = await page.locator('#entry-controls').innerText();
-for (const action of ['MOVE', 'LOOK', 'FIRE', 'USE', 'WEAPON', 'MAP']) {
+for (const action of ['MOVE', 'LOOK', 'FIRE', 'USE']) {
   assert(briefing.includes(action), `Entry briefing omits ${action}`);
 }
+for (const deferred of ['WEAPON', 'MAP']) assert(!briefing.includes(deferred), `Initial orientation is cluttered by ${deferred}`);
 assert(briefing.includes('W') && briefing.includes('Mouse 1'), 'Entry briefing does not expose the active movement/fire bindings');
+assert((await page.locator('#entry-objective').innerText()).includes('Red credential'), 'Initial orientation has no contextual objective');
+assert(await page.locator('#ready-overlay').getAttribute('data-briefing') === 'orientation', 'Fresh E1M1 did not use initial orientation');
 await page.waitForTimeout(250);
 state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(state.tally.elapsed === frozenAt, 'Simulation advanced behind the entry overlay');

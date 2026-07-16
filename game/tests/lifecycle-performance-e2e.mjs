@@ -34,6 +34,13 @@ for (const id of mapIds) await page.evaluate((mapId) => window.__redLedger.loadM
 let runtime = JSON.parse(await page.evaluate(() => window.render_game_to_text())).runtime;
 assert(runtime.textureCount < 256, `Map transitions retained too many GPU textures: ${runtime.textureCount}`);
 
+await page.evaluate(() => window.__redLedger.loadMap('E3M7'));
+const sightQueriesBefore = JSON.parse(await page.evaluate(() => window.render_game_to_text())).runtime.lineOfSightQueries;
+await page.waitForTimeout(3000);
+const sightQueriesAfter = JSON.parse(await page.evaluate(() => window.render_game_to_text())).runtime.lineOfSightQueries;
+const denseMapSightQueries = sightQueriesAfter - sightQueriesBefore;
+assert(denseMapSightQueries <= 6000, `Dense-map visibility budget regressed: ${denseMapSightQueries} sight queries in 3 seconds`);
+
 await page.reload({ waitUntil: 'networkidle' });
 await page.click('#new-game');
 await page.locator('.episode-card').first().click();
@@ -41,6 +48,41 @@ await page.locator('#difficulty-actions button').first().click();
 await page.click('#begin-episode');
 if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
+await page.evaluate(() => {
+  const scale = document.querySelector('#render-scale');
+  scale.value = '3';
+  scale.dispatchEvent(new Event('change', { bubbles: true }));
+  window.__redLedger.loadMap('E2M6');
+});
+await page.waitForTimeout(250);
+const highResolutionFrameStats = await page.evaluate(() => new Promise((resolve) => {
+  const intervals = [];
+  let first;
+  let previous;
+  const sample = (now) => {
+    first ??= now;
+    if (previous !== undefined) intervals.push(now - previous);
+    previous = now;
+    if (now - first < 3000) requestAnimationFrame(sample);
+    else {
+      intervals.sort((a, b) => a - b);
+      resolve({
+        frames: intervals.length,
+        mean: intervals.reduce((total, value) => total + value, 0) / Math.max(1, intervals.length),
+        p95: intervals[Math.floor(intervals.length * .95)] ?? 0,
+      });
+    }
+  };
+  requestAnimationFrame(sample);
+}));
+assert(highResolutionFrameStats.frames >= 55 && highResolutionFrameStats.p95 <= 150,
+  `960x600 hazard-map pacing regressed: frames=${highResolutionFrameStats.frames} p95=${highResolutionFrameStats.p95.toFixed(1)}ms`);
+await page.evaluate(() => {
+  const scale = document.querySelector('#render-scale');
+  scale.value = '1';
+  scale.dispatchEvent(new Event('change', { bubbles: true }));
+  window.__redLedger.loadMap('E1M1');
+});
 await page.waitForTimeout(800);
 const combatStart = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(combatStart.tally.totalKills - combatStart.tally.kills >= 8, 'Performance soak does not contain at least eight live hostiles');
@@ -74,8 +116,10 @@ const report = {
   readyMilliseconds: Math.round(readyMilliseconds),
   liveHostiles: combatStart.tally.totalKills - combatStart.tally.kills,
   frameStats,
+  highResolutionFrameStats,
   heapGrowthBytes: heapAfter && heapBefore ? heapAfter - heapBefore : null,
   textureCount: runtime.textureCount,
+  denseMapSightQueries,
   contextLossSupported: null,
 };
 fs.writeFileSync('output/lifecycle-performance/report.json', JSON.stringify(report, null, 2));
@@ -89,6 +133,14 @@ await page.evaluate(() => window.dispatchEvent(new Event('blur')));
 await page.waitForTimeout(80);
 assert(JSON.parse(await page.evaluate(() => window.render_game_to_text())).mode === 'paused', 'Window blur did not pause and clear live input');
 assert(await page.locator('#pause-menu').isVisible(), 'Lifecycle pause did not expose a resumable screen');
+const pausedRenderCount = JSON.parse(await page.evaluate(() => window.render_game_to_text())).runtime.renderCount;
+await page.waitForTimeout(250);
+assert(JSON.parse(await page.evaluate(() => window.render_game_to_text())).runtime.renderCount === pausedRenderCount,
+  'Paused runtime continued rendering unchanged frames');
+await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+await page.waitForTimeout(40);
+assert(JSON.parse(await page.evaluate(() => window.render_game_to_text())).runtime.renderCount > pausedRenderCount,
+  'Paused viewport resize did not redraw the canvas');
 await page.click('#resume-game');
 
 const contextLossSupported = await page.evaluate(() => {

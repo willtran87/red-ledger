@@ -67,6 +67,7 @@ import {
   type BossMechanismState,
   type BreakableState,
   type LandmarkState,
+  type MoverCompletion,
   type RuntimeActor,
   type SectorMoverState,
 } from './World';
@@ -342,6 +343,31 @@ export const pickupParticleFeedbackKind = (pickup: ParticlePickupDescriptor): Pa
   return 'paper';
 };
 
+export type TimedPowerupKey = keyof PlayerState['powerups'];
+
+export const statusExpiryParticleFeedbackKind = (powerup: TimedPowerupKey): ParticleKind => ({
+  binder: 'deflection',
+  hazard: 'neutralize',
+  rapid: 'authority',
+  forensic: 'scan',
+  goggles: 'scan',
+})[powerup] as ParticleKind;
+
+export const surfaceParticleFeedbackKind = (material: string): ParticleKind => {
+  const id = material.toLowerCase();
+  if (id.includes('toner')) return 'toner';
+  if (id.includes('wet') || id.includes('water') || id.includes('flood')) return 'water';
+  if (id.includes('wax')) return 'wax';
+  if (id.includes('probability') || id.includes('white-void')) return 'scan';
+  if (id.includes('carpet') || id.includes('rubber') || id.includes('paper')) return 'fiber';
+  if (id.includes('steel') || id.includes('metal') || id.includes('brass')
+    || id.includes('plate') || id.includes('hazard-stripe') || id.includes('data-center')) return 'metal';
+  return 'concrete';
+};
+
+export const doorParticleFeedbackKind = (material: string, credential?: Credential): ParticleKind =>
+  credential ? 'metal' : surfaceParticleFeedbackKind(material);
+
 export const impactParticleDirection = (travelDirection: Readonly<Vector3>): Vector3 =>
   new Vector3(-travelDirection.x, -travelDirection.y, -travelDirection.z).normalize();
 
@@ -576,8 +602,13 @@ export class GameEngine {
   private weaponTransition = 0;
   private pendingWeapon?: WeaponId;
   private renderScale = 1;
+  private renderCount = 0;
   private halted = false;
   private ambientParticleTimer = 0;
+  private movementParticleDistance = 0;
+  private visibilityRefreshTimer = 0;
+  private readonly behaviorLineOfSightFrom = new Vector3();
+  private readonly behaviorLineOfSightTo = new Vector3();
   private lastMapResult?: MapResult;
   private readonly animatedEffects: AnimatedEffect[] = [];
   private readonly semanticCues: SemanticCue[] = [];
@@ -629,6 +660,7 @@ export class GameEngine {
     this.renderer.setSize(baseWidth * this.renderScale, baseHeight * this.renderScale, false);
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
+    if (this.world?.map && this.mode !== 'playing') this.render();
   }
 
   startEpisode(episodeIndex: number, difficulty: GameDifficulty): void {
@@ -652,6 +684,7 @@ export class GameEngine {
     this.world.load(map, DIFFICULTY[this.difficulty].placement);
     this.particles.clear();
     this.ambientParticleTimer = .7;
+    this.movementParticleDistance = 0;
     this.enemyBehavior.clear();
     this.projectileSprites.clear();
     this.enemyProjectileTrailTimers.clear();
@@ -690,6 +723,9 @@ export class GameEngine {
     this.audio.startMusic(Number(map.id[1]), map.index);
     this.showMessage(`${map.id}: ${map.title}`, 2.8);
     this.updateCamera();
+    this.visibilityRefreshTimer = 0;
+    this.world.actors.forEach((actor) => this.updateActorVisual(actor, true));
+    this.refreshPickupVisibility();
     this.emit();
     if (createCheckpoint) this.checkpoint();
   }
@@ -697,6 +733,7 @@ export class GameEngine {
   pause(): void {
     if (this.mode !== 'playing') return;
     this.mode = 'paused';
+    if (this.world.map) this.render();
     this.audio.suspend();
     document.exitPointerLock();
     this.emit();
@@ -734,15 +771,17 @@ export class GameEngine {
     if (this.halted) return;
     const elapsed = Math.min(.1, (now - this.lastTime) / 1000);
     this.lastTime = now;
+    let simulated = false;
     if (this.mode === 'playing') {
       this.accumulator += elapsed;
       while (this.accumulator >= STEP) {
         if (this.activeDemo) this.advanceDemoPlayback();
         else this.simulate(STEP);
         this.accumulator -= STEP;
+        simulated = true;
       }
     }
-    this.render();
+    if (this.mode === 'playing' || simulated) this.render();
     this.animationFrame = requestAnimationFrame(this.loop);
   }
 
@@ -763,9 +802,7 @@ export class GameEngine {
     this.updateAnimatedEffects(dt);
     this.updateSemanticCues(dt);
     this.updateAmbientParticles(dt);
-    for (const key of Object.keys(this.player.powerups) as Array<keyof PlayerState['powerups']>) {
-      this.player.powerups[key] = Math.max(0, this.player.powerups[key] - dt);
-    }
+    this.updatePowerupTimers(dt);
     this.updateVisionEffects();
     if (this.messageTimer === 0) this.message = '';
     const command = playbackCommand ?? this.captureGameplayCommand();
@@ -784,12 +821,16 @@ export class GameEngine {
     if (command.walkToggle) this.walkMode = !this.walkMode;
     this.movePlayer(dt, command);
     this.updatePickups();
-    this.world.updateMovers(dt);
+    this.punctuateMoverCompletions(this.world.updateMovers(dt));
     this.world.markVisited(this.player.position);
     this.updateSecrets();
     this.updatePlayerProjectiles(dt);
     this.updateBindingBeam(dt);
-    this.updateEnemies(dt);
+    this.visibilityRefreshTimer -= dt;
+    const refreshVisibility = this.visibilityRefreshTimer <= 0;
+    if (refreshVisibility) this.visibilityRefreshTimer = .1;
+    this.updateEnemies(dt, refreshVisibility);
+    if (refreshVisibility) this.refreshPickupVisibility();
     this.updateHostileBeamVisuals(dt);
     this.weaponSelection(command);
     if (command.fire) this.fireWeapon();
@@ -846,12 +887,17 @@ export class GameEngine {
     }
     if (this.input.keys.has('KeyF')) {
       this.input.keys.delete('KeyF');
-      if (!document.fullscreenElement) void document.documentElement.requestFullscreen();
-      else void document.exitFullscreen();
+      const transition = !document.fullscreenElement
+        ? document.documentElement.requestFullscreen?.()
+        : document.exitFullscreen?.();
+      if (!transition) this.showMessage('Fullscreen unavailable', 1.2);
+      else void transition.catch(() => this.showMessage('Fullscreen unavailable', 1.2));
     }
   }
 
   private movePlayer(dt: number, command: GameplayCommand): void {
+    const previousX = this.player.position.x;
+    const previousZ = this.player.position.z;
     this.player.yaw -= command.look * .002 * this.sensitivity;
     this.player.yaw -= command.turn * 2.25 * dt * this.sensitivity;
     this.player.pitch = Math.max(-.62, Math.min(.62, this.player.pitch - (command.lookVertical ?? 0) * .002 * this.sensitivity));
@@ -871,6 +917,7 @@ export class GameEngine {
     if (this.canPlayerOccupy(nextZ)) this.player.position.z = nextZ.z;
     else this.playerVelocity.z = 0;
     this.player.position.y = this.world.floorHeightAt(this.player.position) + 1.35;
+    this.updateMovementParticles(Math.hypot(this.player.position.x - previousX, this.player.position.z - previousZ));
     if (this.world.isHazardAt(this.player.position) && this.damageCooldown <= 0) {
       if (this.player.powerups.hazard > 0) this.playSemanticCue('neutralize', this.player.position.clone().add(new Vector3(0, -.55, 0)));
       else {
@@ -878,6 +925,68 @@ export class GameEngine {
         this.emitParticles(this.world.episode === 2 ? 'water' : 'spittle', this.player.position.clone().add(new Vector3(0, -.75, 0)), 5);
       }
       this.damageCooldown = .4;
+    }
+  }
+
+  private updateMovementParticles(distance: number): void {
+    if (this.accessibility.reducedEffects) {
+      this.movementParticleDistance = 0;
+      return;
+    }
+    if (distance <= .001) return;
+    this.movementParticleDistance += distance;
+    const spacing = this.walkMode ? 2.4 : 3.1;
+    if (this.movementParticleDistance < spacing) return;
+    this.movementParticleDistance %= spacing;
+    const tile = this.world.map.legend[this.world.tileAt(this.player.position)];
+    const kind = surfaceParticleFeedbackKind(tile?.floorMaterial ?? '');
+    const point = this.player.position.clone();
+    point.y = this.world.floorHeightAt(point) + .08;
+    this.emitParticles(kind, point, 1, undefined, 'ambient');
+  }
+
+  private updatePowerupTimers(dt: number): void {
+    for (const key of Object.keys(this.player.powerups) as TimedPowerupKey[]) {
+      const previous = this.player.powerups[key];
+      const remaining = Math.max(0, previous - dt);
+      this.player.powerups[key] = remaining;
+      if (!(previous > 0 && remaining === 0)) continue;
+      const kind = statusExpiryParticleFeedbackKind(key);
+      const point = this.player.position.clone().add(new Vector3(0, -.55, 0));
+      this.emitParticles(kind, point, 2);
+      window.dispatchEvent(new CustomEvent('powerup-expired', { detail: { powerup: key, kind } }));
+    }
+  }
+
+  private punctuateMoverCompletions(completions: readonly MoverCompletion[]): void {
+    if (completions.length === 0) return;
+    let door: MoverCompletion | undefined;
+    let sector: MoverCompletion | undefined;
+    let doorDistance = Number.POSITIVE_INFINITY;
+    let sectorDistance = Number.POSITIVE_INFINITY;
+    for (const completion of completions) {
+      const distance = (completion.x - this.player.position.x) ** 2 + (completion.z - this.player.position.z) ** 2;
+      if (completion.kind === 'door' && distance < doorDistance) {
+        door = completion;
+        doorDistance = distance;
+      } else if (completion.kind === 'sector' && distance < sectorDistance) {
+        sector = completion;
+        sectorDistance = distance;
+      }
+    }
+    if (door) {
+      this.emitParticles(
+        doorParticleFeedbackKind(door.material, door.credential),
+        new Vector3(door.x, door.y + .08, door.z),
+        3,
+      );
+    }
+    if (sector) {
+      this.emitParticles(
+        surfaceParticleFeedbackKind(sector.material),
+        new Vector3(sector.x, sector.y + .08, sector.z),
+        3,
+      );
     }
   }
 
@@ -1516,17 +1625,26 @@ export class GameEngine {
       }
       window.dispatchEvent(new CustomEvent('boss-mechanism', { detail: { bossId: actor.id, mechanism } }));
     }
-    this.resolveEncounterCompletion(actor.encounter);
+    this.resolveEncounterCompletion(actor.encounter, deathPoint);
   }
 
-  private resolveEncounterCompletion(id?: string): void {
+  private resolveEncounterCompletion(id?: string, position?: Vector3): void {
     if (!id || this.isEncounterActive(id)) return;
     const encounter = this.world.map.encounters.find((candidate) => candidate.id === id);
     if (!encounter || encounter.completion === 'switch') return;
+    const completionToken = `encounter-complete:${id}`;
+    if (this.triggered.has(completionToken)) return;
+    this.triggered.add(completionToken);
     const targets = this.world.map.id === 'E3M8' && id === 'boss-1'
       ? (encounter.opens ?? []).filter((target) => target !== 'boss-2')
       : encounter.opens ?? [];
     this.unlockTargets(targets);
+    this.emitParticles(
+      encounter.completion === 'boss-phase' ? 'authority' : 'momentum',
+      position ?? this.player.position.clone().add(new Vector3(0, -.15, 0)),
+      4,
+    );
+    this.checkpoint();
   }
 
   private setActorDeadVisual(actor: RuntimeActor, restart: boolean): void {
@@ -1537,7 +1655,7 @@ export class GameEngine {
     this.updateActorVisual(actor);
   }
 
-  private updateEnemies(dt: number): void {
+  private updateEnemies(dt: number, refreshVisibility: boolean): void {
     const difficulty = DIFFICULTY[this.difficulty];
     const topology = this.hostileNavigationTopologyKey();
     if (topology !== this.hostileNavigationTopology) {
@@ -1581,7 +1699,10 @@ export class GameEngine {
         alive: this.player.health > 0,
       },
       world: {
-        hasLineOfSight: (from, to) => this.world.hasLineOfSight(new Vector3(from.x, from.y, from.z), new Vector3(to.x, to.y, to.z)),
+        hasLineOfSight: (from, to) => this.world.hasLineOfSight(
+          this.behaviorLineOfSightFrom.set(from.x, from.y, from.z),
+          this.behaviorLineOfSightTo.set(to.x, to.y, to.z),
+        ),
         navigationDirection: (actor, target) => this.hostileNavigationDirection(actor, target, navigationFields),
         canOccupy: (actor, position) => {
           const point = new Vector3(position.x, position.y, position.z);
@@ -1607,7 +1728,7 @@ export class GameEngine {
     const bossPressure = this.world.actors.some((actor) => actor.kind === 'boss' && actor.awake && !actor.dead && !actor.phaseLocked) ? .35 : 0;
     this.audio.setCombatIntensity(Math.min(1, livePressure / 9 + bossPressure));
     this.syncCombatEffects(result.projectiles, result.hazards, dt);
-    this.world.actors.forEach((actor) => this.updateActorVisual(actor));
+    this.world.actors.forEach((actor) => this.updateActorVisual(actor, refreshVisibility));
   }
 
   private hostileNavigationDirection(
@@ -1642,20 +1763,7 @@ export class GameEngine {
   }
 
   private hostileNavigationTopologyKey(): string {
-    const credentialDoors = [...this.world.doors.values()]
-      .filter((door) => door.credential)
-      .map((door) => `${door.key}:${Number(door.progress >= .72)}`)
-      .join(',');
-    const sectors = this.world.serializeSectorMovers()
-      .map((sector) => `${sector.key}:${Math.round(sector.height * 20)}`)
-      .join(',');
-    const secrets = [...this.world.discoveredSecrets].sort().join(',');
-    const breakables = this.world.serializeBreakables()
-      .filter((breakable) => breakable.destroyed)
-      .map((breakable) => breakable.key)
-      .sort()
-      .join(',');
-    return `${this.world.map.id}|${credentialDoors}|${sectors}|${secrets}|${breakables}`;
+    return `${this.world.map.id}|${this.world.navigationTopologyRevision}`;
   }
 
   private canHostileTraverseCell(from: NavigationCell, to: NavigationCell, radius: number): boolean {
@@ -1785,7 +1893,9 @@ export class GameEngine {
           const point = new Vector3(position.x, 0, position.z);
           if (this.world.isSolid(point, ENEMIES[event.enemyId].radius)) return;
           this.world.summonEnemy(event.enemyId, point);
-          this.emitParticles('approval', point.clone().add(new Vector3(0, .3, 0)), 9);
+          const arrival = point.clone().add(new Vector3(0, .3, 0));
+          this.emitParticles('toner', arrival, 5);
+          this.playSemanticCue('rejection', arrival);
           this.tally.totalKills += 1;
         });
         break;
@@ -2169,11 +2279,16 @@ export class GameEngine {
     return actor.moving ? 'walk' : 'idle';
   }
 
-  private updateActorVisual(actor: RuntimeActor): void {
-    const inVisualRange = this.horizontalDistance(actor.position, this.player.position) <= 56
-      && this.world.hasLineOfSight(this.player.position, actor.position);
-    actor.sprite.visible = !actor.phaseLocked && inVisualRange;
-    if (actor.phaseLocked || !inVisualRange) return;
+  private updateActorVisual(actor: RuntimeActor, refreshVisibility = true): void {
+    if (actor.phaseLocked) {
+      actor.sprite.visible = false;
+      return;
+    }
+    if (refreshVisibility) {
+      actor.sprite.visible = this.horizontalDistance(actor.position, this.player.position) <= 56
+        && this.world.hasLineOfSight(this.player.position, actor.position);
+    }
+    if (!actor.sprite.visible) return;
     const behaviorState = this.enemyBehavior.getActorState(actor.uid);
     actor.sprite.material.opacity = this.player.powerups.forensic > 0 ? 1 : behaviorState?.visible === false ? .18 : 1;
     actor.sprite.material.depthWrite = actor.sprite.material.opacity >= 1;
@@ -2299,13 +2414,17 @@ export class GameEngine {
       }
       this.world.openDoor(door);
       const doorPoint = new Vector3((door.x + .5) * this.world.map.cellSize, this.world.floorHeightAt(this.player.position) + 1.2, (door.z + .5) * this.world.map.cellSize);
-      this.emitParticles(door.credential ? 'metal' : 'fiber', doorPoint, door.credential ? 5 : 3);
+      const doorTile = this.world.map.legend[this.world.map.grid[door.z]?.[door.x]];
+      this.emitParticles(doorParticleFeedbackKind(doorTile?.wallMaterial ?? '', door.credential), doorPoint, door.credential ? 5 : 3);
       this.audio.tone(160, .22, 'sawtooth', .035);
       this.showMessage('Access granted', .8);
       return;
     }
     const trigger = interaction.trigger;
     if (trigger) {
+      let checkpointChanged = false;
+      let outcomeMessage = trigger.message ?? this.pretty(trigger.action);
+      let outcomeDuration = 1.4;
       if (trigger.requiresCredential && !this.player.credentials.has(trigger.requiresCredential)) {
         this.rejectUse(`${this.pretty(trigger.requiresCredential)} credential required`, 'credential', trigger.requiresCredential);
         return;
@@ -2342,10 +2461,13 @@ export class GameEngine {
         const secretId = trigger.targets.find((target) => this.world.map.secrets.some((secret) => secret.id === target));
         if (secretId && this.world.revealSecret(secretId)) {
           this.tally.secrets += 1;
-          this.showMessage('Optional exposure discovered', 1.5);
           this.audio.tone(880, .16, 'triangle', .04);
           const secret = this.world.map.secrets.find((candidate) => candidate.id === secretId);
-          if (secret) this.playSemanticCue('secret', this.player.position.clone().addScaledVector(this.aimDirection(), 1.05).add(new Vector3(0, .2, 0)));
+          if (secret) {
+            outcomeMessage = `Anomaly confirmed: ${secret.clue}`;
+            outcomeDuration = 2.2;
+            this.playSemanticCue('secret', this.player.position.clone().addScaledVector(this.aimDirection(), 1.05).add(new Vector3(0, .2, 0)));
+          }
         }
       } else {
         const mechanismId = trigger.targets.find((target) => this.world.map.mechanisms.some((mechanism) => mechanism.id === target));
@@ -2357,8 +2479,10 @@ export class GameEngine {
             return;
           }
           this.world.applyBossMechanism('open-binding-gate', mechanismId);
+          checkpointChanged = true;
           this.emitParticles('energy', this.player.position.clone().addScaledVector(this.aimDirection(), 1.4), 14);
-          this.showMessage(`Binding gate ${this.world.bindingGateCount} of 3 released`, 1.5);
+          outcomeMessage = `Binding gate ${this.world.bindingGateCount} of 3 released`;
+          outcomeDuration = 1.5;
           if (this.world.canExposeCore) {
             this.world.applyBossMechanism('expose-core');
             const core = this.world.actors.find((actor) => actor.id === 'uninsurable');
@@ -2375,6 +2499,7 @@ export class GameEngine {
             return;
           }
           this.unlockTargets(this.world.mechanismOpens(mechanismId));
+          checkpointChanged = true;
           const mechanismKind: ParticleKind = trigger.action === 'drain-liquid' || trigger.action === 'flood-liquid' ? 'water'
             : trigger.action === 'raise-floor' || trigger.action === 'lower-floor' || trigger.action === 'move-walls' ? 'concrete' : 'spark';
           this.emitParticles(mechanismKind, this.player.position.clone().addScaledVector(this.aimDirection(), 1.4), 10);
@@ -2382,7 +2507,8 @@ export class GameEngine {
         else this.world.applyTransformation(trigger.action);
       }
       this.audio.tone(210, .24, 'sawtooth', .04);
-      this.showMessage(trigger.message ?? this.pretty(trigger.action), 1.4);
+      this.showMessage(outcomeMessage, outcomeDuration);
+      if (checkpointChanged) this.checkpoint();
       if (trigger.action !== 'open-exit') return;
     }
     const exit = new Vector3(this.world.map.exit.x * this.world.map.cellSize, 0, this.world.map.exit.z * this.world.map.cellSize);
@@ -2945,7 +3071,13 @@ export class GameEngine {
   continueSummary(): string | undefined {
     const result = this.persistence.newestValidContinue();
     if (!result) return undefined;
-    return `${result.metadata.mapId} ${result.metadata.mapTitle} | ${this.pretty(result.metadata.difficulty)} | ${new Date(result.metadata.savedAt).toLocaleString()}`;
+    const kind = ({
+      manual: 'Manual file',
+      quicksave: 'Quicksave',
+      autosave: 'Autosave',
+      recovery: 'Episode recovery',
+    } as const)[result.kind];
+    return `${kind} | ${result.metadata.mapId} ${result.metadata.mapTitle} | ${this.pretty(result.metadata.difficulty)} | Play ${this.saveTime(result.metadata.playSeconds)} | ${new Date(result.metadata.savedAt).toLocaleString()}`;
   }
   get pendingMap(): MapId | undefined { return this.nextMap; }
   get mapResult(): MapResult | undefined { return this.lastMapResult; }
@@ -3165,7 +3297,11 @@ export class GameEngine {
   debugTeleport(x: number, z: number): void {
     this.player.position.set(x, 0, z);
     this.player.position.y = this.world.floorHeightAt(this.player.position) + 1.35;
+    this.movementParticleDistance = 0;
     this.updateCamera();
+    this.world.actors.forEach((actor) => this.updateActorVisual(actor, true));
+    this.refreshPickupVisibility();
+    this.visibilityRefreshTimer = .1;
   }
 
   debugDefeatAll(): void {
@@ -3186,6 +3322,16 @@ export class GameEngine {
   debugSetAmmo(type: Exclude<AmmoType, 'none'>, amount: number): void {
     this.player.ammo[type] = Math.max(0, Math.floor(amount));
     this.emit();
+  }
+
+  debugDamageActor(id: string, amount: number): boolean {
+    if (!Number.isFinite(amount) || amount <= 0) return false;
+    const actor = this.world.actors.find((candidate) => candidate.id === id && !candidate.dead);
+    if (!actor) return false;
+    actor.phaseLocked = false;
+    actor.sprite.visible = true;
+    this.damageActor(actor, amount);
+    return true;
   }
 
   debugDefeatEncounter(id: string): number {
@@ -3320,7 +3466,11 @@ export class GameEngine {
     const targetY = actor.position.y + ENEMIES[actor.id].height * .5;
     this.player.pitch = Math.atan2(point.y - targetY, horizontal);
     if (!actor.dead) actor.awake = true;
+    this.movementParticleDistance = 0;
     this.updateCamera();
+    this.world.actors.forEach((candidate) => this.updateActorVisual(candidate, true));
+    this.refreshPickupVisibility();
+    this.visibilityRefreshTimer = .1;
     return true;
   }
 
@@ -3410,19 +3560,25 @@ export class GameEngine {
         textureCount: this.assets.textures.size,
         drawCalls: this.renderer.info.render.calls,
         triangles: this.renderer.info.render.triangles,
+        renderCount: this.renderCount,
         navigationFields: this.hostileNavigationFields.size,
+        lineOfSightQueries: this.world.lineOfSightQueryCount,
       },
     });
   }
 
   private render(): void {
+    this.renderCount += 1;
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  private refreshPickupVisibility(): void {
     for (const pickup of this.world.pickups) {
       pickup.sprite.visible = !pickup.collected
         && !this.world.isConcealedAt(pickup.position)
         && this.horizontalDistance(pickup.position, this.player.position) <= 28
         && this.world.hasLineOfSight(this.player.position, pickup.position);
     }
-    this.renderer.render(this.scene, this.camera);
   }
   private currentObjective(): string {
     if (!this.world.map) return '';
@@ -3435,7 +3591,8 @@ export class GameEngine {
       const phase = encounter === 'entry' ? 'initial' : encounter === 'transformation' ? 'control' : encounter === 'climax' ? 'final' : 'required';
       return `Close ${phase} exposures | ${remaining} left`;
     }
-    const missingCredential = [...this.world.doors.values()].find((door) => door.credential && !this.player.credentials.has(door.credential))?.credential;
+    const missingCredential = this.world.pickups.find((pickup) => pickup.kind === 'credential' && !pickup.collected
+      && !this.player.credentials.has(pickup.id as Credential))?.id as Credential | undefined;
     if (missingCredential) return `Recover ${this.pretty(missingCredential)} credential`;
     const nextMechanism = [...this.world.map.mechanisms]
       .sort((left, right) => left.activationOrder - right.activationOrder)

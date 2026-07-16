@@ -308,6 +308,7 @@ export class ParticleSystem {
   private readonly initialState: number;
   private serial = 0;
   private state: number;
+  private liveSlots = 0;
 
   constructor(scene: Scene, capacity = 192, seed = 0x72534c44) {
     this.capacity = Math.max(1, Math.floor(capacity));
@@ -360,8 +361,9 @@ export class ParticleSystem {
       const binding = textures?.[Math.floor(this.random() * textures.length)];
       const life = this.range(preset.life);
       const speed = this.range(preset.speed);
-      const spread = new Vector3(this.signed(), .25 + this.random() * .9, this.signed()).normalize();
-      if (direction) spread.addScaledVector(direction, 1.2).normalize();
+      const wasActive = slot.active;
+      slot.velocity.set(this.signed(), .25 + this.random() * .9, this.signed()).normalize();
+      if (direction) slot.velocity.addScaledVector(direction, 1.2).normalize();
       slot.kind = kind;
       slot.priority = priority;
       slot.serial = ++this.serial;
@@ -374,11 +376,12 @@ export class ParticleSystem {
       slot.drag = preset.drag;
       slot.spin = this.signed() * 7;
       slot.opacity = 1;
-      slot.color = binding ? 0xffffff : preset.color;
+      slot.color = binding && binding.atlasIndex > 0 ? 0xffffff : preset.color;
       slot.atlasIndex = binding?.atlasIndex ?? 0;
       slot.additive = Boolean(preset.additive);
       slot.active = true;
-      slot.velocity.copy(spread).multiplyScalar(speed);
+      if (!wasActive) this.liveSlots += 1;
+      slot.velocity.multiplyScalar(speed);
       slot.position.copy(position);
       slot.position.x += this.signed() * .06;
       slot.position.y += this.random() * .08;
@@ -390,7 +393,7 @@ export class ParticleSystem {
   }
 
   update(dt: number): void {
-    if (!(dt > 0)) return;
+    if (!(dt > 0) || this.liveSlots === 0) return;
     for (const slot of this.slots) {
       if (!slot.active) continue;
       slot.life -= dt;
@@ -443,7 +446,7 @@ export class ParticleSystem {
     this.syncRenderBatches();
   }
 
-  get activeCount(): number { return this.slots.reduce((count, slot) => count + Number(slot.active), 0); }
+  get activeCount(): number { return this.liveSlots; }
 
   counts(): Record<ParticleKind, number> {
     const result: Record<ParticleKind, number> = {
@@ -488,7 +491,9 @@ export class ParticleSystem {
   }
 
   private deactivate(slot: ParticleSlot): void {
+    if (!slot.active) return;
     slot.active = false;
+    this.liveSlots -= 1;
     slot.life = 0;
     slot.opacity = 0;
   }

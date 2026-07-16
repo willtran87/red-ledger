@@ -1,6 +1,8 @@
 import { chromium } from 'playwright';
+import { mkdir } from 'node:fs/promises';
 
 const url = process.env.GAME_URL ?? 'http://127.0.0.1:5400';
+await mkdir('output/intermission', { recursive: true });
 const browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader'] });
 try {
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -37,6 +39,12 @@ for (const id of ['continue-map', 'retry-map', 'intermission-level-select', 'int
 
 await page.click('#retry-map');
 assert(await page.locator('#ready-overlay').isVisible(), 'Retry did not restore the entry gate');
+const retryBriefing = await page.locator('#entry-controls').innerText();
+for (const action of ['USE', 'WEAPON', 'MAP']) assert(retryBriefing.includes(action), `Context briefing omits ${action}`);
+for (const learned of ['MOVE', 'LOOK', 'FIRE']) assert(!retryBriefing.includes(learned), `Context briefing unnecessarily repeats ${learned}`);
+assert(await page.locator('#ready-overlay').getAttribute('data-briefing') === 'context', 'Completed-map retry repeated initial orientation');
+assert((await page.locator('#entry-objective').innerText()).includes('Red credential'), 'Context briefing lost the map objective');
+await page.screenshot({ path: 'output/intermission/context-briefing.png' });
 await enterFile();
 let snapshot = await state();
 assert(snapshot.mode === 'playing' && snapshot.map.id === 'E1M1', 'Retry did not restart the completed map');

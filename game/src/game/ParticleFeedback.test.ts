@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { Vector3 } from 'three';
-import { impactParticleDirection, particleEmissionCount, pickupParticleFeedbackKind, promoteRecent } from './GameEngine';
+import {
+  doorParticleFeedbackKind,
+  impactParticleDirection,
+  particleEmissionCount,
+  pickupParticleFeedbackKind,
+  promoteRecent,
+  statusExpiryParticleFeedbackKind,
+  surfaceParticleFeedbackKind,
+} from './GameEngine';
 
 describe('semantic particle feedback policy', () => {
   it('maps authored toner pickups and drops to toner feedback', () => {
@@ -18,6 +26,27 @@ describe('semantic particle feedback policy', () => {
     expect(pickupParticleFeedbackKind({ kind: 'pickup', id: 'fasteners-large' })).toBe('metal');
     expect(pickupParticleFeedbackKind({ kind: 'pickup', id: 'temporary-binder' })).toBe('deflection');
     expect(pickupParticleFeedbackKind({ kind: 'pickup', id: 'forensic-lens' })).toBe('scan');
+  });
+
+  it('maps movement and mover punctuation from authored surface materials', () => {
+    expect(surfaceParticleFeedbackKind('floor.carpet-gray-clean')).toBe('fiber');
+    expect(surfaceParticleFeedbackKind('floor.wet-asphalt-clean')).toBe('water');
+    expect(surfaceParticleFeedbackKind('floor.toner-sludge-01')).toBe('toner');
+    expect(surfaceParticleFeedbackKind('floor.red-wax-03')).toBe('wax');
+    expect(surfaceParticleFeedbackKind('floor.train-steel-clean')).toBe('metal');
+    expect(surfaceParticleFeedbackKind('floor.litigation-stone-clean')).toBe('concrete');
+    expect(surfaceParticleFeedbackKind('floor.probability-grid-01')).toBe('scan');
+    expect(doorParticleFeedbackKind('door.wax-gate')).toBe('wax');
+    expect(doorParticleFeedbackKind('door.office-steel')).toBe('metal');
+    expect(doorParticleFeedbackKind('door.wax-gate', 'red')).toBe('metal');
+  });
+
+  it('preserves distinct semantic seeds when timed statuses expire', () => {
+    expect(statusExpiryParticleFeedbackKind('binder')).toBe('deflection');
+    expect(statusExpiryParticleFeedbackKind('hazard')).toBe('neutralize');
+    expect(statusExpiryParticleFeedbackKind('rapid')).toBe('authority');
+    expect(statusExpiryParticleFeedbackKind('forensic')).toBe('scan');
+    expect(statusExpiryParticleFeedbackKind('goggles')).toBe('scan');
   });
 
   it('suppresses additive emissions when flashes are disabled', () => {

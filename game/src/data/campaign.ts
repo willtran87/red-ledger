@@ -471,11 +471,40 @@ const actorRoutePoints = (grid: readonly string[], blocked = 's'): readonly Grid
   baseRoutePoints(grid, blocked).filter((point) =>
     !DOOR_CELLS.includes(grid[Math.floor(point.z)]?.[Math.floor(point.x)] ?? ''));
 
-const chooseStartExit = (grid: readonly string[]): { start: GridPoint & { facing: Facing }; exit: GridPoint } => {
-  const points = baseRoutePoints(grid);
-  const start = points[0];
-  const exit = points.reduce((best, point) => distance(start, point) > distance(start, best) ? point : best, points[0]);
-  const facing: Facing = start.x < grid[0].length / 2 ? 'east' : 'west';
+const chooseStartExit = (spec: MapSpec, grid: readonly string[]): { start: GridPoint & { facing: Facing }; exit: GridPoint } => {
+  const route = actorRoutePoints(grid);
+  const plainRoute = route.filter((point) => grid[Math.floor(point.z)]?.[Math.floor(point.x)] === '.');
+  const initialRoute = actorRoutePoints(grid, 'sRYC');
+  const initialPlainRoute = initialRoute.filter((point) => grid[Math.floor(point.z)]?.[Math.floor(point.x)] === '.');
+  const secretCells = pointsFor(grid, 's');
+  const clearRoute = initialPlainRoute.filter((point) => secretCells.every((secret) => distance(point, secret) >= 2));
+  const safeStartRoute = clearRoute.length > 0 ? clearRoute : initialPlainRoute.length > 0 ? initialPlainRoute : initialRoute;
+  const edgeDepth = (point: GridPoint): number => Math.min(
+    point.x - .5,
+    grid[0].length - .5 - point.x,
+    point.z - .5,
+    grid.length - .5 - point.z,
+  );
+  const shallowest = Math.min(...safeStartRoute.map(edgeDepth));
+  const edgeRoute = safeStartRoute.filter((point) => edgeDepth(point) <= shallowest + 1);
+  const start = spec.id === 'E1M1'
+    ? route[0]
+    : edgeRoute[hash(`${spec.id}:player-start`) % edgeRoute.length];
+  const safeExitRoute = plainRoute.length > 0 ? plainRoute : route;
+  const exit = safeExitRoute.reduce((best, point) => distance(start, point) > distance(start, best) ? point : best, safeExitRoute[0]);
+  const routeKeys = new Set(route.map((point) => `${Math.floor(point.x)},${Math.floor(point.z)}`));
+  const facingSteps: ReadonlyArray<{ facing: Facing; x: number; z: number }> = [
+    { facing: 'north', x: 0, z: -1 },
+    { facing: 'east', x: 1, z: 0 },
+    { facing: 'south', x: 0, z: 1 },
+    { facing: 'west', x: -1, z: 0 },
+  ];
+  const traversableFacings = facingSteps
+    .filter((step) => routeKeys.has(`${Math.floor(start.x + step.x)},${Math.floor(start.z + step.z)}`));
+  const facing = traversableFacings.reduce((best, step) =>
+    distance({ x: start.x + step.x, z: start.z + step.z }, exit)
+      < distance({ x: start.x + best.x, z: start.z + best.z }, exit) ? step : best,
+    traversableFacings[0] ?? facingSteps[0]).facing;
   return { start: { ...start, facing }, exit };
 };
 
@@ -490,6 +519,17 @@ const splitPhaseCounts = (total: number): Readonly<Record<EncounterPhase, number
     transformation: transformationEnd - entry,
     climax: total - transformationEnd,
   };
+};
+
+const mandatoryAnchorCount = (spec: MapSpec, phase: EncounterPhase): number => {
+  const mapIndex = Number(spec.id[3]);
+  const episode = Number(spec.id[1]);
+  if (phase === 'entry') return mapIndex <= 2 ? 2 : mapIndex >= 7 ? 4 : 3;
+  if (phase === 'transformation') {
+    if (spec.transformation === 'spawn-wave' || spec.transformation === 'teleport') return 4;
+    return mapIndex <= 2 ? 2 : 3;
+  }
+  return Math.min(5, 2 + Math.ceil(mapIndex / 3) + (episode === 3 ? 1 : 0));
 };
 
 const difficultyMask = (phaseIndex: number, easyCount: number, normalCount: number): readonly Difficulty[] => {
@@ -542,6 +582,9 @@ const makeActors = (
     normal: splitPhaseCounts(normalCount),
     hard: splitPhaseCounts(hardCount),
   } as const;
+  const mandatoryCounts = Object.fromEntries(
+    ENCOUNTER_PHASES.map((phase) => [phase, mandatoryAnchorCount(spec, phase)]),
+  ) as Readonly<Record<EncounterPhase, number>>;
   const actors: ActorPlacement[] = [];
   const occupancy = new Map<string, number>();
   const hostileOccupancy = new Map<string, number>();
@@ -594,7 +637,7 @@ const makeActors = (
         difficulties: difficultyMask(phaseIndex, phaseCounts.easy[encounter], phaseCounts.normal[encounter]),
         dormant: enemyIndex % 5 === 0,
         encounter,
-        mandatory: phaseIndex < 3,
+        mandatory: phaseIndex < mandatoryCounts[encounter],
         route: encounter,
         facing: enemyIndex % 4 === 0 ? blueprint.ambushFacing : (['north', 'east', 'south', 'west'] as const)[enemyIndex % 4],
       });
@@ -653,7 +696,7 @@ const makeActors = (
   return actors;
 };
 
-const makeSecrets = (spec: MapSpec, grid: readonly string[]): readonly SecretDefinition[] => {
+const makeSecrets = (spec: MapSpec, grid: readonly string[], start: GridPoint): readonly SecretDefinition[] => {
   const baseKeys = new Set(baseRoutePoints(grid).map((point) => `${Math.floor(point.x)},${Math.floor(point.z)}`));
   const secretPoints = pointsFor(grid, 's').filter((secret) => [
     { x: secret.x + 1, z: secret.z }, { x: secret.x - 1, z: secret.z },
@@ -668,17 +711,20 @@ const makeSecrets = (spec: MapSpec, grid: readonly string[]): readonly SecretDef
       return symbol !== undefined && symbol !== '#' && symbol !== 's'
         && baseKeys.has(`${Math.floor(point.x)},${Math.floor(point.z)}`);
     });
-    const fallback = baseRoutePoints(grid).filter((point) => distance(point, secret) >= 2);
-    return neighbors[0] ?? fallback[hash(`${spec.id}:secret-switch:${index}`) % fallback.length];
+    const stagedNeighbors = neighbors.filter((point) => distance(point, start) > 0);
+    const fallback = baseRoutePoints(grid).filter((point) => distance(point, secret) >= 2 && distance(point, start) > 0);
+    return stagedNeighbors[hash(`${spec.id}:secret-switch:${index}`) % stagedNeighbors.length]
+      ?? fallback[hash(`${spec.id}:secret-fallback:${index}`) % fallback.length];
   };
   return secretPoints.slice(0, spec.secretClues.length).map((at, index) => {
     const clue = spec.secretClues[index];
+    const clueProps = LANDMARK_PROPS[spec.id];
     return {
       id: `${spec.id.toLowerCase()}-secret-${index + 1}`,
       clue,
       reward: index % 4 === 0 ? 'armor or over-heal' : index % 4 === 1 ? 'ammunition efficiency' : index % 4 === 2 ? 'shortcut or map information' : 'early weapon or powerup',
       rewardPickup: (['goodwill-token', 'staples-large', 'floor-plan', 'hazard-endorsement'] as const)[index % 4],
-      clueProp: (['office-phone-stamp', 'evidence-case-cart', 'desk-lamp-paper-stack'] as const)[index % 3],
+      clueProp: clueProps[(hash(`${spec.id}:secret-props`) + index) % clueProps.length],
       at,
       revealAt: revealPoint(at, index),
       concealedCells: [`${Math.floor(at.x)},${Math.floor(at.z)}`],
@@ -782,9 +828,9 @@ const skies = {
 const buildMap = (spec: MapSpec): CampaignMap => {
   const episode = episodeFor(spec.id);
   const grid = getLayout(spec.layout, episode.number);
-  const { start, exit } = chooseStartExit(grid);
+  const { start, exit } = chooseStartExit(spec, grid);
   const encounterBlueprint = makeEncounterBlueprint(spec, grid);
-  const secrets = makeSecrets(spec, grid);
+  const secrets = makeSecrets(spec, grid, start);
   const landmarks = makeLandmarks(spec, grid);
   const breakables = makeBreakables(spec, grid, episode.number, landmarks);
   const mechanisms = makeMechanisms(spec, grid, landmarks);

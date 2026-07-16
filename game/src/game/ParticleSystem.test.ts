@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DataTexture, InstancedBufferGeometry, Mesh, Scene, Vector3 } from 'three';
+import { DataTexture, InstancedBufferAttribute, InstancedBufferGeometry, Mesh, Scene, Vector3 } from 'three';
 import { ParticleSystem } from './ParticleSystem';
 
 const batchSnapshot = (particles: ParticleSystem) => particles.root.children.map((child) => {
@@ -16,6 +16,18 @@ const firstNormalUvX = (particles: ParticleSystem): number => {
   const mesh = particles.root.children.find((child) => child.name === 'particle-effects-normal') as Mesh;
   return (mesh.geometry as InstancedBufferGeometry).getAttribute('instanceUvRect').getX(0);
 };
+
+const firstNormalColor = (particles: ParticleSystem): readonly number[] => {
+  const mesh = particles.root.children.find((child) => child.name === 'particle-effects-normal') as Mesh;
+  const attribute = (mesh.geometry as InstancedBufferGeometry).getAttribute('instanceColor');
+  return [attribute.getX(0), attribute.getY(0), attribute.getZ(0)];
+};
+
+const batchAttributeVersions = (particles: ParticleSystem): readonly number[] => particles.root.children.flatMap((child) => {
+  const geometry = (child as Mesh).geometry as InstancedBufferGeometry;
+  return ['instancePosition', 'instanceSize', 'instanceRotation', 'instanceOpacity', 'instanceUvRect', 'instanceColor']
+    .map((name) => (geometry.getAttribute(name) as InstancedBufferAttribute).version);
+});
 
 const testTexture = (value: number): DataTexture => new DataTexture(
   new Uint8Array([value, 255 - value, 127, 255]),
@@ -101,11 +113,25 @@ describe('ParticleSystem', () => {
     particles.setTexture('ink', testTexture(250));
     particles.emit('ink', new Vector3(), 1);
     expect(firstNormalUvX(particles)).toBeLessThan(.01);
+    const fallbackColor = firstNormalColor(particles);
+    expect(fallbackColor[0]).toBeCloseTo(0xa7 / 0xff, 6);
+    expect(fallbackColor[1]).toBeCloseTo(0x0d / 0xff, 6);
+    expect(fallbackColor[2]).toBeCloseTo(0x18 / 0xff, 6);
 
     particles.clear();
     particles.clearTextureBindings();
     particles.setTexture('ink', testTexture(42));
     particles.emit('ink', new Vector3(), 1);
     expect(firstNormalUvX(particles)).toBeGreaterThan(.1);
+  });
+
+  it('does not upload empty instance buffers on dormant updates', () => {
+    const particles = new ParticleSystem(new Scene(), 8, 19);
+    particles.emit('paper', new Vector3(), 2);
+    particles.clear();
+    const before = batchAttributeVersions(particles);
+    particles.update(1 / 35);
+    expect(batchAttributeVersions(particles)).toEqual(before);
+    expect(particles.activeCount).toBe(0);
   });
 });

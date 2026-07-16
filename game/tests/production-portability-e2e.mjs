@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
 
 const root = normalize(join(process.cwd(), 'dist'));
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.txt': 'text/plain' };
@@ -47,7 +47,7 @@ const startCampaign = async (page) => {
   await page.locator('.episode-card').first().click();
   await page.locator('#difficulty-actions button').nth(1).click();
   await page.click('#begin-episode');
-  await page.click('#enter-file');
+  if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 };
 
@@ -72,6 +72,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1024, height: 640 } });
   const failures = monitor(page);
   await page.goto(base, { waitUntil: 'networkidle' });
+  assert(await page.evaluate(() => window.__redLedger === undefined), 'Development debug API leaked into the production package');
   assert(await page.locator('.title-art').evaluate((image) => image.complete && image.naturalWidth > 0), 'Title asset did not load');
 
   await page.click('#new-game');
@@ -151,7 +152,25 @@ try {
   assert(retryFailures.length === 0, retryFailures.join('\n'));
   await retryContext.close();
 
-  console.log('Production nested package, persistence, navigation, resilience, and notices passed');
+  for (const [name, browserType] of Object.entries({ firefox, webkit })) {
+    const packagedBrowser = await browserType.launch({ headless: true });
+    try {
+      const context = await packagedBrowser.newContext({ viewport: { width: 1024, height: 640 }, hasTouch: true });
+      const packagedPage = await context.newPage();
+      const packagedFailures = monitor(packagedPage);
+      await packagedPage.goto(base, { waitUntil: 'networkidle' });
+      assert(await packagedPage.locator('.title-art').evaluate((image) => image.complete && image.naturalWidth > 0),
+        `${name} could not load the packaged title asset`);
+      await startCampaign(packagedPage);
+      assert((await state(packagedPage)).mode === 'playing', `${name} could not start the packaged campaign`);
+      assert(packagedFailures.length === 0, `${name} packaged errors: ${packagedFailures.join('\n')}`);
+      await context.close();
+    } finally {
+      await packagedBrowser.close();
+    }
+  }
+
+  console.log('Production nested package, persistence, navigation, resilience, notices, and cross-engine startup passed');
 } finally {
   await browser.close();
   await new Promise((resolve) => server.close(resolve));

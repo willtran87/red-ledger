@@ -30,6 +30,15 @@ assert(encounter(snapshot, 'entry').live > 0, 'Optional entry enemies were incor
 assert(encounter(snapshot, 'transformation').locked === 0, 'Transformation did not unlock after mandatory entry anchors');
 assert(snapshot.objective.includes('control exposures'), `Objective did not advance to the active blocker: ${snapshot.objective}`);
 
+await page.evaluate(() => window.__redLedger.defeatPlayer());
+await page.locator('#death-menu').waitFor({ state: 'visible' });
+await page.click('#restart-checkpoint');
+if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
+await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
+snapshot = await state();
+assert(snapshot.tally.kills === mandatoryEntry, `Phase checkpoint lost entry progress: ${snapshot.tally.kills}/${mandatoryEntry}`);
+assert(encounter(snapshot, 'transformation').locked === 0, 'Phase checkpoint restored before the transformation unlock');
+
 const transformationBefore = encounter(snapshot, 'transformation');
 await page.evaluate(() => window.__redLedger.defeatMandatory('transformation'));
 snapshot = await state();

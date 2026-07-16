@@ -1,16 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import {
   AUTOSAVE_SLOT_COUNT,
+  CAMPAIGN_SCHEMA_VERSION,
   DEMO_SCHEMA_VERSION,
   DEMO_STORAGE_BUDGET_BYTES,
   DemoPlayback,
   DemoRecorder,
   MANUAL_SLOT_COUNT,
+  PERSISTENCE_COMPATIBILITY_POLICY,
   PersistenceSystem,
+  SAVE_SCHEMA_VERSION,
   checksum,
   validateDemo,
   type SaveMetadataInput,
 } from './PersistenceSystem';
+import {
+  CURRENT_CAMPAIGN_V2_FIXTURE,
+  CURRENT_SAVE_V1_FIXTURE,
+  LEGACY_CAMPAIGN_V1_FIXTURE,
+} from './__fixtures__/persistenceFixtures';
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -104,6 +112,44 @@ describe('PersistenceSystem save slots', () => {
     expect(() => system.saveManual(9, state('E1M1'), metadata('E1M1'))).toThrow(RangeError);
   });
 
+  it('loads the frozen current-version fixture and writes the declared schema', () => {
+    const storage = new MemoryStorage();
+    storage.setItem('test:save:manual-1', JSON.stringify(CURRENT_SAVE_V1_FIXTURE));
+    const system = makeSystem(storage);
+
+    expect(PERSISTENCE_COMPATIBILITY_POLICY.saves).toEqual({
+      currentVersion: 1,
+      oldestSupportedVersion: 1,
+      requiresExactGameVersion: true,
+    });
+    expect(system.loadManual(1)).toMatchObject({
+      status: 'valid',
+      persistence: 'persistent',
+      metadata: { mapId: 'E1M3', sequence: 7 },
+      state: { map: 'E1M3', health: 73 },
+    });
+    system.saveManual(2, state('E1M4'), metadata('E1M4'));
+    expect(JSON.parse(storage.getItem('test:save:manual-2')!).version).toBe(SAVE_SCHEMA_VERSION);
+  });
+
+  it('accepts checksum-covered unknown fields in a supported save without losing them while loaded', () => {
+    const storage = new MemoryStorage();
+    const { checksum: _fixtureChecksum, ...fixtureUnsigned } = CURRENT_SAVE_V1_FIXTURE;
+    const unsigned = {
+      ...fixtureUnsigned,
+      extension: { source: 'later-compatible-build' },
+      metadata: { ...fixtureUnsigned.metadata, presentationHint: 'compact' },
+      state: { ...fixtureUnsigned.state, optionalFutureState: 9 },
+    };
+    storage.setItem('test:save:manual-1', JSON.stringify({ ...unsigned, checksum: checksum(unsigned) }));
+
+    const loaded = makeSystem(storage).loadManual(1);
+    expect(loaded.status).toBe('valid');
+    if (loaded.status !== 'valid') throw new Error('Fixture should be valid');
+    expect((loaded.metadata as unknown as Record<string, unknown>).presentationHint).toBe('compact');
+    expect((loaded.state as unknown as Record<string, unknown>).optionalFutureState).toBe(9);
+  });
+
   it('round-trips validated captured-image thumbnails', () => {
     const system = makeSystem(new MemoryStorage());
     const thumbnail = {
@@ -173,12 +219,29 @@ describe('PersistenceSystem save slots', () => {
     });
   });
 
+  it('falls back from a corrupt autosave to the newest valid episode recovery', () => {
+    const storage = new MemoryStorage();
+    const system = makeSystem(storage, [100, 200, 300]);
+    system.saveManual(1, state('OLD-MANUAL'), metadata('E1M1'));
+    system.saveEpisodeRecovery('first-notice', state('RECOVERY'), metadata('E1M2'));
+    system.autosave(state('BROKEN-AUTO'), metadata('E1M3'));
+    storage.setItem('test:save:autosave-1', '{broken');
+
+    expect(system.newestValidContinue()).toMatchObject({
+      kind: 'recovery',
+      state: { map: 'RECOVERY' },
+    });
+  });
+
   it('reports checksum, version, and state failures without deleting or changing any slot', () => {
     const storage = new MemoryStorage();
     const system = makeSystem(storage, [10, 20, 30]);
     system.saveManual(1, state('GOOD'), metadata('E1M1'));
     system.saveManual(2, state('CHECKSUM'), metadata('E1M2'));
     system.saveManual(3, state('VERSION'), metadata('E1M3'));
+    system.saveManual(4, state('STATE'), metadata('E1M4'));
+    system.saveManual(5, state('OLD-VERSION'), metadata('E1M5'));
+    system.saveManual(6, state('GAME-VERSION'), metadata('E1M6'));
 
     const checksumRaw = JSON.parse(storage.getItem('test:save:manual-2')!) as Record<string, unknown>;
     checksumRaw.state = state('TAMPERED');
@@ -190,11 +253,32 @@ describe('PersistenceSystem save slots', () => {
     versionRaw.checksum = checksum(unsigned);
     storage.setItem('test:save:manual-3', JSON.stringify(versionRaw));
 
+    const stateRaw = JSON.parse(storage.getItem('test:save:manual-4')!) as Record<string, unknown>;
+    stateRaw.state = { map: 'INVALID', health: 'full', inventory: [] };
+    const { checksum: _stateChecksum, ...stateUnsigned } = stateRaw;
+    stateRaw.checksum = checksum(stateUnsigned);
+    storage.setItem('test:save:manual-4', JSON.stringify(stateRaw));
+
+    const oldVersionRaw = JSON.parse(storage.getItem('test:save:manual-5')!) as Record<string, unknown>;
+    oldVersionRaw.version = 0;
+    const { checksum: _oldVersionChecksum, ...oldVersionUnsigned } = oldVersionRaw;
+    oldVersionRaw.checksum = checksum(oldVersionUnsigned);
+    storage.setItem('test:save:manual-5', JSON.stringify(oldVersionRaw));
+
+    const gameVersionRaw = JSON.parse(storage.getItem('test:save:manual-6')!) as Record<string, unknown>;
+    gameVersionRaw.gameVersion = 'other-simulation';
+    const { checksum: _gameVersionChecksum, ...gameVersionUnsigned } = gameVersionRaw;
+    gameVersionRaw.checksum = checksum(gameVersionUnsigned);
+    storage.setItem('test:save:manual-6', JSON.stringify(gameVersionRaw));
+
     const beforeChecksum = storage.getItem('test:save:manual-2');
     const beforeVersion = storage.getItem('test:save:manual-3');
     expect(system.loadManual(1)).toMatchObject({ status: 'valid', state: { map: 'GOOD' } });
     expect(system.loadManual(2)).toMatchObject({ status: 'invalid', reason: 'Checksum mismatch' });
-    expect(system.loadManual(3)).toMatchObject({ status: 'invalid', reason: 'Unsupported save version' });
+    expect(system.loadManual(3)).toMatchObject({ status: 'invalid', reason: 'Save version is newer than this build' });
+    expect(system.loadManual(4)).toMatchObject({ status: 'invalid', reason: 'Invalid game state' });
+    expect(system.loadManual(5)).toMatchObject({ status: 'invalid', reason: 'Save version is no longer supported' });
+    expect(system.loadManual(6)).toMatchObject({ status: 'invalid', reason: 'Save belongs to a different game version' });
     expect(storage.getItem('test:save:manual-2')).toBe(beforeChecksum);
     expect(storage.getItem('test:save:manual-3')).toBe(beforeVersion);
     expect(system.loadManual(1)).toMatchObject({ status: 'valid' });
@@ -223,9 +307,10 @@ describe('PersistenceSystem storage degradation', () => {
 
     storage.denyWrites = true;
     const saved = system.saveManual(1, state('SESSION'), metadata('E1M1'));
-    expect(saved.status).toBe('valid');
+    expect(saved).toMatchObject({ status: 'valid', persistence: 'memory-only' });
     expect(system.loadManual(1)).toMatchObject({ status: 'valid', state: { map: 'SESSION' } });
     expect(storage.backing.getItem('test:save:manual-1')).toBeNull();
+    expect(system.storageStatus()).toMatchObject({ mode: 'memory-fallback', volatileKeyCount: 2 });
   });
 
   it('retains quota-failed writes without weakening serialization validation', () => {
@@ -233,14 +318,35 @@ describe('PersistenceSystem storage degradation', () => {
     const system = makeSystem(storage);
     system.saveManual(1, state('PERSISTED'), metadata('E1M1'));
     storage.quotaKey = 'save:manual-1';
-    system.saveManual(1, state('FALLBACK'), metadata('E1M2'));
+    const fallback = system.saveManual(1, state('FALLBACK'), metadata('E1M2'));
 
-    expect(system.loadManual(1)).toMatchObject({ status: 'valid', state: { map: 'FALLBACK' } });
+    expect(fallback).toMatchObject({ status: 'valid', persistence: 'memory-only' });
+    expect(system.loadManual(1)).toMatchObject({ status: 'valid', persistence: 'memory-only', state: { map: 'FALLBACK' } });
     expect(system.storageStatus()).toMatchObject({
-      mode: 'memory-fallback', lastFailure: { operation: 'write', key: 'test:save:manual-1', name: 'QuotaExceededError' },
+      mode: 'memory-fallback', volatileKeyCount: 1,
+      lastFailure: { operation: 'write', key: 'test:save:manual-1', name: 'QuotaExceededError' },
     });
     expect(() => system.saveManual(1, { ...state('BAD'), health: Number.NaN }, metadata('E1M3'))).toThrow(TypeError);
     expect(system.loadManual(1)).toMatchObject({ state: { map: 'FALLBACK' } });
+  });
+
+  it('reports recovery to persistent storage after a later successful overwrite', () => {
+    const storage = new FaultingStorage();
+    const system = makeSystem(storage);
+    storage.quotaKey = 'save:manual-1';
+    expect(system.saveManual(1, state('MEMORY'), metadata('E1M1')).persistence).toBe('memory-only');
+    storage.quotaKey = undefined;
+
+    expect(system.saveManual(1, state('PERSISTED'), metadata('E1M2'))).toMatchObject({
+      persistence: 'persistent',
+      state: { map: 'PERSISTED' },
+    });
+    expect(system.storageStatus()).toMatchObject({ mode: 'persistent', volatileKeyCount: 0, failureCount: 1 });
+    expect(makeSystem(storage.backing).loadManual(1)).toMatchObject({
+      status: 'valid',
+      persistence: 'persistent',
+      state: { map: 'PERSISTED' },
+    });
   });
 
   it('keeps campaign progress available when persistent writes fail', () => {
@@ -338,16 +444,73 @@ describe('PersistenceSystem campaign unlocks', () => {
     expect(system.campaignUnlocks().discoveredSecretMaps).toEqual(['E1M9']);
   });
 
-  it('loads checksum-valid campaign data from before performance records existed', () => {
+  it('migrates the frozen original campaign schema with non-destructive defaults', () => {
     const storage = new MemoryStorage();
-    const progress = {
-      unlockedEpisodes: ['first-notice'], completedEpisodes: [], completedMaps: ['E1M1'], updatedAt: 77,
-    };
-    const unsigned = { schema: 'red-ledger-campaign', version: 1, progress };
-    storage.setItem('test:campaign', JSON.stringify({ ...unsigned, checksum: checksum(unsigned) }));
+    const original = JSON.stringify(LEGACY_CAMPAIGN_V1_FIXTURE);
+    storage.setItem('test:campaign', original);
     expect(makeSystem(storage).campaignUnlocks()).toEqual({
-      ...progress, discoveredSecretMaps: [], records: {},
+      ...LEGACY_CAMPAIGN_V1_FIXTURE.progress,
+      discoveredSecretMaps: [],
+      records: {},
     });
+    expect(storage.getItem('test:campaign')).toBe(original);
+  });
+
+  it('loads the frozen current campaign schema and writes version 2 after legacy progress changes', () => {
+    const currentStorage = new MemoryStorage();
+    currentStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V2_FIXTURE));
+    expect(PERSISTENCE_COMPATIBILITY_POLICY.campaign).toMatchObject({
+      currentVersion: 2,
+      oldestSupportedVersion: 1,
+    });
+    expect(makeSystem(currentStorage).campaignUnlocks()).toMatchObject({
+      completedEpisodes: ['first-notice'],
+      discoveredSecretMaps: ['E1M9'],
+      records: { 'E1M1:field-adjuster': { bestGrade: 'A', highScore: 5_000 } },
+    });
+
+    const legacyStorage = new MemoryStorage();
+    legacyStorage.setItem('test:campaign', JSON.stringify(LEGACY_CAMPAIGN_V1_FIXTURE));
+    makeSystem(legacyStorage).completeMap('E1M2');
+    expect(JSON.parse(legacyStorage.getItem('test:campaign')!).version).toBe(CAMPAIGN_SCHEMA_VERSION);
+  });
+
+  it('accepts unknown current campaign fields and preserves future or corrupt documents untouched', () => {
+    const compatibleStorage = new MemoryStorage();
+    const { checksum: _fixtureChecksum, ...fixtureUnsigned } = CURRENT_CAMPAIGN_V2_FIXTURE;
+    const compatibleUnsigned = {
+      ...fixtureUnsigned,
+      extension: { source: 'later-compatible-build' },
+      progress: { ...fixtureUnsigned.progress, optionalPresentation: 'dense' },
+    };
+    compatibleStorage.setItem('test:campaign', JSON.stringify({
+      ...compatibleUnsigned,
+      checksum: checksum(compatibleUnsigned),
+    }));
+    expect(makeSystem(compatibleStorage).campaignUnlocks()).toMatchObject({
+      completedEpisodes: ['first-notice'],
+      discoveredSecretMaps: ['E1M9'],
+    });
+
+    for (const raw of [
+      '{broken',
+      (() => {
+        const unsigned = { ...fixtureUnsigned, version: CAMPAIGN_SCHEMA_VERSION + 1 };
+        return JSON.stringify({ ...unsigned, checksum: checksum(unsigned) });
+      })(),
+    ]) {
+      const rejectedStorage = new MemoryStorage();
+      rejectedStorage.setItem('test:campaign', raw);
+      expect(makeSystem(rejectedStorage).campaignUnlocks()).toEqual({
+        unlockedEpisodes: ['first-notice'],
+        completedEpisodes: [],
+        completedMaps: [],
+        discoveredSecretMaps: [],
+        records: {},
+        updatedAt: 0,
+      });
+      expect(rejectedStorage.getItem('test:campaign')).toBe(raw);
+    }
   });
 
   it('does not let damaged campaign progress affect save slots', () => {

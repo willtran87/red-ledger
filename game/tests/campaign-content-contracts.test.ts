@@ -18,11 +18,50 @@ const ammoForPickup = (pickup: PickupId): Exclude<AmmoType, 'none'> | undefined 
 };
 
 describe('campaign authored-content contracts', () => {
+  it('varies safe map starts and never stages a secret interaction under the player', () => {
+    const maps = Object.values(CAMPAIGN.maps);
+    const starts = new Set(maps.map((map) => `${Math.floor(map.playerStart.x)},${Math.floor(map.playerStart.z)},${map.playerStart.facing}`));
+    const failures: string[] = [];
+    const facingDelta = {
+      north: { x: 0, z: -1 },
+      east: { x: 1, z: 0 },
+      south: { x: 0, z: 1 },
+      west: { x: -1, z: 0 },
+    } as const;
+    for (const map of maps) {
+      const startX = Math.floor(map.playerStart.x);
+      const startZ = Math.floor(map.playerStart.z);
+      const startSymbol = map.grid[startZ]?.[startX];
+      if (startSymbol !== '.') failures.push(`${map.id}: unsafe start symbol ${startSymbol}`);
+      const delta = facingDelta[map.playerStart.facing];
+      const facingSymbol = map.grid[startZ + delta.z]?.[startX + delta.x];
+      if (!facingSymbol || '#sDRYC'.includes(facingSymbol)) {
+        failures.push(`${map.id}: start faces blocked symbol ${facingSymbol ?? 'outside map'}`);
+      }
+      for (const secret of map.secrets) {
+        const worldDistance = Math.hypot(secret.revealAt.x - map.playerStart.x, secret.revealAt.z - map.playerStart.z) * map.cellSize;
+        if (worldDistance <= 2.2) failures.push(`${map.id}:${secret.id} begins within Use range`);
+      }
+    }
+    expect(starts.size).toBeGreaterThanOrEqual(18);
+    expect(failures).toEqual([]);
+  });
+
   it('materializes every authored secret clue as a reachable runtime secret', () => {
     const failures = Object.values(CAMPAIGN.maps)
       .filter((map) => map.secrets.length !== authoredSecretCounts[map.id])
       .map((map) => `${map.id}: ${map.secrets.length}/${authoredSecretCounts[map.id]} secrets`);
     expect(failures).toEqual([]);
+  });
+
+  it('gives secret clues a broad map-specific visual vocabulary', () => {
+    const maps = Object.values(CAMPAIGN.maps);
+    const clueProps = maps.flatMap((map) => map.secrets.map((secret) => secret.clueProp));
+    expect(new Set(clueProps).size).toBeGreaterThanOrEqual(24);
+    maps.forEach((map) => {
+      expect(new Set(map.secrets.map((secret) => secret.clueProp)).size)
+        .toBeGreaterThanOrEqual(Math.min(3, map.secrets.length));
+    });
   });
 
   it('provides a matching obtainable weapon for every ammo family placed in each episode', () => {
