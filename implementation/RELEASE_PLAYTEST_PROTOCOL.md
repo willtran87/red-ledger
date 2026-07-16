@@ -1,13 +1,13 @@
 # Release Playtest Protocol
 
 - Protocol revision: 2026-07-16
-- Previous automated software baseline: `694b12b24758f3e6c95453e5cf1ab34623fd63dc` (`694b12b`)
-- Candidate under review: `be7b49e02a1a0907f409199473d2abee8b50cef9` (`be7b49e`)
-- Automated preflight and live deployment: **Pass**; exact output, structured evidence, committed-file hashes, and Pages run `29506524733` are archived under `manifests/`
+- Previous automated software baseline: `be7b49e02a1a0907f409199473d2abee8b50cef9` (`be7b49e`)
+- Candidate under review: `3575cdd45eaa7ce880704d393ee895ce6453dbf4` (`3575cdd`)
+- Automated preflight and live deployment: **Pass**; exact output, structured evidence, committed-file hashes, and Pages run `29513277796` are archived under `manifests/`
 
 This protocol closes the four release gates that cannot be truthfully certified by automated tests. Record raw observations and hardware details; do not replace failures with subjective summaries. Automated results are prerequisites, not substitutes for these records. The authored-audio content target is implemented; its subjective listening, device, and provenance checks are part of the representative-hardware and rights gates below.
 
-The current candidate passed a clean `npm ci`, 303 tests across 32 files, the nested production package, 32 registered browser scenarios, Chromium/Firefox/WebKit smoke, exact 3,659-file `dist`/Pages parity, a zero-vulnerability production audit, 11 focused public/audio tests across three files, and the complete art/chroma/spacing validator. GitHub Pages then deployed the committed 3,660-file tree including `.nojekyll`; sampled live HTML, JS, CSS, audio, and generated-particle bytes match that tree, and Chromium reaches E1M1, moves, fires, streams authored audio, exposes no debug API, and reports no console or network failures. Use `manifests/release-candidate-evidence.json`, `manifests/release-candidate-preflight.txt`, and `manifests/pages-artifact-sha256.txt` as the candidate header evidence for every human record below.
+The current candidate passed a clean `npm ci`, 314 tests across 32 files, the nested production package, 32 registered browser scenarios, Chromium/Firefox/WebKit smoke, exact 3,659-file `dist`/Pages parity, a zero-vulnerability production audit, 11 focused public/audio tests across three files, and the complete art/chroma/spacing validator. GitHub Pages then deployed the committed 3,660-file tree including `.nojekyll`; sampled live HTML, JS, CSS, audio, and generated-particle bytes match that tree, and Chromium reaches E1M1, moves, fires, streams authored audio, exposes no debug API, and reports no console or network failures. Use `manifests/release-candidate-evidence.json`, `manifests/release-candidate-preflight.txt`, and `manifests/pages-artifact-sha256.txt` as the candidate header evidence for every human record below.
 
 ## Current Signoff Status
 
@@ -53,7 +53,7 @@ From `game/`, run this deterministic balance gate on the exact candidate before 
 npx vitest run src/game/EconomyPolicy.test.ts tests/campaign-balance-simulation.test.ts
 ```
 
-The gate locks runtime ammunition caps and grants, consumes supplies and weapon grants in encounter order with a 20% aim/overkill reserve, checks every map's fresh-start mandatory route and bosses, simulates a continuous Field Adjuster episode route with 60% optional pressure, verifies all five response levels, and bounds route recovery, pressure scaling, carry saturation, and the authored par envelope. It deliberately excludes secret and breakable supplies and credits only half of maximum launcher splash.
+The gate locks runtime ammunition caps and grants, consumes supplies and weapon grants in encounter order with a 20% aim/overkill reserve, and checks every map's fresh-start mandatory route and bosses. Fresh-start coverage includes the ordinary route, a conservative case that withholds entry pickups until after nonlethal damage, and a case with 25% optional pressure; delayed supplies are never credited after lethal damage. It also simulates a continuous Field Adjuster episode route with 60% optional pressure, verifies all five response levels, and bounds route recovery, pressure scaling, carry saturation, and the authored par envelope. It deliberately excludes secret and breakable supplies and credits only half of maximum launcher splash.
 
 This prerequisite does **not** certify fun, real aiming behavior, incoming-damage fairness, navigation time, secret discovery, or a human 6-9 hour completion time. Those claims require the raw records below and remain open even when automation passes.
 

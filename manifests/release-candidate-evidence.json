@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "recordedAtUtc": "2026-07-16T14:29:17Z",
-  "candidateCommit": "be7b49e02a1a0907f409199473d2abee8b50cef9",
+  "recordedAtUtc": "2026-07-16T15:57:26Z",
+  "candidateCommit": "3575cdd45eaa7ce880704d393ee895ce6453dbf4",
   "productionUrl": "https://willtran87.github.io/red-ledger/",
   "toolchain": {
     "node": "20.20.2",
@@ -27,12 +27,12 @@
     },
     "log": {
       "path": "manifests/release-candidate-preflight.txt",
-      "sha256": "c4e692e7e422379b6c814b7632afcac446f67a8ff717443df71ec1dc0a93695f"
+      "sha256": "b32a4a8ba6ee98f981ef62e20f9a5b6932662b5343121393665c968dfeab0b7e"
     }
   },
   "automatedCoverage": {
     "unitAndDataTestFiles": 32,
-    "unitAndDataTests": 303,
+    "unitAndDataTests": 314,
     "registeredBrowserScenarios": 32,
     "browserEngines": [
       "chromium",
@@ -45,34 +45,34 @@
   },
   "performanceSample": {
     "renderer": "Playwright Chromium SwiftShader",
-    "readyMilliseconds": 3638,
+    "readyMilliseconds": 4201,
     "activeHostiles": 28,
-    "frames": 550,
-    "meanFrameMilliseconds": 18.2,
+    "frames": 535,
+    "meanFrameMilliseconds": 18.7,
     "p95FrameMilliseconds": 33.3,
-    "residentTextures": 96,
+    "residentTextures": 98,
     "particleBaselineDrawCalls": 28,
     "particleStressDrawCalls": 30
   },
   "localPlaytestReportSample": {
     "map": "E2M8",
-    "frames": 570,
+    "frames": 519,
     "medianFrameMilliseconds": 16.5,
-    "p95FrameMilliseconds": 33.5,
-    "worstFrameMilliseconds": 216.7,
+    "p95FrameMilliseconds": 50,
+    "worstFrameMilliseconds": 166.6,
     "candidateAssetStatus": "ready",
     "localServedBuildFingerprint": "6de4f26b2050bf578c57be101bcf9e180f1d995fdfc4a9d054fd497e66651dad",
     "transport": "none",
     "persistent": false
   },
   "publishedArtifact": {
-    "gitTreeCommit": "be7b49e02a1a0907f409199473d2abee8b50cef9",
+    "gitTreeCommit": "3575cdd45eaa7ce880704d393ee895ce6453dbf4",
     "distFiles": 3659,
     "publishedFilesIncludingNojekyll": 3660,
-    "publishedBytes": 74352791,
+    "publishedBytes": 74365769,
     "sha256Manifest": "manifests/pages-artifact-sha256.txt",
     "manifestAuthority": "raw committed Git tree bytes with checkout conversion disabled",
-    "sha256": "a1a7be0b6101294abe568bcdc52d6378d9a710cec32ae3806344545df3b715ec",
+    "sha256": "d7ff385a0224b9de92d1b170312ff3d26f995ee7d50cb336cb5ca7dd77638646",
     "generator": "tools/generate_pages_artifact_manifest.mjs"
   },
   "authoredAudio": {
@@ -102,25 +102,25 @@
   },
   "deployment": {
     "result": "pass",
-    "pagesRunId": 29506524733,
-    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29506524733",
-    "deployedCommit": "be7b49e02a1a0907f409199473d2abee8b50cef9",
+    "pagesRunId": 29513277796,
+    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29513277796",
+    "deployedCommit": "3575cdd45eaa7ce880704d393ee895ce6453dbf4",
     "httpsEnforced": true,
     "liveByteChecks": [
       {
         "path": "index.html",
-        "bytes": 18782,
-        "sha256": "d5258fe91f9430de480e9c8571383f8bc56904e7690c6fb710a68b519667d9ff"
+        "bytes": 19079,
+        "sha256": "18d1de653dc281b1595d10c6ec28257f8f49c60182968526e4e02eaa58d9a2f8"
       },
       {
-        "path": "assets/index-DpTO4A4_.js",
-        "bytes": 978928,
-        "sha256": "486a305a1901c6f7a7cff9903931c7900999407a79a6e4620c85492568baee6a"
+        "path": "assets/index-kbW9Uzxu.js",
+        "bytes": 988874,
+        "sha256": "84eb87eb61712dbb81f345081761a8b5f984834ba1accff4174bb085f63af35b"
       },
       {
-        "path": "assets/index-Dm5icapR.css",
-        "bytes": 34407,
-        "sha256": "c0f797a6033eebd92bc12ec20188518177b76641bb6c0328a03f4391b28de8e4"
+        "path": "assets/index-D9L8raFI.css",
+        "bytes": 37142,
+        "sha256": "795cdb3a40923a4b1f7f0257b8ea3e216c6359880e41f4f737c14050eed90cc5"
       },
       {
         "path": "audio/audio-library.json",
@@ -143,6 +143,7 @@
       "map": "E1M1",
       "mode": "playing",
       "visibleActors": 1,
+      "movementDistance": 4.57,
       "movementPassed": true,
       "firePassed": true,
       "audioSource": "authored",
