@@ -87,9 +87,9 @@ Original prompt: implement the game
 - High-resolution viewport: `2560x1600`
 - Desktop viewport: `1280x720`
 - Mobile viewport: `390x844`
-- Automated-release candidate: `694b12b24758f3e6c95453e5cf1ab34623fd63dc`
-- Production Pages package: 3,659 build files plus `.nojekyll`; 74,315,596 raw committed Git-blob bytes
-- Published artifact-manifest SHA-256: `bce4111233bd61500f652b3adeddaab82119a0decf6385f4fdafc61835954f45`
+- Automated-release candidate: `be7b49e02a1a0907f409199473d2abee8b50cef9`
+- Production Pages package: 3,659 build files plus `.nojekyll`; 74,352,791 raw committed Git-blob bytes
+- Published artifact-manifest SHA-256: `a1a7be0b6101294abe568bcdc52d6378d9a710cec32ae3806344545df3b715ec`
 
 ## External Signoff
 
@@ -97,7 +97,7 @@ Original prompt: implement the game
 
 ## Closed Authored Audio Target
 
-- The GDD audio-content target is implemented by the schema-2 authored library described below. Procedural audio remains only as a deterministic availability fallback, not the primary soundtrack or effects source. Candidate-wide automated release evidence passes on `694b12b`; the four external human signoffs remain separate.
+- The GDD audio-content target is implemented by the schema-2 authored library described below. Procedural audio remains only as a deterministic availability fallback, not the primary soundtrack or effects source. Candidate-wide automated release evidence passes on `be7b49e`; the four external human signoffs remain separate.
 
 ## Onboarding and Accessibility Remediation
 
@@ -126,3 +126,4 @@ Original prompt: implement the game
 - 2026-07-16: E2M6's three independent pump mechanisms now own disjoint authored hazard cells. Every activation subset and order updates only its sector's damage and instanced overlay, while current and legacy saves restore the exact drained sectors; global hazard transformations on other maps retain their original behavior.
 - 2026-07-16: Added a weapon-aware health/armor survival model spanning all 27 maps, five response levels, and three avoidance profiles (405 fresh-start cases), plus continuous full-clear episode runs. It uses runtime damage, cooldown, difficulty tempo, armor absorption, weapon progression, and pickup caps; all routes survive without multi-stage starvation, and the Episode 1 arena now uses small incidental recovery bonuses to prevent cap waste while preserving guaranteed bandages.
 - 2026-07-16: The clean-install integrated release gate passes 303 unit/data/public-package checks across 32 files, the nested production package, all 27 maps and 24 credential routes, 32 registered browser scenarios, and Chromium/Firefox/WebKit. SwiftShader active combat delivered 550 frames at 18.2 ms mean / 33.3 ms p95 with 96 textures; generated particle stress held at 28 to 30 draw calls, the local playtest fingerprint was ready, and the production dependency audit reports zero vulnerabilities.
+- 2026-07-16: Promoted immutable automated-release candidate `be7b49e02a1a0907f409199473d2abee8b50cef9` after the clean 303-test/32-scenario gate. The local E2M8 playtest report sampled 570 frames at 16.5 ms median / 33.5 ms p95 with a ready candidate fingerprint and no transport or persistence. Pages run `29506524733` deployed the 3,660-file, 74,352,791-byte committed tree whose manifest SHA-256 is `a1a7be0b6101294abe568bcdc52d6378d9a710cec32ae3806344545df3b715ec`; six raw candidate files match live bytes, and Chromium reaches E1M1 with movement, firing, authored audio, no debug API, and no console/network failures. The four external human signoffs remain open.

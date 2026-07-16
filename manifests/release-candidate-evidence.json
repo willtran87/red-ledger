@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "recordedAtUtc": "2026-07-16T12:18:16Z",
-  "candidateCommit": "694b12b24758f3e6c95453e5cf1ab34623fd63dc",
+  "recordedAtUtc": "2026-07-16T14:29:17Z",
+  "candidateCommit": "be7b49e02a1a0907f409199473d2abee8b50cef9",
   "productionUrl": "https://willtran87.github.io/red-ledger/",
   "toolchain": {
     "node": "20.20.2",
@@ -27,13 +27,13 @@
     },
     "log": {
       "path": "manifests/release-candidate-preflight.txt",
-      "sha256": "2e5b29e2f874e72e4b2aee5e3399b50231a422dfc922f80f257ff4f01f58d5d9"
+      "sha256": "c4e692e7e422379b6c814b7632afcac446f67a8ff717443df71ec1dc0a93695f"
     }
   },
   "automatedCoverage": {
-    "unitAndDataTestFiles": 29,
-    "unitAndDataTests": 270,
-    "registeredBrowserScenarios": 31,
+    "unitAndDataTestFiles": 32,
+    "unitAndDataTests": 303,
+    "registeredBrowserScenarios": 32,
     "browserEngines": [
       "chromium",
       "firefox",
@@ -45,23 +45,34 @@
   },
   "performanceSample": {
     "renderer": "Playwright Chromium SwiftShader",
-    "readyMilliseconds": 3327,
+    "readyMilliseconds": 3638,
     "activeHostiles": 28,
-    "frames": 460,
-    "meanFrameMilliseconds": 21.8,
-    "p95FrameMilliseconds": 49.9,
-    "residentTextures": 92,
+    "frames": 550,
+    "meanFrameMilliseconds": 18.2,
+    "p95FrameMilliseconds": 33.3,
+    "residentTextures": 96,
     "particleBaselineDrawCalls": 28,
     "particleStressDrawCalls": 30
   },
+  "localPlaytestReportSample": {
+    "map": "E2M8",
+    "frames": 570,
+    "medianFrameMilliseconds": 16.5,
+    "p95FrameMilliseconds": 33.5,
+    "worstFrameMilliseconds": 216.7,
+    "candidateAssetStatus": "ready",
+    "localServedBuildFingerprint": "6de4f26b2050bf578c57be101bcf9e180f1d995fdfc4a9d054fd497e66651dad",
+    "transport": "none",
+    "persistent": false
+  },
   "publishedArtifact": {
-    "gitTreeCommit": "694b12b24758f3e6c95453e5cf1ab34623fd63dc",
+    "gitTreeCommit": "be7b49e02a1a0907f409199473d2abee8b50cef9",
     "distFiles": 3659,
     "publishedFilesIncludingNojekyll": 3660,
-    "publishedBytes": 74315596,
+    "publishedBytes": 74352791,
     "sha256Manifest": "manifests/pages-artifact-sha256.txt",
     "manifestAuthority": "raw committed Git tree bytes with checkout conversion disabled",
-    "sha256": "bce4111233bd61500f652b3adeddaab82119a0decf6385f4fdafc61835954f45",
+    "sha256": "a1a7be0b6101294abe568bcdc52d6378d9a710cec32ae3806344545df3b715ec",
     "generator": "tools/generate_pages_artifact_manifest.mjs"
   },
   "authoredAudio": {
@@ -91,25 +102,25 @@
   },
   "deployment": {
     "result": "pass",
-    "pagesRunId": 29497253110,
-    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29497253110",
-    "deployedCommit": "694b12b24758f3e6c95453e5cf1ab34623fd63dc",
+    "pagesRunId": 29506524733,
+    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29506524733",
+    "deployedCommit": "be7b49e02a1a0907f409199473d2abee8b50cef9",
     "httpsEnforced": true,
     "liveByteChecks": [
       {
         "path": "index.html",
-        "bytes": 17794,
-        "sha256": "e56f29f60f56cf3a697575f5749cb033b0013f178b9634d95ed0ee7b5abfd1f6"
+        "bytes": 18782,
+        "sha256": "d5258fe91f9430de480e9c8571383f8bc56904e7690c6fb710a68b519667d9ff"
       },
       {
-        "path": "assets/index-CaElIiws.js",
-        "bytes": 944067,
-        "sha256": "e408173bc0d08195d5eefda51f5b6339ef109935ab3d5eec985c1b2b043225b4"
+        "path": "assets/index-DpTO4A4_.js",
+        "bytes": 978928,
+        "sha256": "486a305a1901c6f7a7cff9903931c7900999407a79a6e4620c85492568baee6a"
       },
       {
-        "path": "assets/index-DhOn4lwA.css",
-        "bytes": 33061,
-        "sha256": "7822d1b727667aee59b88fa1ac04d294322f5efa3f9cd1f36a4c655a0fc3b3b7"
+        "path": "assets/index-Dm5icapR.css",
+        "bytes": 34407,
+        "sha256": "c0f797a6033eebd92bc12ec20188518177b76641bb6c0328a03f4391b28de8e4"
       },
       {
         "path": "audio/audio-library.json",
@@ -135,7 +146,7 @@
       "movementPassed": true,
       "firePassed": true,
       "audioSource": "authored",
-      "loadedSfxShards": 4,
+      "loadedSfxShards": 5,
       "decodedLongFormTracks": 0,
       "consoleOrNetworkFailures": 0,
       "developmentDebugApiExposed": false
