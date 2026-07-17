@@ -11,12 +11,14 @@ import {
   PersistenceSystem,
   SAVE_SCHEMA_VERSION,
   checksum,
+  mapRecordKey,
   validateDemo,
   type SaveMetadataInput,
 } from './PersistenceSystem';
 import {
   CURRENT_CAMPAIGN_V2_FIXTURE,
   CURRENT_CAMPAIGN_V3_FIXTURE,
+  CURRENT_CAMPAIGN_V4_FIXTURE,
   CURRENT_SAVE_V1_FIXTURE,
   LEGACY_CAMPAIGN_V1_FIXTURE,
 } from './__fixtures__/persistenceFixtures';
@@ -655,38 +657,107 @@ describe('PersistenceSystem campaign unlocks', () => {
   it('merges stronger performance records and keeps difficulties independent', () => {
     const system = makeSystem(new MemoryStorage(), [100, 200, 300]);
     system.completeMap('E1M1', {
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 180, parSeconds: 200, score: 4200, bestChain: 4,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 180, parSeconds: 200, score: 4200, bestChain: 4,
       killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B',
     });
     system.completeMap('E1M1', {
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 220, parSeconds: 200, score: 5200, bestChain: 3,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 220, parSeconds: 200, score: 5200, bestChain: 3,
       killsPercent: 100, itemsPercent: 60, secretsPercent: 100, grade: 'A',
     });
     system.completeMap('E1M1', {
-      mapId: 'E1M1', difficulty: 'orientation', elapsed: 140, parSeconds: 200, score: 2800, bestChain: 2,
+      mapId: 'E1M1', difficulty: 'orientation', runVariant: 'fresh-start', elapsed: 140, parSeconds: 200, score: 2800, bestChain: 2,
       killsPercent: 80, itemsPercent: 50, secretsPercent: 0, grade: 'C',
     });
 
-    expect(system.campaignUnlocks().records['E1M1:field-adjuster']).toMatchObject({
+    expect(system.campaignUnlocks().records['E1M1:field-adjuster:fresh-start']).toMatchObject({
       completions: 2, bestTime: 180, highScore: 5200, bestChain: 4, bestKillsPercent: 100,
       bestItemsPercent: 70, bestSecretsPercent: 100, bestGrade: 'A', parBeaten: true, achievedAt: 200,
     });
-    expect(system.campaignUnlocks().records['E1M1:orientation']).toMatchObject({ completions: 1, bestTime: 140, bestGrade: 'C' });
+    expect(system.campaignUnlocks().records['E1M1:orientation:fresh-start']).toMatchObject({ completions: 1, bestTime: 140, bestGrade: 'C' });
+  });
+
+  it('keeps fresh-start and campaign-carry records independent while merging the same track', () => {
+    const system = makeSystem(new MemoryStorage(), [100, 200, 300]);
+    const performance = (runVariant: 'fresh-start' | 'campaign-carry', score: number, elapsed: number) => ({
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant, elapsed, parSeconds: 200, score, bestChain: 4,
+      killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B' as const,
+    });
+
+    system.completeMap('E1M1', performance('fresh-start', 4_000, 180));
+    system.completeMap('E1M1', performance('campaign-carry', 9_000, 140));
+    system.completeMap('E1M1', performance('fresh-start', 5_000, 170));
+
+    expect(mapRecordKey('E1M1', 'field-adjuster', 'fresh-start'))
+      .toBe('E1M1:field-adjuster:fresh-start');
+    expect(system.campaignUnlocks().records).toMatchObject({
+      'E1M1:field-adjuster:fresh-start': {
+        runVariant: 'fresh-start', completions: 2, bestTime: 170, highScore: 5_000,
+      },
+      'E1M1:field-adjuster:campaign-carry': {
+        runVariant: 'campaign-carry', completions: 1, bestTime: 140, highScore: 9_000,
+      },
+    });
+  });
+
+  it('rejects completion records whose performance belongs to a different map', () => {
+    const mismatchedPerformance = {
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start' as const,
+      elapsed: 180, parSeconds: 200, score: 4_000, bestChain: 4,
+      killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B' as const,
+    };
+    const direct = makeSystem(new MemoryStorage(), [100], 'direct-tab');
+    expect(() => direct.completeMap('E1M2', mismatchedPerformance))
+      .toThrow('Performance map E1M1 does not match completed map E1M2');
+    expect(direct.campaignUnlocks()).toMatchObject({ completedMaps: [], records: {} });
+
+    const storage = new MemoryStorage();
+    const unsigned = {
+      schema: 'red-ledger-campaign-mutation' as const,
+      version: 2 as const,
+      id: 'mismatched-map-journal',
+      writerId: 'bad-tab',
+      createdAt: 100,
+      mutation: { type: 'complete-map' as const, mapId: 'E1M2', performance: mismatchedPerformance },
+    };
+    storage.setItem('test:campaign-mutation:mismatched-map-journal', JSON.stringify({
+      ...unsigned,
+      checksum: checksum(unsigned),
+    }));
+    expect(makeSystem(storage).campaignUnlocks()).toMatchObject({ completedMaps: [], records: {} });
+  });
+
+  it('reconciles separate run variants across tabs without letting either track absorb the other', () => {
+    const freshBranch = new MemoryStorage();
+    const carryBranch = new MemoryStorage();
+    const performance = (runVariant: 'fresh-start' | 'campaign-carry', score: number) => ({
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant, elapsed: 180, parSeconds: 200, score, bestChain: 4,
+      killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B' as const,
+    });
+    makeSystem(freshBranch, [100], 'fresh-tab').completeMap('E1M1', performance('fresh-start', 4_000));
+    makeSystem(carryBranch, [110], 'carry-tab').completeMap('E1M1', performance('campaign-carry', 8_000));
+
+    const mergedStorage = new MemoryStorage();
+    mergedStorage.setItem('test:campaign', carryBranch.getItem('test:campaign')!);
+    mergedStorage.setItem('test:campaign-recovery', freshBranch.getItem('test:campaign')!);
+    const records = makeSystem(mergedStorage, [200], 'merge-tab').campaignUnlocks().records;
+
+    expect(records['E1M1:field-adjuster:fresh-start']).toMatchObject({ completions: 1, highScore: 4_000 });
+    expect(records['E1M1:field-adjuster:campaign-carry']).toMatchObject({ completions: 1, highScore: 8_000 });
   });
 
   it('requires every mastery condition in one run instead of combining complementary personal bests', () => {
     const storage = new MemoryStorage();
     const system = makeSystem(storage, [100, 200, 300]);
     system.completeMap('E1M1', {
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 150, parSeconds: 200, score: 6_000, bestChain: 6,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 150, parSeconds: 200, score: 6_000, bestChain: 6,
       killsPercent: 100, itemsPercent: 60, secretsPercent: 100, grade: 'S',
     });
     system.completeMap('E1M1', {
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 160, parSeconds: 200, score: 5_500, bestChain: 5,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 160, parSeconds: 200, score: 5_500, bestChain: 5,
       killsPercent: 80, itemsPercent: 100, secretsPercent: 100, grade: 'S',
     });
 
-    const synthesized = system.campaignUnlocks().records['E1M1:field-adjuster'];
+    const synthesized = system.campaignUnlocks().records['E1M1:field-adjuster:fresh-start'];
     expect(synthesized).toMatchObject({
       bestKillsPercent: 100,
       bestItemsPercent: 100,
@@ -697,12 +768,12 @@ describe('PersistenceSystem campaign unlocks', () => {
     expect(synthesized).not.toHaveProperty('masteryProof');
 
     system.completeMap('E1M1', {
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 140, parSeconds: 200, score: 7_000, bestChain: 8,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 140, parSeconds: 200, score: 7_000, bestChain: 8,
       killsPercent: 100, itemsPercent: 100, secretsPercent: 100, grade: 'S',
     });
-    const mastered = makeSystem(storage, [400], 'fresh-tab').campaignUnlocks().records['E1M1:field-adjuster'];
+    const mastered = makeSystem(storage, [400], 'fresh-tab').campaignUnlocks().records['E1M1:field-adjuster:fresh-start'];
     expect(mastered.masteryProof).toEqual({
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 140, parSeconds: 200, score: 7_000, bestChain: 8,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 140, parSeconds: 200, score: 7_000, bestChain: 8,
       killsPercent: 100, itemsPercent: 100, secretsPercent: 100, grade: 'S', achievedAt: 300,
     });
   });
@@ -711,29 +782,29 @@ describe('PersistenceSystem campaign unlocks', () => {
     const firstBranch = new MemoryStorage();
     const secondBranch = new MemoryStorage();
     makeSystem(firstBranch, [100], 'tab-a').completeMap('E1M1', {
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 150, parSeconds: 200, score: 6_000, bestChain: 6,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 150, parSeconds: 200, score: 6_000, bestChain: 6,
       killsPercent: 100, itemsPercent: 60, secretsPercent: 100, grade: 'S',
     });
     makeSystem(secondBranch, [110], 'tab-b').completeMap('E1M1', {
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 160, parSeconds: 200, score: 5_500, bestChain: 5,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 160, parSeconds: 200, score: 5_500, bestChain: 5,
       killsPercent: 80, itemsPercent: 100, secretsPercent: 100, grade: 'S',
     });
 
     const mergedStorage = new MemoryStorage();
     mergedStorage.setItem('test:campaign', secondBranch.getItem('test:campaign')!);
     mergedStorage.setItem('test:campaign-recovery', firstBranch.getItem('test:campaign')!);
-    const merged = makeSystem(mergedStorage, [200], 'tab-c').campaignUnlocks().records['E1M1:field-adjuster'];
+    const merged = makeSystem(mergedStorage, [200], 'tab-c').campaignUnlocks().records['E1M1:field-adjuster:fresh-start'];
 
     expect(merged).toMatchObject({ bestKillsPercent: 100, bestItemsPercent: 100, bestSecretsPercent: 100 });
     expect(merged).not.toHaveProperty('masteryProof');
 
     const masteredBranch = new MemoryStorage();
     makeSystem(masteredBranch, [120], 'tab-mastered').completeMap('E1M1', {
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 140, parSeconds: 200, score: 7_000, bestChain: 8,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 140, parSeconds: 200, score: 7_000, bestChain: 8,
       killsPercent: 100, itemsPercent: 100, secretsPercent: 100, grade: 'S',
     });
     mergedStorage.setItem('test:campaign-recovery', masteredBranch.getItem('test:campaign')!);
-    expect(makeSystem(mergedStorage, [300], 'tab-d').campaignUnlocks().records['E1M1:field-adjuster'].masteryProof)
+    expect(makeSystem(mergedStorage, [300], 'tab-d').campaignUnlocks().records['E1M1:field-adjuster:fresh-start'].masteryProof)
       .toMatchObject({ achievedAt: 120, elapsed: 140, grade: 'S' });
   });
 
@@ -757,22 +828,44 @@ describe('PersistenceSystem campaign unlocks', () => {
     expect(storage.getItem('test:campaign')).toBe(original);
   });
 
-  it('loads the frozen current campaign schema and writes version 3 after legacy progress changes', () => {
+  it('loads schema 4 and classifies schema 1-3 records as legacy without inventing run conditions', () => {
     const currentStorage = new MemoryStorage();
-    currentStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V3_FIXTURE));
+    currentStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V4_FIXTURE));
     expect(PERSISTENCE_COMPATIBILITY_POLICY.campaign).toMatchObject({
-      currentVersion: 3,
+      currentVersion: 4,
       oldestSupportedVersion: 1,
+      legacyDefaults: { runVariant: 'legacy-unclassified' },
     });
     expect(makeSystem(currentStorage).campaignUnlocks()).toMatchObject({
       completedEpisodes: ['first-notice'],
       discoveredSecretMaps: ['E1M9'],
-      records: { 'E1M1:field-adjuster': { bestGrade: 'S', highScore: 5_000, masteryProof: { achievedAt: 1_710_000_000_200 } } },
+      records: {
+        'E1M1:field-adjuster:fresh-start': {
+          runVariant: 'fresh-start',
+          bestGrade: 'S',
+          highScore: 5_000,
+          masteryProof: { runVariant: 'fresh-start', achievedAt: 1_710_000_000_200 },
+        },
+      },
+    });
+
+    const schemaThreeStorage = new MemoryStorage();
+    schemaThreeStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V3_FIXTURE));
+    expect(makeSystem(schemaThreeStorage).campaignUnlocks()).toMatchObject({
+      records: {
+        'E1M1:field-adjuster:legacy-unclassified': {
+          runVariant: 'legacy-unclassified',
+          masteryProof: { runVariant: 'legacy-unclassified', achievedAt: 1_710_000_000_200 },
+        },
+      },
     });
 
     const schemaTwoStorage = new MemoryStorage();
     schemaTwoStorage.setItem('test:campaign', JSON.stringify(CURRENT_CAMPAIGN_V2_FIXTURE));
-    expect(makeSystem(schemaTwoStorage).campaignUnlocks().records['E1M1:field-adjuster']).not.toHaveProperty('masteryProof');
+    expect(makeSystem(schemaTwoStorage).campaignUnlocks().records['E1M1:field-adjuster:legacy-unclassified'])
+      .toMatchObject({ runVariant: 'legacy-unclassified' });
+    expect(makeSystem(schemaTwoStorage).campaignUnlocks().records['E1M1:field-adjuster:legacy-unclassified'])
+      .not.toHaveProperty('masteryProof');
 
     const { checksum: _schemaTwoChecksum, ...schemaTwoUnsigned } = CURRENT_CAMPAIGN_V2_FIXTURE;
     const schemaTwoWithUntrustedProof = {
@@ -792,7 +885,8 @@ describe('PersistenceSystem campaign unlocks', () => {
       ...schemaTwoWithUntrustedProof,
       checksum: checksum(schemaTwoWithUntrustedProof),
     }));
-    expect(makeSystem(schemaTwoStorage).campaignUnlocks().records['E1M1:field-adjuster']).not.toHaveProperty('masteryProof');
+    expect(makeSystem(schemaTwoStorage).campaignUnlocks().records['E1M1:field-adjuster:legacy-unclassified'])
+      .not.toHaveProperty('masteryProof');
 
     const legacyStorage = new MemoryStorage();
     legacyStorage.setItem('test:campaign', JSON.stringify(LEGACY_CAMPAIGN_V1_FIXTURE));
@@ -809,14 +903,14 @@ describe('PersistenceSystem campaign unlocks', () => {
     const restored = makeSystem(storage).campaignUnlocks();
 
     expect(restored.completedMaps).toEqual(CURRENT_CAMPAIGN_V2_FIXTURE.progress.completedMaps);
-    expect(restored.records['E1M1:field-adjuster']).not.toHaveProperty('masteryProof');
+    expect(restored.records['E1M1:field-adjuster:legacy-unclassified']).not.toHaveProperty('masteryProof');
     expect(storage.getItem('test:campaign-recovery-v2')).toBeNull();
-    expect(JSON.parse(storage.getItem('test:campaign-recovery-v3')!)).toMatchObject({ version: 3 });
+    expect(JSON.parse(storage.getItem('test:campaign-recovery-v4')!)).toMatchObject({ version: 4 });
   });
 
   it('accepts unknown current campaign fields and preserves future or corrupt documents untouched', () => {
     const compatibleStorage = new MemoryStorage();
-    const { checksum: _fixtureChecksum, ...fixtureUnsigned } = CURRENT_CAMPAIGN_V3_FIXTURE;
+    const { checksum: _fixtureChecksum, ...fixtureUnsigned } = CURRENT_CAMPAIGN_V4_FIXTURE;
     const compatibleUnsigned = {
       ...fixtureUnsigned,
       extension: { source: 'later-compatible-build' },
@@ -852,12 +946,51 @@ describe('PersistenceSystem campaign unlocks', () => {
     }
   });
 
+  it('rejects schema-4 records whose key, record, or mastery proof disagree about the run variant', () => {
+    const { checksum: _fixtureChecksum, ...fixtureUnsigned } = CURRENT_CAMPAIGN_V4_FIXTURE;
+    const key = 'E1M1:field-adjuster:fresh-start';
+    const record = fixtureUnsigned.progress.records[key];
+    const invalidDocuments = [
+      {
+        ...fixtureUnsigned,
+        progress: { ...fixtureUnsigned.progress, records: { 'E1M1:field-adjuster:campaign-carry': record } },
+      },
+      {
+        ...fixtureUnsigned,
+        progress: {
+          ...fixtureUnsigned.progress,
+          records: { [key]: { ...record, runVariant: 'campaign-carry' as const } },
+        },
+      },
+      {
+        ...fixtureUnsigned,
+        progress: {
+          ...fixtureUnsigned.progress,
+          records: {
+            [key]: {
+              ...record,
+              masteryProof: { ...record.masteryProof, runVariant: 'campaign-carry' as const },
+            },
+          },
+        },
+      },
+    ];
+
+    invalidDocuments.forEach((unsigned) => {
+      const raw = JSON.stringify({ ...unsigned, checksum: checksum(unsigned) });
+      const storage = new MemoryStorage();
+      storage.setItem('test:campaign', raw);
+      expect(makeSystem(storage).campaignUnlocks().records).toEqual({});
+      expect(storage.getItem('test:campaign')).toBe(raw);
+    });
+  });
+
   it('checkpoints campaign mutations in a bounded recovery record when the canonical is protected', () => {
     vi.useFakeTimers();
-    const { checksum: _checksum, ...currentUnsigned } = CURRENT_CAMPAIGN_V3_FIXTURE;
+    const { checksum: _checksum, ...currentUnsigned } = CURRENT_CAMPAIGN_V4_FIXTURE;
     const futureUnsigned = { ...currentUnsigned, version: CAMPAIGN_SCHEMA_VERSION + 1 };
     const futureRaw = JSON.stringify({ ...futureUnsigned, checksum: checksum(futureUnsigned) });
-    const invalidChecksumRaw = JSON.stringify({ ...CURRENT_CAMPAIGN_V3_FIXTURE, checksum: '00000000' });
+    const invalidChecksumRaw = JSON.stringify({ ...CURRENT_CAMPAIGN_V4_FIXTURE, checksum: '00000000' });
 
     try {
       for (const raw of ['{broken', invalidChecksumRaw, futureRaw]) {
@@ -904,12 +1037,12 @@ describe('PersistenceSystem campaign unlocks', () => {
       expect(system.storageStatus().mode).toBe('persistent');
       expect(storage.getItem('test:campaign')).toBe(futureRaw);
       expect(storage.getItem('test:campaign-recovery')).toBe(damagedRecoveryRaw);
-      expect(storage.getItem('test:campaign-recovery-v3')).not.toBeNull();
+      expect(storage.getItem('test:campaign-recovery-v4')).not.toBeNull();
 
       vi.advanceTimersByTime(5_000);
 
       expect(storageKeys(storage, 'test:campaign-mutation:')).toEqual([]);
-      expect(JSON.parse(storage.getItem('test:campaign-recovery-v3')!).appliedMutations).toEqual([]);
+      expect(JSON.parse(storage.getItem('test:campaign-recovery-v4')!).appliedMutations).toEqual([]);
       expect(makeSystem(storage, [400], 'fresh-tab').campaignUnlocks().completedMaps).toEqual(['E1M2', 'E1M3']);
       expect(storage.getItem('test:campaign')).toBe(futureRaw);
       expect(storage.getItem('test:campaign-recovery')).toBe(damagedRecoveryRaw);
@@ -956,11 +1089,72 @@ describe('PersistenceSystem campaign unlocks', () => {
     expect(system.loadManual(1)).toMatchObject({ status: 'valid', state: { map: 'SAFE' } });
   });
 
+  it('normalizes version-1 performance journals to legacy and writes new journals as version 2', () => {
+    const storage = new MemoryStorage();
+    const legacyUnsigned = {
+      schema: 'red-ledger-campaign-mutation' as const,
+      version: 1 as const,
+      id: 'legacy-journal',
+      writerId: 'old-tab',
+      createdAt: 100,
+      mutation: {
+        type: 'complete-map' as const,
+        mapId: 'E1M1',
+        performance: {
+          mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 180, parSeconds: 200, score: 4_000, bestChain: 4,
+          killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B' as const,
+        },
+      },
+    };
+    storage.setItem('test:campaign-mutation:legacy-journal', JSON.stringify({
+      ...legacyUnsigned,
+      checksum: checksum(legacyUnsigned),
+    }));
+
+    const system = makeSystem(storage, [200], 'new-tab');
+    expect(system.campaignUnlocks().records['E1M1:field-adjuster:legacy-unclassified'])
+      .toMatchObject({ runVariant: 'legacy-unclassified', completions: 1, highScore: 4_000 });
+
+    system.completeMap('E1M2', {
+      mapId: 'E1M2', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 200, parSeconds: 220,
+      score: 5_000, bestChain: 5, killsPercent: 100, itemsPercent: 80, secretsPercent: 0, grade: 'A',
+    });
+    const currentJournal = storageKeys(storage, 'test:campaign-mutation:')
+      .map((key) => JSON.parse(storage.getItem(key)!))
+      .find((journal) => journal.id !== 'legacy-journal');
+    expect(currentJournal).toMatchObject({ version: 2, mutation: { performance: { runVariant: 'fresh-start' } } });
+  });
+
+  it('ignores a checksum-valid version-2 journal that omits its required run variant', () => {
+    const storage = new MemoryStorage();
+    const unsigned = {
+      schema: 'red-ledger-campaign-mutation' as const,
+      version: 2 as const,
+      id: 'invalid-current-journal',
+      writerId: 'bad-tab',
+      createdAt: 100,
+      mutation: {
+        type: 'complete-map' as const,
+        mapId: 'E1M1',
+        performance: {
+          mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 180, parSeconds: 200, score: 4_000, bestChain: 4,
+          killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B' as const,
+        },
+      },
+    };
+    storage.setItem('test:campaign-mutation:invalid-current-journal', JSON.stringify({
+      ...unsigned,
+      checksum: checksum(unsigned),
+    }));
+
+    expect(makeSystem(storage).campaignUnlocks()).toMatchObject({ completedMaps: [], records: {} });
+  });
+
   it('reconciles checksum-valid mutation journals from simultaneous campaign branches exactly once', () => {
     const firstBranch = new MemoryStorage();
     const secondBranch = new MemoryStorage();
     const performance = (score: number): Parameters<PersistenceSystem<TestState>['completeMap']>[1] => ({
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 180, parSeconds: 200, score, bestChain: 4,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start', elapsed: 180, parSeconds: 200, score, bestChain: 4,
       killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B',
     });
     makeSystem(firstBranch, [100], 'tab-a').completeMap('E1M1', performance(4_000));
@@ -974,19 +1168,19 @@ describe('PersistenceSystem campaign unlocks', () => {
     expect(system.campaignUnlocks()).toMatchObject({
       completedMaps: ['E1M1'],
       discoveredSecretMaps: ['E1M9'],
-      records: { 'E1M1:field-adjuster': { completions: 2, highScore: 5_000 } },
+      records: { 'E1M1:field-adjuster:fresh-start': { completions: 2, highScore: 5_000 } },
     });
-    expect(system.campaignUnlocks().records['E1M1:field-adjuster'].completions).toBe(2);
+    expect(system.campaignUnlocks().records['E1M1:field-adjuster:fresh-start'].completions).toBe(2);
     system.unlockEpisode('exclusions-apply');
     const persisted = makeSystem(mergedStorage, [300], 'tab-d').campaignUnlocks();
-    expect(persisted.records['E1M1:field-adjuster'].completions).toBe(2);
+    expect(persisted.records['E1M1:field-adjuster:fresh-start'].completions).toBe(2);
     expect(persisted.unlockedEpisodes).toContain('exclusions-apply');
   });
 
   it('uses the external commit ledger when an older writer drops applied mutation ids', () => {
     const storage = new MemoryStorage();
     const performance = {
-      mapId: 'E1M1', difficulty: 'field-adjuster', elapsed: 180, parSeconds: 200, score: 4_000, bestChain: 4,
+      mapId: 'E1M1', difficulty: 'field-adjuster', runVariant: 'fresh-start' as const, elapsed: 180, parSeconds: 200, score: 4_000, bestChain: 4,
       killsPercent: 90, itemsPercent: 70, secretsPercent: 0, grade: 'B' as const,
     };
     makeSystem(storage, [100], 'new-tab').completeMap('E1M1', performance);
@@ -995,7 +1189,7 @@ describe('PersistenceSystem campaign unlocks', () => {
     storage.setItem('test:campaign', JSON.stringify({ ...olderUnsigned, checksum: checksum(olderUnsigned) }));
 
     const restored = makeSystem(storage, [200], 'later-tab').campaignUnlocks();
-    expect(restored.records['E1M1:field-adjuster'].completions).toBe(1);
+    expect(restored.records['E1M1:field-adjuster:fresh-start'].completions).toBe(1);
     expect(restored.completedMaps).toEqual(['E1M1']);
   });
 
@@ -1035,7 +1229,7 @@ describe('PersistenceSystem campaign unlocks', () => {
   it.each([
     { target: 'test:campaign', expectedCheckpoint: 'test:campaign-recovery', externalRaw: '{"schema":"red-ledger-campaign","version":999,"primary":"retained"}' },
     { target: 'test:campaign', expectedCheckpoint: 'test:campaign-recovery', externalRaw: '' },
-    { target: 'test:campaign-recovery', expectedCheckpoint: 'test:campaign-recovery-v3', externalRaw: '{"schema":"red-ledger-campaign","version":999,"recovery":"retained"}' },
+    { target: 'test:campaign-recovery', expectedCheckpoint: 'test:campaign-recovery-v4', externalRaw: '{"schema":"red-ledger-campaign","version":999,"recovery":"retained"}' },
   ])('relocates a volatile $target overlay before external bytes can be overwritten', ({ target, expectedCheckpoint, externalRaw }) => {
     vi.useFakeTimers();
     try {

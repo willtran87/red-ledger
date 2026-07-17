@@ -142,6 +142,24 @@ export function menuAxisEngaged(value: number, wasEngaged: boolean): boolean {
   return wasEngaged ? value > .22 : value >= .4;
 }
 
+export interface MenuCommandState {
+  down: boolean;
+  axisEngaged: boolean;
+}
+
+export function advanceMenuCommand(
+  axisValue: number,
+  buttonDown: boolean,
+  state: Readonly<MenuCommandState>,
+): { state: MenuCommandState; fire: boolean } {
+  const axisEngaged = menuAxisEngaged(axisValue, state.axisEngaged);
+  const down = buttonDown || axisEngaged;
+  return {
+    state: { down, axisEngaged },
+    fire: down && !state.down,
+  };
+}
+
 export const MENU_REPEAT_DELAY_MS = 340;
 export const MENU_REPEAT_INTERVAL_MS = 90;
 
@@ -186,7 +204,29 @@ const PULSE_ACTIONS = new Set<InputAction>([
   'weapon-1', 'weapon-2', 'weapon-3', 'weapon-4', 'weapon-5', 'weapon-6', 'weapon-7', 'weapon-8',
   'quick-save', 'quick-load', 'fullscreen', 'pause',
 ]);
+const MENU_COMMAND_ACTIONS = ['menu-confirm', 'menu-back'] as const satisfies readonly InputAction[];
+const MENU_DIRECTION_ACTIONS = ['menu-up', 'menu-down', 'menu-left', 'menu-right'] as const satisfies readonly InputAction[];
 const MINIMUM_PULSE_MS = 40;
+
+export interface MenuDirectionCaptureSeed {
+  index: number;
+  axisEngaged: boolean;
+  state: MenuRepeatState;
+}
+
+export function menuDirectionCaptureSeed(
+  action: InputAction,
+  binding: Readonly<InputBinding>,
+): MenuDirectionCaptureSeed | undefined {
+  if (binding.device !== 'gamepad-axis' && binding.device !== 'gamepad-button') return undefined;
+  const index = MENU_DIRECTION_ACTIONS.findIndex((candidate) => candidate === action);
+  if (index < 0) return undefined;
+  return {
+    index,
+    axisEngaged: binding.device === 'gamepad-axis',
+    state: { down: true, nextAt: Number.POSITIVE_INFINITY },
+  };
+}
 
 export class InputSystem {
   readonly keys = new Set<string>();
@@ -212,9 +252,11 @@ export class InputSystem {
   private menuGamepadButtons: boolean[] = [];
   private menuAxisActions: boolean[] = [];
   private menuDirectionStates: MenuRepeatState[] = [];
+  private readonly menuCommandStates = new Map<InputAction, MenuCommandState>();
   private captureGamepadAxes: boolean[] = [];
   private menuPollFrame = 0;
   private controllerConnected = false;
+  private controllerReconnectPending = false;
   private lastInputDevice?: InputActionEvent['source'];
   private touchLookPointer?: number;
   private controllerDeadzone = DEFAULT_INPUT_PREFERENCES.controllerDeadzone;
@@ -335,6 +377,7 @@ export class InputSystem {
       this.menuGamepadButtons = [];
       this.menuAxisActions = [];
       this.menuDirectionStates = [];
+      this.menuCommandStates.clear();
       this.captureGamepadAxes = [];
       if (this.menuPollFrame) cancelAnimationFrame(this.menuPollFrame);
       this.menuPollFrame = 0;
@@ -444,6 +487,7 @@ export class InputSystem {
       this.menuGamepadButtons = [];
       this.menuAxisActions = [];
       this.menuDirectionStates = [];
+      this.menuCommandStates.clear();
       this.captureGamepadAxes = [];
       return;
     }
@@ -558,8 +602,7 @@ export class InputSystem {
   }
 
   private pollMenuDirections(axes: readonly number[], buttons: readonly GamepadButton[], now: number): void {
-    const menuActions: InputAction[] = ['menu-up', 'menu-down', 'menu-left', 'menu-right'];
-    menuActions.forEach((action, index) => {
+    MENU_DIRECTION_ACTIONS.forEach((action, index) => {
       const axisDown = menuAxisEngaged(this.controllerAxisValue(action, axes), this.menuAxisActions[index] ?? false);
       this.menuAxisActions[index] = axisDown;
       const down = axisDown || this.bindings.isGamepadButtonDown(action, buttons);
@@ -589,6 +632,7 @@ export class InputSystem {
       this.menuGamepadButtons = [];
       this.menuAxisActions = [];
       this.menuDirectionStates = [];
+      this.menuCommandStates.clear();
       this.captureGamepadAxes = [];
       return;
     }
@@ -605,15 +649,7 @@ export class InputSystem {
         }
       }
     } else {
-      pressed.forEach((value, index) => {
-        if (!value || this.menuGamepadButtons[index]) return;
-        for (const action of this.bindings.gamepadButtonActions(index)) {
-          const menuAction = MENU_ACTIONS[action];
-          if (menuAction && menuAction !== 'up' && menuAction !== 'down' && menuAction !== 'left' && menuAction !== 'right') {
-            this.emitMenuNavigation(menuAction, 'gamepad', false);
-          }
-        }
-      });
+      this.pollMenuCommands(gamepad.axes, gamepad.buttons);
       this.pollMenuDirections(gamepad.axes, gamepad.buttons, performance.now());
     }
     this.menuGamepadButtons = pressed;
@@ -626,6 +662,20 @@ export class InputSystem {
     window.dispatchEvent(new CustomEvent<MenuNavigationEvent>('input-menu-navigation', { detail }));
   }
 
+  private pollMenuCommands(axes: readonly number[], buttons: readonly GamepadButton[]): void {
+    for (const action of MENU_COMMAND_ACTIONS) {
+      const transition = advanceMenuCommand(
+        this.controllerAxisValue(action, axes),
+        this.bindings.isGamepadButtonDown(action, buttons),
+        this.menuCommandStates.get(action) ?? { down: false, axisEngaged: false },
+      );
+      this.menuCommandStates.set(action, transition.state);
+      if (transition.fire && this.menuNavigationEnabled) {
+        this.emitMenuNavigation(MENU_ACTIONS[action]!, 'gamepad', false);
+      }
+    }
+  }
+
   private notifyInputDevice(source: InputActionEvent['source']): void {
     if (source === this.lastInputDevice) return;
     this.lastInputDevice = source;
@@ -634,17 +684,35 @@ export class InputSystem {
 
   private updateControllerConnection(connected: boolean): void {
     if (connected) {
+      if (this.controllerConnected) return;
       this.controllerConnected = true;
+      if (this.controllerReconnectPending) {
+        this.controllerReconnectPending = false;
+        window.dispatchEvent(new Event('input-controller-reconnected'));
+      }
       return;
     }
     if (!this.controllerConnected) return;
     this.controllerConnected = false;
+    this.controllerReconnectPending = true;
     window.dispatchEvent(new Event('input-controller-disconnected'));
   }
 
   private finishCapture(binding: InputBinding): void {
     const detail = this.bindings.capture(binding);
-    if (detail) window.dispatchEvent(new CustomEvent<CaptureResult>('input-binding-captured', { detail }));
+    if (!detail) return;
+    const directionSeed = menuDirectionCaptureSeed(detail.action, binding);
+    if (directionSeed) {
+      this.menuAxisActions[directionSeed.index] = directionSeed.axisEngaged;
+      this.menuDirectionStates[directionSeed.index] = directionSeed.state;
+    } else if (MENU_COMMAND_ACTIONS.includes(detail.action as typeof MENU_COMMAND_ACTIONS[number])
+      && (binding.device === 'gamepad-axis' || binding.device === 'gamepad-button')) {
+      this.menuCommandStates.set(detail.action, {
+        down: true,
+        axisEngaged: binding.device === 'gamepad-axis',
+      });
+    }
+    window.dispatchEvent(new CustomEvent<CaptureResult>('input-binding-captured', { detail }));
   }
 
   private browserStorage(): BindingStorage | null {

@@ -6,7 +6,7 @@ import { actorIsEnabled } from './audit-helpers';
 const countEnemies = (map: (typeof CAMPAIGN.maps)[keyof typeof CAMPAIGN.maps], placement: 'easy' | 'normal' | 'hard') =>
   map.actors.filter((actor) => actor.type === 'enemy' && actorIsEnabled(actor, placement)).length;
 
-describe('difficulty placement and supply contracts', () => {
+describe('difficulty placement and ammunition contracts', () => {
   it('maps all five named tiers to the intended serialized placement layers', () => {
     expect(Object.keys(DIFFICULTY)).toEqual([
       'orientation',
@@ -18,7 +18,7 @@ describe('difficulty placement and supply contracts', () => {
     expect(Object.values(DIFFICULTY).map((difficulty) => difficulty.placement)).toEqual([
       'easy', 'easy', 'normal', 'hard', 'hard',
     ]);
-    expect(Object.values(DIFFICULTY).map((difficulty) => difficulty.supply)).toEqual([
+    expect(Object.values(DIFFICULTY).map((difficulty) => difficulty.ammoSupply)).toEqual([
       1.5, 1.25, 1, 0.8, 0.65,
     ]);
   });
@@ -57,4 +57,3 @@ describe('difficulty placement and supply contracts', () => {
     }
   });
 });
-

@@ -117,7 +117,7 @@ const collectRouteResources = (
   difficulty: GameDifficulty,
 ): AmmoCollectionStats => {
   const stats = { offered: 0, accepted: 0, saturatedPickups: 0 };
-  const multiplier = DIFFICULTY[difficulty].supply;
+  const multiplier = DIFFICULTY[difficulty].ammoSupply;
   for (const actor of map.actors) {
     if (actor.secret || actor.route !== phase || !actorIsEnabled(actor, DIFFICULTY[difficulty].placement)) continue;
     if (!standardReachable(map, actor)) continue;
@@ -777,7 +777,7 @@ describe('deterministic whole-campaign balance model', () => {
       reaction: 1 / .9,
       refire: 1 / .9,
       projectileSpeed: .95,
-      supply: 1.25,
+      ammoSupply: 1.25,
       placement: 'easy',
     });
   });

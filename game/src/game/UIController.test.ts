@@ -1,22 +1,89 @@
 import { describe, expect, it } from 'vitest';
 import { CAMPAIGN } from '../data';
-import type { MapPerformance, MapRecord } from './PersistenceSystem';
+import type { CampaignUnlocks, MapPerformance, MapRecord } from './PersistenceSystem';
 import {
+  activeEffectsPresentation,
+  advanceAssistiveGameplayGuidance,
   automapPanDelta,
   boundedReplayEntries,
+  DIFFICULTY_OPTIONS,
   entryBriefingLabels,
+  entryObjectiveBriefing,
   entryObjectiveCue,
   formatRangeSetting,
+  levelSelectRecordTracks,
+  masteryAggregatePresentation,
   masteryPresentation,
+  milestoneAwardAnnouncement,
   normalizeInterfacePreferences,
   resolveReducedMotionSetting,
   resolveScreenShakeSetting,
+  runVariantUiLabel,
+  trackedIntermissionMastery,
   touchBriefingPadLabels,
 } from './UIController';
+import { deriveMilestones } from './Milestones';
+
+describe('active timed-effect presentation', () => {
+  it('uses a deterministic tactical order with rounded time and progress', () => {
+    const effects = activeEffectsPresentation({
+      goggles: 12.01,
+      forensic: 9.1,
+      binder: 30,
+      rapid: 18.4,
+      hazard: 24.2,
+    });
+
+    expect(effects.map(({ key }) => key)).toEqual(['binder', 'hazard', 'rapid', 'forensic', 'goggles']);
+    expect(effects.map(({ seconds }) => seconds)).toEqual([30, 25, 19, 10, 13]);
+    expect(effects.map(({ progress }) => progress)).toEqual([100, 81, 62, 31, 41]);
+  });
+
+  it('marks five seconds and below urgent while omitting nonpositive or invalid effects', () => {
+    const effects = activeEffectsPresentation({ binder: 5, hazard: 5.01, rapid: 0, forensic: -1, goggles: Number.NaN });
+
+    expect(effects).toHaveLength(2);
+    expect(effects[0]).toMatchObject({ key: 'binder', seconds: 5, urgent: true });
+    expect(effects[1]).toMatchObject({ key: 'hazard', seconds: 6, urgent: false });
+    expect(activeEffectsPresentation({ rapid: Number.POSITIVE_INFINITY })).toEqual([]);
+  });
+});
+
+describe('milestone award announcements', () => {
+  it('announces each newly earned cosmetic reward once and stays silent for an empty diff', () => {
+    const awards = deriveMilestones({
+      unlockedEpisodes: ['first-notice'],
+      completedEpisodes: [],
+      completedMaps: ['E1M1'],
+      discoveredSecretMaps: [],
+      records: {},
+      updatedAt: 1,
+    }).filter(({ earned }) => earned);
+
+    expect(milestoneAwardAnnouncement(awards)).toBe(
+      'Milestone earned: First Notice. Cosmetic seal: First Notice Seal.',
+    );
+    expect(milestoneAwardAnnouncement([])).toBe('');
+  });
+});
+
+describe('difficulty menu truthfulness', () => {
+  it('states the exact ammunition-only economy modifier for every response level', () => {
+    expect(DIFFICULTY_OPTIONS.map(({ id, detail }) => [id, detail])).toEqual([
+      ['orientation', 'Story-focused: 50% more ammo from pickups, fewer and slower threats, and forgiving damage.'],
+      ['desk-adjuster', 'Measured: 25% more ammo from pickups, fewer threats, and reduced threat speed and damage.'],
+      ['field-adjuster', 'Recommended: standard ammo pickups with the intended threat placements, speed, and damage.'],
+      ['catastrophe-team', 'Hard placements with ammo from pickups reduced to 80%; threat speed and damage remain standard.'],
+      ['binding-authority', 'Hard placements, ammo from pickups reduced to 65%, and faster, harder-hitting threats.'],
+    ]);
+    expect(DIFFICULTY_OPTIONS.every(({ detail }) => !/suppl|recovery/i.test(detail))).toBe(true);
+  });
+});
 
 const mapRecord = (overrides: Partial<MapRecord> = {}): MapRecord => ({
   mapId: 'E1M1',
   difficulty: 'field-adjuster',
+  runVariant: overrides.runVariant ?? 'fresh-start',
   completions: 3,
   bestTime: 120,
   highScore: 9000,
@@ -29,6 +96,7 @@ const mapRecord = (overrides: Partial<MapRecord> = {}): MapRecord => ({
   masteryProof: {
     mapId: 'E1M1',
     difficulty: 'field-adjuster',
+    runVariant: overrides.runVariant ?? 'fresh-start',
     elapsed: 120,
     parSeconds: 180,
     score: 9000,
@@ -46,6 +114,7 @@ const mapRecord = (overrides: Partial<MapRecord> = {}): MapRecord => ({
 const mapPerformance = (overrides: Partial<MapPerformance> = {}): MapPerformance => ({
   mapId: 'E1M1',
   difficulty: 'field-adjuster',
+  runVariant: overrides.runVariant ?? 'fresh-start',
   elapsed: 180,
   parSeconds: 240,
   score: 5000,
@@ -55,6 +124,15 @@ const mapPerformance = (overrides: Partial<MapPerformance> = {}): MapPerformance
   secretsPercent: 0,
   grade: 'B',
   ...overrides,
+});
+
+const campaignProgress = (records: CampaignUnlocks['records']): CampaignUnlocks => ({
+  unlockedEpisodes: ['first-notice'],
+  completedEpisodes: [],
+  completedMaps: ['E1M1'],
+  discoveredSecretMaps: [],
+  records,
+  updatedAt: 1,
 });
 
 describe('automap pointer panning', () => {
@@ -122,6 +200,53 @@ describe('persistent mastery presentation', () => {
 
     expect(presentation.complete).toBe(false);
     expect(presentation.target).toBe('Retry goal: Complete every goal in one run');
+  });
+
+  it('keeps Level Select on Fresh Start while retaining carry and legacy tracks', () => {
+    const fresh = mapRecord({ runVariant: 'fresh-start' });
+    const carry = mapRecord({ runVariant: 'campaign-carry', highScore: 12_000 });
+    const legacy = mapRecord({ runVariant: 'legacy-unclassified', highScore: 10_000 });
+    const progress = campaignProgress({
+      'E1M1:field-adjuster:fresh-start': fresh,
+      'E1M1:field-adjuster:campaign-carry': carry,
+      'E1M1:field-adjuster:legacy-unclassified': legacy,
+    });
+
+    expect(levelSelectRecordTracks(progress, 'E1M1', 'field-adjuster')).toEqual({
+      freshStart: fresh,
+      campaignCarry: carry,
+      legacy,
+    });
+    expect(masteryAggregatePresentation(progress, 'field-adjuster', 'fresh-start')).toContain('Fresh Start Campaign 1/24 clear');
+    expect(masteryAggregatePresentation(progress, 'field-adjuster', 'campaign-carry')).toContain('Campaign Carry Campaign 1/24 clear');
+    expect(masteryAggregatePresentation(progress, 'field-adjuster', 'legacy-unclassified')).toContain('Legacy Run (retained) Campaign 1/24 clear');
+  });
+
+  it('reports the actual intermission track while making a carry retry target Fresh Start', () => {
+    const fresh = mapRecord({
+      runVariant: 'fresh-start',
+      parBeaten: false,
+      masteryProof: undefined,
+    });
+    const carry = mapRecord({ runVariant: 'campaign-carry' });
+    const progress = campaignProgress({
+      'E1M1:field-adjuster:fresh-start': fresh,
+      'E1M1:field-adjuster:campaign-carry': carry,
+    });
+    const tracked = trackedIntermissionMastery(
+      'E1M1',
+      progress,
+      'field-adjuster',
+      'campaign-carry',
+      carry,
+      mapPerformance({ runVariant: 'campaign-carry' }),
+    );
+
+    expect(tracked.resultLabel).toBe('Campaign Carry');
+    expect(tracked.result.complete).toBe(true);
+    expect(tracked.retry.complete).toBe(false);
+    expect(tracked.retryTarget).toMatch(/^Retry goal: Fresh Start - Beat par /);
+    expect(runVariantUiLabel('legacy-unclassified')).toBe('Legacy Run (retained)');
   });
 });
 
@@ -198,5 +323,65 @@ describe('contextual entry briefing', () => {
   it('derives an honest objective cue from the current map', () => {
     expect(entryObjectiveCue(CAMPAIGN.maps.E1M1)).toContain('Red credential');
     expect(entryObjectiveCue(CAMPAIGN.maps.E3M8)).toContain('Chief Actuary and Uninsurable');
+  });
+
+  it('orders the live immediate objective before the authored route', () => {
+    const briefing = entryObjectiveBriefing({
+      map: CAMPAIGN.maps.E1M1,
+      objective: 'Close initial exposures | 4 left',
+    });
+
+    expect(briefing).toContain('First: Close initial exposures | 4 left.');
+    expect(briefing).toContain('Then: Secure Red credential');
+  });
+
+  it('omits start-of-file directions from a restored in-progress briefing', () => {
+    const briefing = entryObjectiveBriefing({
+      map: CAMPAIGN.maps.E1M1,
+      objective: 'Proceed to the exit',
+    }, false);
+
+    expect(briefing).toBe('Current objective: Proceed to the exit.');
+    expect(briefing).not.toContain('credential');
+  });
+});
+
+describe('assistive gameplay guidance', () => {
+  const initial = { objective: '', interactionSignature: '' };
+  const input = {
+    active: true,
+    transientMessage: '',
+    objective: 'Close initial exposures | 4 left',
+    interaction: { signature: 'ready|minimal-terminal|Access', label: 'Access', state: 'ready' as const },
+  };
+
+  it('waits through menus, the entry gate, and transient messages before announcing once', () => {
+    expect(advanceAssistiveGameplayGuidance({ ...input, active: false }, initial)).toEqual({ state: initial });
+    expect(advanceAssistiveGameplayGuidance({ ...input, transientMessage: 'E1M1: First Notice' }, initial)).toEqual({ state: initial });
+
+    const announced = advanceAssistiveGameplayGuidance(input, initial);
+    expect(announced.announcement).toBe('Objective: Close initial exposures | 4 left. Action available: Access.');
+    expect(advanceAssistiveGameplayGuidance(input, announced.state)).toEqual({ state: announced.state });
+  });
+
+  it('holds changed guidance behind transient feedback and rearms a prompt after it clears', () => {
+    const baseline = advanceAssistiveGameplayGuidance(input, initial).state;
+    const changed = {
+      ...input,
+      transientMessage: 'Exposure closed',
+      objective: 'Recover Red credential',
+      interaction: { signature: 'locked|credential-red|Red credential', label: 'Red credential', state: 'locked' as const },
+    };
+
+    expect(advanceAssistiveGameplayGuidance(changed, baseline)).toEqual({ state: baseline });
+    const announced = advanceAssistiveGameplayGuidance({ ...changed, transientMessage: '' }, baseline);
+    expect(announced.announcement).toBe('Objective: Recover Red credential. Blocked: Red credential.');
+
+    const cleared = advanceAssistiveGameplayGuidance({ ...input, interaction: undefined }, announced.state);
+    expect(cleared).toEqual({
+      state: { objective: input.objective, interactionSignature: '' },
+      announcement: 'Objective: Close initial exposures | 4 left.',
+    });
+    expect(advanceAssistiveGameplayGuidance(input, cleared.state).announcement).toBe('Action available: Access.');
   });
 });

@@ -3,8 +3,10 @@ import {
   DEFAULT_INPUT_PREFERENCES,
   applyClassicLookRestrictions,
   applyControllerDeadzone,
+  advanceMenuCommand,
   advanceMenuRepeat,
   composeLookInput,
+  menuDirectionCaptureSeed,
   menuAxisEngaged,
   normalizeInputPreferences,
   touchStickVector,
@@ -31,6 +33,58 @@ describe('controller menu repeat', () => {
     result = advanceMenuRepeat(false, 540, result.state);
     expect(result).toEqual({ state: { down: false, nextAt: 0 }, fire: false, repeat: false });
     expect(advanceMenuRepeat(true, 541, result.state)).toMatchObject({ fire: true, repeat: false });
+  });
+
+  it('fires command axes once per hysteretic engage and never repeats while held', () => {
+    let state = { down: false, axisEngaged: false };
+    let result = advanceMenuCommand(.4, false, state);
+    expect(result.fire).toBe(true);
+    state = result.state;
+
+    result = advanceMenuCommand(1, false, state);
+    expect(result.fire).toBe(false);
+    state = result.state;
+    result = advanceMenuCommand(.23, false, state);
+    expect(result).toMatchObject({ fire: false, state: { down: true, axisEngaged: true } });
+    state = result.state;
+
+    result = advanceMenuCommand(.22, false, state);
+    expect(result).toEqual({ fire: false, state: { down: false, axisEngaged: false } });
+    expect(advanceMenuCommand(.4, false, result.state).fire).toBe(true);
+  });
+
+  it('combines command buttons and axes into one edge and consumes a captured hold', () => {
+    let result = advanceMenuCommand(1, true, { down: false, axisEngaged: false });
+    expect(result).toEqual({ fire: true, state: { down: true, axisEngaged: true } });
+
+    result = advanceMenuCommand(1, false, result.state);
+    expect(result.fire).toBe(false);
+    result = advanceMenuCommand(0, false, result.state);
+    expect(result).toEqual({ fire: false, state: { down: false, axisEngaged: false } });
+
+    const captured = { down: true, axisEngaged: true };
+    expect(advanceMenuCommand(1, false, captured).fire).toBe(false);
+    expect(advanceMenuCommand(0, false, captured)).toEqual({
+      fire: false,
+      state: { down: false, axisEngaged: false },
+    });
+  });
+
+  it('consumes held directional controller input after a binding capture', () => {
+    const axis = menuDirectionCaptureSeed('menu-left', {
+      device: 'gamepad-axis', axis: 0, direction: -1, threshold: .45,
+    });
+    expect(axis).toEqual({
+      index: 2,
+      axisEngaged: true,
+      state: { down: true, nextAt: Number.POSITIVE_INFINITY },
+    });
+    expect(advanceMenuRepeat(true, 100, axis!.state).fire).toBe(false);
+    expect(advanceMenuRepeat(false, 101, axis!.state).state.down).toBe(false);
+
+    const button = menuDirectionCaptureSeed('menu-down', { device: 'gamepad-button', button: 13 });
+    expect(button).toMatchObject({ index: 1, axisEngaged: false, state: { down: true } });
+    expect(menuDirectionCaptureSeed('fire', { device: 'gamepad-button', button: 7 })).toBeUndefined();
   });
 });
 

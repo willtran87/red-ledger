@@ -119,6 +119,7 @@ function initializeGame(activeGame: GameEngine): void {
     stopReplay: () => game.stopDemoPlayback(),
     setVerticalAutoAim: (enabled) => { game.verticalAutoAim = enabled; },
     teleportNearLandmark: (index, distance) => game.debugTeleportNearLandmark(index, distance),
+    rerenderIntermission: () => game.onIntermission?.(),
     failRuntime: () => requestAnimationFrame(() => {
       throw new Error('Injected runtime frame failure');
     }),
@@ -167,6 +168,7 @@ declare global {
       stopReplay: () => void;
       setVerticalAutoAim: (enabled: boolean) => void;
       teleportNearLandmark: (index?: number, distance?: number) => boolean;
+      rerenderIntermission: () => void;
       failRuntime: () => number;
       radial: (x: number, y: number, active: boolean) => void;
     };

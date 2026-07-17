@@ -167,7 +167,9 @@ const touchPadLabels = await page.evaluate(() => ({
 }));
 assert(touchPadLabels.move.includes('MOVE') && touchPadLabels.look.includes('LOOK'), 'Touch pads lack persistent Move/Look labels');
 assert(!touchBriefing.includes('WEAPON') && !touchBriefing.includes('MAP'), 'Touch orientation repeats advanced controls');
-assert((await page.locator('#entry-objective').innerText()).includes('Red credential'), 'Touch orientation has no contextual objective');
+const touchObjective = await page.locator('#entry-objective').innerText();
+assert(touchObjective.includes('First: Close initial exposures'), 'Touch orientation omits the current immediate exposure objective');
+assert(touchObjective.includes('Then: Secure Red credential'), 'Touch orientation omits the authored red credential route');
 assert((await page.evaluate(() => JSON.parse(window.render_game_to_text()).mode)) === 'paused', 'Touch briefing did not freeze simulation');
 await page.screenshot({ path: 'output/mobile-ux/entry-briefing-390x844.png' });
 await page.locator('#enter-file').tap();
@@ -339,6 +341,17 @@ const hybridContext = await browser.newContext({ viewport: { width: 390, height:
 const hybridPage = await hybridContext.newPage();
 hybridPage.on('pageerror', (error) => errors.push(String(error)));
 await hybridPage.goto(url, { waitUntil: 'networkidle' });
+await hybridPage.click('#options-button');
+await hybridPage.click('#controls-button');
+const hybridAutomapBinding = await hybridPage.locator('.control-row', { has: hybridPage.getByText('Automap', { exact: true }) }).first().locator('button').innerText();
+assert(hybridAutomapBinding.includes('View/Select'), `Mobile controller automap label is not platform-neutral: ${hybridAutomapBinding}`);
+await hybridPage.click('#controls-back');
+await hybridPage.locator('#options-menu [data-back]').click();
+await hybridPage.locator('#menu').waitFor({ state: 'visible' });
+await hybridPage.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))));
+await hybridPage.locator('#new-game').focus();
+assert(await hybridPage.evaluate(() => document.activeElement?.id === 'new-game'),
+  'Hybrid controller fixture could not establish the intended New Game focus');
 await dispatchMenu(hybridPage, 'confirm');
 await hybridPage.locator('#episode-menu').waitFor({ state: 'visible' });
 await dispatchMenu(hybridPage, 'confirm');
@@ -350,7 +363,7 @@ await hybridPage.locator('#ready-overlay').waitFor({ state: 'visible' });
 assert(await hybridPage.locator('#game-shell').getAttribute('data-input-device') === 'gamepad', 'Hybrid input did not retain the controller as the active device');
 assert(await hybridPage.locator('#ready-overlay').getAttribute('data-input') === 'gamepad', 'Hybrid entry briefing showed touch guidance after controller navigation');
 const gamepadBriefing = await hybridPage.locator('#entry-controls').innerText();
-for (const binding of ['Left stick', 'Right stick', 'Button 8', 'Button 1']) {
+for (const binding of ['Left stick', 'Right stick', 'Right Trigger', 'South Button']) {
   assert(gamepadBriefing.includes(binding), `Hybrid controller briefing omits ${binding}`);
 }
 await dispatchMenu(hybridPage, 'confirm');

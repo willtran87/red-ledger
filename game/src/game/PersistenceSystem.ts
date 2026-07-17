@@ -1,5 +1,5 @@
 export const SAVE_SCHEMA_VERSION = 1;
-export const CAMPAIGN_SCHEMA_VERSION = 3;
+export const CAMPAIGN_SCHEMA_VERSION = 4;
 export const OLDEST_SUPPORTED_SAVE_SCHEMA_VERSION = 1;
 export const OLDEST_SUPPORTED_CAMPAIGN_SCHEMA_VERSION = 1;
 export const DEMO_SCHEMA_VERSION = 4;
@@ -14,10 +14,12 @@ const MAX_CONFLICT_COPIES_TOTAL = 8;
 export type SaveKind = 'manual' | 'quicksave' | 'autosave' | 'recovery' | 'conflict';
 export type SlotStatus = 'empty' | 'valid' | 'invalid';
 export type PerformanceGrade = 'S' | 'A' | 'B' | 'C' | 'D';
+export type RunVariant = 'fresh-start' | 'campaign-carry' | 'legacy-unclassified';
 
 export interface MapPerformance {
   readonly mapId: string;
   readonly difficulty: string;
+  readonly runVariant: RunVariant;
   readonly elapsed: number;
   readonly parSeconds: number;
   readonly score: number;
@@ -36,6 +38,7 @@ export interface MapMasteryProof extends MapPerformance {
 export interface MapRecord {
   readonly mapId: string;
   readonly difficulty: string;
+  readonly runVariant: RunVariant;
   readonly completions: number;
   readonly bestTime: number;
   readonly highScore: number;
@@ -198,7 +201,7 @@ type CampaignMutation =
 
 interface CampaignMutationEnvelope {
   readonly schema: 'red-ledger-campaign-mutation';
-  readonly version: 1;
+  readonly version: 1 | 2;
   readonly id: string;
   readonly writerId: string;
   readonly createdAt: number;
@@ -243,10 +246,13 @@ interface SaveShadowEnvelope<TState> {
  *
  * Save state is application-owned and therefore requires both schema 1 and the exact gameVersion.
  * Campaign schema 1 is the original public format; schema 2 adds performance records and secret-map
- * discovery; schema 3 adds single-run mastery proofs. Legacy records conservatively migrate without
- * a proof. Ordinary reads never rewrite storage; validated mutation journals may be checkpointed
- * after a stability window. Unknown fields in supported envelopes are preserved. Corrupt, older,
- * and future envelopes remain untouched so another build or a recovery tool can inspect them.
+ * discovery; schema 3 adds single-run mastery proofs; schema 4 separates fresh-start,
+ * campaign-carry, and legacy-unclassified performance. Schema 1-3 records are retained only as
+ * legacy-unclassified history because their original run conditions cannot be reconstructed.
+ * Schema 3 mastery proofs are retained, while older untrusted proofs remain stripped. Ordinary
+ * reads never rewrite storage; validated mutation journals may be checkpointed after a stability
+ * window. Unknown fields in supported envelopes are preserved. Corrupt, older, and future
+ * envelopes remain untouched so another build or a recovery tool can inspect them.
  */
 export const PERSISTENCE_COMPATIBILITY_POLICY = Object.freeze({
   saves: Object.freeze({
@@ -257,7 +263,12 @@ export const PERSISTENCE_COMPATIBILITY_POLICY = Object.freeze({
   campaign: Object.freeze({
     currentVersion: CAMPAIGN_SCHEMA_VERSION,
     oldestSupportedVersion: OLDEST_SUPPORTED_CAMPAIGN_SCHEMA_VERSION,
-    legacyDefaults: Object.freeze({ discoveredSecretMaps: true, records: true, masteryProofs: true }),
+    legacyDefaults: Object.freeze({
+      discoveredSecretMaps: true,
+      records: true,
+      masteryProofs: true,
+      runVariant: 'legacy-unclassified' as const,
+    }),
   }),
 });
 
@@ -360,13 +371,23 @@ const normalizeStringList = (values: readonly string[]): string[] =>
   [...new Set(values.filter((value) => value.length > 0))].sort();
 
 const GRADES: readonly PerformanceGrade[] = ['S', 'A', 'B', 'C', 'D'];
+export const RUN_VARIANTS: readonly RunVariant[] = ['fresh-start', 'campaign-carry', 'legacy-unclassified'];
 const isPerformanceGrade = (value: unknown): value is PerformanceGrade => GRADES.includes(value as PerformanceGrade);
-const isMapPerformance = (value: unknown): value is MapPerformance => isRecord(value)
-  && typeof value.mapId === 'string'
-  && typeof value.difficulty === 'string'
-  && ['elapsed', 'parSeconds', 'score', 'bestChain', 'killsPercent', 'itemsPercent', 'secretsPercent']
-    .every((key) => Number.isFinite(value[key]))
-  && isPerformanceGrade(value.grade);
+export const isRunVariant = (value: unknown): value is RunVariant => RUN_VARIANTS.includes(value as RunVariant);
+
+const normalizeMapPerformance = (
+  value: unknown,
+  legacyFallback?: RunVariant,
+): MapPerformance | undefined => {
+  if (!isRecord(value)
+    || typeof value.mapId !== 'string'
+    || typeof value.difficulty !== 'string'
+    || !['elapsed', 'parSeconds', 'score', 'bestChain', 'killsPercent', 'itemsPercent', 'secretsPercent']
+      .every((key) => Number.isFinite(value[key]))
+    || !isPerformanceGrade(value.grade)) return undefined;
+  const runVariant = legacyFallback ?? (isRunVariant(value.runVariant) ? value.runVariant : undefined);
+  return runVariant ? { ...value, runVariant } as unknown as MapPerformance : undefined;
+};
 
 export const isSingleRunMastery = (performance: MapPerformance): boolean => performance.elapsed <= performance.parSeconds
   && performance.grade === 'S'
@@ -376,23 +397,62 @@ export const isSingleRunMastery = (performance: MapPerformance): boolean => perf
 
 export const hasMasteryProof = (record: MapRecord | undefined): boolean => Boolean(record?.masteryProof);
 
-const isMapMasteryProof = (value: unknown, mapId: string, difficulty: string): value is MapMasteryProof =>
-  isMapPerformance(value)
-  && value.mapId === mapId
-  && value.difficulty === difficulty
-  && isSingleRunMastery(value)
-  && Number.isFinite((value as unknown as Record<string, unknown>).achievedAt);
+const normalizeMapMasteryProof = (
+  value: unknown,
+  mapId: string,
+  difficulty: string,
+  runVariant: RunVariant,
+  legacyFallback?: RunVariant,
+): MapMasteryProof | undefined => {
+  const performance = normalizeMapPerformance(value, legacyFallback);
+  if (!performance
+    || performance.mapId !== mapId
+    || performance.difficulty !== difficulty
+    || performance.runVariant !== runVariant
+    || !isSingleRunMastery(performance)
+    || !isRecord(value)
+    || !Number.isFinite(value.achievedAt)) return undefined;
+  return { ...performance, achievedAt: value.achievedAt as number };
+};
 
-const isMapRecord = (value: unknown, validateMasteryProof: boolean): value is MapRecord => isRecord(value)
-  && typeof value.mapId === 'string'
-  && typeof value.difficulty === 'string'
-  && Number.isSafeInteger(value.completions) && Number(value.completions) > 0
-  && ['bestTime', 'highScore', 'bestChain', 'bestKillsPercent', 'bestItemsPercent', 'bestSecretsPercent', 'achievedAt']
-    .every((key) => Number.isFinite(value[key]))
-  && isPerformanceGrade(value.bestGrade)
-  && typeof value.parBeaten === 'boolean'
-  && (!validateMasteryProof || value.masteryProof === undefined
-    || isMapMasteryProof(value.masteryProof, value.mapId, value.difficulty));
+const normalizeMapRecord = (value: unknown, schemaVersion: number): MapRecord | undefined => {
+  if (!isRecord(value)
+    || typeof value.mapId !== 'string'
+    || typeof value.difficulty !== 'string'
+    || !Number.isSafeInteger(value.completions) || Number(value.completions) <= 0
+    || !['bestTime', 'highScore', 'bestChain', 'bestKillsPercent', 'bestItemsPercent', 'bestSecretsPercent', 'achievedAt']
+      .every((key) => Number.isFinite(value[key]))
+    || !isPerformanceGrade(value.bestGrade)
+    || typeof value.parBeaten !== 'boolean') return undefined;
+
+  const runVariant = schemaVersion >= 4
+    ? (isRunVariant(value.runVariant) ? value.runVariant : undefined)
+    : 'legacy-unclassified';
+  if (!runVariant) return undefined;
+
+  let masteryProof: MapMasteryProof | undefined;
+  if (schemaVersion >= 3 && value.masteryProof !== undefined) {
+    masteryProof = normalizeMapMasteryProof(
+      value.masteryProof,
+      value.mapId,
+      value.difficulty,
+      runVariant,
+      schemaVersion < 4 ? 'legacy-unclassified' : undefined,
+    );
+    if (!masteryProof) return undefined;
+  }
+  const { masteryProof: _storedProof, ...record } = value;
+  return {
+    ...record,
+    mapId: value.mapId,
+    difficulty: value.difficulty,
+    runVariant,
+    ...(masteryProof ? { masteryProof } : {}),
+  } as unknown as MapRecord;
+};
+
+export const mapRecordKey = (mapId: string, difficulty: string, runVariant: RunVariant): string =>
+  `${mapId}:${difficulty}:${runVariant}`;
 
 const migrateCampaignEnvelope = (value: unknown): CampaignUnlocks | undefined => {
   if (!isRecord(value)
@@ -416,19 +476,19 @@ const migrateCampaignEnvelope = (value: unknown): CampaignUnlocks | undefined =>
     || !Array.isArray(progress.completedMaps)
     || !hasLegacyOrValidSecretMaps
     || !hasLegacyOrValidRecords
-    || (isRecord(progress.records) && !Object.values(progress.records)
-      .every((record) => isMapRecord(record, version >= 3)))
     || !Number.isFinite(progress.updatedAt)
     || [...progress.unlockedEpisodes, ...progress.completedEpisodes, ...progress.completedMaps,
       ...(progress.discoveredSecretMaps as unknown[] | undefined ?? [])]
       .some((entry) => typeof entry !== 'string')) return undefined;
 
-  const records = Object.fromEntries(Object.entries(progress.records as Record<string, MapRecord> | undefined ?? {})
-    .map(([key, record]) => {
-      if (version >= 3) return [key, { ...record }];
-      const { masteryProof: _untrustedLegacyProof, ...legacyRecord } = record;
-      return [key, legacyRecord];
-    }));
+  const records: Record<string, MapRecord> = {};
+  for (const [storedKey, storedRecord] of Object.entries(progress.records as Record<string, unknown> | undefined ?? {})) {
+    const record = normalizeMapRecord(storedRecord, version);
+    if (!record) return undefined;
+    const key = mapRecordKey(record.mapId, record.difficulty, record.runVariant);
+    if (version >= 4 && storedKey !== key) return undefined;
+    records[key] = records[key] ? mergeCampaignRecords(records[key], record) : record;
+  }
   return {
     unlockedEpisodes: normalizeStringList(progress.unlockedEpisodes as string[]),
     completedEpisodes: normalizeStringList(progress.completedEpisodes as string[]),
@@ -438,8 +498,6 @@ const migrateCampaignEnvelope = (value: unknown): CampaignUnlocks | undefined =>
     updatedAt: progress.updatedAt as number,
   };
 };
-
-export const mapRecordKey = (mapId: string, difficulty: string): string => `${mapId}:${difficulty}`;
 
 const selectMasteryProof = (
   left: MapMasteryProof | undefined,
@@ -457,6 +515,7 @@ const mergeMapRecord = (previous: MapRecord | undefined, performance: MapPerform
   return {
     mapId: performance.mapId,
     difficulty: performance.difficulty,
+    runVariant: performance.runVariant,
     completions: (previous?.completions ?? 0) + 1,
     bestTime: previous ? Math.min(previous.bestTime, performance.elapsed) : performance.elapsed,
     highScore: Math.max(previous?.highScore ?? 0, performance.score),
@@ -471,31 +530,53 @@ const mergeMapRecord = (previous: MapRecord | undefined, performance: MapPerform
   };
 };
 
-const isCampaignMutation = (value: unknown): value is CampaignMutation => {
-  if (!isRecord(value)) return false;
-  if (value.type === 'unlock-episode') return typeof value.episodeId === 'string' && value.episodeId.length > 0;
+const normalizeCampaignMutation = (
+  value: unknown,
+  legacyPerformance: boolean,
+): CampaignMutation | undefined => {
+  if (!isRecord(value)) return undefined;
+  if (value.type === 'unlock-episode') {
+    return typeof value.episodeId === 'string' && value.episodeId.length > 0
+      ? { type: 'unlock-episode', episodeId: value.episodeId }
+      : undefined;
+  }
   if (value.type === 'complete-episode') {
     return typeof value.episodeId === 'string'
       && value.episodeId.length > 0
-      && (value.unlockNextEpisodeId === undefined || typeof value.unlockNextEpisodeId === 'string');
+      && (value.unlockNextEpisodeId === undefined || typeof value.unlockNextEpisodeId === 'string')
+      ? {
+        type: 'complete-episode',
+        episodeId: value.episodeId,
+        ...(value.unlockNextEpisodeId ? { unlockNextEpisodeId: value.unlockNextEpisodeId } : {}),
+      }
+      : undefined;
   }
-  return value.type === 'complete-map'
-    && typeof value.mapId === 'string'
-    && value.mapId.length > 0
-    && (value.performance === undefined || isMapPerformance(value.performance))
-    && (value.discoveredSecretMap === undefined || typeof value.discoveredSecretMap === 'string');
+  if (value.type !== 'complete-map'
+    || typeof value.mapId !== 'string'
+    || value.mapId.length === 0
+    || (value.discoveredSecretMap !== undefined && typeof value.discoveredSecretMap !== 'string')) return undefined;
+  const performance = value.performance === undefined
+    ? undefined
+    : normalizeMapPerformance(value.performance, legacyPerformance ? 'legacy-unclassified' : undefined);
+  if (value.performance !== undefined && (!performance || performance.mapId !== value.mapId)) return undefined;
+  return {
+    type: 'complete-map',
+    mapId: value.mapId,
+    ...(performance ? { performance } : {}),
+    ...(value.discoveredSecretMap ? { discoveredSecretMap: value.discoveredSecretMap } : {}),
+  };
 };
 
 const migrateCampaignMutation = (value: unknown): CampaignMutationEnvelope | undefined => {
   if (!isRecord(value)
     || value.schema !== 'red-ledger-campaign-mutation'
-    || value.version !== 1
+    || (value.version !== 1 && value.version !== 2)
     || typeof value.id !== 'string'
     || typeof value.writerId !== 'string'
     || !Number.isFinite(value.createdAt)
-    || !isCampaignMutation(value.mutation)
     || !verifyChecksum(value)) return undefined;
-  return value as unknown as CampaignMutationEnvelope;
+  const mutation = normalizeCampaignMutation(value.mutation, value.version === 1);
+  return mutation ? { ...value, mutation } as unknown as CampaignMutationEnvelope : undefined;
 };
 
 const migrateCampaignCommits = (value: unknown): CampaignCommitEnvelope | undefined => {
@@ -529,7 +610,11 @@ const applyCampaignMutation = (current: CampaignUnlocks, envelope: CampaignMutat
 
   const records = { ...current.records };
   if (mutation.performance) {
-    const key = mapRecordKey(mutation.performance.mapId, mutation.performance.difficulty);
+    const key = mapRecordKey(
+      mutation.performance.mapId,
+      mutation.performance.difficulty,
+      mutation.performance.runVariant,
+    );
     records[key] = mergeMapRecord(
       records[key],
       mutation.performance,
@@ -787,6 +872,9 @@ export class PersistenceSystem<TState> {
   }
 
   completeMap(mapId: string, performance?: MapPerformance, discoveredSecretMap?: string): CampaignUnlocks {
+    if (performance && performance.mapId !== mapId) {
+      throw new TypeError(`Performance map ${performance.mapId} does not match completed map ${mapId}`);
+    }
     const achievedAt = this.now();
     return this.recordCampaignMutation({
       type: 'complete-map',
@@ -813,7 +901,7 @@ export class PersistenceSystem<TState> {
     const id = `${this.writerId}-${createdAt.toString(36)}-${(++this.mutationSequence).toString(36)}`;
     const unsigned = {
       schema: 'red-ledger-campaign-mutation' as const,
-      version: 1 as const,
+      version: 2 as const,
       id,
       writerId: this.writerId,
       createdAt,

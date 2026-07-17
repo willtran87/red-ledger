@@ -156,9 +156,41 @@ export function bindingLabel(binding: InputBinding): string {
     case 'keyboard': return binding.code.replace(/^Key/, '').replace(/^Digit/, '');
     case 'mouse-button': return binding.button === 0 ? 'Mouse 1' : binding.button === 1 ? 'Mouse 3' : binding.button === 2 ? 'Mouse 2' : `Mouse ${binding.button + 1}`;
     case 'mouse-wheel': return binding.direction < 0 ? 'Wheel Up' : 'Wheel Down';
-    case 'gamepad-button': return `Button ${binding.button + 1}`;
-    case 'gamepad-axis': return `Axis ${binding.axis + 1} ${binding.direction < 0 ? '-' : '+'}`;
+    case 'gamepad-button': return STANDARD_GAMEPAD_BUTTON_LABELS[binding.button] ?? `Button ${binding.button + 1}`;
+    case 'gamepad-axis': return standardGamepadAxisLabel(binding.axis, binding.direction)
+      ?? `Axis ${binding.axis + 1} ${binding.direction < 0 ? '-' : '+'}`;
   }
+}
+
+const STANDARD_GAMEPAD_BUTTON_LABELS: Readonly<Record<number, string>> = Object.freeze({
+  0: 'South Button',
+  1: 'East Button',
+  2: 'West Button',
+  3: 'North Button',
+  4: 'Left Bumper',
+  5: 'Right Bumper',
+  6: 'Left Trigger',
+  7: 'Right Trigger',
+  8: 'View/Select',
+  9: 'Menu/Start',
+  10: 'Left Stick Button',
+  11: 'Right Stick Button',
+  12: 'D-pad Up',
+  13: 'D-pad Down',
+  14: 'D-pad Left',
+  15: 'D-pad Right',
+  16: 'Home Button',
+});
+
+function standardGamepadAxisLabel(axis: number, direction: -1 | 1): string | undefined {
+  const labels: Readonly<Record<number, readonly [negative: string, positive: string]>> = {
+    0: ['Left Stick Left', 'Left Stick Right'],
+    1: ['Left Stick Up', 'Left Stick Down'],
+    2: ['Right Stick Left', 'Right Stick Right'],
+    3: ['Right Stick Up', 'Right Stick Down'],
+  };
+  const pair = labels[axis];
+  return pair?.[direction < 0 ? 0 : 1];
 }
 
 function bindingFamily(binding: InputBinding): 'keyboard' | 'mouse' | 'gamepad' {

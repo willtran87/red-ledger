@@ -88,6 +88,25 @@ describe('authored world content', () => {
     expect(restored.pickups.find((pickup) => pickup.uid === 'drop-test')?.ammoDrop?.amount).toBe(5);
   });
 
+  it('restores collected actor drops from identity-light public save pickup rows', () => {
+    const legacy = PRE_PROFILE_E1M1_RUNTIME_FIXTURE.actorDrop.ammoDrop;
+    const restored = worldFor('E1M1');
+    restored.restoreAmmoDrops([{
+      ...legacy,
+      position: [...legacy.position],
+    }]);
+
+    const drop = restored.pickups.find((pickup) => pickup.uid === legacy.uid);
+    expect(drop).toMatchObject({
+      uid: legacy.uid,
+      kind: 'pickup',
+      id: 'staples-small',
+      collected: true,
+      ammoDrop: { ammoId: 'staples', amount: 1 },
+    });
+    expect(drop?.sprite.visible).toBe(false);
+  });
+
   it('advances generated summon and drop IDs beyond restored entities', () => {
     const world = worldFor('E1M1');
     const restoredSummon = world.summonEnemy('returned-mail', new Vector3(6, 0, 6), 'summoned-returned-mail-12');

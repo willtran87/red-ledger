@@ -51,7 +51,7 @@ await automapButton.click();
 await page.keyboard.press('KeyM');
 const remappedAutomapCopy = (await automapButton.textContent())?.trim() ?? '';
 assert(remappedAutomapCopy.includes('M'), 'Automap binding capture did not update its keyboard label');
-assert(remappedAutomapCopy.includes('Button 9'), 'Keyboard remap erased the controller automap binding');
+assert(remappedAutomapCopy.includes('View/Select'), 'Keyboard remap erased the controller automap binding');
 await page.waitForFunction(() => (document.activeElement instanceof HTMLElement) && document.activeElement.dataset.action === 'automap');
 assert((await automapButton.getAttribute('aria-label'))?.includes(`Current bindings: ${remappedAutomapCopy}`), 'Remapping control accessible name omits its current bindings');
 assert((await page.locator('#controls-feedback').textContent())?.includes('Mouse and controller bindings retained.'), 'Remapping feedback did not explain preserved device bindings');
@@ -63,6 +63,21 @@ assert((await page.locator('#controls-feedback').textContent())?.includes('Remov
 
 await page.click('#controls-back');
 await page.locator('#options-menu [data-back]').click();
+await page.evaluate(() => {
+  window.__assistiveGuidance = [];
+  const announcer = document.querySelector('#announcer');
+  let lastText = '';
+  new MutationObserver(() => {
+    const text = announcer.textContent.trim();
+    if (!text) {
+      lastText = '';
+      return;
+    }
+    if (text === lastText) return;
+    lastText = text;
+    if (/^(Objective:|Action available:|Blocked:)/.test(text)) window.__assistiveGuidance.push(text);
+  }).observe(announcer, { childList: true, subtree: true, characterData: true });
+});
 await page.click('#new-game');
 await page.locator('.episode-card').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();
@@ -72,9 +87,40 @@ if (await page.locator('#ready-overlay').isVisible()) {
   assert((await page.locator('#ready-overlay').getAttribute('aria-labelledby'))?.includes('ready-map'), 'Entry briefing has no map label');
   assert(await page.locator('#entry-controls').getAttribute('role') === 'list', 'Essential controls are not exposed as a list');
   assert(await page.locator('#entry-controls [role="listitem"]').count() === 4, 'Initial orientation did not expose four essential controls');
+  const entryObjective = await page.locator('#entry-objective').innerText();
+  assert(entryObjective.includes('First: Close initial exposures'), 'Entry briefing omits the current immediate exposure objective');
+  assert(entryObjective.includes('Then: Secure Red credential'), 'Entry briefing omits the authored red credential route');
+  assert(await page.locator('#announcer').getAttribute('aria-live') === 'polite', 'Gameplay guidance is not exposed through a polite live region');
+  await page.waitForTimeout(150);
+  assert((await page.evaluate(() => window.__assistiveGuidance)).length === 0, 'Gameplay guidance announced while the entry gate was open');
   await page.click('#enter-file');
 }
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
+await page.evaluate(() => {
+  for (let index = 0; index < 12; index += 1) window.advanceTime(250);
+});
+await page.waitForFunction(() => window.__assistiveGuidance.some((message) => message.startsWith('Objective: Close initial exposures')));
+await page.waitForTimeout(150);
+let assistiveGuidance = await page.evaluate(() => window.__assistiveGuidance);
+assert(assistiveGuidance.filter((message) => message.startsWith('Objective: Close initial exposures')).length === 1,
+  `Stable objective produced repeated guidance: ${JSON.stringify(assistiveGuidance)}`);
+
+const contextOrigin = await page.evaluate(() => {
+  const before = JSON.parse(window.render_game_to_text()).player;
+  const found = window.__redLedger.teleportToDoor('red');
+  window.advanceTime(35);
+  return { found, x: before.x, z: before.z };
+});
+assert(contextOrigin.found, 'Could not stage the locked red credential context prompt');
+await page.waitForFunction(() => window.__assistiveGuidance.some((message) => message.includes('Blocked: Red credential.')));
+await page.waitForTimeout(150);
+assistiveGuidance = await page.evaluate(() => window.__assistiveGuidance);
+assert(assistiveGuidance.filter((message) => message.includes('Blocked: Red credential.')).length === 1,
+  `Stable context prompt produced repeated guidance: ${JSON.stringify(assistiveGuidance)}`);
+await page.evaluate(({ x, z }) => {
+  window.__redLedger.teleport(x, z);
+  window.advanceTime(35);
+}, contextOrigin);
 await page.mouse.down();
 await page.waitForTimeout(80);
 await page.mouse.up();
@@ -182,7 +228,7 @@ await page.click('#controls-button');
 const restoredRow = page.locator('.control-row', { has: page.getByText('Automap', { exact: true }) }).first();
 assert(await restoredRow.count() === 1, 'Remapped binding did not persist across reload');
 assert((await restoredRow.locator('button').textContent())?.includes('M'), 'Persisted automap keyboard binding changed after reload');
-assert((await restoredRow.locator('button').textContent())?.includes('Button 9'), 'Persisted automap controller binding changed after reload');
+assert((await restoredRow.locator('button').textContent())?.includes('View/Select'), 'Persisted automap controller binding changed after reload');
 await page.click('#reset-controls');
 assert(await page.locator('#confirm-dialog').isVisible(), 'Reset controls did not request confirmation');
 await page.click('#confirm-accept');
@@ -201,8 +247,10 @@ assert(await page.evaluate(() => document.activeElement?.matches('#credits a[hre
 
 await page.evaluate(() => {
   const buttons = Array.from({ length: 16 }, () => ({ pressed: false, touched: false, value: 0 }));
-  window.__testGamepad = { connected: true, buttons, axes: [0, 0, 0, 0] };
+  window.__testGamepad = { connected: true, buttons, axes: [0, 0, 0, 0, 0] };
   window.__gamepadNavigation = [];
+  window.__controllerLifecycle = [];
+  window.__announcements = [];
   Object.defineProperty(navigator, 'getGamepads', {
     configurable: true,
     value: () => window.__testGamepad.connected ? [window.__testGamepad] : [],
@@ -210,6 +258,20 @@ await page.evaluate(() => {
   window.addEventListener('input-menu-navigation', (event) => {
     if (event.detail.source === 'gamepad') window.__gamepadNavigation.push(event.detail);
   });
+  window.addEventListener('input-controller-disconnected', () => window.__controllerLifecycle.push('disconnected'));
+  window.addEventListener('input-controller-reconnected', () => window.__controllerLifecycle.push('reconnected'));
+  const announcer = document.querySelector('#announcer');
+  let lastAnnouncement = '';
+  new MutationObserver(() => {
+    const text = announcer.textContent.trim();
+    if (!text) {
+      lastAnnouncement = '';
+      return;
+    }
+    if (text === lastAnnouncement) return;
+    lastAnnouncement = text;
+    window.__announcements.push(text);
+  }).observe(announcer, { childList: true, subtree: true, characterData: true });
   buttons[13].pressed = true;
   buttons[13].touched = true;
   buttons[13].value = 1;
@@ -226,9 +288,97 @@ const gamepadNavigation = await page.evaluate(() => window.__gamepadNavigation);
 assert(gamepadNavigation.length >= 3, 'Held controller navigation did not repeat after its initial step');
 assert(gamepadNavigation[0].repeat === false && gamepadNavigation.slice(1).some((event) => event.repeat), 'Controller navigation did not distinguish its initial press from repeats');
 assert(await page.locator('#game-shell').getAttribute('data-input-device') === 'gamepad', 'Controller activity did not become the active input device');
+assert((await page.evaluate(() => window.__controllerLifecycle)).length === 0, 'Initial controller detection was misreported as a reconnection');
+
+await page.locator('#credits [data-back]').click();
+await page.click('#options-button');
+await page.click('#controls-button');
+const menuConfirmRow = page.locator('.control-row', { has: page.getByText('Menu Confirm', { exact: true }) }).first();
+const menuConfirmButton = menuConfirmRow.locator('button');
+await menuConfirmButton.click();
+await page.evaluate(() => {
+  window.__gamepadNavigation = [];
+  window.__testGamepad.axes[4] = .8;
+});
+await page.waitForFunction(() => document.querySelector('.control-row button[data-action="menu-confirm"]')?.textContent?.includes('Axis 5 +'));
+await page.waitForTimeout(400);
+assert((await page.evaluate(() => window.__gamepadNavigation)).length === 0, 'The axis capture gesture immediately activated Menu Confirm');
+
+await page.evaluate(() => { window.__testGamepad.axes[4] = 0; });
+await page.waitForTimeout(150);
+await page.locator('#controls-back').focus();
+await page.evaluate(() => { window.__testGamepad.axes[4] = .8; });
+await page.waitForFunction(() => window.__gamepadNavigation.length === 1);
+await page.waitForTimeout(500);
+let commandNavigation = await page.evaluate(() => window.__gamepadNavigation);
+assert(commandNavigation.length === 1 && commandNavigation[0].action === 'confirm' && commandNavigation[0].repeat === false,
+  'Held Menu Confirm axis repeated instead of firing one edge');
+
+await page.evaluate(() => { window.__testGamepad.axes[4] = 0; });
+await page.waitForTimeout(150);
+await page.evaluate(() => { window.__testGamepad.axes[4] = .8; });
+await page.waitForFunction(() => window.__gamepadNavigation.length === 2);
+commandNavigation = await page.evaluate(() => window.__gamepadNavigation);
+assert(commandNavigation.every((event) => event.action === 'confirm' && event.repeat === false),
+  'Menu Confirm axis did not require release before its second edge');
+await page.evaluate(() => { window.__testGamepad.axes[4] = 0; });
+await page.waitForTimeout(150);
+
+await page.waitForSelector('#controls-menu.active');
+const menuBackRow = page.locator('.control-row', { has: page.getByText('Menu Back', { exact: true }) }).first();
+await menuBackRow.locator('button').click();
+await page.evaluate(() => {
+  window.__gamepadNavigation = [];
+  window.__testGamepad.axes[4] = -.8;
+});
+await page.waitForFunction(() => document.querySelector('.control-row button[data-action="menu-back"]')?.textContent?.includes('Axis 5 -'));
+await page.waitForTimeout(400);
+assert((await page.evaluate(() => window.__gamepadNavigation)).length === 0, 'The axis capture gesture immediately activated Menu Back');
+
+await page.evaluate(() => { window.__testGamepad.axes[4] = 0; });
+await page.waitForTimeout(150);
+await page.evaluate(() => { window.__testGamepad.axes[4] = -.8; });
+await page.waitForFunction(() => window.__gamepadNavigation.length === 1);
+await page.waitForTimeout(500);
+commandNavigation = await page.evaluate(() => window.__gamepadNavigation);
+assert(commandNavigation.length === 1 && commandNavigation[0].action === 'back' && commandNavigation[0].repeat === false,
+  'Held Menu Back axis repeated instead of firing one edge');
+await page.evaluate(() => { window.__testGamepad.axes[4] = 0; });
 
 await page.evaluate(() => { window.__testGamepad.connected = false; });
+await page.waitForFunction(() => window.__controllerLifecycle.includes('disconnected'));
+await page.evaluate(() => { window.__testGamepad.connected = true; });
+await page.waitForFunction(() => window.__controllerLifecycle.includes('reconnected'));
+await page.waitForFunction(() => document.querySelector('#runtime-warning').hasAttribute('hidden'));
+await page.waitForFunction(() => window.__announcements.includes('Controller reconnected. Controller input is available.'));
+let recoveryAnnouncements = await page.evaluate(() => window.__announcements
+  .filter((message) => message === 'Controller reconnected. Controller input is available.'));
+assert(recoveryAnnouncements.length === 1, `Controller recovery was not announced once: ${JSON.stringify(recoveryAnnouncements)}`);
+
+await page.evaluate(() => window.dispatchEvent(new Event('red-ledger-asset-degraded')));
+await page.waitForFunction(() => document.querySelector('#runtime-warning')?.textContent?.includes('visual assets could not load'));
+await page.evaluate(() => { window.__testGamepad.connected = false; });
+await page.waitForFunction(() => window.__controllerLifecycle.length === 3);
 await page.waitForFunction(() => document.querySelector('#runtime-warning')?.textContent?.includes('Controller disconnected'));
+await page.evaluate(() => { window.__testGamepad.connected = true; });
+await page.waitForFunction(() => window.__controllerLifecycle.length === 4);
+await page.waitForFunction(() => !document.querySelector('#runtime-warning')?.textContent?.includes('Controller disconnected'));
+assert(await page.locator('#runtime-warning').isVisible(), 'Recovery hid an unrelated runtime warning');
+assert((await page.locator('#runtime-warning').textContent())?.includes('visual assets could not load'), 'Recovery removed an unrelated runtime warning');
+await page.waitForFunction(() => window.__announcements
+  .filter((message) => message === 'Controller reconnected. Controller input is available.').length === 2);
+recoveryAnnouncements = await page.evaluate(() => window.__announcements
+  .filter((message) => message === 'Controller reconnected. Controller input is available.'));
+assert(recoveryAnnouncements.length === 2, `A real second recovery was not announced exactly once: ${JSON.stringify(recoveryAnnouncements)}`);
+const controllerLifecycle = await page.evaluate(() => window.__controllerLifecycle);
+assert(JSON.stringify(controllerLifecycle) === JSON.stringify(['disconnected', 'reconnected', 'disconnected', 'reconnected']),
+  `Controller lifecycle emitted unexpected transitions: ${JSON.stringify(controllerLifecycle)}`);
+
+await page.evaluate(() => window.dispatchEvent(new Event('input-controller-reconnected')));
+await page.waitForTimeout(100);
+recoveryAnnouncements = await page.evaluate(() => window.__announcements
+  .filter((message) => message === 'Controller reconnected. Controller input is available.'));
+assert(recoveryAnnouncements.length === 2, 'A duplicate reconnect event announced recovery without a disconnect warning');
 
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 console.log('Controls/remapping E2E passed');

@@ -7,8 +7,8 @@
     <meta name="description" content="A retro first-person action campaign through a surreal claims facility." />
     <link rel="icon" type="image/png" href="./public_runtime/ui/title-screen.png" />
     <title>Red Ledger</title>
-    <script type="module" crossorigin src="./assets/index-kbW9Uzxu.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-D9L8raFI.css">
+    <script type="module" crossorigin src="./assets/index-r8NBR_lh.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-15guANoA.css">
   </head>
   <body>
     <main id="game-shell" aria-busy="true">
@@ -37,6 +37,7 @@
           <button id="new-game">New Game</button>
           <button id="continue-game">Continue</button>
           <button id="level-select-button">Level Select</button>
+          <button id="milestones-button">Milestones</button>
           <button id="replays-button">Replays</button>
           <button id="options-button">Options</button>
           <button id="credits-button">Credits</button>
@@ -67,8 +68,23 @@
         </label>
         <div id="campaign-mastery" class="campaign-mastery" aria-live="polite"></div>
         <div id="level-milestones" class="milestone-panel" aria-label="Milestones"></div>
+        <button id="level-select-milestones">Milestone Ledger</button>
         <div id="level-select-list" class="level-select-list"></div>
         <button data-back>Back</button>
+      </section>
+      <section id="milestone-ledger" class="screen compact milestone-ledger-screen" aria-labelledby="milestone-ledger-title">
+        <h1 id="milestone-ledger-title">Milestone Ledger</h1>
+        <div id="milestone-ledger-tabs" class="milestone-ledger-tabs" role="tablist" aria-label="Milestone filters" aria-orientation="horizontal">
+          <button id="milestone-filter-all" type="button" role="tab" aria-selected="true" aria-controls="milestone-ledger-panel" data-milestone-filter="all">All</button>
+          <button id="milestone-filter-open" type="button" role="tab" aria-selected="false" aria-controls="milestone-ledger-panel" data-milestone-filter="open" tabindex="-1">Open</button>
+          <button id="milestone-filter-earned" type="button" role="tab" aria-selected="false" aria-controls="milestone-ledger-panel" data-milestone-filter="earned" tabindex="-1">Earned</button>
+        </div>
+        <p id="milestone-ledger-summary" class="milestone-ledger-summary" role="status" aria-live="polite"></p>
+        <div id="milestone-ledger-panel" class="milestone-ledger-panel" role="tabpanel" aria-labelledby="milestone-filter-all" aria-describedby="milestone-ledger-summary">
+          <div id="milestone-ledger-list" class="milestone-ledger-list" role="list"></div>
+          <p id="milestone-ledger-empty" class="screen-copy" role="status" hidden></p>
+        </div>
+        <button id="milestone-ledger-back" data-back>Back</button>
       </section>
       <section id="episode-menu" class="screen" aria-label="Episode selection">
         <h1>Select Episode</h1>
@@ -148,6 +164,7 @@
         <div id="tally"></div>
         <div id="result-bests" aria-live="polite"></div>
         <div id="intermission-mastery" class="mastery-panel" aria-label="Mastery target"></div>
+        <div id="intermission-milestone-awards" class="milestone-awards" aria-label="New milestone awards" hidden></div>
         <div id="intermission-milestones" class="milestone-panel" aria-label="Milestones"></div>
         <div id="episode-mastery" class="episode-mastery" aria-label="Episode mastery"></div>
         <div id="episode-progress" aria-label="Episode progress"></div>
@@ -155,6 +172,7 @@
           <button id="continue-map">Continue</button>
           <button id="retry-map">Retry Map</button>
           <button id="intermission-level-select">Level Select</button>
+          <button id="intermission-milestones-button">Milestones</button>
           <button id="intermission-menu">Main Menu</button>
         </div>
       </section>
@@ -218,6 +236,7 @@
         <div id="objective" role="note" aria-label="Current objective"></div>
         <div id="message" aria-hidden="true"></div>
         <div id="boss-bar" role="group" aria-label="Boss encounter" hidden><div><strong></strong><small></small></div><i role="progressbar" aria-label="Boss health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span aria-hidden="true"></span></i></div>
+        <div id="active-effects" role="group" aria-label="No active effects" aria-live="off" hidden></div>
         <div id="combat-streak" aria-hidden="true" hidden>
           <strong></strong><span></span><i></i>
         </div>

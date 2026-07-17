@@ -32,9 +32,9 @@ export const PICKUP_AMMO_GRANTS: Readonly<Partial<Record<PickupId, AmmoGrant>>> 
 
 export const ammoCap = (ammo: CombatAmmo): number => AMMO_CAPS[ammo];
 
-export const pickupAmmoGrant = (pickup: PickupId, supplyMultiplier = 1): AmmoGrant | undefined => {
+export const pickupAmmoGrant = (pickup: PickupId, ammoSupplyMultiplier = 1): AmmoGrant | undefined => {
   const grant = PICKUP_AMMO_GRANTS[pickup];
-  return grant ? { ammo: grant.ammo, amount: grant.amount * supplyMultiplier } : undefined;
+  return grant ? { ammo: grant.ammo, amount: grant.amount * ammoSupplyMultiplier } : undefined;
 };
 
 export const weaponAcquisitionAmmoGrant = (

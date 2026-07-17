@@ -25,7 +25,7 @@ describe('shared ammunition economy policy', () => {
     });
   });
 
-  it('scales pickup supply before applying the runtime cap', () => {
+  it('scales pickup ammunition before applying the runtime cap', () => {
     expect(pickupAmmoGrant('staples-large', .65)).toEqual({ ammo: 'staples', amount: 26 });
     expect(pickupAmmoGrant('field-medical-case')).toBeUndefined();
     expect(addAmmoWithinCap(190, pickupAmmoGrant('staples-large')!)).toBe(200);

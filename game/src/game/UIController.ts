@@ -19,12 +19,21 @@ import {
   PERSISTENCE_CONFLICT_EVENT,
   PERSISTENCE_DEGRADED_EVENT,
   hasMasteryProof,
+  mapRecordKey,
   type CampaignUnlocks,
   type MapPerformance,
   type MapRecord,
   type PersistenceConflict,
+  type RunVariant,
 } from './PersistenceSystem';
-import { deriveMilestones, milestoneHighlights } from './Milestones';
+import {
+  deriveMilestones,
+  filterMilestones,
+  milestoneHighlights,
+  newlyEarnedMilestones,
+  type MilestoneFilter,
+  type MilestoneStatus,
+} from './Milestones';
 
 type PortraitState = 'neutral' | 'pain-center' | 'pain-left' | 'pain-right' | 'glance-left' | 'glance-right' | 'weapon-acquired' | 'overcharge' | 'invulnerable' | 'dead';
 
@@ -87,16 +96,53 @@ export const normalizeInterfacePreferences = (value: unknown): InterfacePreferen
   };
 };
 
-const DIFFICULTY_OPTIONS: ReadonlyArray<{ id: GameDifficulty; label: string; detail: string }> = [
-  { id: 'orientation', label: 'Orientation', detail: 'Story-focused. More supplies, slower threats, forgiving damage.' },
-  { id: 'desk-adjuster', label: 'Desk Adjuster', detail: 'A measured first campaign with generous recovery.' },
-  { id: 'field-adjuster', label: 'Field Adjuster', detail: 'Recommended. The intended balance of pressure, supplies, and speed.' },
-  { id: 'catastrophe-team', label: 'Catastrophe Team', detail: 'Hard placements and lean supplies demand route mastery.' },
-  { id: 'binding-authority', label: 'Binding Authority', detail: 'Relentless speed and damage for fully mastered files.' },
+export const DIFFICULTY_OPTIONS: ReadonlyArray<{ id: GameDifficulty; label: string; detail: string }> = [
+  { id: 'orientation', label: 'Orientation', detail: 'Story-focused: 50% more ammo from pickups, fewer and slower threats, and forgiving damage.' },
+  { id: 'desk-adjuster', label: 'Desk Adjuster', detail: 'Measured: 25% more ammo from pickups, fewer threats, and reduced threat speed and damage.' },
+  { id: 'field-adjuster', label: 'Field Adjuster', detail: 'Recommended: standard ammo pickups with the intended threat placements, speed, and damage.' },
+  { id: 'catastrophe-team', label: 'Catastrophe Team', detail: 'Hard placements with ammo from pickups reduced to 80%; threat speed and damage remain standard.' },
+  { id: 'binding-authority', label: 'Binding Authority', detail: 'Hard placements, ammo from pickups reduced to 65%, and faster, harder-hitting threats.' },
 ];
 
 const formatTime = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 const formatLabel = (value: string): string => value.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
+const CONTROLLER_DISCONNECTED_WARNING = 'Controller disconnected. Reconnect it or continue with keyboard, mouse, or touch controls.';
+const CONTROLLER_RECONNECTED_ANNOUNCEMENT = 'Controller reconnected. Controller input is available.';
+
+type ActiveEffectKey = keyof GameSnapshot['player']['powerups'];
+
+export interface ActiveEffectPresentation {
+  readonly key: ActiveEffectKey;
+  readonly assetId: string;
+  readonly label: string;
+  readonly effect: string;
+  readonly seconds: number;
+  readonly progress: number;
+  readonly urgent: boolean;
+}
+
+const ACTIVE_EFFECT_DURATION = 30;
+const ACTIVE_EFFECT_DEFINITIONS: readonly Omit<ActiveEffectPresentation, 'seconds' | 'progress' | 'urgent'>[] = [
+  { key: 'binder', assetId: 'temporary-binder', label: 'Temporary Binder', effect: 'Blocks all damage.' },
+  { key: 'hazard', assetId: 'hazard-endorsement', label: 'Hazard Endorsement', effect: 'Prevents floor hazard damage.' },
+  { key: 'rapid', assetId: 'rapid-authority', label: 'Rapid Authority', effect: 'Weapons fire faster.' },
+  { key: 'forensic', assetId: 'forensic-lens', label: 'Forensic Lens', effect: 'Reveals threats and slows their targeting.' },
+  { key: 'goggles', assetId: 'night-goggles', label: 'Night Inspection Goggles', effect: 'Improves distance visibility.' },
+];
+
+/** Produces stable, display-ready timed effects without mutating simulation state. */
+export const activeEffectsPresentation = (
+  powerups: Readonly<Partial<GameSnapshot['player']['powerups']>>,
+): readonly ActiveEffectPresentation[] => ACTIVE_EFFECT_DEFINITIONS.flatMap((definition) => {
+  const remaining = powerups[definition.key];
+  if (typeof remaining !== 'number' || !Number.isFinite(remaining) || remaining <= 0) return [];
+  return [{
+    ...definition,
+    seconds: Math.ceil(remaining),
+    progress: Math.ceil(Math.min(1, remaining / ACTIVE_EFFECT_DURATION) * 100),
+    urgent: remaining <= 5,
+  }];
+});
 
 export interface MasteryPresentation {
   target: string;
@@ -153,6 +199,86 @@ export const masteryPresentation = (mapId: MapId, record?: MapRecord, current?: 
   };
 };
 
+export const runVariantUiLabel = (runVariant: RunVariant): string => ({
+  'fresh-start': 'Fresh Start',
+  'campaign-carry': 'Campaign Carry',
+  'legacy-unclassified': 'Legacy Run (retained)',
+})[runVariant];
+
+export interface LevelSelectRecordTracks {
+  readonly freshStart?: MapRecord;
+  readonly campaignCarry?: MapRecord;
+  readonly legacy?: MapRecord;
+}
+
+export const levelSelectRecordTracks = (
+  progress: CampaignUnlocks,
+  mapId: MapId,
+  difficulty: GameDifficulty,
+): LevelSelectRecordTracks => ({
+  freshStart: progress.records[mapRecordKey(mapId, difficulty, 'fresh-start')],
+  campaignCarry: progress.records[mapRecordKey(mapId, difficulty, 'campaign-carry')],
+  legacy: progress.records[mapRecordKey(mapId, difficulty, 'legacy-unclassified')],
+});
+
+export interface TrackedIntermissionMastery {
+  readonly result: MasteryPresentation;
+  readonly retry: MasteryPresentation;
+  readonly resultTrack: RunVariant;
+  readonly resultLabel: string;
+  readonly retryTarget: string;
+}
+
+export const trackedIntermissionMastery = (
+  mapId: MapId,
+  progress: CampaignUnlocks,
+  difficulty: GameDifficulty,
+  resultTrack: RunVariant,
+  resultRecord?: MapRecord,
+  current?: MapPerformance,
+): TrackedIntermissionMastery => {
+  const retry = masteryPresentation(
+    mapId,
+    progress.records[mapRecordKey(mapId, difficulty, 'fresh-start')],
+  );
+  return {
+    result: masteryPresentation(mapId, resultRecord, current),
+    retry,
+    resultTrack,
+    resultLabel: runVariantUiLabel(resultTrack),
+    retryTarget: retry.complete
+      ? 'Fresh Start mastery achieved'
+      : retry.target.replace('Retry goal: ', 'Retry goal: Fresh Start - '),
+  };
+};
+
+export const masteryAggregatePresentation = (
+  progress: CampaignUnlocks,
+  difficulty: GameDifficulty,
+  runVariant: RunVariant,
+  episodeIndex?: number,
+): string => {
+  const episodes = episodeIndex === undefined ? CAMPAIGN.episodes : [CAMPAIGN.episodes[episodeIndex]];
+  const maps = episodes.flatMap((episode) => episode.maps).filter((id) => !CAMPAIGN.maps[id].secretMap);
+  const records = maps.flatMap((id) => {
+    const record = progress.records[mapRecordKey(id, difficulty, runVariant)];
+    return record ? [record] : [];
+  });
+  const pars = records.filter((record) => record.parBeaten).length;
+  const elite = records.filter((record) => record.bestGrade === 'S' || record.bestGrade === 'A').length;
+  const mastered = records.filter(hasMasteryProof).length;
+  const track = runVariantUiLabel(runVariant);
+  if (episodeIndex === undefined) {
+    const completedEpisodes = CAMPAIGN.episodes.filter((episode) => episode.maps
+      .filter((id) => !CAMPAIGN.maps[id].secretMap)
+      .every((id) => progress.records[mapRecordKey(id, difficulty, runVariant)])).length;
+    return `${track} Campaign ${records.length}/${maps.length} clear | ${completedEpisodes}/${CAMPAIGN.episodes.length} episodes | ${pars} par | ${elite} A+ | ${mastered} mastered`;
+  }
+  const secretMaps = CAMPAIGN.episodes[episodeIndex].maps.filter((id) => CAMPAIGN.maps[id].secretMap);
+  const knownSecrets = secretMaps.filter((id) => progress.discoveredSecretMaps.includes(id)).length;
+  return `${track} Episode ${records.length}/${maps.length} clear | ${pars} par | ${elite} A+ | ${mastered} mastered | ${knownSecrets}/${secretMaps.length} secret routes`;
+};
+
 export const resolveReducedMotionSetting = (
   settings: Readonly<Record<string, unknown>>,
   systemPrefersReducedMotion: boolean,
@@ -194,6 +320,64 @@ export const entryObjectiveCue = (map: CampaignMap): string => {
   }
   return 'Clear the required response, work the marked controls, then reach the outbound file.';
 };
+
+const sentenceFragment = (value: string): string => value.trim().replace(/[.!?]+$/, '');
+
+export const entryObjectiveBriefing = (
+  snapshot: Readonly<Pick<GameSnapshot, 'map' | 'objective'>>,
+  includeAuthoredRoute = true,
+): string => {
+  const immediate = sentenceFragment(snapshot.objective) || 'Review the current objective';
+  if (!includeAuthoredRoute) return `Current objective: ${immediate}.`;
+  const route = sentenceFragment(entryObjectiveCue(snapshot.map));
+  return `First: ${immediate}. Then: ${route}.`;
+};
+
+export interface AssistiveGameplayGuidanceState {
+  readonly objective: string;
+  readonly interactionSignature: string;
+}
+
+export interface AssistiveGameplayGuidanceInput {
+  readonly active: boolean;
+  readonly transientMessage: string;
+  readonly objective: string;
+  readonly interaction?: {
+    readonly signature: string;
+    readonly label: string;
+    readonly state: 'ready' | 'locked';
+  };
+}
+
+export const advanceAssistiveGameplayGuidance = (
+  input: Readonly<AssistiveGameplayGuidanceInput>,
+  state: Readonly<AssistiveGameplayGuidanceState>,
+): { state: AssistiveGameplayGuidanceState; announcement?: string } => {
+  if (!input.active) return { state };
+
+  const interactionSignature = input.interaction?.signature ?? '';
+  if (input.transientMessage) {
+    return interactionSignature || !state.interactionSignature
+      ? { state }
+      : { state: { ...state, interactionSignature: '' } };
+  }
+
+  const objective = input.objective.trim();
+  const announcement: string[] = [];
+  if (objective && objective !== state.objective) {
+    announcement.push(`Objective: ${sentenceFragment(objective)}.`);
+  }
+  if (input.interaction && interactionSignature !== state.interactionSignature) {
+    const prefix = input.interaction.state === 'locked' ? 'Blocked' : 'Action available';
+    announcement.push(`${prefix}: ${sentenceFragment(input.interaction.label)}.`);
+  }
+  const nextState = { objective, interactionSignature };
+  return announcement.length ? { state: nextState, announcement: announcement.join(' ') } : { state: nextState };
+};
+
+export const milestoneAwardAnnouncement = (awards: readonly MilestoneStatus[]): string => awards
+  .map((milestone) => `Milestone earned: ${milestone.name}. Cosmetic seal: ${milestone.reward.label}.`)
+  .join(' ');
 
 const updateText = (element: Element, value: string): void => {
   if (element.textContent !== value) element.textContent = value;
@@ -274,6 +458,9 @@ export class UIController {
   private weaponBob = { x: 0, y: 0 };
   private lastView?: { x: number; z: number; yaw: number };
   private levelSelectReturn: 'menu' | 'intermission' = 'menu';
+  private milestoneReturn: 'menu' | 'level-select' | 'intermission' = 'menu';
+  private milestoneFilter: MilestoneFilter = 'all';
+  private readonly knownEarnedMilestoneIds = new Set<string>();
   private replayReturn: 'menu' | 'pause-menu' = 'menu';
   private sessionReplays: ReplayLibraryEntry[] = [];
   private entryDevice: 'desktop' | 'gamepad' | 'touch' = 'desktop';
@@ -282,7 +469,10 @@ export class UIController {
   private readonly screenFocusHistory = new Map<string, HTMLElement>();
   private reticleKick = 0;
   private lastCredentialSignature = '';
+  private lastActiveEffectsSignature = '';
   private lastInteractionSignature?: string;
+  private latestSnapshot?: Readonly<GameSnapshot>;
+  private assistiveGuidanceState: AssistiveGameplayGuidanceState = { objective: '', interactionSignature: '' };
   private lastPortraitFile = '';
   private audioReadyRequested = false;
   private entryPreparationToken = 0;
@@ -299,6 +489,9 @@ export class UIController {
     window.addEventListener(ASSET_DEGRADED_EVENT, () => this.showRuntimeWarning(
       'One or more visual assets could not load. Safe placeholder art is in use; reload when the connection is stable.',
     ));
+    deriveMilestones(this.game.campaignProgress())
+      .filter((milestone) => milestone.earned)
+      .forEach((milestone) => this.knownEarnedMilestoneIds.add(milestone.id));
     this.buildEpisodeCards();
     this.buildDifficulties();
     this.bindActions();
@@ -470,6 +663,12 @@ export class UIController {
     ));
     $('#cancel-binding').addEventListener('click', () => this.cancelBindingCapture());
     $('#level-select-button').addEventListener('click', () => { this.levelSelectReturn = 'menu'; this.showLevelSelect(); });
+    $('#milestones-button').addEventListener('click', () => this.showMilestoneLedger('menu'));
+    $('#level-select-milestones').addEventListener('click', () => this.showMilestoneLedger('level-select'));
+    document.querySelectorAll<HTMLButtonElement>('[data-milestone-filter]').forEach((button) => {
+      button.addEventListener('click', () => this.setMilestoneFilter(button.dataset.milestoneFilter as MilestoneFilter));
+      button.addEventListener('keydown', (event) => this.handleMilestoneTabKeydown(event));
+    });
     $('#replays-button').addEventListener('click', () => { this.replayReturn = 'menu'; this.showReplayLibrary(); });
     $('#replay-back').addEventListener('click', () => this.returnFromReplayLibrary());
     $('#import-replay').addEventListener('click', () => $<HTMLInputElement>('#replay-file').click());
@@ -531,6 +730,7 @@ export class UIController {
       this.levelSelectReturn = 'intermission';
       this.showLevelSelect();
     });
+    $('#intermission-milestones-button').addEventListener('click', () => this.showMilestoneLedger('intermission'));
     $('#intermission-menu').addEventListener('click', () => {
       this.game.audio.stopMusic();
       this.game.returnToMenu();
@@ -634,10 +834,14 @@ export class UIController {
       this.setEntryDevice(source === 'gamepad' ? 'gamepad' : source === 'touch' ? 'touch' : 'desktop');
     });
     window.addEventListener('input-controller-disconnected', () => {
-      const message = 'Controller disconnected. Reconnect it or continue with keyboard, mouse, or touch controls.';
-      this.showRuntimeWarning(message);
-      this.announce(message);
+      this.showRuntimeWarning(CONTROLLER_DISCONNECTED_WARNING);
+      this.announce(CONTROLLER_DISCONNECTED_WARNING);
       if (this.game.mode === 'playing') this.game.pause();
+    });
+    window.addEventListener('input-controller-reconnected', () => {
+      if (this.clearRuntimeWarning(CONTROLLER_DISCONNECTED_WARNING)) {
+        this.announce(CONTROLLER_RECONNECTED_ANNOUNCEMENT);
+      }
     });
     window.addEventListener(AUDIO_CAPTION_EVENT, (event) => {
       this.showSoundCaption((event as CustomEvent<AudioCaptionDetail>).detail);
@@ -650,12 +854,14 @@ export class UIController {
   }
 
   private update(snapshot: GameSnapshot): void {
+    this.latestSnapshot = snapshot;
     if (this.trailMap !== snapshot.map.id) {
       this.playerTrail.length = 0;
       this.trailMap = snapshot.map.id;
       this.automapPan = { x: 0, z: 0 };
       this.lastView = undefined;
       this.reticleKick = 0;
+      this.assistiveGuidanceState = { objective: '', interactionSignature: '' };
     }
     const healthValue = Math.max(0, Math.ceil(snapshot.player.health));
     const armorValue = Math.max(0, Math.ceil(snapshot.player.armor));
@@ -682,6 +888,7 @@ export class UIController {
     } else if (!snapshot.message) this.lastAnnouncedMessage = '';
     updateText($('#map-name'), `${snapshot.map.id} ${snapshot.map.title}`);
     updateText($('#objective'), snapshot.objective);
+    this.renderActiveEffects(snapshot.player.powerups);
     const interaction = snapshot.interaction;
     const interactionSignature = interaction ? `${interaction.state}|${interaction.icon}|${interaction.label}` : '';
     if (interactionSignature !== this.lastInteractionSignature) {
@@ -694,6 +901,16 @@ export class UIController {
       }
       this.lastInteractionSignature = interactionSignature;
     }
+    const guidance = advanceAssistiveGameplayGuidance({
+      active: snapshot.mode === 'playing'
+        && !document.querySelector('.screen.active')
+        && $('#ready-overlay').hasAttribute('hidden'),
+      transientMessage: snapshot.message,
+      objective: snapshot.objective,
+      ...(interaction ? { interaction: { signature: interactionSignature, label: interaction.label, state: interaction.state } } : {}),
+    }, this.assistiveGuidanceState);
+    this.assistiveGuidanceState = guidance.state;
+    if (guidance.announcement) this.announce(guidance.announcement);
     const streak = $<HTMLElement>('#combat-streak');
     streak.toggleAttribute('hidden', snapshot.momentum.chain < 2);
     updateText(streak.querySelector<HTMLElement>('strong')!, `x${snapshot.momentum.chain}`);
@@ -777,6 +994,61 @@ export class UIController {
       if (this.playerTrail.length > 180) this.playerTrail.shift();
     }
     this.lastMode = snapshot.mode;
+  }
+
+  private renderActiveEffects(powerups: Readonly<GameSnapshot['player']['powerups']>): void {
+    const effects = activeEffectsPresentation(powerups);
+    const signature = effects.map(({ key, seconds, progress }) => `${key}:${seconds}:${progress}`).join('|');
+    if (signature === this.lastActiveEffectsSignature) return;
+    this.lastActiveEffectsSignature = signature;
+
+    const container = $('#active-effects');
+    container.toggleAttribute('hidden', effects.length === 0);
+    if (effects.length === 0) {
+      container.replaceChildren();
+      container.setAttribute('aria-label', 'No active effects');
+      return;
+    }
+
+    container.setAttribute('aria-label', `Active effects: ${effects.map(({ label }) => label).join(', ')}`);
+    container.replaceChildren(...effects.map((effect) => {
+      const item = document.createElement('div');
+      item.className = 'active-effect';
+      item.dataset.effect = effect.key;
+      item.classList.toggle('urgent', effect.urgent);
+      item.setAttribute('role', 'group');
+      item.setAttribute('aria-label', `${effect.label}. ${effect.effect} ${effect.seconds} seconds remaining.`);
+
+      const icon = document.createElement('img');
+      icon.src = runtimeUrl(this.game.assets.pickup(effect.assetId));
+      icon.alt = '';
+      icon.setAttribute('aria-hidden', 'true');
+
+      const copy = document.createElement('span');
+      const label = document.createElement('strong');
+      const description = document.createElement('small');
+      label.textContent = effect.label;
+      description.textContent = effect.effect;
+      copy.append(label, description);
+
+      const time = document.createElement('time');
+      time.textContent = `${effect.seconds}s`;
+      time.dateTime = `PT${effect.seconds}S`;
+      time.setAttribute('aria-hidden', 'true');
+
+      const progress = document.createElement('i');
+      progress.setAttribute('role', 'progressbar');
+      progress.setAttribute('aria-label', `${effect.label} time remaining`);
+      progress.setAttribute('aria-valuemin', '0');
+      progress.setAttribute('aria-valuemax', '30');
+      progress.setAttribute('aria-valuenow', String(Math.min(ACTIVE_EFFECT_DURATION, effect.seconds)));
+      progress.setAttribute('aria-valuetext', `${effect.seconds} seconds remaining`);
+      progress.style.setProperty('--effect-progress', `${effect.progress}%`);
+      progress.append(document.createElement('span'));
+
+      item.append(icon, copy, time, progress);
+      return item;
+    }));
   }
 
   private drawAutomap(snapshot: GameSnapshot): void {
@@ -901,19 +1173,146 @@ export class UIController {
     }
   }
 
-  private renderMastery(container: HTMLElement, presentation: MasteryPresentation): void {
+  private renderMastery(container: HTMLElement, presentation: TrackedIntermissionMastery): void {
     const target = document.createElement('strong');
-    target.textContent = presentation.target;
+    target.textContent = presentation.retryTarget;
     const comparison = document.createElement('span');
-    comparison.textContent = presentation.comparison;
+    comparison.textContent = `${presentation.resultLabel} result | ${presentation.result.comparison}`;
     const metrics = document.createElement('div');
-    presentation.metrics.forEach((value) => {
+    presentation.result.metrics.forEach((value) => {
       const metric = document.createElement('small');
       metric.textContent = value;
       metrics.append(metric);
     });
-    container.classList.toggle('complete', presentation.complete);
+    container.dataset.resultTrack = presentation.resultTrack;
+    container.dataset.retryTrack = 'fresh-start';
+    container.classList.toggle('complete', presentation.retry.complete);
     container.replaceChildren(target, comparison, metrics);
+  }
+
+  private showMilestoneLedger(origin: 'menu' | 'level-select' | 'intermission'): void {
+    this.milestoneReturn = origin;
+    this.milestoneFilter = 'all';
+    this.screenFocusHistory.delete('milestone-ledger');
+    this.renderMilestoneLedger();
+    this.showScreen('milestone-ledger');
+  }
+
+  private setMilestoneFilter(filter: MilestoneFilter, focus = false): void {
+    this.milestoneFilter = filter;
+    this.renderMilestoneLedger();
+    if (focus) $<HTMLButtonElement>(`#milestone-filter-${filter}`).focus();
+  }
+
+  private handleMilestoneTabKeydown(event: KeyboardEvent): void {
+    const filters: readonly MilestoneFilter[] = ['all', 'open', 'earned'];
+    const current = filters.indexOf((event.currentTarget as HTMLButtonElement).dataset.milestoneFilter as MilestoneFilter);
+    if (current < 0) return;
+    let next = current;
+    if (event.key === 'ArrowRight') next = (current + 1) % filters.length;
+    else if (event.key === 'ArrowLeft') next = (current - 1 + filters.length) % filters.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = filters.length - 1;
+    else return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.setMilestoneFilter(filters[next], true);
+  }
+
+  private renderMilestoneLedger(): void {
+    const milestones = deriveMilestones(this.game.campaignProgress());
+    const filtered = filterMilestones(milestones, this.milestoneFilter);
+    const earned = milestones.filter((milestone) => milestone.earned).length;
+    document.querySelectorAll<HTMLButtonElement>('[data-milestone-filter]').forEach((button) => {
+      const selected = button.dataset.milestoneFilter === this.milestoneFilter;
+      button.setAttribute('aria-selected', String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
+    const panel = $('#milestone-ledger-panel');
+    panel.setAttribute('aria-labelledby', `milestone-filter-${this.milestoneFilter}`);
+    $('#milestone-ledger-summary').textContent = `Showing ${filtered.length} of ${milestones.length}. ${earned} earned.`;
+    const list = $('#milestone-ledger-list');
+    list.setAttribute('aria-label', `${formatLabel(this.milestoneFilter)} milestones`);
+    list.replaceChildren(...filtered.map((milestone) => this.buildMilestoneLedgerItem(milestone)));
+    list.toggleAttribute('hidden', filtered.length === 0);
+    const empty = $('#milestone-ledger-empty');
+    empty.textContent = this.milestoneFilter === 'earned'
+      ? 'No earned milestones yet.'
+      : this.milestoneFilter === 'open'
+        ? 'Every milestone is earned.'
+        : 'No milestones are available.';
+    empty.toggleAttribute('hidden', filtered.length > 0);
+  }
+
+  private buildMilestoneLedgerItem(milestone: MilestoneStatus): HTMLElement {
+    const item = document.createElement('article');
+    item.className = `milestone-ledger-item ${milestone.earned ? 'earned' : 'open'}`;
+    item.dataset.milestone = milestone.id;
+    item.dataset.state = milestone.earned ? 'earned' : 'open';
+    item.setAttribute('role', 'listitem');
+
+    const header = document.createElement('header');
+    const name = document.createElement('strong');
+    name.id = `milestone-${milestone.id}-name`;
+    name.textContent = milestone.name;
+    const state = document.createElement('span');
+    state.id = `milestone-${milestone.id}-state`;
+    state.className = 'milestone-ledger-state';
+    state.textContent = milestone.earned ? 'Earned' : 'Open';
+    item.setAttribute('aria-labelledby', `${name.id} ${state.id}`);
+    header.append(name, state);
+
+    const condition = document.createElement('p');
+    condition.textContent = `Condition: ${milestone.description}`;
+    const progressCopy = document.createElement('span');
+    progressCopy.id = `milestone-${milestone.id}-progress`;
+    progressCopy.className = 'milestone-ledger-progress-copy';
+    progressCopy.textContent = `Progress: ${milestone.progress} (${milestone.current} of ${milestone.target})`;
+    const progress = document.createElement('progress');
+    progress.max = milestone.target;
+    progress.value = milestone.current;
+    progress.setAttribute('aria-label', `${milestone.name} progress`);
+    progress.setAttribute('aria-describedby', progressCopy.id);
+    progress.setAttribute('aria-valuetext', milestone.progress);
+
+    const reward = document.createElement('div');
+    reward.className = 'milestone-ledger-reward';
+    const seal = document.createElement('span');
+    seal.className = 'milestone-seal-mark';
+    seal.textContent = 'SEAL';
+    seal.setAttribute('aria-hidden', 'true');
+    const rewardCopy = document.createElement('span');
+    const rewardLabel = document.createElement('strong');
+    rewardLabel.textContent = `Seal: ${milestone.reward.label}`;
+    const rewardRule = document.createElement('small');
+    rewardRule.textContent = 'Cosmetic only | No gameplay effect';
+    rewardCopy.append(rewardLabel, rewardRule);
+    reward.append(seal, rewardCopy);
+
+    item.append(header, condition, progressCopy, progress, reward);
+    return item;
+  }
+
+  private renderMilestoneAwards(awards: readonly MilestoneStatus[]): void {
+    const container = $('#intermission-milestone-awards');
+    container.toggleAttribute('hidden', awards.length === 0);
+    if (!awards.length) {
+      container.replaceChildren();
+      return;
+    }
+    const title = document.createElement('strong');
+    title.textContent = awards.length === 1 ? 'Milestone Earned' : `${awards.length} Milestones Earned`;
+    const list = document.createElement('div');
+    awards.forEach((milestone) => {
+      const item = document.createElement('span');
+      const name = document.createElement('b');
+      name.textContent = milestone.name;
+      const seal = document.createElement('small');
+      seal.textContent = `Seal: ${milestone.reward.label}`;
+      item.append(name, seal);
+      list.append(item);
+    });
+    container.replaceChildren(title, list);
   }
 
   private renderMilestones(
@@ -945,24 +1344,6 @@ export class UIController {
     container.replaceChildren(summary, list);
   }
 
-  private masteryAggregate(progress: CampaignUnlocks, difficulty: GameDifficulty, episodeIndex?: number): string {
-    const episodes = episodeIndex === undefined ? CAMPAIGN.episodes : [CAMPAIGN.episodes[episodeIndex]];
-    const maps = episodes.flatMap((episode) => episode.maps).filter((id) => !CAMPAIGN.maps[id].secretMap);
-    const records = maps.flatMap((id) => {
-      const record = progress.records[`${id}:${difficulty}`];
-      return record ? [record] : [];
-    });
-    const pars = records.filter((record) => record.parBeaten).length;
-    const elite = records.filter((record) => record.bestGrade === 'S' || record.bestGrade === 'A').length;
-    const mastered = records.filter(hasMasteryProof).length;
-    if (episodeIndex === undefined) {
-      return `Campaign ${records.length}/${maps.length} clear | ${progress.completedEpisodes.length}/${CAMPAIGN.episodes.length} episodes | ${pars} par | ${elite} A+ | ${mastered} mastered`;
-    }
-    const secretMaps = CAMPAIGN.episodes[episodeIndex].maps.filter((id) => CAMPAIGN.maps[id].secretMap);
-    const knownSecrets = secretMaps.filter((id) => progress.discoveredSecretMaps.includes(id)).length;
-    return `Episode ${records.length}/${maps.length} clear | ${pars} par | ${elite} A+ | ${mastered} mastered | ${knownSecrets}/${secretMaps.length} secret routes`;
-  }
-
   private showIntermission(): void {
     const episode = Number(this.game.world.map.id[1]);
     const art = this.game.world.map.index === 8 ? `episode-${episode}-outro` : `intermission-episode-${episode}`;
@@ -980,21 +1361,40 @@ export class UIController {
       ...(result?.completionBonus ? [`Clear bonus +${result.completionBonus}`] : []),
       `Best chain x${this.game.momentum.best}`,
       `Time    ${formatTime(tally.elapsed)} / Par ${formatTime(this.game.world.map.parSeconds)}`,
-      ...(result ? [`Record  ${formatTime(result.record.bestTime)} / ${result.record.highScore} pts / ${result.record.completions} clear${result.record.completions === 1 ? '' : 's'}`] : []),
+      ...(result ? [`Record (${runVariantUiLabel(result.record.runVariant)})  ${formatTime(result.record.bestTime)} / ${result.record.highScore} pts / ${result.record.completions} clear${result.record.completions === 1 ? '' : 's'}`] : []),
     ].join('\n');
-    $('#result-bests').textContent = result?.newBests.length ? `NEW: ${result.newBests.join(' / ')}` : 'Record held';
+    $('#result-bests').textContent = result
+      ? `${runVariantUiLabel(result.record.runVariant)}: ${result.newBests.length ? `NEW: ${result.newBests.join(' / ')}` : 'Record held'}`
+      : 'Record held';
     const episodeMaps = CAMPAIGN.episodes[episode - 1].maps;
     const progress = this.game.campaignProgress();
-    const mastery = result
-      ? masteryPresentation(this.game.world.map.id, result.record, result.performance)
-      : masteryPresentation(this.game.world.map.id);
+    const milestoneStatuses = deriveMilestones(progress);
+    const milestoneAwards = newlyEarnedMilestones(milestoneStatuses, this.knownEarnedMilestoneIds);
+    milestoneStatuses.filter((milestone) => milestone.earned)
+      .forEach((milestone) => this.knownEarnedMilestoneIds.add(milestone.id));
+    const mastery = trackedIntermissionMastery(
+      this.game.world.map.id,
+      progress,
+      this.game.difficulty,
+      result?.record.runVariant ?? this.game.runVariant,
+      result?.record,
+      result?.performance,
+    );
     this.renderMastery($<HTMLElement>('#intermission-mastery'), mastery);
+    this.renderMilestoneAwards(milestoneAwards);
     this.renderMilestones($<HTMLElement>('#intermission-milestones'), progress, this.game.difficulty, this.game.world.map.id);
-    $('#episode-mastery').textContent = this.masteryAggregate(progress, this.game.difficulty, episode - 1);
+    $('#episode-mastery').textContent = masteryAggregatePresentation(
+      progress,
+      this.game.difficulty,
+      mastery.resultTrack,
+      episode - 1,
+    );
     const retry = $<HTMLButtonElement>('#retry-map');
-    retry.classList.toggle('recommended', !mastery.complete);
-    retry.textContent = mastery.complete ? 'Retry Map' : 'Retry Goal';
-    retry.title = mastery.target.replace('Retry goal: ', '');
+    retry.classList.toggle('recommended', !mastery.retry.complete);
+    retry.textContent = mastery.resultTrack === 'fresh-start'
+      ? (mastery.retry.complete ? 'Retry Map' : 'Retry Goal')
+      : (mastery.retry.complete ? 'Retry Fresh Start' : 'Retry Fresh Start Goal');
+    retry.title = mastery.retryTarget;
     const visibleMaps = episodeMaps.filter((id) => !CAMPAIGN.maps[id].secretMap
       || id === this.game.world.map.id || progress.discoveredSecretMaps.includes(id) || progress.completedMaps.includes(id));
     $('#episode-progress').replaceChildren(...visibleMaps.map((id) => {
@@ -1004,6 +1404,8 @@ export class UIController {
       return marker;
     }));
     this.showScreen('intermission');
+    const awardAnnouncement = milestoneAwardAnnouncement(milestoneAwards);
+    if (awardAnnouncement) this.announce(awardAnnouncement);
     this.playCompletionBurst();
   }
 
@@ -1248,7 +1650,10 @@ export class UIController {
     $('#ready-overlay').setAttribute('data-briefing', initialOrientation ? 'orientation' : 'context');
     $('#ready-map').textContent = `${this.game.world.map.id} ${this.game.world.map.title}`;
     $('#ready-briefing-kind').textContent = initialOrientation ? 'INITIAL ORIENTATION' : 'FIELD BRIEFING';
-    $('#entry-objective').textContent = entryObjectiveCue(this.game.world.map);
+    const snapshot = this.latestSnapshot?.map.id === this.game.world.map.id
+      ? this.latestSnapshot
+      : { map: this.game.world.map, objective: '' };
+    $('#entry-objective').textContent = entryObjectiveBriefing(snapshot, this.game.tally.elapsed === 0);
   }
 
   private prepareGameEntry(onEntered?: () => void): void {
@@ -1555,7 +1960,10 @@ export class UIController {
     const progress = this.game.campaignProgress();
     const difficulty = $<HTMLSelectElement>('#level-select-difficulty');
     difficulty.value = this.pendingDifficulty;
-    $('#campaign-mastery').textContent = this.masteryAggregate(progress, difficulty.value as GameDifficulty);
+    const selectedDifficulty = difficulty.value as GameDifficulty;
+    const retainedLegacy = Object.values(progress.records).some((record) =>
+      record.difficulty === selectedDifficulty && record.runVariant === 'legacy-unclassified');
+    $('#campaign-mastery').textContent = `${masteryAggregatePresentation(progress, selectedDifficulty, 'fresh-start')}${retainedLegacy ? ' | Legacy records retained for milestone history' : ''}`;
     this.renderMilestones($<HTMLElement>('#level-milestones'), progress, difficulty.value as GameDifficulty);
     CAMPAIGN.episodes.forEach((episode, episodeIndex) => {
       if (!this.game.isEpisodeUnlocked(episodeIndex)) return;
@@ -1565,7 +1973,12 @@ export class UIController {
       const headingTitle = document.createElement('strong');
       headingTitle.textContent = `Episode ${episode.number}: ${episode.title}`;
       const headingMastery = document.createElement('small');
-      headingMastery.textContent = this.masteryAggregate(progress, difficulty.value as GameDifficulty, episodeIndex);
+      headingMastery.textContent = masteryAggregatePresentation(
+        progress,
+        difficulty.value as GameDifficulty,
+        'fresh-start',
+        episodeIndex,
+      );
       heading.append(headingTitle, headingMastery);
       const grid = document.createElement('div');
       grid.className = 'level-map-grid';
@@ -1575,13 +1988,13 @@ export class UIController {
         if (map.secretMap && !secretKnown) return;
         const unlocked = map.secretMap ? secretKnown
           : mapIndex === 0 || progress.completedMaps.includes(id) || progress.completedMaps.includes(episode.maps[mapIndex - 1]);
-        const record = progress.records[`${id}:${difficulty.value}`];
-        const presentation = masteryPresentation(id, record);
+        const tracks = levelSelectRecordTracks(progress, id, difficulty.value as GameDifficulty);
+        const presentation = masteryPresentation(id, tracks.freshStart);
         const button = document.createElement('button');
         const label = document.createElement('strong');
         label.textContent = `${id} ${map.title}`;
         const detail = document.createElement('small');
-        detail.textContent = presentation.comparison;
+        detail.textContent = `Fresh Start | ${presentation.comparison}`;
         const target = document.createElement('small');
         target.className = 'map-mastery-target';
         target.textContent = unlocked
@@ -1589,6 +2002,18 @@ export class UIController {
           : `Unlock: Clear ${episode.maps[Math.max(0, mapIndex - 1)]}`;
         button.classList.toggle('mastered', presentation.complete);
         button.append(label, detail, target);
+        if (tracks.campaignCarry) {
+          const note = document.createElement('small');
+          note.className = 'map-record-note campaign-carry';
+          note.textContent = 'Campaign Carry record tracked separately';
+          button.append(note);
+        }
+        if (tracks.legacy) {
+          const note = document.createElement('small');
+          note.className = 'map-record-note legacy';
+          note.textContent = 'Legacy record retained for milestone history';
+          button.append(note);
+        }
         button.disabled = !unlocked;
         button.title = unlocked
           ? `${presentation.target}. ${presentation.metrics.join('. ')}`
@@ -2218,6 +2643,13 @@ export class UIController {
     warning.textContent = [...this.runtimeWarnings].join(' ');
     warning.toggleAttribute('hidden', false);
   }
+  private clearRuntimeWarning(message: string): boolean {
+    if (!this.runtimeWarnings.delete(message)) return false;
+    const warning = $('#runtime-warning');
+    warning.textContent = [...this.runtimeWarnings].join(' ');
+    warning.toggleAttribute('hidden', this.runtimeWarnings.size === 0);
+    return true;
+  }
   private hideScreens(): void { document.querySelectorAll('.screen').forEach((screen) => screen.classList.remove('active')); }
   private showScreen(id: string): void {
     if (id === 'menu' && this.game.mode === 'menu' && this.audioReadyRequested) {
@@ -2246,6 +2678,7 @@ export class UIController {
 
   private returnFromScreen(id: string): void {
     const target = id === 'level-select' ? this.levelSelectReturn
+      : id === 'milestone-ledger' ? this.milestoneReturn
       : id === 'difficulty-menu' ? 'episode-menu'
         : id === 'episode-intro' ? 'difficulty-menu'
           : id === 'options-menu' ? this.optionsReturn

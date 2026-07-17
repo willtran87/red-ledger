@@ -562,6 +562,37 @@ describe('EnemyBehaviorSystem role mechanics', () => {
     expect(soak(restored, 120, true)).toHaveLength(0);
   });
 
+  it('reconciles rejected summon placements without refunding the lifetime cap', () => {
+    const system = new EnemyBehaviorSystem({ rng: () => 0 });
+    system.restore({
+      version: 1,
+      elapsed: 0,
+      nextEntityId: 20,
+      actors: [],
+      projectiles: [],
+      hazards: [],
+      summonOwners: [{
+        ownerUid: 'regional-director-1',
+        actorUids: ['existing-add', 'attempted-add-a', 'attempted-add-b'],
+        total: 7,
+      }],
+    });
+
+    system.reconcileSummonPlacements(
+      'regional-director-1',
+      ['attempted-add-a', 'attempted-add-b', 'not-owned'],
+      ['attempted-add-b', 'not-owned'],
+    );
+    expect(system.serialize().summonOwners).toEqual([{
+      ownerUid: 'regional-director-1',
+      actorUids: ['attempted-add-b', 'existing-add'],
+      total: 7,
+    }]);
+
+    expect(() => system.reconcileSummonPlacements('absent-owner', ['missing'], [])).not.toThrow();
+    expect(system.serialize().summonOwners?.[0]?.total).toBe(7);
+  });
+
   it('infers legacy summon ownership before applying live and lifetime caps', () => {
     const boss = actor('regional-director', { health: ENEMIES['regional-director'].health * .5 });
     const adds = Array.from({ length: REGIONAL_DIRECTOR_SUMMON_CAPS.live }, (_, index) => actor('desk-warden', {

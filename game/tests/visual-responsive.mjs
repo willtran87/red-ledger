@@ -201,7 +201,8 @@ async function inspectShortLandscapeDifficulty() {
   await page.click('#new-game');
   await page.locator('.episode-card').first().click();
   await page.waitForFunction(() => document.activeElement?.getAttribute('data-difficulty') === 'field-adjuster');
-  assert((await page.locator('#difficulty-detail').innerText()).startsWith('Recommended.'),
+  const difficultyDetail = await page.locator('#difficulty-detail').innerText();
+  assert(difficultyDetail.startsWith('Recommended:') && difficultyDetail.includes('standard ammo pickups'),
     'mobile-landscape-568: Difficulty detail does not match the retained Field Adjuster selection');
   const initial = await page.locator('#difficulty-menu').evaluate((screen) => {
     screen.scrollTop = 0;

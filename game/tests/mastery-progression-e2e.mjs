@@ -32,24 +32,32 @@ assert(/^[SABCD]$/.test(await page.locator('#intermission-grade').innerText()), 
 assert((await page.locator('#tally').innerText()).includes('Par '), 'Intermission has no par comparison');
 assert((await page.locator('#result-bests').innerText()).includes('First clear'), 'First clear was not identified');
 const intermissionMastery = await page.locator('#intermission-mastery').innerText();
-assert(intermissionMastery.includes('Retry goal:') && intermissionMastery.includes('PB matched'), `Intermission lacks a concrete current-vs-PB retry target: ${intermissionMastery}`);
-assert((await page.locator('#episode-mastery').innerText()).includes('Episode 1/8 clear'), 'Intermission episode aggregate is missing or incorrect');
+assert(intermissionMastery.includes('Retry goal: Fresh Start')
+  && intermissionMastery.includes('Campaign Carry result')
+  && intermissionMastery.includes('PB matched'), `Intermission does not separate its result and retry tracks: ${intermissionMastery}`);
+assert(await page.locator('#intermission-mastery').getAttribute('data-result-track') === 'campaign-carry', 'Intermission lost the actual Campaign Carry result track');
+assert(await page.locator('#intermission-mastery').getAttribute('data-retry-track') === 'fresh-start', 'Intermission retry target is not Fresh Start');
+assert(!await page.locator('#intermission-mastery').evaluate((element) => element.classList.contains('complete')),
+  'A mastered Campaign Carry result incorrectly marked the incomplete Fresh Start retry target complete');
+assert((await page.locator('#episode-mastery').innerText()).includes('Campaign Carry Episode 1/8 clear'), 'Intermission episode aggregate is missing or uses the wrong track');
 const intermissionMilestones = await page.locator('#intermission-milestones').innerText();
 assert(intermissionMilestones.includes('Milestones') && /Closed Without Exception|Red Seal|Ahead of Schedule/.test(intermissionMilestones), `Intermission does not surface relevant earned milestones: ${intermissionMilestones}`);
 assert(intermissionMilestones.includes('Next:'), 'Intermission does not surface a relevant next milestone');
-assert((await page.locator('#retry-map').innerText()) === 'Retry Goal', 'Retry action is not tied to the visible mastery target');
+assert((await page.locator('#retry-map').innerText()) === 'Retry Fresh Start Goal', 'Carry result does not label its Fresh Start retry');
 await page.screenshot({ path: shot('intermission.png') });
 
 await page.evaluate(() => document.querySelector('#level-select-button').click());
 assert(await page.locator('#level-select').isVisible(), 'Level select did not open');
 assert(await page.locator('.level-map-grid button', { hasText: 'E1M8' }).count() === 1, 'Completed map is missing from level select');
 assert(await page.locator('.level-map-grid button', { hasText: 'E1M9' }).count() === 0, 'Ordinary E1M8 completion leaked the secret map');
-assert((await page.locator('#campaign-mastery').innerText()).includes('Campaign 1/24 clear'), 'Campaign mastery aggregate is missing');
+assert((await page.locator('#campaign-mastery').innerText()).includes('Fresh Start Campaign 0/24 clear'), 'Level Select leaked a Campaign Carry record into Fresh Start totals');
 const levelMilestones = await page.locator('#level-milestones').innerText();
 assert(levelMilestones.includes('Milestones') && /Closed Without Exception|Red Seal|Ahead of Schedule/.test(levelMilestones), `Level Select does not summarize earned milestones: ${levelMilestones}`);
 const completedMap = page.locator('.level-map-grid button', { hasText: 'E1M8' });
-assert((await completedMap.innerText()).includes('Target:'), 'Completed map has no next mastery target');
-assert((await page.locator('.level-episode h2').first().innerText()).includes('1/8 clear'), 'Episode mastery aggregate is missing from Level Select');
+const completedMapText = await completedMap.innerText();
+assert(completedMapText.includes('Target: First clear'), 'Level Select does not show the Fresh Start target');
+assert(completedMapText.includes('Campaign Carry record tracked separately'), 'Level Select does not label the retained Campaign Carry result');
+assert((await page.locator('.level-episode h2').first().innerText()).includes('Fresh Start Episode 0/8 clear'), 'Episode mastery aggregate is not Fresh Start-only');
 
 await page.locator('#level-select-difficulty').selectOption('field-adjuster');
 assert((await page.locator('.level-map-grid button', { hasText: 'E1M8' }).innerText()).includes('First clear'), 'Per-difficulty mastery target leaked another response level record');
@@ -64,7 +72,9 @@ await page.evaluate(() => {
 assert(await page.locator('#intermission').isVisible(), 'Secret exit did not complete the map');
 await page.evaluate(() => document.querySelector('#level-select-button').click());
 assert(await page.locator('.level-map-grid button', { hasText: 'E1M9' }).count() === 1, 'Discovered secret map did not appear');
-assert((await page.locator('.level-map-grid button', { hasText: 'E1M3' }).innerText()).includes('Grade'), 'Map record is missing from level select');
+const campaignCarryMap = await page.locator('.level-map-grid button', { hasText: 'E1M3' }).innerText();
+assert(campaignCarryMap.includes('Fresh Start | Par') && campaignCarryMap.includes('Target: First clear'), 'Level Select compared against a non-Fresh-Start record');
+assert(campaignCarryMap.includes('Campaign Carry record tracked separately'), 'Level Select omitted its separate Campaign Carry history label');
 await page.screenshot({ path: shot('level-select.png') });
 
 await page.reload({ waitUntil: 'networkidle' });

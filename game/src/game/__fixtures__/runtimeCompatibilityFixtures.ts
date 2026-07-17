@@ -58,5 +58,21 @@ export const PRE_PROFILE_E1M1_RUNTIME_FIXTURE = {
     id: 'night-inspection-goggles',
     position: [40.5, 0, 40.5],
   },
+  // The same public schema wrote spawned ammo drops into both collections: the
+  // pickup row carried only mutable state, while ammoDrops carried its identity.
+  actorDrop: {
+    pickup: {
+      uid: 'actor-drop-enemy-2',
+      collected: true,
+      phaseLocked: false,
+    },
+    ammoDrop: {
+      uid: 'actor-drop-enemy-2',
+      position: [40.5, 0, 37.5],
+      ammoId: 'staples',
+      amount: 1,
+      collected: true,
+    },
+  },
   tally: { kills: 1, totalKills: 21, items: 1, totalItems: 1, secrets: 0, totalSecrets: 2, elapsed: 40 },
 } as const;

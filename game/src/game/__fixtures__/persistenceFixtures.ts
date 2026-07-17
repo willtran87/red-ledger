@@ -104,3 +104,48 @@ export const CURRENT_CAMPAIGN_V3_FIXTURE = {
   },
   checksum: '028227ff',
 } as const;
+
+/** Current record format with run conditions represented in both the key and checksum-covered values. */
+export const CURRENT_CAMPAIGN_V4_FIXTURE = {
+  schema: 'red-ledger-campaign',
+  version: 4,
+  progress: {
+    unlockedEpisodes: ['first-notice', 'exclusions-apply'],
+    completedEpisodes: ['first-notice'],
+    completedMaps: ['E1M1', 'E1M8'],
+    discoveredSecretMaps: ['E1M9'],
+    records: {
+      'E1M1:field-adjuster:fresh-start': {
+        mapId: 'E1M1',
+        difficulty: 'field-adjuster',
+        runVariant: 'fresh-start',
+        completions: 1,
+        bestTime: 120,
+        highScore: 5_000,
+        bestChain: 4,
+        bestKillsPercent: 100,
+        bestItemsPercent: 100,
+        bestSecretsPercent: 100,
+        bestGrade: 'S',
+        parBeaten: true,
+        masteryProof: {
+          mapId: 'E1M1',
+          difficulty: 'field-adjuster',
+          runVariant: 'fresh-start',
+          elapsed: 120,
+          parSeconds: 180,
+          score: 5_000,
+          bestChain: 4,
+          killsPercent: 100,
+          itemsPercent: 100,
+          secretsPercent: 100,
+          grade: 'S',
+          achievedAt: 1_710_000_000_200,
+        },
+        achievedAt: 1_710_000_000_200,
+      },
+    },
+    updatedAt: 1_710_000_000_200,
+  },
+  checksum: '74c3d31b',
+} as const;

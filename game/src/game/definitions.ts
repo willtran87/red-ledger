@@ -106,9 +106,9 @@ export const ENEMIES = Object.fromEntries(Object.entries(enemyDefinitions).map((
 }])) as Record<EnemyId | BossId, EnemyDefinition>;
 
 export const DIFFICULTY = {
-  orientation: { enemyDamage: .5, enemySpeed: .85, aggression: .85, reaction: 1 / .85, refire: 1 / .85, projectileSpeed: .9, supply: 1.5, placement: 'easy' },
-  'desk-adjuster': { enemyDamage: .75, enemySpeed: .9, aggression: .9, reaction: 1 / .9, refire: 1 / .9, projectileSpeed: .95, supply: 1.25, placement: 'easy' },
-  'field-adjuster': { enemyDamage: 1, enemySpeed: 1, aggression: 1, reaction: 1, refire: 1, projectileSpeed: 1, supply: 1, placement: 'normal' },
-  'catastrophe-team': { enemyDamage: 1, enemySpeed: 1, aggression: 1, reaction: 1, refire: 1, projectileSpeed: 1, supply: .8, placement: 'hard' },
-  'binding-authority': { enemyDamage: 1.5, enemySpeed: 1.2, aggression: 1.25, reaction: .8, refire: .8, projectileSpeed: 1.2, supply: .65, placement: 'hard' },
+  orientation: { enemyDamage: .5, enemySpeed: .85, aggression: .85, reaction: 1 / .85, refire: 1 / .85, projectileSpeed: .9, ammoSupply: 1.5, placement: 'easy' },
+  'desk-adjuster': { enemyDamage: .75, enemySpeed: .9, aggression: .9, reaction: 1 / .9, refire: 1 / .9, projectileSpeed: .95, ammoSupply: 1.25, placement: 'easy' },
+  'field-adjuster': { enemyDamage: 1, enemySpeed: 1, aggression: 1, reaction: 1, refire: 1, projectileSpeed: 1, ammoSupply: 1, placement: 'normal' },
+  'catastrophe-team': { enemyDamage: 1, enemySpeed: 1, aggression: 1, reaction: 1, refire: 1, projectileSpeed: 1, ammoSupply: .8, placement: 'hard' },
+  'binding-authority': { enemyDamage: 1.5, enemySpeed: 1.2, aggression: 1.25, reaction: .8, refire: .8, projectileSpeed: 1.2, ammoSupply: .65, placement: 'hard' },
 } as const;

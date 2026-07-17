@@ -962,6 +962,18 @@ export class EnemyBehaviorSystem {
     if (snapshot.rngState !== undefined) this.randomSource.setState?.(snapshot.rngState);
   }
 
+  reconcileSummonPlacements(
+    ownerUid: string,
+    attemptedActorUids: readonly string[],
+    acceptedActorUids: readonly string[],
+  ): void {
+    const owner = this.summonOwners.get(ownerUid);
+    if (!owner || attemptedActorUids.length === 0) return;
+    const attempted = new Set(attemptedActorUids);
+    const accepted = new Set(acceptedActorUids);
+    owner.actorUids = owner.actorUids.filter((uid) => !attempted.has(uid) || accepted.has(uid));
+  }
+
   clear(): void {
     this.elapsed = 0;
     this.nextEntityId = 1;

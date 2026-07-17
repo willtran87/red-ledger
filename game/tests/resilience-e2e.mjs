@@ -288,7 +288,8 @@ const deniedStorageScenario = async () => {
     await page.locator('#intermission').waitFor({ state: 'visible' });
     await page.click('#intermission-level-select');
     const recordSummary = await page.locator('#level-select-list button').first().locator('small').first().textContent();
-    assert(recordSummary.startsWith('Grade '), `Fallback campaign record was not readable in-session: ${recordSummary}`);
+    assert(/^Fresh Start \| Grade [SABCDF] /.test(recordSummary),
+      `Fallback campaign record was not readable in-session: ${recordSummary}`);
     expectNoUnexpectedErrors('Denied-storage scenario', errors);
   } finally {
     await context.close();

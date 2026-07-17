@@ -43,6 +43,8 @@ try {
   await ordinary.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
   await ordinary.keyboard.press('F6');
   await ordinary.waitForTimeout(50);
+  await ordinary.keyboard.press('Escape');
+  await ordinary.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'paused');
   const seededLegacyStorage = await ordinary.evaluate(() => {
     const envelope = JSON.parse(localStorage.getItem('red-ledger-v2:save:quicksave'));
     const audioPreferences = localStorage.getItem('red-ledger-audio-v1');

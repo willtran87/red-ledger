@@ -2,14 +2,42 @@ import { CAMPAIGN, type MapId } from '../data';
 import type { GameDifficulty } from './definitions';
 import { hasMasteryProof, type CampaignUnlocks, type MapRecord } from './PersistenceSystem';
 
+const MILESTONE_SEAL_LABELS = Object.freeze({
+  'first-clear': 'First Notice Seal',
+  'second-review': 'Double Review Seal',
+  'chain-five': 'Five-Link Seal',
+  'chain-ten': 'Ten-Link Seal',
+  'first-par': 'Ahead of Schedule Seal',
+  'first-s': 'Red Ledger Seal',
+  'first-mastery': 'Exception-Free Seal',
+  'binding-mastery': 'Authority Seal',
+  'episode-close': 'Regional Seal',
+  'episode-mastery': 'Clean Ledger Seal',
+  'campaign-mastery': 'One Standard Seal',
+  'first-secret': 'Fine Print Seal',
+  'secret-clear': 'Off the Record Seal',
+  'all-secrets': 'Every Exclusion Seal',
+  'campaign-close': 'National Seal',
+} as const);
+
+export type MilestoneId = keyof typeof MILESTONE_SEAL_LABELS;
+export type MilestoneFilter = 'all' | 'open' | 'earned';
+
+export interface MilestoneReward {
+  readonly kind: 'seal';
+  readonly label: string;
+  readonly gameplayEffect: false;
+}
+
 export interface MilestoneStatus {
-  readonly id: string;
+  readonly id: MilestoneId;
   readonly name: string;
   readonly description: string;
   readonly earned: boolean;
   readonly current: number;
   readonly target: number;
   readonly progress: string;
+  readonly reward: MilestoneReward;
 }
 
 export interface MilestoneHighlights {
@@ -26,8 +54,31 @@ const mastered = (record: MapRecord): boolean => hasMasteryProof(record);
 
 const bounded = (current: number, target: number): number => Math.min(target, Math.max(0, current));
 
+interface LogicalRecordGroup {
+  readonly mapId: string;
+  readonly difficulty: string;
+  readonly records: readonly MapRecord[];
+}
+
+const logicalRecordGroups = (records: readonly MapRecord[]): readonly LogicalRecordGroup[] => {
+  const groups = new Map<string, { mapId: string; difficulty: string; records: MapRecord[] }>();
+  records.forEach((record) => {
+    const key = `${record.mapId}\u0000${record.difficulty}`;
+    const group = groups.get(key) ?? { mapId: record.mapId, difficulty: record.difficulty, records: [] };
+    group.records.push(record);
+    groups.set(key, group);
+  });
+  return [...groups.values()];
+};
+
+export const milestoneReward = (id: MilestoneId): MilestoneReward => ({
+  kind: 'seal',
+  label: MILESTONE_SEAL_LABELS[id],
+  gameplayEffect: false,
+});
+
 const status = (
-  id: string,
+  id: MilestoneId,
   name: string,
   description: string,
   current: number,
@@ -41,17 +92,30 @@ const status = (
   current: bounded(current, target),
   target,
   progress,
+  reward: milestoneReward(id),
 });
 
-const episodeMasteryDepth = (records: readonly MapRecord[]): number => {
-  const difficulties = new Set(records.map((record) => record.difficulty));
+export const filterMilestones = (
+  milestones: readonly MilestoneStatus[],
+  filter: MilestoneFilter,
+): readonly MilestoneStatus[] => filter === 'all'
+  ? [...milestones]
+  : milestones.filter((milestone) => milestone.earned === (filter === 'earned'));
+
+export const newlyEarnedMilestones = (
+  milestones: readonly MilestoneStatus[],
+  knownEarnedIds: ReadonlySet<string>,
+): readonly MilestoneStatus[] => milestones.filter((milestone) => milestone.earned && !knownEarnedIds.has(milestone.id));
+
+const episodeMasteryDepth = (groups: readonly LogicalRecordGroup[]): number => {
+  const difficulties = new Set(groups.map((group) => group.difficulty));
   let depth = 0;
   for (const difficulty of difficulties) {
     for (const episode of CAMPAIGN.episodes) {
       const episodeMaps = episode.maps.filter((id) => !CAMPAIGN.maps[id].secretMap);
       const count = episodeMaps.filter((id) => {
-        const record = records.find((candidate) => candidate.mapId === id && candidate.difficulty === difficulty);
-        return Boolean(record && mastered(record));
+        const group = groups.find((candidate) => candidate.mapId === id && candidate.difficulty === difficulty);
+        return Boolean(group?.records.some(mastered));
       }).length;
       depth = Math.max(depth, count);
     }
@@ -59,13 +123,13 @@ const episodeMasteryDepth = (records: readonly MapRecord[]): number => {
   return depth;
 };
 
-const campaignMasteryDepth = (records: readonly MapRecord[]): number => {
-  const difficulties = new Set(records.map((record) => record.difficulty));
+const campaignMasteryDepth = (groups: readonly LogicalRecordGroup[]): number => {
+  const difficulties = new Set(groups.map((group) => group.difficulty));
   let depth = 0;
   for (const difficulty of difficulties) {
     const count = standardMaps.filter((id) => {
-      const record = records.find((candidate) => candidate.mapId === id && candidate.difficulty === difficulty);
-      return Boolean(record && mastered(record));
+      const group = groups.find((candidate) => candidate.mapId === id && candidate.difficulty === difficulty);
+      return Boolean(group?.records.some(mastered));
     }).length;
     depth = Math.max(depth, count);
   }
@@ -75,14 +139,17 @@ const campaignMasteryDepth = (records: readonly MapRecord[]): number => {
 /** Milestones are projections of campaign records, including their single-run mastery proofs. */
 export const deriveMilestones = (progress: CampaignUnlocks): readonly MilestoneStatus[] => {
   const records = Object.values(progress.records).filter((record) => record.mapId in CAMPAIGN.maps);
-  const maximumCompletions = Math.max(0, ...records.map((record) => record.completions));
+  const groups = logicalRecordGroups(records);
+  const maximumCompletions = Math.max(0, ...groups.map((group) =>
+    group.records.reduce((total, record) => total + record.completions, 0)));
   const maximumChain = Math.max(0, ...records.map((record) => record.bestChain));
-  const parRecords = records.filter((record) => record.parBeaten).length;
-  const sRecords = records.filter((record) => record.bestGrade === 'S').length;
-  const masteredRecords = records.filter(mastered).length;
-  const episodeDepth = episodeMasteryDepth(records);
-  const campaignDepth = campaignMasteryDepth(records);
-  const bindingMasteries = records.filter((record) => record.difficulty === 'binding-authority' && mastered(record)).length;
+  const parRecords = groups.filter((group) => group.records.some((record) => record.parBeaten)).length;
+  const sRecords = groups.filter((group) => group.records.some((record) => record.bestGrade === 'S')).length;
+  const masteredRecords = groups.filter((group) => group.records.some(mastered)).length;
+  const episodeDepth = episodeMasteryDepth(groups);
+  const campaignDepth = campaignMasteryDepth(groups);
+  const bindingMasteries = groups.filter((group) => group.difficulty === 'binding-authority'
+    && group.records.some(mastered)).length;
   const discoveredSecrets = secretMaps.filter((id) => progress.discoveredSecretMaps.includes(id)).length;
   const completedSecretMaps = secretMaps.filter((id) => progress.completedMaps.includes(id)).length;
   const campaignEpisodes = CAMPAIGN.episodes.filter((episode) => progress.completedEpisodes.includes(episode.id)).length;
@@ -112,15 +179,18 @@ const contextualMilestoneIds = (
   mapId?: MapId,
 ): ReadonlySet<string> => {
   if (!difficulty || !mapId) return new Set();
-  const record = progress.records[`${mapId}:${difficulty}`];
-  if (!record) return new Set();
+  const records = Object.values(progress.records)
+    .filter((record) => record.mapId === mapId && record.difficulty === difficulty);
+  if (!records.length) return new Set();
   const ids = new Set<string>(['first-clear']);
-  if (record.completions >= 2) ids.add('second-review');
-  if (record.bestChain >= 5) ids.add('chain-five');
-  if (record.bestChain >= 10) ids.add('chain-ten');
-  if (record.parBeaten) ids.add('first-par');
-  if (record.bestGrade === 'S') ids.add('first-s');
-  if (mastered(record)) {
+  const completions = records.reduce((total, record) => total + record.completions, 0);
+  const bestChain = Math.max(...records.map((record) => record.bestChain));
+  if (completions >= 2) ids.add('second-review');
+  if (bestChain >= 5) ids.add('chain-five');
+  if (bestChain >= 10) ids.add('chain-ten');
+  if (records.some((record) => record.parBeaten)) ids.add('first-par');
+  if (records.some((record) => record.bestGrade === 'S')) ids.add('first-s');
+  if (records.some(mastered)) {
     ids.add('first-mastery');
     if (difficulty === 'binding-authority') ids.add('binding-mastery');
     if (!CAMPAIGN.maps[mapId].secretMap) ids.add('campaign-mastery');

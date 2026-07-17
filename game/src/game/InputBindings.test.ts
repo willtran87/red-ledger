@@ -99,7 +99,14 @@ describe('InputBindings', () => {
   it('provides concise labels for remapping UI', () => {
     expect(bindingLabel({ device: 'keyboard', code: 'KeyR' })).toBe('R');
     expect(bindingLabel({ device: 'mouse-wheel', direction: -1 })).toBe('Wheel Up');
-    expect(bindingLabel({ device: 'gamepad-axis', axis: 2, direction: 1 })).toBe('Axis 3 +');
-    expect(bindingLabel({ device: 'gamepad-button', button: 7 })).toBe('Button 8');
+    expect(bindingLabel({ device: 'gamepad-axis', axis: 2, direction: 1 })).toBe('Right Stick Right');
+    expect(bindingLabel({ device: 'gamepad-axis', axis: 1, direction: -1 })).toBe('Left Stick Up');
+    expect(bindingLabel({ device: 'gamepad-button', button: 7 })).toBe('Right Trigger');
+    expect(bindingLabel({ device: 'gamepad-button', button: 8 })).toBe('View/Select');
+  });
+
+  it('falls back to stable numeric labels for non-standard controls', () => {
+    expect(bindingLabel({ device: 'gamepad-axis', axis: 7, direction: -1 })).toBe('Axis 8 -');
+    expect(bindingLabel({ device: 'gamepad-button', button: 31 })).toBe('Button 32');
   });
 });

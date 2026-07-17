@@ -29,7 +29,7 @@ import {
   VERTICAL_AUTO_AIM_RADIANS,
 } from './CombatMath';
 import { DIFFICULTY, ENEMIES, WEAPONS, type AmmoType, type GameDifficulty } from './definitions';
-import { addAmmoWithinCap, ammoCap, pickupAmmoGrant, weaponAcquisitionAmmoGrant } from './EconomyPolicy';
+import { COMBAT_AMMO_TYPES, addAmmoWithinCap, ammoCap, pickupAmmoGrant, weaponAcquisitionAmmoGrant } from './EconomyPolicy';
 import {
   actorDeathEffects,
   breakableDestructionEffects,
@@ -80,12 +80,15 @@ import {
   DemoRecorder,
   DEMO_STORAGE_BUDGET_BYTES,
   PersistenceSystem,
+  isRunVariant,
+  mapRecordKey,
   validateDemo,
   type DemoData,
   type CampaignUnlocks,
   type MapPerformance,
   type MapRecord,
   type PersistenceConflict,
+  type RunVariant,
   type SaveMetadataInput,
   type SaveThumbnail,
 } from './PersistenceSystem';
@@ -257,9 +260,10 @@ export interface GameSnapshot {
   replay?: { currentTick: number; totalTicks: number; paused: boolean; finished: boolean; speed: number };
 }
 
-interface SaveData {
+export interface SaveData {
   version: 1;
   mode?: 'playing' | 'paused';
+  runVariant?: RunVariant;
   mapId: MapId;
   difficulty: GameDifficulty;
   player: {
@@ -402,8 +406,15 @@ const NEUTRAL_COMMAND: GameplayCommand = {
 const isGameplayCommand = (value: unknown): value is GameplayCommand => {
   if (!value || typeof value !== 'object') return false;
   const command = value as Partial<GameplayCommand>;
-  return ['forward', 'strafe', 'turn', 'look', 'weaponSlot', 'weaponCycle'].every((key) => Number.isFinite(command[key as keyof GameplayCommand]))
-    && (command.lookVertical === undefined || Number.isFinite(command.lookVertical))
+  const inRange = (candidate: unknown, minimum: number, maximum: number): boolean =>
+    typeof candidate === 'number' && Number.isFinite(candidate) && candidate >= minimum && candidate <= maximum;
+  return inRange(command.forward, -3, 3)
+    && inRange(command.strafe, -3, 3)
+    && inRange(command.turn, -8, 8)
+    && inRange(command.look, -100_000, 100_000)
+    && (command.lookVertical === undefined || inRange(command.lookVertical, -100_000, 100_000))
+    && Number.isSafeInteger(command.weaponSlot) && Number(command.weaponSlot) >= 0 && Number(command.weaponSlot) <= 8
+    && Number.isSafeInteger(command.weaponCycle) && Number(command.weaponCycle) >= -1 && Number(command.weaponCycle) <= 1
     && typeof command.fire === 'boolean'
     && typeof command.use === 'boolean'
     && typeof command.walkToggle === 'boolean';
@@ -412,6 +423,60 @@ const isGameplayCommand = (value: unknown): value is GameplayCommand => {
 const LEGACY_SAVE_KEY = 'red-ledger-save-v1';
 const STEP = 1 / 35;
 export const MAX_DEMO_TICKS = 35 * 60 * 45;
+export const RECOVERY_CHECKPOINT_INTERVAL_SECONDS = 60;
+
+export interface RecoveryCheckpointSchedule {
+  readonly lastElapsed: number;
+  readonly nextElapsed: number;
+}
+
+export interface RecoveryCheckpointContext {
+  readonly mode: GameMode;
+  readonly demoPlayback: boolean;
+  readonly demoRecording: boolean;
+  readonly demoReadOnly: boolean;
+  readonly playtestReadOnly: boolean;
+}
+
+const normalizedRecoveryElapsed = (elapsed: number): number => Number.isFinite(elapsed) ? Math.max(0, elapsed) : 0;
+
+export const createRecoveryCheckpointSchedule = (
+  elapsed: number,
+  checkpointed = false,
+): RecoveryCheckpointSchedule => {
+  const normalized = normalizedRecoveryElapsed(elapsed);
+  return {
+    lastElapsed: checkpointed ? normalized : Number.NEGATIVE_INFINITY,
+    nextElapsed: normalized + RECOVERY_CHECKPOINT_INTERVAL_SECONDS,
+  };
+};
+
+export const recoveryCheckpointDue = (
+  schedule: RecoveryCheckpointSchedule,
+  elapsed: number,
+  periodic: boolean,
+): boolean => {
+  if (!Number.isFinite(elapsed) || elapsed < 0 || elapsed <= schedule.lastElapsed + 1e-6) return false;
+  return !periodic || elapsed + 1e-6 >= schedule.nextElapsed;
+};
+
+export const recoveryCheckpointAllowed = (context: RecoveryCheckpointContext): boolean =>
+  context.mode === 'playing'
+  && !context.demoPlayback
+  && !context.demoRecording
+  && !context.demoReadOnly
+  && !context.playtestReadOnly;
+
+const TIMED_PICKUP_ANNOUNCEMENTS: Readonly<Partial<Record<PickupId, string>>> = {
+  'temporary-binder': 'Temporary Binder: blocks all damage for 30 seconds',
+  'hazard-endorsement': 'Hazard Endorsement: prevents floor hazard damage for 30 seconds',
+  'rapid-authority': 'Rapid Authority: weapons fire faster for 30 seconds',
+  'forensic-lens': 'Forensic Lens: reveals threats and slows their targeting for 30 seconds',
+  'night-inspection-goggles': 'Night Inspection Goggles: improves distance visibility for 30 seconds',
+};
+
+export const timedPickupAnnouncement = (id: PickupId): string | undefined => TIMED_PICKUP_ANNOUNCEMENTS[id];
+
 const ADDITIVE_PARTICLE_KINDS: ReadonlySet<ParticleKind> = new Set([
   'spark', 'ember', 'energy', 'approval', 'metal', 'deflection', 'neutralize',
   'authority', 'scan', 'momentum', 'rejection',
@@ -562,6 +627,7 @@ const performanceGrade = (kills: number, items: number, secrets: number, elapsed
 const transientPlaytestRecord = (performance: MapPerformance): MapRecord => ({
   mapId: performance.mapId,
   difficulty: performance.difficulty,
+  runVariant: performance.runVariant,
   completions: 1,
   bestTime: performance.elapsed,
   highScore: performance.score,
@@ -573,6 +639,15 @@ const transientPlaytestRecord = (performance: MapPerformance): MapRecord => ({
   parBeaten: performance.elapsed <= performance.parSeconds,
   achievedAt: 0,
 });
+
+export const runVariantLabel = (runVariant: RunVariant): string => ({
+  'fresh-start': 'Fresh Start',
+  'campaign-carry': 'Campaign Carry',
+  'legacy-unclassified': 'Legacy Run',
+})[runVariant];
+
+export const restoredRunVariant = (save: Pick<SaveData, 'runVariant'>): RunVariant =>
+  save.runVariant ?? 'legacy-unclassified';
 
 const WINDUP_VISUALS: Readonly<Record<string, string>> = {
   'staple-burst': 'aim',
@@ -625,83 +700,436 @@ const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(v
 const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 const isVector3 = (value: unknown): value is [number, number, number] => Array.isArray(value) && value.length === 3 && value.every(isFiniteNumber);
 const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every((entry) => typeof entry === 'string');
-const isFiniteRecord = (value: unknown, keys: readonly string[]): boolean => isRecord(value) && keys.every((key) => isFiniteNumber(value[key]));
+const isNumberInRange = (value: unknown, minimum: number, maximum: number): value is number =>
+  isFiniteNumber(value) && value >= minimum && value <= maximum;
+const isNonNegativeNumber = (value: unknown): value is number => isFiniteNumber(value) && value >= 0;
+const isSafeIntegerInRange = (value: unknown, minimum: number, maximum: number): value is number =>
+  Number.isSafeInteger(value) && Number(value) >= minimum && Number(value) <= maximum;
+const isNonNegativeSafeInteger = (value: unknown): value is number =>
+  Number.isSafeInteger(value) && Number(value) >= 0;
+const isIdentity = (value: unknown): value is string => typeof value === 'string' && value.length > 0 && value.length <= 128;
+const hasUniqueStrings = (values: readonly string[]): boolean => new Set(values).size === values.length;
+const isKnownStringArray = (value: unknown, allowed: ReadonlySet<string>, maximum: number): value is string[] =>
+  isStringArray(value) && value.length <= maximum && hasUniqueStrings(value) && value.every((entry) => allowed.has(entry));
 
-const isEnemyBehaviorSnapshot = (value: unknown): value is EnemyBehaviorSnapshot => {
-  if (!isRecord(value) || value.version !== 1 || !isFiniteNumber(value.elapsed) || !Number.isSafeInteger(value.nextEntityId)) return false;
-  if (!Array.isArray(value.actors) || !Array.isArray(value.projectiles) || !Array.isArray(value.hazards)) return false;
-  const vectors = (entry: unknown): boolean => isRecord(entry) && isVector3([entry.x, entry.y, entry.z]);
-  const actors = value.actors.every((entry) => isRecord(entry) && typeof entry.uid === 'string' && typeof entry.hostileId === 'string'
-    && entry.hostileId in ENEMIES && isFiniteRecord(entry, ['cooldown', 'attackCursor', 'phaseIndex', 'bobClock', 'revealRemaining', 'stateTimer'])
-    && typeof entry.phaseId === 'string' && typeof entry.visible === 'boolean' && typeof entry.targetUid === 'string'
-    && typeof entry.redacted === 'boolean' && [-1, 1].includes(Number(entry.strafeSign))
-    && (entry.lungeRemaining === undefined || isFiniteNumber(entry.lungeRemaining))
-    && (entry.lungeVelocity === undefined || vectors(entry.lungeVelocity)));
-  const projectiles = value.projectiles.every((entry) => isRecord(entry) && typeof entry.id === 'string' && typeof entry.ownerUid === 'string'
-    && typeof entry.ownerId === 'string' && entry.ownerId in ENEMIES && typeof entry.kind === 'string'
-    && vectors(entry.position) && vectors(entry.velocity) && isFiniteRecord(entry, ['radius', 'damage', 'remaining', 'homing'])
-    && typeof entry.targetUid === 'string');
-  const hazards = value.hazards.every((entry) => isRecord(entry) && typeof entry.id === 'string' && typeof entry.ownerUid === 'string'
-    && typeof entry.ownerId === 'string' && entry.ownerId in ENEMIES && typeof entry.kind === 'string' && vectors(entry.position)
-    && isFiniteRecord(entry, ['radius', 'damage', 'remaining', 'armRemaining', 'pulseRemaining', 'pulseInterval']) && typeof entry.armed === 'boolean');
-  const sounds = value.pendingSounds === undefined || (Array.isArray(value.pendingSounds) && value.pendingSounds.every((entry) => isRecord(entry)
-    && vectors(entry.position) && isFiniteNumber(entry.radius) && typeof entry.sourceUid === 'string'));
-  const damage = value.pendingDamage === undefined || (Array.isArray(value.pendingDamage) && value.pendingDamage.every((entry) => isRecord(entry)
-    && typeof entry.targetUid === 'string' && typeof entry.sourceUid === 'string' && isFiniteNumber(entry.amount)));
-  const summonOwners = value.summonOwners === undefined || (Array.isArray(value.summonOwners) && value.summonOwners.every((entry) => isRecord(entry)
-    && typeof entry.ownerUid === 'string' && isStringArray(entry.actorUids) && Number.isSafeInteger(entry.total) && Number(entry.total) >= 0));
-  return actors && projectiles && hazards && sounds && damage && summonOwners && (value.rngState === undefined || isFiniteNumber(value.rngState));
+const SAVE_MODES: ReadonlySet<string> = new Set(['playing', 'paused']);
+const ARMOR_CLASSES: ReadonlySet<string> = new Set(['none', 'light', 'heavy']);
+const WEAPON_STATES: ReadonlySet<string> = new Set(['ready', 'lowering', 'raising']);
+const ACTOR_KINDS: ReadonlySet<string> = new Set(['enemy', 'boss']);
+const PICKUP_KINDS: ReadonlySet<string> = new Set(['pickup', 'weapon', 'credential']);
+const ACTOR_ACTIONS: ReadonlySet<string> = new Set(['dormant', 'acquire', 'chase', 'windup', 'recovery', 'pain', 'dead']);
+const DAMAGE_KINDS: ReadonlySet<string> = new Set(['ballistic', 'fire', 'impact', 'denial', 'toner', 'hazard', 'prediction', 'redaction']);
+const CREDENTIAL_IDS: ReadonlySet<string> = new Set(['red', 'yellow', 'cyan']);
+const COMBAT_AMMO_IDS: ReadonlySet<string> = new Set(COMBAT_AMMO_TYPES);
+const PICKUP_IDS: ReadonlySet<string> = new Set<PickupId>([
+  'staples-small', 'staples-large', 'fasteners-small', 'fasteners-large', 'canister', 'canister-crate',
+  'toner-cell', 'toner-pack', 'adhesive-bandage', 'field-medical-case', 'goodwill-token', 'loss-control-vest',
+  'catastrophe-suit', 'emergency-reserve', 'temporary-binder', 'night-inspection-goggles', 'hazard-endorsement',
+  'rapid-authority', 'floor-plan', 'forensic-lens',
+]);
+const BOSS_ACTIONS: ReadonlySet<string> = new Set([
+  'open-add-shutters', 'disable-left-emitter', 'disable-right-emitter', 'sink-cover',
+  'arena-switch-ready', 'open-binding-gate', 'expose-core',
+]);
+const MAX_REMAINING_DURATION_SECONDS = 60 * 60 * 24 * 7;
+const MAX_RUNTIME_ENTITIES = 4096;
+const UINT32_MAX = 0xffff_ffff;
+
+const isBehaviorVector = (value: unknown, maximumMagnitude: number): boolean => isRecord(value)
+  && isNumberInRange(value.x, -maximumMagnitude, maximumMagnitude)
+  && isNumberInRange(value.y, -maximumMagnitude, maximumMagnitude)
+  && isNumberInRange(value.z, -maximumMagnitude, maximumMagnitude);
+
+const isHazardTemplate = (value: unknown): boolean => isRecord(value)
+  && isIdentity(value.kind)
+  && isNumberInRange(value.radius, 0, 64)
+  && isNumberInRange(value.damage, 0, 100_000)
+  && typeof value.damageKind === 'string' && DAMAGE_KINDS.has(value.damageKind)
+  && isNumberInRange(value.duration, 0, MAX_REMAINING_DURATION_SECONDS)
+  && isNumberInRange(value.armTime, 0, MAX_REMAINING_DURATION_SECONDS)
+  && isNumberInRange(value.pulseInterval, 0, MAX_REMAINING_DURATION_SECONDS);
+
+const isEnemyBehaviorSnapshot = (
+  value: unknown,
+  savedActors: ReadonlyMap<string, RuntimeActor['id']>,
+): value is EnemyBehaviorSnapshot => {
+  if (!isRecord(value) || value.version !== 1
+    || !isNonNegativeNumber(value.elapsed)
+    || !Number.isSafeInteger(value.nextEntityId) || Number(value.nextEntityId) < 1
+    || !Array.isArray(value.actors) || value.actors.length > MAX_RUNTIME_ENTITIES
+    || !Array.isArray(value.projectiles) || value.projectiles.length > MAX_RUNTIME_ENTITIES
+    || !Array.isArray(value.hazards) || value.hazards.length > MAX_RUNTIME_ENTITIES) return false;
+
+  const actorStateUids = new Set<string>();
+  for (const entry of value.actors) {
+    if (!isRecord(entry) || !isIdentity(entry.uid) || actorStateUids.has(entry.uid)
+      || typeof entry.hostileId !== 'string' || !(entry.hostileId in ENEMIES)
+      || !isFiniteNumber(entry.cooldown)
+      || !isNonNegativeSafeInteger(entry.attackCursor)
+      || !isSafeIntegerInRange(entry.phaseIndex, 0, 64)
+      || !isIdentity(entry.phaseId)
+      || !isNonNegativeNumber(entry.bobClock)
+      || !isNumberInRange(entry.revealRemaining, 0, MAX_REMAINING_DURATION_SECONDS)
+      || !isNumberInRange(entry.stateTimer, 0, MAX_REMAINING_DURATION_SECONDS)
+      || typeof entry.visible !== 'boolean' || ![-1, 1].includes(Number(entry.strafeSign))
+      || !isIdentity(entry.targetUid) || typeof entry.redacted !== 'boolean'
+      || (entry.action !== undefined && (typeof entry.action !== 'string' || !ACTOR_ACTIONS.has(entry.action)))
+      || (entry.provokerUid !== undefined && !isIdentity(entry.provokerUid))
+      || !isNumberInRange(entry.lungeRemaining ?? 0, 0, MAX_REMAINING_DURATION_SECONDS)
+      || (entry.lungeVelocity !== undefined && !isBehaviorVector(entry.lungeVelocity, 256))) return false;
+    const hostileId = entry.hostileId as RuntimeActor['id'];
+    const profile = ENEMY_BEHAVIOR_PROFILES[hostileId];
+    const phase = profile.phases?.[Number(entry.phaseIndex)];
+    if ((profile.phases?.length ? phase?.id : 'base') !== entry.phaseId) return false;
+    if (entry.pendingAttackId !== undefined
+      && (!isIdentity(entry.pendingAttackId) || !profile.attacks.some((attack) => attack.id === entry.pendingAttackId))) return false;
+    const savedId = savedActors.get(entry.uid);
+    if (savedId !== undefined && savedId !== hostileId) return false;
+    actorStateUids.add(entry.uid);
+  }
+
+  const validReference = (uid: unknown): uid is string => isIdentity(uid) && (uid === 'player' || savedActors.has(uid));
+  const projectileIds = new Set<string>();
+  for (const entry of value.projectiles) {
+    if (!isRecord(entry) || !isIdentity(entry.id) || projectileIds.has(entry.id)
+      || !validReference(entry.ownerUid) || entry.ownerUid === 'player'
+      || typeof entry.ownerId !== 'string' || !(entry.ownerId in ENEMIES)
+      || savedActors.get(entry.ownerUid) !== entry.ownerId
+      || !isIdentity(entry.kind) || !isBehaviorVector(entry.position, 10_000) || !isBehaviorVector(entry.velocity, 512)
+      || !isNumberInRange(entry.radius, 0, 64) || !isNumberInRange(entry.damage, 0, 100_000)
+      || typeof entry.damageKind !== 'string' || !DAMAGE_KINDS.has(entry.damageKind)
+      || !isNumberInRange(entry.remaining, 0, MAX_REMAINING_DURATION_SECONDS)
+      || !isNumberInRange(entry.homing, 0, 100)
+      || !validReference(entry.targetUid)
+      || (entry.gravity !== undefined && !isNumberInRange(entry.gravity, -512, 512))
+      || (entry.impactHazard !== undefined && !isHazardTemplate(entry.impactHazard))) return false;
+    projectileIds.add(entry.id);
+  }
+
+  const hazardIds = new Set<string>();
+  for (const entry of value.hazards) {
+    if (!isRecord(entry) || !isIdentity(entry.id) || hazardIds.has(entry.id)
+      || !validReference(entry.ownerUid) || entry.ownerUid === 'player'
+      || typeof entry.ownerId !== 'string' || !(entry.ownerId in ENEMIES)
+      || savedActors.get(entry.ownerUid) !== entry.ownerId
+      || !isIdentity(entry.kind) || !isBehaviorVector(entry.position, 10_000)
+      || !isNumberInRange(entry.radius, 0, 64) || !isNumberInRange(entry.damage, 0, 100_000)
+      || typeof entry.damageKind !== 'string' || !DAMAGE_KINDS.has(entry.damageKind)
+      || !isNumberInRange(entry.remaining, 0, MAX_REMAINING_DURATION_SECONDS)
+      || !isNumberInRange(entry.armRemaining, 0, MAX_REMAINING_DURATION_SECONDS)
+      || !isNumberInRange(entry.pulseRemaining, 0, MAX_REMAINING_DURATION_SECONDS)
+      || !isNumberInRange(entry.pulseInterval, 0, MAX_REMAINING_DURATION_SECONDS)
+      || typeof entry.armed !== 'boolean') return false;
+    hazardIds.add(entry.id);
+  }
+
+  if (value.pendingSounds !== undefined && (!Array.isArray(value.pendingSounds)
+    || value.pendingSounds.length > MAX_RUNTIME_ENTITIES
+    || !value.pendingSounds.every((entry) => isRecord(entry) && isBehaviorVector(entry.position, 10_000)
+      && isNumberInRange(entry.radius, 0, 10_000) && validReference(entry.sourceUid)))) return false;
+  if (value.pendingDamage !== undefined && (!Array.isArray(value.pendingDamage)
+    || value.pendingDamage.length > MAX_RUNTIME_ENTITIES
+    || !value.pendingDamage.every((entry) => isRecord(entry) && validReference(entry.targetUid)
+      && validReference(entry.sourceUid) && isNumberInRange(entry.amount, 0, 100_000)))) return false;
+  if (value.summonOwners !== undefined) {
+    if (!Array.isArray(value.summonOwners) || value.summonOwners.length > MAX_RUNTIME_ENTITIES) return false;
+    const owners = new Set<string>();
+    for (const entry of value.summonOwners) {
+      if (!isRecord(entry) || !validReference(entry.ownerUid) || entry.ownerUid === 'player' || owners.has(entry.ownerUid)
+        || !isStringArray(entry.actorUids) || entry.actorUids.length > MAX_RUNTIME_ENTITIES
+        || !hasUniqueStrings(entry.actorUids) || !entry.actorUids.every((uid) => validReference(uid) && uid !== 'player')
+        || !isSafeIntegerInRange(entry.total, entry.actorUids.length, MAX_RUNTIME_ENTITIES)) return false;
+      owners.add(entry.ownerUid);
+    }
+  }
+  return value.rngState === undefined || isSafeIntegerInRange(value.rngState, 0, UINT32_MAX);
 };
 
-const isSaveData = (value: unknown): value is SaveData => {
-  if (!isRecord(value) || value.version !== 1 || typeof value.mapId !== 'string' || !CAMPAIGN.maps[value.mapId as MapId]
-    || typeof value.difficulty !== 'string' || !(value.difficulty in DIFFICULTY) || !isRecord(value.player)) return false;
+const mapIdentitySets = (map: CampaignMap): {
+  readonly grid: ReadonlySet<string>;
+  readonly sectors: ReadonlySet<string>;
+  readonly doors: ReadonlySet<string>;
+  readonly hazards: ReadonlySet<string>;
+  readonly secrets: ReadonlySet<string>;
+  readonly triggers: ReadonlySet<string>;
+  readonly mechanisms: ReadonlySet<string>;
+  readonly encounters: ReadonlySet<string>;
+  readonly landmarks: ReadonlySet<string>;
+  readonly breakables: ReadonlyMap<string, number>;
+} => {
+  const grid = new Set<string>();
+  const sectors = new Set<string>();
+  const doors = new Set<string>();
+  const hazards = new Set<string>();
+  map.grid.forEach((row, z) => [...row].forEach((cell, x) => {
+    const key = `${x},${z}`;
+    grid.add(key);
+    if (!map.legend[cell]?.solid) sectors.add(key);
+    if ('DRYC'.includes(cell)) doors.add(key);
+    if (cell === 'h' || cell === 'w') hazards.add(key);
+  }));
+  return {
+    grid,
+    sectors,
+    doors,
+    hazards,
+    secrets: new Set(map.secrets.map((secret) => secret.id)),
+    triggers: new Set([
+      ...map.triggers.map((trigger) => trigger.id),
+      ...map.encounters.map((encounter) => `encounter-complete:${encounter.id}`),
+    ]),
+    mechanisms: new Set(map.mechanisms.map((mechanism) => mechanism.id)),
+    encounters: new Set(map.encounters.map((encounter) => encounter.id)),
+    landmarks: new Set(map.landmarks.map((landmark) => landmark.id)),
+    breakables: new Map(map.breakables.map((breakable) => [breakable.id, breakable.health])),
+  };
+};
+
+const isMapPosition = (value: unknown, map: CampaignMap, margin = map.cellSize): value is [number, number, number] => {
+  if (!isVector3(value)) return false;
+  const width = (map.grid[0]?.length ?? 0) * map.cellSize;
+  const depth = map.grid.length * map.cellSize;
+  return value[0] >= -margin && value[0] <= width + margin
+    && value[1] >= -32 && value[1] <= 32
+    && value[2] >= -margin && value[2] <= depth + margin;
+};
+
+const MAX_PLAYER_PROJECTILE_ABSOLUTE_Y = 32 + Math.max(14 * 4, 28 * 2.2);
+const isPlayerProjectilePosition = (value: unknown, map: CampaignMap): value is [number, number, number] => {
+  if (!isVector3(value)) return false;
+  const margin = map.cellSize * 2;
+  const width = (map.grid[0]?.length ?? 0) * map.cellSize;
+  const depth = map.grid.length * map.cellSize;
+  return value[0] >= -margin && value[0] <= width + margin
+    && Math.abs(value[1]) <= MAX_PLAYER_PROJECTILE_ABSOLUTE_Y
+    && value[2] >= -margin && value[2] <= depth + margin;
+};
+
+const isPickupIdentity = (kind: unknown, id: unknown): boolean => {
+  if (typeof kind !== 'string' || !PICKUP_KINDS.has(kind) || typeof id !== 'string') return false;
+  if (kind === 'pickup') return PICKUP_IDS.has(id);
+  if (kind === 'weapon') return id in WEAPONS;
+  return CREDENTIAL_IDS.has(id);
+};
+
+export const isSaveData = (value: unknown): value is SaveData => {
+  if (!isRecord(value) || value.version !== 1
+    || (value.mode !== undefined && (typeof value.mode !== 'string' || !SAVE_MODES.has(value.mode)))
+    || (value.runVariant !== undefined && !isRunVariant(value.runVariant))
+    || typeof value.mapId !== 'string' || !CAMPAIGN.maps[value.mapId as MapId]
+    || typeof value.difficulty !== 'string' || !(value.difficulty in DIFFICULTY)
+    || !isRecord(value.player)) return false;
+  const map = CAMPAIGN.maps[value.mapId as MapId];
+  const identities = mapIdentitySets(map);
   const player = value.player;
-  if (!isFiniteRecord(player, ['health', 'armor', 'yaw']) || !isVector3(player.position) || !isRecord(player.ammo)
-    || !isFiniteRecord(player.ammo, ['staples', 'fasteners', 'canisters', 'toner-cells']) || !isStringArray(player.weapons)
-    || !player.weapons.every((weapon) => weapon in WEAPONS) || typeof player.weapon !== 'string' || !(player.weapon in WEAPONS)
-    || !isStringArray(player.credentials) || typeof player.floorPlan !== 'boolean' || !isFiniteRecord(player.powerups, ['binder', 'hazard', 'rapid', 'forensic', 'goggles'])
-    || (player.pitch !== undefined && !isFiniteNumber(player.pitch))) return false;
-  if (!Array.isArray(value.actors) || !value.actors.every((entry) => isRecord(entry) && typeof entry.uid === 'string'
-    && isFiniteRecord(entry, ['health']) && typeof entry.dead === 'boolean' && typeof entry.phaseLocked === 'boolean' && isVector3(entry.position)
-    && (entry.id === undefined || (typeof entry.id === 'string' && entry.id in ENEMIES))
-    && (entry.tallyEligible === undefined || typeof entry.tallyEligible === 'boolean')
-    && (entry.authoredKey === undefined || typeof entry.authoredKey === 'string'))) return false;
-  if (!Array.isArray(value.pickups) || !value.pickups.every((entry) => isRecord(entry)
-    && typeof entry.uid === 'string'
-    && typeof entry.collected === 'boolean'
-    && (entry.phaseLocked === undefined || typeof entry.phaseLocked === 'boolean')
-    && (entry.kind === undefined || entry.kind === 'pickup' || entry.kind === 'weapon' || entry.kind === 'credential')
-    && (entry.id === undefined || typeof entry.id === 'string')
-    && (entry.position === undefined || isVector3(entry.position)))) return false;
-  if (!Array.isArray(value.doors) || !value.doors.every((entry) => typeof entry === 'string' || (isRecord(entry) && typeof entry.key === 'string'
-    && typeof entry.open === 'boolean' && isFiniteNumber(entry.progress)))) return false;
-  if (!isStringArray(value.secrets) || !isStringArray(value.visited) || !isStringArray(value.triggered)
-    || (value.mechanisms !== undefined && !isStringArray(value.mechanisms)) || typeof value.hazardsEnabled !== 'boolean'
-    || (value.unlockedEncounters !== undefined && !isStringArray(value.unlockedEncounters))
-    || !isFiniteRecord(value.tally, ['kills', 'totalKills', 'items', 'totalItems', 'secrets', 'totalSecrets', 'elapsed']) || !isFiniteNumber(value.rng)) return false;
-  if (value.hazardSectors !== undefined && (!Array.isArray(value.hazardSectors) || !value.hazardSectors.every((entry) =>
-    isRecord(entry) && typeof entry.key === 'string' && typeof entry.enabled === 'boolean'))) return false;
-  if (value.momentum !== undefined && !isFiniteRecord(value.momentum, ['chain', 'best', 'score', 'timer'])) return false;
-  if (value.enemyBehavior !== undefined && !isEnemyBehaviorSnapshot(value.enemyBehavior)) return false;
-  if (value.playerProjectiles !== undefined && (!Array.isArray(value.playerProjectiles) || !value.playerProjectiles.every((entry) => isRecord(entry)
-    && typeof entry.id === 'string' && ['catastrophe-launcher', 'plasma-copier'].includes(String(entry.weapon)) && isVector3(entry.position)
-    && isVector3(entry.velocity) && isFiniteRecord(entry, ['damage', 'radius', 'remaining'])))) return false;
-  if (value.ammoDrops !== undefined && (!Array.isArray(value.ammoDrops) || !value.ammoDrops.every((entry) => isRecord(entry) && typeof entry.uid === 'string'
-    && isVector3(entry.position) && typeof entry.ammoId === 'string' && isFiniteNumber(entry.amount) && typeof entry.collected === 'boolean'))) return false;
-  if (value.bindingBeam !== undefined && (!isRecord(value.bindingBeam) || !isFiniteRecord(value.bindingBeam, ['pulses', 'timer']))) return false;
-  if (value.sectors !== undefined && (!Array.isArray(value.sectors) || !value.sectors.every((entry) => isRecord(entry) && typeof entry.key === 'string'
-    && isFiniteRecord(entry, ['height', 'targetHeight'])))) return false;
-  if (value.landmarks !== undefined && (!Array.isArray(value.landmarks) || !value.landmarks.every((entry) => isRecord(entry) && typeof entry.key === 'string'
-    && isVector3(entry.position) && isVector3(entry.targetPosition) && typeof entry.active === 'boolean'))) return false;
-  if (value.breakables !== undefined && (!Array.isArray(value.breakables) || !value.breakables.every((entry) => isRecord(entry) && typeof entry.key === 'string'
-    && isFiniteNumber(entry.health) && typeof entry.destroyed === 'boolean'))) return false;
-  const bossActions = ['open-add-shutters', 'disable-left-emitter', 'disable-right-emitter', 'sink-cover', 'arena-switch-ready', 'open-binding-gate', 'expose-core'];
-  if (value.bossMechanisms !== undefined && (!isRecord(value.bossMechanisms) || !Array.isArray(value.bossMechanisms.actions)
-    || !value.bossMechanisms.actions.every((action) => bossActions.includes(String(action))) || !Number.isSafeInteger(value.bossMechanisms.bindingGates))) return false;
-  if (value.runtime !== undefined && (!isRecord(value.runtime) || !isFiniteRecord(value.runtime, ['weaponCooldown', 'damageCooldown', 'messageTimer', 'projectileSequence'])
-    || (value.runtime.weaponTransition !== undefined && !isFiniteNumber(value.runtime.weaponTransition))
-    || typeof value.runtime.message !== 'string' || typeof value.runtime.walkMode !== 'boolean' || !isVector3(value.runtime.playerVelocity))) return false;
+  if (!isRecord(player.ammo) || !isRecord(player.powerups)) return false;
+  const ammo = player.ammo;
+  const powerups = player.powerups;
+  if (!isNumberInRange(player.health, 0, 200) || !isNumberInRange(player.armor, 0, 200)
+    || (player.armorClass !== undefined && (typeof player.armorClass !== 'string' || !ARMOR_CLASSES.has(player.armorClass)))
+    || (player.armorClass === 'none' && player.armor !== 0)
+    || (player.armorClass !== undefined && player.armorClass !== 'none' && player.armor === 0)
+    || !isMapPosition(player.position, map, 0)
+    || !isNumberInRange(player.yaw, -1_000_000_000, 1_000_000_000)
+    || (player.pitch !== undefined && !isNumberInRange(player.pitch, -.62, .62))
+    || !COMBAT_AMMO_TYPES.every((ammoId) => isNumberInRange(ammo[ammoId], 0, ammoCap(ammoId)))
+    || !isStringArray(player.weapons) || player.weapons.length === 0 || player.weapons.length > Object.keys(WEAPONS).length
+    || !hasUniqueStrings(player.weapons) || !player.weapons.every((weapon) => weapon in WEAPONS)
+    || typeof player.weapon !== 'string' || !(player.weapon in WEAPONS) || !player.weapons.includes(player.weapon)
+    || !isKnownStringArray(player.credentials, CREDENTIAL_IDS, CREDENTIAL_IDS.size)
+    || typeof player.floorPlan !== 'boolean'
+    || !['binder', 'hazard', 'rapid', 'forensic', 'goggles'].every((powerup) => isNumberInRange(powerups[powerup], 0, 30))) return false;
+
+  if (!Array.isArray(value.actors) || value.actors.length > MAX_RUNTIME_ENTITIES) return false;
+  const actorUids = new Set<string>();
+  const savedActors = new Map<string, RuntimeActor['id']>();
+  for (const entry of value.actors) {
+    if (!isRecord(entry) || !isIdentity(entry.uid) || actorUids.has(entry.uid)
+      || !isNumberInRange(entry.health, 0, 100_000) || typeof entry.dead !== 'boolean'
+      || (entry.dead !== (entry.health === 0)) || typeof entry.phaseLocked !== 'boolean'
+      || !isMapPosition(entry.position, map)
+      || (entry.authoredKey !== undefined && !isIdentity(entry.authoredKey))
+      || (entry.scoreEligible !== undefined && typeof entry.scoreEligible !== 'boolean')
+      || (entry.tallyEligible !== undefined && typeof entry.tallyEligible !== 'boolean')
+      || (entry.awake !== undefined && typeof entry.awake !== 'boolean')
+      || (entry.facing !== undefined && !isNumberInRange(entry.facing, -Math.PI, Math.PI))
+      || (entry.animationTime !== undefined && !isNonNegativeNumber(entry.animationTime))
+      || (entry.attackFlash !== undefined && !isNumberInRange(entry.attackFlash, 0, 60))
+      || (entry.redacted !== undefined && typeof entry.redacted !== 'boolean')) return false;
+    const hasKind = entry.kind !== undefined;
+    const hasId = entry.id !== undefined;
+    if (hasKind !== hasId) return false;
+    if (hasKind) {
+      if (typeof entry.kind !== 'string' || !ACTOR_KINDS.has(entry.kind)
+        || typeof entry.id !== 'string' || !(entry.id in ENEMIES)) return false;
+      const id = entry.id as RuntimeActor['id'];
+      const expectedKind = ENEMIES[id].faction === 'bureaucracy' ? 'enemy' : 'boss';
+      if (entry.kind !== expectedKind || Number(entry.health) > ENEMIES[id].health) return false;
+      savedActors.set(entry.uid, id);
+    }
+    actorUids.add(entry.uid);
+  }
+
+  if (!Array.isArray(value.pickups) || value.pickups.length > MAX_RUNTIME_ENTITIES) return false;
+  const pickupUids = new Set<string>();
+  const pickupByUid = new Map<string, Record<string, unknown>>();
+  for (const entry of value.pickups) {
+    if (!isRecord(entry) || !isIdentity(entry.uid) || pickupUids.has(entry.uid)
+      || typeof entry.collected !== 'boolean'
+      || (entry.phaseLocked !== undefined && typeof entry.phaseLocked !== 'boolean')) return false;
+    const identityParts = [entry.kind, entry.id, entry.position].filter((part) => part !== undefined).length;
+    if (identityParts !== 0 && (identityParts !== 3 || !isPickupIdentity(entry.kind, entry.id) || !isMapPosition(entry.position, map))) return false;
+    pickupUids.add(entry.uid);
+    pickupByUid.set(entry.uid, entry);
+  }
+
+  if (!Array.isArray(value.doors) || value.doors.length > identities.doors.size) return false;
+  const doorKeys = new Set<string>();
+  for (const entry of value.doors) {
+    const key = typeof entry === 'string' ? entry : isRecord(entry) ? entry.key : undefined;
+    if (typeof key !== 'string' || !identities.doors.has(key) || doorKeys.has(key)) return false;
+    if (typeof entry !== 'string' && (!isRecord(entry) || typeof entry.open !== 'boolean'
+      || !isNumberInRange(entry.progress, 0, 1))) return false;
+    doorKeys.add(key);
+  }
+
+  if (!isRecord(value.tally)) return false;
+  const tally = value.tally;
+  if (!isKnownStringArray(value.secrets, identities.secrets, identities.secrets.size)
+    || !isKnownStringArray(value.visited, identities.grid, identities.grid.size)
+    || !isKnownStringArray(value.triggered, identities.triggers, identities.triggers.size)
+    || (value.mechanisms !== undefined && !isKnownStringArray(value.mechanisms, identities.mechanisms, identities.mechanisms.size))
+    || (value.unlockedEncounters !== undefined
+      && (!isKnownStringArray(value.unlockedEncounters, identities.encounters, identities.encounters.size)
+        || !value.unlockedEncounters.includes('entry')))
+    || typeof value.hazardsEnabled !== 'boolean'
+    || !['kills', 'totalKills', 'items', 'totalItems', 'secrets', 'totalSecrets'].every((key) => isNonNegativeSafeInteger(tally[key]))
+    || !isNonNegativeNumber(tally.elapsed)
+    || Number(tally.kills) > Number(tally.totalKills)
+    || Number(tally.items) > Number(tally.totalItems)
+    || Number(tally.secrets) > Number(tally.totalSecrets)
+    || !isSafeIntegerInRange(value.rng, 0, UINT32_MAX)) return false;
+
+  if (value.hazardSectors !== undefined) {
+    if (!Array.isArray(value.hazardSectors) || value.hazardSectors.length > identities.hazards.size) return false;
+    const keys = new Set<string>();
+    if (!value.hazardSectors.every((entry) => isRecord(entry) && typeof entry.key === 'string'
+      && identities.hazards.has(entry.key) && !keys.has(entry.key) && Boolean(keys.add(entry.key))
+      && typeof entry.enabled === 'boolean')) return false;
+  }
+  if (value.momentum !== undefined && (!isRecord(value.momentum)
+    || !isNonNegativeSafeInteger(value.momentum.chain)
+    || !Number.isSafeInteger(value.momentum.best) || Number(value.momentum.best) < Number(value.momentum.chain)
+    || !isNonNegativeSafeInteger(value.momentum.score)
+    || !isNumberInRange(value.momentum.timer, 0, 60))) return false;
+  if (value.enemyBehavior !== undefined && !isEnemyBehaviorSnapshot(value.enemyBehavior, savedActors)) return false;
+
+  if (value.playerProjectiles !== undefined) {
+    if (!Array.isArray(value.playerProjectiles) || value.playerProjectiles.length > MAX_RUNTIME_ENTITIES) return false;
+    const ids = new Set<string>();
+    for (const entry of value.playerProjectiles) {
+      if (!isRecord(entry) || !isIdentity(entry.id) || ids.has(entry.id)
+        || typeof entry.weapon !== 'string' || !['catastrophe-launcher', 'plasma-copier'].includes(entry.weapon)
+        || !player.weapons.includes(entry.weapon) || !isPlayerProjectilePosition(entry.position, map)
+        || !isVector3(entry.velocity) || !entry.velocity.every((component) => Math.abs(component) <= 512)
+        || !isNumberInRange(entry.damage, 0, 100_000) || !isNumberInRange(entry.radius, 0, 64)
+        || !isNumberInRange(entry.remaining, 0, MAX_REMAINING_DURATION_SECONDS)) return false;
+      ids.add(entry.id);
+    }
+  }
+
+  if (value.ammoDrops !== undefined) {
+    if (!Array.isArray(value.ammoDrops) || value.ammoDrops.length > MAX_RUNTIME_ENTITIES) return false;
+    const ids = new Set<string>();
+    for (const entry of value.ammoDrops) {
+      if (!isRecord(entry) || !isIdentity(entry.uid) || ids.has(entry.uid) || !isMapPosition(entry.position, map)
+        || typeof entry.ammoId !== 'string' || !COMBAT_AMMO_IDS.has(entry.ammoId)
+        || !isNumberInRange(entry.amount, 0, ammoCap(entry.ammoId as Exclude<AmmoType, 'none'>))
+        || typeof entry.collected !== 'boolean') return false;
+      const pickup = pickupByUid.get(entry.uid);
+      const expectedPickup = entry.ammoId === 'staples' ? 'staples-small'
+        : entry.ammoId === 'fasteners' ? 'fasteners-small'
+          : entry.ammoId === 'canisters' ? 'canister' : 'toner-cell';
+      if (!pickup || pickup.collected !== entry.collected) return false;
+      const hasPickupIdentity = pickup.kind !== undefined;
+      if (hasPickupIdentity && (pickup.kind !== 'pickup' || pickup.id !== expectedPickup
+        || !isVector3(pickup.position)
+        || pickup.position.some((component, index) => Math.abs(component - (entry.position as number[])[index]) > .01))) return false;
+      ids.add(entry.uid);
+    }
+  }
+
+  if (value.bindingBeam !== undefined && (!isRecord(value.bindingBeam)
+    || !player.weapons.includes('binding-engine')
+    || !isSafeIntegerInRange(value.bindingBeam.pulses, 0, 20)
+    || !isNumberInRange(value.bindingBeam.timer, 0, 1))) return false;
+  if (value.sectors !== undefined) {
+    if (!Array.isArray(value.sectors) || value.sectors.length > identities.sectors.size) return false;
+    const keys = new Set<string>();
+    if (!value.sectors.every((entry) => isRecord(entry) && typeof entry.key === 'string'
+      && identities.sectors.has(entry.key) && !keys.has(entry.key) && Boolean(keys.add(entry.key))
+      && isNumberInRange(entry.height, -32, 32) && isNumberInRange(entry.targetHeight, -32, 32))) return false;
+  }
+  if (value.landmarks !== undefined) {
+    if (!Array.isArray(value.landmarks) || value.landmarks.length > identities.landmarks.size) return false;
+    const keys = new Set<string>();
+    if (!value.landmarks.every((entry) => isRecord(entry) && typeof entry.key === 'string'
+      && identities.landmarks.has(entry.key) && !keys.has(entry.key) && Boolean(keys.add(entry.key))
+      && isMapPosition(entry.position, map, map.cellSize * 4) && isMapPosition(entry.targetPosition, map, map.cellSize * 4)
+      && typeof entry.active === 'boolean')) return false;
+  }
+  if (value.breakables !== undefined) {
+    if (!Array.isArray(value.breakables) || value.breakables.length > identities.breakables.size) return false;
+    const keys = new Set<string>();
+    for (const entry of value.breakables) {
+      if (!isRecord(entry) || typeof entry.key !== 'string' || keys.has(entry.key) || !identities.breakables.has(entry.key)
+        || !isNumberInRange(entry.health, 0, identities.breakables.get(entry.key)!) || typeof entry.destroyed !== 'boolean'
+        || entry.destroyed !== (entry.health === 0)) return false;
+      keys.add(entry.key);
+    }
+  }
+
+  if (value.bossMechanisms !== undefined) {
+    if (!isRecord(value.bossMechanisms) || !Array.isArray(value.bossMechanisms.actions)
+      || value.bossMechanisms.actions.length > BOSS_ACTIONS.size
+      || !value.bossMechanisms.actions.every((action) => typeof action === 'string' && BOSS_ACTIONS.has(action))
+      || !hasUniqueStrings(value.bossMechanisms.actions as string[])
+      || !isSafeIntegerInRange(value.bossMechanisms.bindingGates, 0, 3)) return false;
+    const actions = new Set(value.bossMechanisms.actions as string[]);
+    const gates = Number(value.bossMechanisms.bindingGates);
+    if ((gates > 0) !== actions.has('open-binding-gate') || (gates > 0 && map.id !== 'E3M8')) return false;
+  }
+
+  if (value.runtime !== undefined) {
+    if (!isRecord(value.runtime)
+      || !isNumberInRange(value.runtime.weaponCooldown, 0, 60)
+      || !isNumberInRange(value.runtime.damageCooldown, 0, 60)
+      || !isNumberInRange(value.runtime.messageTimer, 0, 60)
+      || typeof value.runtime.message !== 'string' || value.runtime.message.length > 512
+      || typeof value.runtime.walkMode !== 'boolean'
+      || !isNonNegativeSafeInteger(value.runtime.projectileSequence)
+      || !isVector3(value.runtime.playerVelocity) || value.runtime.playerVelocity.some((component) => Math.abs(component) > 16)
+      || (value.runtime.weaponState !== undefined
+        && (typeof value.runtime.weaponState !== 'string' || !WEAPON_STATES.has(value.runtime.weaponState)))
+      || !isNumberInRange(value.runtime.weaponTransition ?? 0, 0, 60)
+      || (value.runtime.pendingWeapon !== undefined
+        && (typeof value.runtime.pendingWeapon !== 'string' || !(value.runtime.pendingWeapon in WEAPONS)
+          || !player.weapons.includes(value.runtime.pendingWeapon)))) return false;
+    const state = value.runtime.weaponState ?? 'ready';
+    const transition = Number(value.runtime.weaponTransition ?? 0);
+    const pending = value.runtime.pendingWeapon;
+    if (state === 'ready' && (pending !== undefined || transition !== 0)) return false;
+    if (state === 'lowering' && (typeof pending !== 'string' || pending === player.weapon || transition > WEAPONS[player.weapon as WeaponId].lowerTime)) return false;
+    if (state === 'raising' && (transition > WEAPONS[player.weapon as WeaponId].raiseTime
+      || (pending !== undefined && pending === player.weapon))) return false;
+    if (value.playerProjectiles) {
+      const greatestSequence = value.playerProjectiles.reduce((greatest, projectile) => {
+        const match = /^player-projectile-(\d+)$/.exec(projectile.id);
+        return match ? Math.max(greatest, Number(match[1])) : greatest;
+      }, -1);
+      if (greatestSequence >= Number(value.runtime.projectileSequence)) return false;
+    }
+  }
   return true;
 };
 
@@ -737,6 +1165,7 @@ export class GameEngine {
   };
   mode: GameMode = 'menu';
   difficulty: GameDifficulty = 'field-adjuster';
+  runVariant: RunVariant = 'fresh-start';
   tally: MapTally = { kills: 0, totalKills: 0, items: 0, totalItems: 0, secrets: 0, totalSecrets: 0, elapsed: 0 };
   readonly momentum: CombatMomentum = { chain: 0, best: 0, score: 0, timer: 0 };
   message = '';
@@ -758,6 +1187,10 @@ export class GameEngine {
   private rngState = 0x4d595df4;
   private nextMap?: MapId;
   private readonly triggered = new Set<string>();
+  private applyingEnemyEventBatch = false;
+  private enemyEventBatchCheckpointPending = false;
+  private applyingSimulationTick = false;
+  private simulationCheckpointPending = false;
   private animationFrame = 0;
   private walkMode = false;
   private readonly playerVelocity = new Vector3();
@@ -778,6 +1211,7 @@ export class GameEngine {
   private activeDemo?: ActiveDemoPlayback;
   private demoReadOnly = false;
   private playtestReadOnly = false;
+  private recoveryCheckpointState = createRecoveryCheckpointSchedule(0);
   private radialSelecting = false;
   private weaponState: 'ready' | 'lowering' | 'raising' = 'ready';
   private weaponTransition = 0;
@@ -829,6 +1263,7 @@ export class GameEngine {
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement !== canvas && this.mode === 'playing') this.pause();
     });
+    window.addEventListener('pagehide', () => { this.checkpoint(); });
     window.addEventListener('accessibility-settings-change', (event) => {
       const detail = (event as CustomEvent<Partial<typeof this.accessibility>>).detail;
       Object.assign(this.accessibility, detail);
@@ -873,18 +1308,27 @@ export class GameEngine {
 
   startEpisode(episodeIndex: number, difficulty: GameDifficulty): void {
     this.difficulty = difficulty;
-    this.resetInventory();
     const episode = CAMPAIGN.episodes[episodeIndex];
     if (!episode) throw new Error(`Unknown episode ${episodeIndex}`);
-    this.loadMap(episode.maps[0]);
+    this.loadMap(episode.maps[0], false, true, 'fresh-start');
   }
 
-  loadMap(id: MapId, preserveInventory = true, createCheckpoint = true): void {
+  loadMap(
+    id: MapId,
+    preserveInventory = true,
+    createCheckpoint = true,
+    runVariant?: RunVariant,
+  ): void {
     const map = CAMPAIGN.maps[id];
     if (!map) throw new Error(`Unknown map ${id}`);
+    const inferredVariant: RunVariant = preserveInventory
+      && this.world.map?.episode === map.episode
+      ? 'campaign-carry'
+      : 'fresh-start';
+    this.runVariant = runVariant ?? inferredVariant;
     this.demoRecorder = undefined;
     this.demoTick = 0;
-    if (!preserveInventory) this.resetInventory();
+    if (!preserveInventory || this.runVariant === 'fresh-start') this.resetInventory();
     this.resetMapScopedPlayerState();
     this.clearAnimatedEffects();
     this.assets.disposeTextures();
@@ -927,6 +1371,7 @@ export class GameEngine {
       totalSecrets: map.secrets.length,
       elapsed: 0,
     };
+    this.recoveryCheckpointState = createRecoveryCheckpointSchedule(this.tally.elapsed);
     Object.assign(this.momentum, { chain: 0, best: 0, score: 0, timer: 0 });
     this.mode = 'playing';
     this.nextMap = undefined;
@@ -953,6 +1398,7 @@ export class GameEngine {
 
   pause(): void {
     if (this.mode !== 'playing') return;
+    this.checkpoint();
     this.mode = 'paused';
     if (this.world.map) this.render();
     this.audio.suspend();
@@ -1017,53 +1463,63 @@ export class GameEngine {
       this.handleGlobalKeys();
       if (this.mode !== 'playing') return;
     }
-    this.tally.elapsed += dt;
-    this.momentum.timer = Math.max(0, this.momentum.timer - dt);
-    if (this.momentum.timer === 0) this.momentum.chain = 0;
-    this.weaponCooldown = Math.max(0, this.weaponCooldown - dt);
-    this.updateWeaponTransition(dt);
-    this.damageCooldown = Math.max(0, this.damageCooldown - dt);
-    this.messageTimer = Math.max(0, this.messageTimer - dt);
-    this.particles.update(dt);
-    this.updateAnimatedEffects(dt);
-    this.updateSemanticCues(dt);
-    this.updateAmbientAudio(dt);
-    this.updateAmbientParticles(dt);
-    this.updatePowerupTimers(dt);
-    this.updateVisionEffects();
-    if (this.messageTimer === 0) this.message = '';
-    const command = playbackCommand ?? this.captureGameplayCommand();
-    if (recordDemo && this.demoRecorder) {
-      if (!this.demoRecorder.record(this.demoTick, command)) {
-        const demo = this.finishDemoRecording();
-        if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'size' } }));
-      } else {
-        this.demoTick += 1;
+    this.applyingSimulationTick = true;
+    let completed = false;
+    try {
+      this.tally.elapsed += dt;
+      this.momentum.timer = Math.max(0, this.momentum.timer - dt);
+      if (this.momentum.timer === 0) this.momentum.chain = 0;
+      this.weaponCooldown = Math.max(0, this.weaponCooldown - dt);
+      this.updateWeaponTransition(dt);
+      this.damageCooldown = Math.max(0, this.damageCooldown - dt);
+      this.messageTimer = Math.max(0, this.messageTimer - dt);
+      this.particles.update(dt);
+      this.updateAnimatedEffects(dt);
+      this.updateSemanticCues(dt);
+      this.updateAmbientAudio(dt);
+      this.updateAmbientParticles(dt);
+      this.updatePowerupTimers(dt);
+      this.updateVisionEffects();
+      if (this.messageTimer === 0) this.message = '';
+      const command = playbackCommand ?? this.captureGameplayCommand();
+      if (recordDemo && this.demoRecorder) {
+        if (!this.demoRecorder.record(this.demoTick, command)) {
+          const demo = this.finishDemoRecording();
+          if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'size' } }));
+        } else {
+          this.demoTick += 1;
+        }
+        if (this.demoRecorder && this.demoTick >= MAX_DEMO_TICKS) {
+          const demo = this.finishDemoRecording();
+          if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'duration' } }));
+        }
       }
-      if (this.demoRecorder && this.demoTick >= MAX_DEMO_TICKS) {
-        const demo = this.finishDemoRecording();
-        if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'duration' } }));
-      }
+      if (command.walkToggle) this.walkMode = !this.walkMode;
+      this.movePlayer(dt, command);
+      this.updatePickups();
+      this.punctuateMoverCompletions(this.world.updateMovers(dt));
+      this.world.markVisited(this.player.position);
+      this.updateSecrets();
+      this.updatePlayerProjectiles(dt);
+      this.updateBindingBeam(dt);
+      this.visibilityRefreshTimer -= dt;
+      const refreshVisibility = this.visibilityRefreshTimer <= 0;
+      if (refreshVisibility) this.visibilityRefreshTimer = .1;
+      this.updateEnemies(dt, refreshVisibility);
+      if (refreshVisibility) this.refreshPickupVisibility();
+      this.updateHostileBeamVisuals(dt);
+      this.weaponSelection(command);
+      if (command.fire) this.fireWeapon();
+      if (command.use) this.use();
+      this.updateCamera();
+      if (this.player.health <= 0) this.die();
+      completed = true;
+    } finally {
+      this.applyingSimulationTick = false;
+      const explicitCheckpoint = completed && this.simulationCheckpointPending;
+      this.simulationCheckpointPending = false;
+      if (completed) this.checkpoint(!explicitCheckpoint);
     }
-    if (command.walkToggle) this.walkMode = !this.walkMode;
-    this.movePlayer(dt, command);
-    this.updatePickups();
-    this.punctuateMoverCompletions(this.world.updateMovers(dt));
-    this.world.markVisited(this.player.position);
-    this.updateSecrets();
-    this.updatePlayerProjectiles(dt);
-    this.updateBindingBeam(dt);
-    this.visibilityRefreshTimer -= dt;
-    const refreshVisibility = this.visibilityRefreshTimer <= 0;
-    if (refreshVisibility) this.visibilityRefreshTimer = .1;
-    this.updateEnemies(dt, refreshVisibility);
-    if (refreshVisibility) this.refreshPickupVisibility();
-    this.updateHostileBeamVisuals(dt);
-    this.weaponSelection(command);
-    if (command.fire) this.fireWeapon();
-    if (command.use) this.use();
-    this.updateCamera();
-    if (this.player.health <= 0) this.die();
     this.emit();
   }
 
@@ -1936,7 +2392,8 @@ export class GameEngine {
       position ?? this.player.position.clone().add(new Vector3(0, -.15, 0)),
       4,
     );
-    this.checkpoint();
+    if (this.applyingEnemyEventBatch) this.enemyEventBatchCheckpointPending = true;
+    else this.checkpoint();
   }
 
   private setActorDeadVisual(actor: RuntimeActor, restart: boolean): void {
@@ -2015,7 +2472,7 @@ export class GameEngine {
       },
       difficulty: { reaction: difficulty.reaction, refire: difficulty.refire, projectileSpeed: difficulty.projectileSpeed, aggression: difficulty.aggression },
     });
-    result.events.forEach((event) => this.applyEnemyEvent(event, dt, difficulty.enemySpeed, difficulty.enemyDamage));
+    this.applyEnemyEventBatch(result.events, dt, difficulty.enemySpeed, difficulty.enemyDamage);
     const livePressure = this.world.actors.filter((actor) => actor.awake && !actor.dead && !actor.phaseLocked
       && this.horizontalDistance(actor.position, this.player.position) < 28).length;
     const bossPressure = this.world.actors.some((actor) => actor.kind === 'boss' && actor.awake && !actor.dead && !actor.phaseLocked) ? .35 : 0;
@@ -2073,6 +2530,20 @@ export class GameEngine {
       return toPoint.y - fromPoint.y <= 1.05;
     }
     return this.world.canTraverse(fromPoint, toPoint, radius);
+  }
+
+  private applyEnemyEventBatch(events: readonly BehaviorEvent[], dt: number, speedScale: number, damageScale: number): void {
+    this.applyingEnemyEventBatch = true;
+    let completed = false;
+    try {
+      events.forEach((event) => this.applyEnemyEvent(event, dt, speedScale, damageScale));
+      completed = true;
+    } finally {
+      this.applyingEnemyEventBatch = false;
+      const createCheckpoint = completed && this.enemyEventBatchCheckpointPending;
+      this.enemyEventBatchCheckpointPending = false;
+      if (createCheckpoint) this.checkpoint();
+    }
   }
 
   private applyEnemyEvent(event: BehaviorEvent, dt: number, speedScale: number, damageScale: number): void {
@@ -2182,16 +2653,20 @@ export class GameEngine {
         );
         break;
       }
-      case 'summon':
+      case 'summon': {
+        const acceptedActorUids: string[] = [];
         event.positions.forEach((position, index) => {
           const point = new Vector3(position.x, 0, position.z);
           if (this.world.isSolid(point, ENEMIES[event.enemyId].radius)) return;
-          this.world.summonEnemy(event.enemyId, point, event.actorUids[index]);
+          const summoned = this.world.summonEnemy(event.enemyId, point, event.actorUids[index]);
+          acceptedActorUids.push(summoned.uid);
           const arrival = point.clone().add(new Vector3(0, .3, 0));
           this.emitParticles('toner', arrival, 5);
           this.playSemanticCue('rejection', arrival);
         });
+        this.enemyBehavior.reconcileSummonPlacements(event.actorUid, event.actorUids, acceptedActorUids);
         break;
+      }
       case 'boss-phase':
         if (actor) this.audio.enemyCue(actor.id, 'phase', this.actorPan(actor), Math.max(.35, this.actorAudibility(actor)));
         if (actor) this.playSemanticCue('authority', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .5, 0)));
@@ -2675,8 +3150,8 @@ export class GameEngine {
   }
 
   private applyPickup(id: PickupId): void {
-    const supply = DIFFICULTY[this.difficulty].supply;
-    const ammoGrant = pickupAmmoGrant(id, supply);
+    const ammoSupply = DIFFICULTY[this.difficulty].ammoSupply;
+    const ammoGrant = pickupAmmoGrant(id, ammoSupply);
     if (ammoGrant) this.player.ammo[ammoGrant.ammo] = addAmmoWithinCap(this.player.ammo[ammoGrant.ammo], ammoGrant);
     else if (id === 'loss-control-vest') { this.player.armor = Math.max(this.player.armor, 100); this.player.armorClass = 'light'; }
     else if (id === 'catastrophe-suit') { this.player.armor = Math.max(this.player.armor, 200); this.player.armorClass = 'heavy'; }
@@ -2690,7 +3165,7 @@ export class GameEngine {
     else this.player.health = Math.min(id === 'goodwill-token' ? 200 : 100, this.player.health + (id === 'field-medical-case' ? 25 : id === 'goodwill-token' ? 1 : 10));
     if (id === 'temporary-binder') window.dispatchEvent(new CustomEvent('player-portrait', { detail: { state: 'invulnerable' } }));
     else if (id === 'emergency-reserve') window.dispatchEvent(new CustomEvent('player-portrait', { detail: { state: 'overcharge' } }));
-    this.showMessage(this.pretty(id));
+    this.showMessage(timedPickupAnnouncement(id) ?? this.pretty(id));
   }
 
   private updateSecrets(): void {
@@ -2933,6 +3408,7 @@ export class GameEngine {
     const performance: MapPerformance = {
       mapId: this.world.map.id,
       difficulty: this.difficulty,
+      runVariant: this.runVariant ?? 'fresh-start',
       elapsed: this.tally.elapsed,
       parSeconds: this.world.map.parSeconds,
       score: this.momentum.score,
@@ -2948,9 +3424,10 @@ export class GameEngine {
       record = transientPlaytestRecord(performance);
       newBests = ['Playtest only'];
     } else {
-      const before = this.persistence.campaignUnlocks().records[`${performance.mapId}:${performance.difficulty}`];
+      const recordKey = mapRecordKey(performance.mapId, performance.difficulty, performance.runVariant);
+      const before = this.persistence.campaignUnlocks().records[recordKey];
       const progress = this.persistence.completeMap(this.world.map.id, performance, secretRoute ? nextMap : undefined);
-      record = progress.records[`${performance.mapId}:${performance.difficulty}`];
+      record = progress.records[recordKey];
       newBests = before ? [
         ...(performance.elapsed < before.bestTime ? ['Best time'] : []),
         ...(performance.score > before.highScore ? ['High score'] : []),
@@ -2959,7 +3436,7 @@ export class GameEngine {
         ...(performance.itemsPercent > before.bestItemsPercent ? ['Item mastery'] : []),
         ...(performance.secretsPercent > before.bestSecretsPercent ? ['Secret mastery'] : []),
         ...(performance.grade !== before.bestGrade && record.bestGrade === performance.grade ? ['Grade'] : []),
-      ] : ['First clear'];
+      ] : [`First clear: ${runVariantLabel(performance.runVariant)} track`];
     }
     this.lastMapResult = { performance, record, completionBonus, newBests, secretRoute };
     if (!this.playtestReadOnly && this.world.map.index === 8) {
@@ -2986,13 +3463,18 @@ export class GameEngine {
     }
     const currentEpisode = Number(this.world.map.id[1]);
     const nextEpisode = Number(this.nextMap[1]);
-    if (currentEpisode !== nextEpisode) this.resetInventory();
-    this.loadMap(this.nextMap);
+    const sameEpisode = currentEpisode === nextEpisode;
+    this.loadMap(
+      this.nextMap,
+      sameEpisode,
+      true,
+      sameEpisode ? 'campaign-carry' : 'fresh-start',
+    );
   }
 
   retryCurrentMap(): void {
     if (this.mode !== 'intermission') return;
-    this.loadMap(this.world.map.id, false);
+    this.loadMap(this.world.map.id, false, true, 'fresh-start');
   }
 
   private die(): void {
@@ -3021,6 +3503,7 @@ export class GameEngine {
 
   restartFromCheckpoint(): boolean {
     if (this.playtestReadOnly) {
+      this.runVariant = 'fresh-start';
       this.loadMap(this.world.map.id, false, false);
       return true;
     }
@@ -3034,6 +3517,7 @@ export class GameEngine {
     if (checkpoint?.status === 'valid') return this.restoreSave(checkpoint.state);
     const recovery = this.persistence.loadEpisodeRecovery(this.world.map.episode);
     if (recovery.status === 'valid') return this.restoreSave(recovery.state);
+    this.runVariant = 'fresh-start';
     this.loadMap(this.world.map.id, false);
     return true;
   }
@@ -3086,6 +3570,16 @@ export class GameEngine {
       window.dispatchEvent(new CustomEvent('weapon-switch', { detail: { from, to: this.player.weapon, state: 'raising', duration: this.weaponTransition } }));
       return;
     }
+    if (this.weaponState === 'raising' && this.pendingWeapon
+      && this.pendingWeapon !== this.player.weapon && this.player.weapons.has(this.pendingWeapon)) {
+      this.weaponState = 'lowering';
+      this.weaponTransition = WEAPONS[this.player.weapon].lowerTime;
+      window.dispatchEvent(new CustomEvent('weapon-switch', {
+        detail: { from: this.player.weapon, to: this.pendingWeapon, state: 'lowering', duration: this.weaponTransition },
+      }));
+      return;
+    }
+    this.pendingWeapon = undefined;
     this.weaponState = 'ready';
     this.weaponTransition = 0;
     window.dispatchEvent(new CustomEvent('weapon-switch', { detail: { to: this.player.weapon, state: 'ready', duration: 0 } }));
@@ -3095,6 +3589,7 @@ export class GameEngine {
     return {
       version: 1,
       mode: this.mode === 'paused' ? 'paused' : 'playing',
+      runVariant: this.runVariant,
       mapId: this.world.map.id,
       difficulty: this.difficulty,
       player: {
@@ -3190,13 +3685,28 @@ export class GameEngine {
     }
   }
 
-  private checkpoint(): void {
-    if (this.activeDemo || this.demoReadOnly || this.playtestReadOnly) return;
+  private checkpoint(periodic = false): boolean {
+    if (this.applyingSimulationTick) {
+      if (!periodic) this.simulationCheckpointPending = true;
+      return false;
+    }
+    if (!this.world.map || !recoveryCheckpointAllowed({
+      mode: this.mode,
+      demoPlayback: Boolean(this.activeDemo),
+      demoRecording: Boolean(this.demoRecorder),
+      demoReadOnly: this.demoReadOnly,
+      playtestReadOnly: this.playtestReadOnly,
+    })) return false;
+    const elapsed = this.tally.elapsed;
+    if (this.player.health <= 0 || !recoveryCheckpointDue(this.recoveryCheckpointState, elapsed, periodic)) return false;
     const state = this.createSaveData();
+    if (!isSaveData(state)) return false;
     const metadata = this.saveMetadata();
     this.persistence.autosave(state, metadata);
     const recovery = this.persistence.loadEpisodeRecovery(this.world.map.episode);
     if (this.world.map.index === 1 || recovery.status !== 'valid') this.persistence.saveEpisodeRecovery(this.world.map.episode, state, metadata);
+    this.recoveryCheckpointState = createRecoveryCheckpointSchedule(elapsed, true);
+    return true;
   }
 
   save(): void {
@@ -3219,7 +3729,7 @@ export class GameEngine {
       status: entry.status,
       name: entry.status === 'valid' ? entry.metadata.name : entry.defaultName,
       detail: entry.status === 'valid'
-        ? `${entry.metadata.mapId} ${entry.metadata.mapTitle} | ${this.pretty(entry.metadata.difficulty)} | ${this.saveTime(entry.metadata.playSeconds)} | ${new Date(entry.metadata.savedAt).toLocaleString()}`
+        ? `${entry.metadata.mapId} ${entry.metadata.mapTitle} | ${this.pretty(entry.metadata.difficulty)} | ${runVariantLabel(restoredRunVariant(entry.state))} | ${this.saveTime(entry.metadata.playSeconds)} | ${new Date(entry.metadata.savedAt).toLocaleString()}`
         : entry.status === 'invalid' ? `Unreadable: ${entry.reason}` : 'Empty',
       ...(entry.status === 'valid' ? { thumbnail: entry.metadata.thumbnail } : {}),
     }));
@@ -3231,7 +3741,10 @@ export class GameEngine {
       .sort((left, right) => {
         const leftTime = left.status === 'valid' ? left.metadata.savedAt : 0;
         const rightTime = right.status === 'valid' ? right.metadata.savedAt : 0;
-        return rightTime - leftTime;
+        if (rightTime !== leftTime) return rightTime - leftTime;
+        const leftSequence = left.status === 'valid' ? left.metadata.sequence : -1;
+        const rightSequence = right.status === 'valid' ? right.metadata.sequence : -1;
+        return rightSequence - leftSequence;
       })
       .map((entry, index) => ({
         slot: index + 1,
@@ -3240,7 +3753,7 @@ export class GameEngine {
         status: entry.status,
         name: entry.status === 'valid' ? entry.metadata.name : entry.defaultName,
         detail: entry.status === 'valid'
-          ? `${entry.metadata.mapId} ${entry.metadata.mapTitle} | ${this.pretty(entry.metadata.difficulty)} | ${this.saveTime(entry.metadata.playSeconds)} | ${new Date(entry.metadata.savedAt).toLocaleString()}`
+          ? `${entry.metadata.mapId} ${entry.metadata.mapTitle} | ${this.pretty(entry.metadata.difficulty)} | ${runVariantLabel(restoredRunVariant(entry.state))} | ${this.saveTime(entry.metadata.playSeconds)} | ${new Date(entry.metadata.savedAt).toLocaleString()}`
           : entry.status === 'invalid' ? `Unreadable: ${entry.reason}` : 'Empty',
         ...(entry.status === 'valid' ? { thumbnail: entry.metadata.thumbnail } : {}),
       }));
@@ -3291,7 +3804,7 @@ export class GameEngine {
     if (!isSaveData(save)) return false;
     try {
       this.difficulty = save.difficulty;
-      this.loadMap(save.mapId, true, false);
+      this.loadMap(save.mapId, true, false, restoredRunVariant(save));
       Object.assign(this.player, {
         health: save.player.health,
         armor: save.player.armor,
@@ -3461,6 +3974,7 @@ export class GameEngine {
       // simulation events, rather than becoming part of saves or demos.
       this.particles.clear();
       this.mode = resume ? 'playing' : 'paused';
+      this.recoveryCheckpointState = createRecoveryCheckpointSchedule(this.tally.elapsed, true);
       this.updateVisionEffects();
       this.updateCamera();
       this.resetPresentationHistory();
@@ -3483,7 +3997,7 @@ export class GameEngine {
       recovery: 'Episode recovery',
       conflict: 'Previous tab copy',
     } as const)[result.kind];
-    return `${kind} | ${result.metadata.mapId} ${result.metadata.mapTitle} | ${this.pretty(result.metadata.difficulty)} | Play ${this.saveTime(result.metadata.playSeconds)} | ${new Date(result.metadata.savedAt).toLocaleString()}`;
+    return `${kind} | ${result.metadata.mapId} ${result.metadata.mapTitle} | ${this.pretty(result.metadata.difficulty)} | ${runVariantLabel(restoredRunVariant(result.state))} | Play ${this.saveTime(result.metadata.playSeconds)} | ${new Date(result.metadata.savedAt).toLocaleString()}`;
   }
   get pendingMap(): MapId | undefined { return this.nextMap; }
   get mapResult(): MapResult | undefined { return this.lastMapResult; }
@@ -3698,8 +4212,7 @@ export class GameEngine {
       : mapIndex === 0 || progress.completedMaps.includes(map.id) || progress.completedMaps.includes(episode.maps[mapIndex - 1]);
     if (!available) throw new Error(`Locked map ${mapId}`);
     this.difficulty = difficulty;
-    this.resetInventory();
-    this.loadMap(mapId, true);
+    this.loadMap(mapId, false, true, 'fresh-start');
   }
 
   private migrateLegacySave(storage: Storage): void {
@@ -3737,12 +4250,7 @@ export class GameEngine {
   }
 
   debugDefeatAll(): void {
-    this.world.actors.forEach((actor) => {
-      if (actor.dead) return;
-      actor.phaseLocked = false;
-      actor.sprite.visible = true;
-      this.damageActor(actor, actor.health + 1);
-    });
+    this.runAtomicDebugDefeat(this.world.actors.filter((actor) => !actor.dead));
   }
 
   debugDefeatPlayer(): void {
@@ -3767,27 +4275,36 @@ export class GameEngine {
   }
 
   debugDefeatEncounter(id: string): number {
-    let defeated = 0;
-    this.world.actors.filter((actor) => actor.encounter === id && !actor.dead).forEach((actor) => {
-      actor.phaseLocked = false;
-      actor.sprite.visible = true;
-      this.damageActor(actor, actor.health + 1);
-      defeated += Number(actor.dead);
-    });
-    return defeated;
+    return this.runAtomicDebugDefeat(this.world.actors.filter((actor) => actor.encounter === id && !actor.dead));
   }
 
   debugDefeatMandatory(id: string): number {
+    return this.runAtomicDebugDefeat(this.world.actors
+      .filter((actor) => actor.encounter === id && actor.mandatory && !actor.dead));
+  }
+
+  private runAtomicDebugDefeat(actors: readonly RuntimeActor[]): number {
+    const alreadyAtomic = this.applyingSimulationTick;
+    if (!alreadyAtomic) this.applyingSimulationTick = true;
+    let completed = false;
     let defeated = 0;
-    this.world.actors
-      .filter((actor) => actor.encounter === id && actor.mandatory && !actor.dead)
-      .forEach((actor) => {
+    try {
+      actors.forEach((actor) => {
         actor.phaseLocked = false;
         actor.sprite.visible = true;
         this.damageActor(actor, actor.health + 1);
         defeated += Number(actor.dead);
       });
-    return defeated;
+      completed = true;
+      return defeated;
+    } finally {
+      if (!alreadyAtomic) {
+        this.applyingSimulationTick = false;
+        const createCheckpoint = completed && this.simulationCheckpointPending;
+        this.simulationCheckpointPending = false;
+        if (createCheckpoint) this.checkpoint();
+      }
+    }
   }
 
   debugTeleportToPickup(kind: 'pickup' | 'weapon' | 'credential', id?: string): boolean {
@@ -3953,6 +4470,7 @@ export class GameEngine {
     return JSON.stringify({
       coordinateSystem: 'world units; x increases east/right on automap, z increases south/down; yaw 0 faces north (-z)',
       mode: this.mode,
+      runVariant: this.runVariant,
       map: this.world.map ? { id: this.world.map.id, title: this.world.map.title, exit: this.world.map.exit } : null,
       player: { x: +this.player.position.x.toFixed(2), z: +this.player.position.z.toFixed(2), yaw: +this.player.yaw.toFixed(3), pitch: +this.player.pitch.toFixed(3), health: Math.ceil(this.player.health), armor: Math.ceil(this.player.armor), armorClass: this.player.armorClass, weapon: this.player.weapon, ammo: this.player.ammo, credentials: [...this.player.credentials], floorPlan: this.player.floorPlan, powerups: this.player.powerups },
       visibleActors,

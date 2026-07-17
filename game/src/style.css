@@ -155,22 +155,59 @@ dialog:focus-visible { outline: 0; }
 .level-difficulty { display: flex; align-items: center; gap: 8px; }
 .campaign-mastery { width: min(720px, 96%); padding: 6px 8px; border-block: 1px solid #4b5055; color: #ffe17a; font-size: .625rem; text-align: center; }
 .milestone-panel { width: min(720px, 96%); display: flex; align-items: center; justify-content: center; gap: 10px; padding: 4px 8px; border-bottom: 1px solid #34383d; text-align: center; }
-.milestone-panel > strong { flex: 0 0 auto; color: #d4d2cb; font-size: .5625rem; }
+.milestone-panel > strong { flex: 0 0 auto; color: #d4d2cb; font-size: .625rem; }
 .milestone-list { min-width: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
-.milestone-list span { color: #777d82; font-size: .5625rem; }
+.milestone-list span { color: #777d82; font-size: .625rem; }
 .milestone-list .earned { color: #47bcd1; }
 .milestone-list .next { color: #ffe17a; }
+.milestone-ledger-screen { inset: 4% 10%; justify-content: flex-start; overflow-x: hidden; border-color: #646a70; }
+.milestone-ledger-screen h1 { margin-bottom: 0; }
+.milestone-ledger-tabs { width: min(720px, 100%); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.milestone-ledger-tabs button { min-width: 0; border-color: #4b5055; color: #b7b8b4; background: #1d2023; }
+.milestone-ledger-tabs button[aria-selected="true"] { color: #fffdf7; border-color: #d9232e; background: #7a1018; }
+.milestone-ledger-summary { width: min(720px, 100%); margin: 0; color: #b7b8b4; font-size: .6875rem; text-align: center; }
+.milestone-ledger-panel { width: min(880px, 100%); }
+.milestone-ledger-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.milestone-ledger-list[hidden], .milestone-ledger-empty[hidden] { display: none; }
+.milestone-ledger-item { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 5px 10px; padding: 8px 9px; border: 1px solid #4b5055; border-left: 3px solid #646a70; background: #1d2023; }
+.milestone-ledger-item.earned { border-color: #646a70; border-left-color: #d9232e; background: #24272a; }
+.milestone-ledger-item header { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-bottom: 1px solid #34383d; padding-bottom: 4px; }
+.milestone-ledger-item header strong { min-width: 0; color: #fffdf7; font-size: .75rem; line-height: 1.2; overflow-wrap: anywhere; }
+.milestone-ledger-state { flex: 0 0 auto; padding: 2px 5px; color: #b7b8b4; border: 1px solid #646a70; font-size: .625rem; font-weight: bold; text-transform: uppercase; }
+.milestone-ledger-item.earned .milestone-ledger-state { color: #fffdf7; border-color: #d9232e; background: #7a1018; }
+.milestone-ledger-item > p { grid-column: 1; margin: 0; color: #d4d2cb; font-size: .6875rem; line-height: 1.35; }
+.milestone-ledger-progress-copy { grid-column: 1; color: #b7b8b4; font-size: .625rem; line-height: 1.25; }
+.milestone-ledger-item progress { grid-column: 1; width: 100%; height: 8px; overflow: hidden; border: 1px solid #646a70; border-radius: 0; background: #08090a; accent-color: #d9232e; }
+.milestone-ledger-item progress::-webkit-progress-bar { background: #08090a; }
+.milestone-ledger-item progress::-webkit-progress-value { background: #d9232e; }
+.milestone-ledger-item progress::-moz-progress-bar { background: #d9232e; }
+.milestone-ledger-reward { grid-column: 2; grid-row: 2 / 5; display: grid; align-content: center; justify-items: center; gap: 5px; min-width: 0; text-align: center; }
+.milestone-seal-mark { width: 44px; height: 44px; display: grid; place-items: center; color: #777d82; border: 2px double #777d82; background: #111214; font-size: .5rem; font-weight: bold; clip-path: polygon(50% 0, 85% 15%, 100% 50%, 85% 85%, 50% 100%, 15% 85%, 0 50%, 15% 15%); }
+.earned .milestone-seal-mark { color: #fffdf7; border-color: #ffe17a; background: #7a1018; }
+.milestone-ledger-reward > span:last-child { display: grid; gap: 2px; }
+.milestone-ledger-reward strong { color: #ffe17a; font-size: .625rem; line-height: 1.2; overflow-wrap: anywhere; }
+.milestone-ledger-reward small { color: #b7b8b4; font-size: .625rem; line-height: 1.2; }
+.milestone-ledger-empty { margin: 24px auto; }
+.milestone-awards { width: min(620px, 94%); padding: 6px 8px; border: 1px solid #ffe17a; border-left: 3px solid #d9232e; background: #24272a; text-align: center; }
+.milestone-awards[hidden] { display: none; }
+.milestone-awards > strong { display: block; margin-bottom: 4px; color: #ffe17a; font-size: .6875rem; }
+.milestone-awards > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 14px; }
+.milestone-awards span { display: grid; gap: 1px; }
+.milestone-awards b { color: #fffdf7; font-size: .625rem; }
+.milestone-awards small { color: #b7b8b4; font-size: .625rem; }
 #level-select { justify-content: flex-start; }
 .level-select-list { width: min(720px, 96%); display: grid; gap: 10px; }
 .level-episode h2 { margin: 0 0 4px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; color: #b7b8b4; font-size: .8125rem; }
 .level-episode h2 strong { color: #d4d2cb; font-size: .8125rem; }
 .level-episode h2 small { color: #777d82; font-size: .5rem; text-align: right; }
 .level-map-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.level-map-grid button { min-width: 0; min-height: 64px; padding: 5px; overflow: hidden; text-align: left; }
+.level-map-grid button { min-width: 0; min-height: 76px; padding: 5px; overflow: hidden; text-align: left; }
 .level-map-grid strong, .level-map-grid small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .level-map-grid strong { color: #fffdf7; font-size: .6875rem; }
 .level-map-grid small { margin-top: 4px; color: #b7b8b4; font-size: .5rem; }
 .level-map-grid .map-mastery-target { color: #ffe17a; }
+.level-map-grid .map-record-note { color: #47bcd1; white-space: normal; line-height: 1.15; }
+.level-map-grid .map-record-note.legacy { color: #d4d2cb; }
 .level-map-grid button.mastered { border-color: #47bcd1; }
 .level-map-grid button.mastered .map-mastery-target { color: #47bcd1; }
 button {
@@ -335,6 +372,23 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
 #boss-bar small { color: #b7b8b4; font-size: .5rem; }
 #boss-bar i { display: block; height: 8px; border: 1px solid #f4f1ea; background: #111214; }
 #boss-bar span { display: block; width: 100%; height: 100%; background: #d9232e; }
+#active-effects { position: absolute; z-index: 7; left: 2.5%; bottom: calc(16% + 10px); width: min(240px, 34%); display: grid; gap: 4px; pointer-events: none; }
+#active-effects[hidden] { display: none; }
+.active-effect { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 2px 6px; min-width: 0; padding: 4px 6px; color: #fffdf7; border: 1px solid #646a70; border-left: 3px solid #47bcd1; background: rgba(8,9,10,.88); text-shadow: 1px 1px #08090a; }
+.active-effect.urgent { border-color: #ffe17a; border-left-color: #d9232e; }
+.active-effect img { grid-row: 1 / 3; width: 34px; height: 34px; object-fit: contain; image-rendering: pixelated; }
+.active-effect > span { min-width: 0; display: grid; gap: 1px; }
+.active-effect strong, .active-effect small { overflow-wrap: anywhere; letter-spacing: 0; }
+.active-effect strong { color: #fffdf7; font-size: .6875rem; line-height: 1.15; }
+.active-effect small { color: #b7b8b4; font-size: .625rem; line-height: 1.15; }
+.active-effect > time { color: #47bcd1; font-size: .6875rem; font-weight: bold; }
+.active-effect.urgent > time { color: #ffe17a; }
+.active-effect > i { grid-column: 2 / 4; display: block; height: 3px; overflow: hidden; background: #34383d; }
+.active-effect > i > span { display: block; width: var(--effect-progress, 0%); height: 100%; background: #47bcd1; }
+.active-effect.urgent > i > span { background: #d9232e; }
+#hud.minimal #active-effects { bottom: 64px; }
+#hud.full-automap #active-effects { display: none; }
+#game-shell:has(#active-effects:not([hidden])) #sound-caption { left: auto; right: 2.5%; max-width: min(62%, 680px); transform: none; }
 #automap { position: absolute; inset: 0; width: 100%; height: 84%; background: rgba(8, 9, 10, .9); image-rendering: pixelated; pointer-events: auto; touch-action: none; }
 #automap.overlay { inset: 10px 10px auto auto; width: 42%; height: 42%; border: 1px solid #b7b8b4; background: rgba(8, 9, 10, .76); }
 #hud.full-automap #objective, #hud.full-automap #message, #hud.full-automap #combat-streak, #hud.full-automap #reticle,
@@ -509,6 +563,13 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
   #portrait { width: 44px; height: 44px; }
   #weapon-view { bottom: 54px; }
   #sound-caption { bottom: 29%; max-width: 86%; font-size: .625rem; }
+  #active-effects { width: min(210px, 54%); gap: 3px; }
+  .active-effect { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 1px 4px; padding: 3px 4px; }
+  .active-effect img { width: 26px; height: 26px; }
+  .active-effect strong { font-size: .625rem; }
+  .active-effect small { font-size: .625rem; }
+  .active-effect > time { font-size: .625rem; }
+  #game-shell:has(#active-effects:not([hidden])) #sound-caption { right: 8px; min-width: 0; max-width: 28%; }
   #ready-overlay { display: grid; }
   #ready-overlay[hidden] { display: none; }
   .screen { gap: 6px; }
@@ -578,6 +639,9 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
   .level-select-list { grid-template-columns: 1fr; }
   .level-map-grid { grid-template-columns: 1fr 1fr; }
   .milestone-panel { width: 100%; align-items: stretch; flex-direction: column; gap: 4px; }
+  .milestone-ledger-list { grid-template-columns: 1fr; }
+  .milestone-ledger-item { padding: 8px; }
+  .milestone-ledger-tabs button { min-height: 44px; }
   #ready-overlay[data-briefing="orientation"] .entry-controls { grid-template-columns: 1fr 1fr; }
   #hud { height: 100%; }
   #status { top: 0; bottom: auto; }
@@ -585,11 +649,19 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
   #objective { top: 120px; left: 12px; max-width: 72%; }
   #combat-streak { top: 62px; right: 52px; }
   #boss-bar { top: 58px; }
+  #active-effects, #hud.minimal #active-effects { top: auto; right: auto; bottom: max(210px, 31%); left: max(8px, env(safe-area-inset-left)); width: min(190px, 48%); transform: none; }
+  #game-shell:has(#active-effects:not([hidden])) #sound-caption { right: max(8px, env(safe-area-inset-right)); max-width: 44%; }
   #weapon-view { bottom: 64px; width: 68%; height: 27%; }
   #reticle, #hit-marker { top: 40%; }
   #context-prompt { top: calc(40% + 26px); }
   #automap { height: 100%; }
   #touch-controls { inset: 0; background: rgba(8, 9, 10, .18); }
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  #active-effects, #hud.minimal #active-effects { top: max(64px, env(safe-area-inset-top)); bottom: auto; left: 50%; width: min(210px, calc(100% - 360px)); transform: translateX(-50%); }
+  #sound-caption,
+  #game-shell:has(#active-effects:not([hidden])) #sound-caption { top: max(64px, env(safe-area-inset-top)); right: auto; bottom: auto; left: max(8px, env(safe-area-inset-left)); min-width: 0; max-width: min(220px, calc(50% - 120px)); transform: none; }
 }
 
 @media (pointer: coarse) and (orientation: portrait) {
@@ -613,7 +685,14 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
 
 @media (max-height: 540px) and (orientation: landscape) {
   .screen.compact { inset: 2% 8%; padding-block: 8px; }
+  .milestone-ledger-screen { inset: 2% 4%; }
+  .milestone-ledger-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #options-menu { gap: 7px; }
+}
+
+@media (max-width: 520px) {
+  .milestone-ledger-screen { inset: 0; width: 100%; max-height: none; border: 0; }
+  .milestone-ledger-list { grid-template-columns: 1fr; }
 }
 
 @media (pointer: coarse) and (max-height: 540px) and (orientation: landscape) {

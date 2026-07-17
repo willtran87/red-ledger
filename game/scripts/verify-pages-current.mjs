@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,6 +7,11 @@ const gameRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = resolve(gameRoot, 'dist');
 const destination = resolve(gameRoot, '../docs');
 const ignored = new Set(['.nojekyll']);
+
+const noJekyll = resolve(destination, '.nojekyll');
+if (!existsSync(noJekyll) || !statSync(noJekyll).isFile()) {
+  throw new Error('docs/.nojekyll is missing. Run npm run pages:sync before publishing.');
+}
 
 const inventory = (root) => {
   const files = [];
