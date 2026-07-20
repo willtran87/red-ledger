@@ -81,7 +81,6 @@ const browserTests = [
   ['player replay library', 'tests/replay-library-e2e.mjs'],
   ['navigation and session continuity', 'tests/navigation-continuity-e2e.mjs'],
   ['death review and recovery clarity', 'tests/death-review-e2e.mjs'],
-  ['startup and storage resilience', 'tests/resilience-e2e.mjs'],
   ['critical map texture readiness', 'tests/asset-readiness-e2e.mjs'],
   ['hostile telegraphs', 'tests/hostile-telegraph-e2e.mjs'],
   ['input remapping', 'tests/controls-e2e.mjs'],
@@ -99,6 +98,9 @@ const browserTests = [
   ['binding beam presentation', 'tests/binding-beam-e2e.mjs'],
   ['semantic enemy and boss animation', 'tests/semantic-animation-e2e.mjs'],
   ['Chromium, Firefox, and WebKit', 'tests/cross-browser-smoke.mjs'],
+  // Keep the intentional uncaught-frame fault last so Vite's development error
+  // channel cannot delay readiness in a subsequent browser journey.
+  ['startup and storage resilience', 'tests/resilience-e2e.mjs'],
 ];
 
 try {

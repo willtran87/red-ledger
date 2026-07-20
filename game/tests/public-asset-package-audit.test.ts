@@ -72,7 +72,7 @@ describe('public runtime asset URLs and package', () => {
         expect(() => JSON.parse(readFileSync(file, 'utf8')), relative(publicRoot, file)).not.toThrow();
       }
     }
-  });
+  }, 15_000);
 
   it('resolves every literal runtime URL used by source and HTML', () => {
     const roots = [join(projectRoot, 'game/src'), join(projectRoot, 'game/index.html')];

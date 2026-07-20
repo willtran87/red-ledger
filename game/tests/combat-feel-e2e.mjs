@@ -13,6 +13,7 @@ page.on('console', (message) => { if (message.type() === 'error') consoleErrors.
 
 await page.goto(url);
 await page.waitForFunction(() => typeof window.render_game_to_text === 'function');
+await page.locator('#menu:not([hidden]) #new-game').waitFor({ state: 'visible' });
 await page.click('#new-game');
 await page.locator('.episode-card:not(:disabled)').first().click();
 await page.locator('#difficulty-actions button').nth(2).click();

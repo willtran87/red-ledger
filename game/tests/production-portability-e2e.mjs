@@ -44,7 +44,11 @@ const monitor = (page, ignoredRequest = () => false) => {
   return failures;
 };
 
+const waitForTitleMenu = (page) => page.locator('#menu:not([hidden]) #new-game')
+  .waitFor({ state: 'visible' });
+
 const startCampaign = async (page) => {
+  await waitForTitleMenu(page);
   await page.locator('#new-game').tap();
   await page.locator('.episode-card').first().tap();
   await page.locator('#difficulty-actions button').nth(1).tap();
@@ -95,6 +99,7 @@ try {
   await page.goto(base, { waitUntil: 'networkidle' });
   assert(await page.evaluate(() => window.__redLedger === undefined), 'Development debug API leaked into the production package');
   assert(await page.locator('.title-art').evaluate((image) => image.complete && image.naturalWidth > 0), 'Title asset did not load');
+  await waitForTitleMenu(page);
 
   await page.click('#new-game');
   await page.locator('#episode-menu [data-back]').click();

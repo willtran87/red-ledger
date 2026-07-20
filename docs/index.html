@@ -7,8 +7,9 @@
     <meta name="description" content="A retro first-person action campaign through a surreal claims facility." />
     <link rel="icon" type="image/png" href="./public_runtime/ui/title-screen.png" />
     <title>Red Ledger</title>
-    <script type="module" crossorigin src="./assets/index-r8NBR_lh.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-15guANoA.css">
+    <script type="module" crossorigin src="./assets/index-DepcOFHR.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/three-BmJz_r64.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-MEiAcwOM.css">
   </head>
   <body>
     <main id="game-shell" aria-busy="true">
@@ -33,6 +34,9 @@
       <section id="menu" class="screen active" aria-label="Main menu">
         <h1 class="game-title">RED LEDGER</h1>
         <img class="title-art" src="./public_runtime/ui/title-screen.png" alt="Figure entering a damaged records facility" />
+        <div id="profile-seal" class="profile-seal" role="status" aria-live="polite" hidden>
+          <span>ACTIVE SEAL</span><strong></strong>
+        </div>
         <nav class="menu-actions">
           <button id="new-game">New Game</button>
           <button id="continue-game">Continue</button>
@@ -43,7 +47,7 @@
           <button id="credits-button">Credits</button>
           <button id="quit-game">Quit</button>
         </nav>
-        <p id="menu-feedback" class="menu-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div id="menu-feedback" class="menu-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div>
       </section>
       <section id="replay-library" class="screen compact replay-screen" aria-label="Replay library">
         <h1>Replays</h1>
@@ -117,6 +121,7 @@
             <label><span>Touch sensitivity</span><span class="range-control"><input id="touch-sensitivity" type="range" min="0.5" max="3" value="1.2" step="0.1" /><output id="touch-sensitivity-value" for="touch-sensitivity">1.2x</output></span></label>
             <label class="option-check"><input id="invert-y" type="checkbox" /> Invert look Y</label>
             <label class="option-check"><input id="vertical-auto-aim" type="checkbox" checked /> Vertical auto-aim</label>
+            <label class="option-check"><input id="controller-vibration" type="checkbox" checked /> Controller vibration</label>
             <label>Touch size <select id="touch-size"><option value="small">Small</option><option value="standard" selected>Standard</option><option value="large">Large</option></select></label>
             <label><span>Touch opacity</span><span class="range-control"><input id="touch-opacity" type="range" min="0.45" max="1" value="0.78" step="0.01" /><output id="touch-opacity-value" for="touch-opacity">78%</output></span></label>
             <label>Touch handedness <select id="touch-handedness"><option value="right" selected>Right-handed</option><option value="left">Left-handed</option></select></label>
@@ -138,13 +143,20 @@
             <label><span>Master volume</span><span class="range-control"><input id="master-volume" type="range" min="0" max="1" value="0.8" step="0.05" /><output id="master-volume-value" for="master-volume">80%</output></span></label>
             <label><span>Music volume</span><span class="range-control"><input id="music-volume" type="range" min="0" max="1" value="0.65" step="0.05" /><output id="music-volume-value" for="music-volume">65%</output></span></label>
             <label><span>Effects volume</span><span class="range-control"><input id="sfx-volume" type="range" min="0" max="1" value="0.8" step="0.05" /><output id="sfx-volume-value" for="sfx-volume">80%</output></span></label>
-            <label>Playback <select id="audio-profile"><option value="speakers">Speakers</option><option value="headphones">Headphones</option><option value="night">Night</option><option value="mono">Mono</option></select></label>
+            <label>Playback <select id="audio-profile" aria-describedby="audio-profile-detail"><option value="speakers">Speakers</option><option value="headphones">Headphones</option><option value="night">Night</option><option value="mono">Mono</option></select></label>
+            <p id="audio-profile-detail" class="audio-profile-detail"></p>
             <label class="option-check"><input id="mute-audio" type="checkbox" /> Mute audio</label>
             <label class="option-check"><input id="sound-captions" type="checkbox" /> Sound captions</label>
+            <div class="audio-preview-row">
+              <button id="audio-preview" type="button" aria-describedby="audio-profile-detail audio-preview-status">Preview Mix</button>
+              <span id="audio-preview-status" role="status" aria-live="polite"></span>
+            </div>
           </section>
         </div>
+        <p id="options-feedback" class="screen-copy options-feedback" role="status" aria-live="polite"></p>
         <div class="options-actions">
           <button id="controls-button">Controls</button>
+          <button id="restore-options">Restore Defaults</button>
           <button data-back>Back</button>
         </div>
       </section>
@@ -159,9 +171,15 @@
         </div>
       </section>
       <section id="intermission" class="screen" aria-label="Intermission">
+        <div id="completion-burst" class="completion-burst" aria-hidden="true"></div>
         <img id="intermission-art" alt="Episode intermission" />
         <strong id="intermission-grade" aria-label="Performance grade"></strong>
         <div id="tally"></div>
+        <details id="score-breakdown" class="score-breakdown">
+          <summary>Score details</summary>
+          <div id="score-breakdown-totals" class="score-breakdown-totals"></div>
+          <div id="score-breakdown-bonuses" class="score-breakdown-bonuses" role="list" aria-label="Clear goals"></div>
+        </details>
         <div id="result-bests" aria-live="polite"></div>
         <div id="intermission-mastery" class="mastery-panel" aria-label="Mastery target"></div>
         <div id="intermission-milestone-awards" class="milestone-awards" aria-label="New milestone awards" hidden></div>
@@ -178,6 +196,17 @@
       </section>
       <section id="pause-menu" class="screen compact" aria-label="Paused">
         <img src="./public_runtime/ui/pause-plaque.png" alt="Paused" />
+        <div id="pause-review" class="pause-review" aria-labelledby="pause-map">
+          <header>
+            <strong id="pause-map"></strong>
+            <span><b id="pause-difficulty"></b><b id="pause-run"></b></span>
+          </header>
+          <p id="pause-objective"></p>
+          <footer>
+            <span id="pause-progress"></span>
+            <span id="pause-recovery"></span>
+          </footer>
+        </div>
         <button id="resume-game">Resume</button>
         <button id="save-game">Save</button>
         <button id="load-game">Load</button>
@@ -187,10 +216,20 @@
       </section>
       <section id="death-menu" class="screen compact" aria-label="Claim denied">
         <h1>Claim Denied</h1>
-        <p class="screen-copy">Choose where to reopen the file.</p>
-        <button id="restart-checkpoint">Restart Last Checkpoint</button>
-        <button id="death-load">Load Game</button>
-        <button id="death-menu-button">Main Menu</button>
+        <div id="death-review" class="death-review" aria-live="polite">
+          <strong id="death-cause"></strong>
+          <dl>
+            <div><dt>Progress</dt><dd id="death-progress"></dd></div>
+            <div><dt>Objective</dt><dd id="death-objective"></dd></div>
+            <div><dt>Recovery</dt><dd id="death-recovery"></dd></div>
+          </dl>
+          <p id="death-advice"></p>
+        </div>
+        <div class="death-actions">
+          <button id="restart-checkpoint" aria-describedby="death-recovery">Restart Last Checkpoint</button>
+          <button id="death-load">Load Game</button>
+          <button id="death-menu-button">Main Menu</button>
+        </div>
       </section>
       <section id="save-slots" class="screen compact slot-screen" aria-label="Save game">
         <h1>Save Game</h1>
@@ -237,7 +276,7 @@
         <div id="message" aria-hidden="true"></div>
         <div id="boss-bar" role="group" aria-label="Boss encounter" hidden><div><strong></strong><small></small></div><i role="progressbar" aria-label="Boss health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span aria-hidden="true"></span></i></div>
         <div id="active-effects" role="group" aria-label="No active effects" aria-live="off" hidden></div>
-        <div id="combat-streak" aria-hidden="true" hidden>
+        <div id="combat-streak" role="group" aria-label="No active momentum" hidden>
           <strong></strong><span></span><i></i>
         </div>
         <div id="reticle" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
@@ -265,9 +304,15 @@
       <div id="ready-overlay" role="dialog" aria-modal="true" aria-labelledby="ready-map ready-briefing-kind" aria-describedby="entry-objective" hidden>
         <header>
           <img src="./public_runtime/ui/icons/minimal-terminal.png" alt="" aria-hidden="true" />
-          <div><strong id="ready-map"></strong><span id="ready-briefing-kind">FIELD BRIEFING</span></div>
+          <div><strong id="ready-map"></strong><span id="ready-briefing-kind">FIELD BRIEFING</span><small id="ready-seal" hidden></small></div>
         </header>
         <p id="entry-objective"></p>
+        <section id="entry-field-order" class="entry-field-order" role="note" hidden>
+          <strong id="entry-field-order-label"></strong>
+          <span id="entry-field-order-target"></span>
+          <small id="entry-field-order-comparison"></small>
+          <div id="entry-field-order-metrics"></div>
+        </section>
         <div id="entry-controls" class="entry-controls" role="list" aria-label="Essential controls"></div>
         <button id="enter-file">Enter File</button>
       </div>
@@ -281,9 +326,17 @@
         <button id="touch-map" class="touch-command" aria-label="Automap">MAP</button>
         <button id="touch-pause" class="touch-command" aria-label="Pause">II</button>
       </div>
-      <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-copy">
+      <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-copy confirm-review">
         <h2 id="confirm-title">Confirm</h2>
         <p id="confirm-copy"></p>
+        <section id="confirm-review" class="confirm-review" aria-label="Return-to-title recovery review" hidden>
+          <div>
+            <span>Return point</span>
+            <strong id="confirm-return-point"></strong>
+          </div>
+          <p id="confirm-consequence"></p>
+          <small id="confirm-durability"></small>
+        </section>
         <div class="dialog-actions">
           <button id="confirm-cancel">Cancel</button>
           <button id="confirm-accept">Confirm</button>
