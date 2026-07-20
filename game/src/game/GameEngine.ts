@@ -89,8 +89,10 @@ import {
   type MapRecord,
   type PersistenceConflict,
   type RunVariant,
+  type SaveKind,
   type SaveMetadataInput,
   type SaveThumbnail,
+  type ValidSlotResult,
 } from './PersistenceSystem';
 import {
   findMatchingRuntimeActorIdentity,
@@ -111,6 +113,64 @@ import {
 } from './World';
 
 export type GameMode = 'menu' | 'playing' | 'paused' | 'intermission' | 'dead' | 'complete';
+
+const SAVE_KIND_LABELS: Readonly<Record<SaveKind, string>> = Object.freeze({
+  manual: 'Manual file',
+  quicksave: 'Quicksave',
+  autosave: 'Autosave',
+  recovery: 'Episode recovery',
+  conflict: 'Previous tab copy',
+});
+
+export interface ContinueDetails {
+  readonly kind: string;
+  readonly mapId: string;
+  readonly mapTitle: string;
+  readonly difficulty: string;
+  readonly runVariant: string;
+  readonly playTime: string;
+  readonly savedAt: string;
+  readonly savedAtIso: string;
+  readonly summary: string;
+}
+
+export interface DeathReview {
+  readonly cause: string;
+  readonly progress: string;
+  readonly objective: string;
+  readonly recovery: string;
+  readonly restartLabel: string;
+  readonly advice: string;
+}
+
+export interface PauseDetails {
+  readonly mapId: string;
+  readonly mapTitle: string;
+  readonly difficulty: string;
+  readonly runVariant: string;
+  readonly objective: string;
+  readonly progress: string;
+  readonly recovery: string;
+  readonly recoveryState: 'persistent' | 'session-only' | 'unavailable';
+  readonly summary: string;
+}
+
+export interface ExitReview {
+  readonly mapId: string;
+  readonly mapTitle: string;
+  readonly returnPoint: string;
+  readonly recoveryState: 'persistent' | 'session-only' | 'unavailable';
+  readonly consequenceState: 'safe' | 'rewind' | 'discard';
+  readonly consequence: string;
+  readonly durability: string;
+  readonly summary: string;
+}
+
+interface LastDamageContext {
+  readonly source: string;
+  readonly kind: DamageKind;
+  readonly amount: number;
+}
 
 export interface PlayerState {
   health: number;
@@ -233,10 +293,39 @@ export interface CombatMomentum {
   timer: number;
 }
 
+export type CombatMomentumTier = 'chain' | 'escalation' | 'redline' | 'authority-rush';
+
+export interface CombatMomentumPresentation {
+  readonly tier: CombatMomentumTier;
+  readonly label: string;
+  readonly windowSeconds: number;
+  readonly nextThreshold: number | null;
+  readonly thresholdReached: boolean;
+}
+
+export const combatMomentumPresentation = (chain: number): CombatMomentumPresentation => {
+  const count = Math.max(0, Math.floor(Number.isFinite(chain) ? chain : 0));
+  if (count >= 8) return {
+    tier: 'authority-rush', label: 'Authority Rush', windowSeconds: 6.25, nextThreshold: null, thresholdReached: count === 8,
+  };
+  if (count >= 5) return {
+    tier: 'redline', label: 'Redline', windowSeconds: 5.5, nextThreshold: 8, thresholdReached: count === 5,
+  };
+  if (count >= 3) return {
+    tier: 'escalation', label: 'Escalation', windowSeconds: 4.75, nextThreshold: 5, thresholdReached: count === 3,
+  };
+  return {
+    tier: 'chain', label: 'Chain', windowSeconds: 4, nextThreshold: 3, thresholdReached: false,
+  };
+};
+
+export interface CombatMomentumEventDetail extends CombatMomentum, CombatMomentumPresentation {}
+
 export interface MapResult {
   readonly performance: MapPerformance;
   readonly record: MapRecord;
   readonly completionBonus: number;
+  readonly scoreBreakdown: MapScoreBreakdown;
   readonly newBests: readonly string[];
   readonly secretRoute: boolean;
 }
@@ -257,6 +346,8 @@ export interface GameSnapshot {
   message: string;
   objective: string;
   interaction?: InteractionHint;
+  death?: DeathReview;
+  pause?: PauseDetails;
   replay?: { currentTick: number; totalTicks: number; paused: boolean; finished: boolean; speed: number };
 }
 
@@ -610,6 +701,69 @@ const DIFFICULTY_SCORE_MULTIPLIER: Record<GameDifficulty, number> = {
   'field-adjuster': 1,
   'catastrophe-team': 1.2,
   'binding-authority': 1.5,
+};
+
+export type ScoreBonusId = 'threats' | 'items' | 'secrets' | 'par' | 'secret-route';
+
+export interface ScoreBonusBreakdown {
+  readonly id: ScoreBonusId;
+  readonly label: string;
+  readonly requirement: string;
+  readonly available: number;
+  readonly awarded: number;
+  readonly earned: boolean;
+}
+
+export interface MapScoreBreakdown {
+  readonly combatScore: number;
+  readonly bonuses: readonly ScoreBonusBreakdown[];
+  readonly bonusSubtotal: number;
+  readonly preMultiplierScore: number;
+  readonly multiplier: number;
+  readonly finalScore: number;
+}
+
+export interface MapScoreBreakdownInput {
+  readonly combatScore: number;
+  readonly killsPercent: number;
+  readonly itemsPercent: number;
+  readonly secretsPercent: number;
+  readonly beatPar: boolean;
+  readonly secretRoute: boolean;
+  readonly difficulty: GameDifficulty;
+}
+
+/** One authoritative explanation of the score awarded at map completion. */
+export const mapScoreBreakdown = (input: MapScoreBreakdownInput): MapScoreBreakdown => {
+  const definitions: readonly Omit<ScoreBonusBreakdown, 'awarded' | 'earned'>[] = [
+    { id: 'threats', label: 'Threat mastery', requirement: 'Close every threat', available: 1000 },
+    { id: 'items', label: 'Item mastery', requirement: 'Recover every counted item', available: 500 },
+    { id: 'secrets', label: 'Secret mastery', requirement: 'Find every secret', available: 1500 },
+    { id: 'par', label: 'Par time', requirement: 'Finish at or under par', available: 1000 },
+    { id: 'secret-route', label: 'Secret route', requirement: 'Use the concealed exit', available: 1000 },
+  ];
+  const earnedById: Readonly<Record<ScoreBonusId, boolean>> = {
+    threats: input.killsPercent === 100,
+    items: input.itemsPercent === 100,
+    secrets: input.secretsPercent === 100,
+    par: input.beatPar,
+    'secret-route': input.secretRoute,
+  };
+  const bonuses = definitions.map((definition): ScoreBonusBreakdown => {
+    const earned = earnedById[definition.id];
+    return { ...definition, earned, awarded: earned ? definition.available : 0 };
+  });
+  const bonusSubtotal = bonuses.reduce((total, bonus) => total + bonus.awarded, 0);
+  const preMultiplierScore = input.combatScore + bonusSubtotal;
+  const multiplier = DIFFICULTY_SCORE_MULTIPLIER[input.difficulty];
+  return {
+    combatScore: input.combatScore,
+    bonuses,
+    bonusSubtotal,
+    preMultiplierScore,
+    multiplier,
+    finalScore: Math.round(preMultiplierScore * multiplier),
+  };
 };
 
 const tallyPercent = (value: number, total: number): number => total > 0 ? Math.round(value / total * 100) : 100;
@@ -1184,6 +1338,8 @@ export class GameEngine {
   private weaponCooldown = 0;
   private damageCooldown = 0;
   private messageTimer = 0;
+  private lastDamageContext?: LastDamageContext;
+  private lastDeathReview?: DeathReview;
   private rngState = 0x4d595df4;
   private nextMap?: MapId;
   private readonly triggered = new Set<string>();
@@ -1357,6 +1513,8 @@ export class GameEngine {
     if (this.activeDemo) this.verticalAutoAim = this.activeDemo.userVerticalAutoAim;
     this.activeDemo = undefined;
     this.lastMapResult = undefined;
+    this.lastDamageContext = undefined;
+    this.lastDeathReview = undefined;
     this.player.position.set(map.playerStart.x * map.cellSize, 0, map.playerStart.z * map.cellSize);
     this.player.position.y = this.world.floorHeightAt(this.player.position) + 1.35;
     this.player.yaw = ({ north: Math.PI, east: -Math.PI / 2, south: 0, west: Math.PI / 2 })[map.playerStart.facing];
@@ -1621,7 +1779,7 @@ export class GameEngine {
     if (this.world.isHazardAt(this.player.position) && this.damageCooldown <= 0) {
       if (this.player.powerups.hazard > 0) this.playSemanticCue('neutralize', this.player.position.clone().add(new Vector3(0, -.55, 0)));
       else {
-        this.damagePlayer(this.world.hazardDamageAt(this.player.position) * .4);
+        this.damagePlayer(this.world.hazardDamageAt(this.player.position) * .4, undefined, 'hazard');
         this.emitParticles(this.world.episode === 2 ? 'water' : 'spittle', this.player.position.clone().add(new Vector3(0, -.75, 0)), 5);
       }
       this.damageCooldown = .4;
@@ -2181,7 +2339,9 @@ export class GameEngine {
       }
     }
     const playerDistance = center.distanceTo(this.player.position);
-    if (playerDistance < radius && this.world.hasLineOfSight(center, this.player.position)) this.damagePlayer(maxDamage * (1 - playerDistance / radius));
+    if (playerDistance < radius && this.world.hasLineOfSight(center, this.player.position)) {
+      this.damagePlayer(maxDamage * (1 - playerDistance / radius), 'player', 'impact');
+    }
   }
 
   private syncPlayerProjectileSprite(projectile: PlayerProjectile): void {
@@ -2332,11 +2492,14 @@ export class GameEngine {
     if (awardsScore) {
       this.momentum.chain = this.momentum.timer > 0 ? this.momentum.chain + 1 : 1;
       this.momentum.best = Math.max(this.momentum.best, this.momentum.chain);
-      this.momentum.timer = 4;
+      const momentumPresentation = combatMomentumPresentation(this.momentum.chain);
+      this.momentum.timer = momentumPresentation.windowSeconds;
       this.momentum.score += Math.round((100 + Math.min(400, actor.maxHealth * .35)) * this.momentum.chain);
       if (this.momentum.chain > 1) this.audio.uiCue('momentum');
-      window.dispatchEvent(new CustomEvent('combat-momentum', { detail: { ...this.momentum } }));
-      if ([3, 5, 8].includes(this.momentum.chain)) {
+      window.dispatchEvent(new CustomEvent<CombatMomentumEventDetail>('combat-momentum', {
+        detail: { ...this.momentum, ...momentumPresentation },
+      }));
+      if (momentumPresentation.thresholdReached) {
         this.playSemanticCue('momentum', actor.position.clone().add(new Vector3(0, ENEMIES[actor.id].height * .7, 0)));
       }
     }
@@ -3018,7 +3181,13 @@ export class GameEngine {
     const absorbed = Math.min(this.player.armor, amount * absorption);
     this.player.armor -= absorbed;
     if (this.player.armor <= 0) this.player.armorClass = 'none';
-    this.player.health -= amount - absorbed;
+    const healthDamage = Math.max(0, amount - absorbed);
+    this.player.health -= healthDamage;
+    if (healthDamage > 0) this.lastDamageContext = {
+      source: this.damageSourceLabel(sourceUid, damageKind),
+      kind: damageKind ?? 'hazard',
+      amount: healthDamage,
+    };
     this.audio.playerCue(absorbed > 0 ? 'armor' : 'hurt');
     const source = sourceUid ? this.world.actors.find((actor) => actor.uid === sourceUid) : undefined;
     let direction: 'left' | 'right' | 'center' = 'center';
@@ -3028,6 +3197,17 @@ export class GameEngine {
       direction = side > .25 ? 'right' : side < -.25 ? 'left' : 'center';
     }
     window.dispatchEvent(new CustomEvent('player-hurt', { detail: { amount, direction, ...(damageKind ? { damageKind } : {}) } }));
+  }
+
+  private damageSourceLabel(sourceUid?: string, damageKind?: DamageKind): string {
+    if (sourceUid === 'player') return 'Your Catastrophe Launcher';
+    const actor = sourceUid ? this.world.actors.find((candidate) => candidate.uid === sourceUid) : undefined;
+    if (actor) return this.pretty(actor.id);
+    if (damageKind === 'prediction') return 'Predicted strike';
+    if (damageKind === 'redaction') return 'Redaction field';
+    if (damageKind === 'fire') return 'Active fire';
+    if (damageKind === 'hazard') return 'Environmental hazard';
+    return 'Unidentified exposure';
   }
 
   private actorVisualState(actor: RuntimeActor, behaviorState?: ActorBehaviorState): string {
@@ -3127,6 +3307,7 @@ export class GameEngine {
         this.emitParticles(feedbackKind, feedbackPoint, pickup.kind === 'pickup' ? 3 : 4);
       }
       this.audio.pickupCue(pickupAudioFeedbackCue(pickup));
+      window.dispatchEvent(new CustomEvent('pickup-collected', { detail: { id: pickup.id, kind: pickup.kind } }));
     }
   }
 
@@ -3399,12 +3580,17 @@ export class GameEngine {
     const itemsPercent = tallyPercent(this.tally.items, this.tally.totalItems);
     const secretsPercent = tallyPercent(this.tally.secrets, this.tally.totalSecrets);
     const secretRoute = Boolean(nextMap && nextMap === this.world.map.secretExitTo);
-    const completionBonus = (killsPercent === 100 ? 1000 : 0)
-      + (itemsPercent === 100 ? 500 : 0)
-      + (secretsPercent === 100 ? 1500 : 0)
-      + (this.tally.elapsed <= this.world.map.parSeconds ? 1000 : 0)
-      + (secretRoute ? 1000 : 0);
-    this.momentum.score = Math.round((this.momentum.score + completionBonus) * DIFFICULTY_SCORE_MULTIPLIER[this.difficulty]);
+    const scoreBreakdown = mapScoreBreakdown({
+      combatScore: this.momentum.score,
+      killsPercent,
+      itemsPercent,
+      secretsPercent,
+      beatPar: this.tally.elapsed <= this.world.map.parSeconds,
+      secretRoute,
+      difficulty: this.difficulty,
+    });
+    const completionBonus = scoreBreakdown.bonusSubtotal;
+    this.momentum.score = scoreBreakdown.finalScore;
     const performance: MapPerformance = {
       mapId: this.world.map.id,
       difficulty: this.difficulty,
@@ -3438,7 +3624,7 @@ export class GameEngine {
         ...(performance.grade !== before.bestGrade && record.bestGrade === performance.grade ? ['Grade'] : []),
       ] : [`First clear: ${runVariantLabel(performance.runVariant)} track`];
     }
-    this.lastMapResult = { performance, record, completionBonus, newBests, secretRoute };
+    this.lastMapResult = { performance, record, completionBonus, scoreBreakdown, newBests, secretRoute };
     if (!this.playtestReadOnly && this.world.map.index === 8) {
       const episode = CAMPAIGN.episodes.find((candidate) => candidate.id === this.world.map.episode);
       const nextEpisode = episode && CAMPAIGN.episodes[episode.number];
@@ -3477,6 +3663,140 @@ export class GameEngine {
     this.loadMap(this.world.map.id, false, true, 'fresh-start');
   }
 
+  private newestCurrentMapAutosave(): ValidSlotResult<SaveData> | undefined {
+    return this.persistence.listAutosaves()
+      .filter((entry): entry is ValidSlotResult<SaveData> => entry.status === 'valid' && entry.state.mapId === this.world.map.id)
+      .sort((left, right) => right.metadata.sequence - left.metadata.sequence
+      || right.metadata.savedAt - left.metadata.savedAt)[0];
+  }
+
+  private tallyProgressPresentation(): string {
+    return `Threats ${this.tally.kills}/${this.tally.totalKills} • Items ${this.tally.items}/${this.tally.totalItems} • Secrets ${this.tally.secrets}/${this.tally.totalSecrets} • ${this.saveTime(this.tally.elapsed)}`;
+  }
+
+  pauseDetails(): PauseDetails {
+    const checkpoint = this.newestCurrentMapAutosave();
+    const recoveryState: PauseDetails['recoveryState'] = checkpoint
+      ? checkpoint.persistence === 'persistent' ? 'persistent' : 'session-only'
+      : 'unavailable';
+    const recovery = checkpoint
+      ? `${checkpoint.persistence === 'persistent' ? 'Checkpoint saved' : 'Session-only checkpoint'} at ${this.saveTime(checkpoint.metadata.playSeconds)}`
+      : 'No automatic checkpoint is currently available';
+    const difficulty = this.pretty(this.difficulty);
+    const runVariant = runVariantLabel(this.runVariant);
+    const objective = this.currentObjective();
+    const progress = this.tallyProgressPresentation();
+    return {
+      mapId: this.world.map.id,
+      mapTitle: this.world.map.title,
+      difficulty,
+      runVariant,
+      objective,
+      progress,
+      recovery,
+      recoveryState,
+      summary: `${this.world.map.id} ${this.world.map.title}. ${difficulty}. ${runVariant}. Objective: ${objective}. ${progress}. ${recovery}.`,
+    };
+  }
+
+  exitReview(): ExitReview {
+    const mapId = this.world.map.id;
+    const mapTitle = this.world.map.title;
+    const checkpoint = this.persistence.newestValidContinue();
+    if (!checkpoint) {
+      const consequence = `Returning now discards this ${mapId} attempt; Continue will open New Game.`;
+      const durability = 'Nothing from this attempt is recoverable from the title screen.';
+      return {
+        mapId,
+        mapTitle,
+        returnPoint: 'No recoverable save is available',
+        recoveryState: 'unavailable',
+        consequenceState: 'discard',
+        consequence,
+        durability,
+        summary: `${mapId} ${mapTitle}. No recoverable save is available. ${consequence} ${durability}`,
+      };
+    }
+
+    const playTime = this.saveTime(checkpoint.metadata.playSeconds);
+    const returnPoint = `${SAVE_KIND_LABELS[checkpoint.kind]} • ${checkpoint.metadata.mapId} ${checkpoint.metadata.mapTitle} • ${playTime}`;
+    const sameMap = checkpoint.metadata.mapId === mapId;
+    const rewind = sameMap ? Math.max(0, this.tally.elapsed - checkpoint.metadata.playSeconds) : 0;
+    const consequenceState: ExitReview['consequenceState'] = !sameMap ? 'discard' : rewind >= 1 ? 'rewind' : 'safe';
+    const consequence = !sameMap
+      ? `Returning now discards this ${mapId} attempt; Continue resumes the saved ${checkpoint.metadata.mapId} file.`
+      : rewind >= 1
+        ? `Returning now rewinds ${this.saveTime(rewind)} of progress made after that save.`
+        : 'Returning now preserves this map at the recorded checkpoint.';
+    const recoveryState: ExitReview['recoveryState'] = checkpoint.persistence === 'persistent' ? 'persistent' : 'session-only';
+    const durability = checkpoint.persistence === 'persistent'
+      ? 'This return point survives closing or reloading the browser.'
+      : 'This return point is available only while this tab remains open.';
+    return {
+      mapId,
+      mapTitle,
+      returnPoint,
+      recoveryState,
+      consequenceState,
+      consequence,
+      durability,
+      summary: `${mapId} ${mapTitle}. Return point: ${returnPoint}. ${consequence} ${durability}`,
+    };
+  }
+
+  private deathRecoveryPresentation(): Pick<DeathReview, 'recovery' | 'restartLabel'> {
+    if (this.playtestReadOnly) return {
+      restartLabel: 'Restart Map',
+      recovery: 'Playtest mode restarts this map with its standard loadout.',
+    };
+    const checkpoint = this.newestCurrentMapAutosave();
+    if (checkpoint) {
+      const age = Math.max(0, this.tally.elapsed - checkpoint.metadata.playSeconds);
+      return {
+        restartLabel: 'Restart Last Checkpoint',
+        recovery: `Checkpoint at ${this.saveTime(checkpoint.metadata.playSeconds)} • rewinds ${this.saveTime(age)}`,
+      };
+    }
+    const episode = this.persistence.loadEpisodeRecovery(this.world.map.episode);
+    if (episode.status === 'valid') return {
+      restartLabel: 'Restart Episode Recovery',
+      recovery: `${episode.metadata.mapId} ${episode.metadata.mapTitle} • ${this.saveTime(episode.metadata.playSeconds)}`,
+    };
+    return {
+      restartLabel: 'Restart Map',
+      recovery: 'No recovery file is available; restart this map with its standard loadout.',
+    };
+  }
+
+  private deathAdvice(context?: LastDamageContext): string {
+    if (context?.source === 'Your Catastrophe Launcher') return 'Create more distance before firing canisters; their blast can reach you through an open lane.';
+    if (context?.kind === 'hazard' || context?.kind === 'prediction' || context?.kind === 'fire') {
+      return 'Leave marked floor zones before they arm, then re-enter after the danger clears.';
+    }
+    if (context?.kind === 'impact') return 'Create space before the next close-range exchange and use cover to break pursuit.';
+    if (context?.kind === 'denial' || context?.kind === 'ballistic' || context?.kind === 'toner') {
+      return 'Break line of sight during the attack tell, then answer while the exposure recovers.';
+    }
+    if (context?.kind === 'redaction') return 'Keep moving across the redaction lane and commit only after its pulse resolves.';
+    return 'Review the current objective, use available cover, and reopen from the recovery point below.';
+  }
+
+  private createDeathReview(): DeathReview {
+    const recovery = this.deathRecoveryPresentation();
+    const damage = this.lastDamageContext;
+    const cause = damage
+      ? `${damage.source} • ${this.pretty(damage.kind)} • ${Math.max(1, Math.ceil(damage.amount))} final damage`
+      : 'Unidentified exposure • review the surrounding threats';
+    return {
+      cause,
+      progress: this.tallyProgressPresentation(),
+      objective: this.currentObjective(),
+      recovery: recovery.recovery,
+      restartLabel: recovery.restartLabel,
+      advice: this.deathAdvice(damage),
+    };
+  }
+
   private die(): void {
     if (this.activeDemo || this.demoReadOnly) {
       if (this.activeDemo) {
@@ -3493,6 +3813,7 @@ export class GameEngine {
       const demo = this.finishDemoRecording();
       if (demo) window.dispatchEvent(new CustomEvent('demo-recording-complete', { detail: { demo, reason: 'death' } }));
     }
+    this.lastDeathReview = this.createDeathReview();
     this.mode = 'dead';
     this.audio.stopMusic();
     this.audio.playerCue('death');
@@ -3987,18 +4308,28 @@ export class GameEngine {
 
   hasSave(): boolean { return Boolean(this.persistence.newestValidContinue()); }
   persistenceConflicts(): readonly PersistenceConflict[] { return this.persistence.conflicts(); }
-  continueSummary(): string | undefined {
+  continueDetails(): ContinueDetails | undefined {
     const result = this.persistence.newestValidContinue();
     if (!result) return undefined;
-    const kind = ({
-      manual: 'Manual file',
-      quicksave: 'Quicksave',
-      autosave: 'Autosave',
-      recovery: 'Episode recovery',
-      conflict: 'Previous tab copy',
-    } as const)[result.kind];
-    return `${kind} | ${result.metadata.mapId} ${result.metadata.mapTitle} | ${this.pretty(result.metadata.difficulty)} | ${runVariantLabel(restoredRunVariant(result.state))} | Play ${this.saveTime(result.metadata.playSeconds)} | ${new Date(result.metadata.savedAt).toLocaleString()}`;
+    const kind = SAVE_KIND_LABELS[result.kind];
+    const difficulty = this.pretty(result.metadata.difficulty);
+    const runVariant = runVariantLabel(restoredRunVariant(result.state));
+    const playTime = this.saveTime(result.metadata.playSeconds);
+    const savedDate = new Date(result.metadata.savedAt);
+    const savedAt = savedDate.toLocaleString();
+    return {
+      kind,
+      mapId: result.metadata.mapId,
+      mapTitle: result.metadata.mapTitle,
+      difficulty,
+      runVariant,
+      playTime,
+      savedAt,
+      savedAtIso: savedDate.toISOString(),
+      summary: `${kind} | ${result.metadata.mapId} ${result.metadata.mapTitle} | ${difficulty} | ${runVariant} | Play ${playTime} | ${savedAt}`,
+    };
   }
+  continueSummary(): string | undefined { return this.continueDetails()?.summary; }
   get pendingMap(): MapId | undefined { return this.nextMap; }
   get mapResult(): MapResult | undefined { return this.lastMapResult; }
 
@@ -4253,8 +4584,14 @@ export class GameEngine {
     this.runAtomicDebugDefeat(this.world.actors.filter((actor) => !actor.dead));
   }
 
-  debugDefeatPlayer(): void {
+  debugDefeatPlayer(sourceId?: RuntimeActor['id'], damageKind: DamageKind = 'hazard'): void {
     if (this.mode !== 'playing') return;
+    const source = sourceId ? this.world.actors.find((actor) => actor.id === sourceId) : undefined;
+    this.lastDamageContext = {
+      source: source ? this.pretty(source.id) : this.damageSourceLabel(undefined, damageKind),
+      kind: damageKind,
+      amount: Math.max(1, this.player.health),
+    };
     this.player.health = 0;
     this.die();
   }
@@ -4517,10 +4854,18 @@ export class GameEngine {
       audio: this.audio.diagnostics(),
       bosses: this.world.actors.filter((actor) => actor.kind === 'boss').map((actor) => ({ id: actor.id, health: actor.health, dead: actor.dead, phaseLocked: actor.phaseLocked })),
       tally: this.tally,
-      momentum: this.momentum,
+      momentum: { ...this.momentum, presentation: combatMomentumPresentation(this.momentum.chain) },
       objective: this.currentObjective(),
       interaction: this.interactionHint() ?? null,
       message: this.message,
+      death: this.mode === 'dead' ? this.lastDeathReview ?? null : null,
+      pause: this.mode === 'paused' ? this.pauseDetails() : null,
+      exitReview: this.mode === 'paused' || this.mode === 'dead' ? this.exitReview() : null,
+      result: this.mode === 'intermission' && this.lastMapResult ? {
+        grade: this.lastMapResult.performance.grade,
+        newBests: this.lastMapResult.newBests,
+        scoreBreakdown: this.lastMapResult.scoreBreakdown,
+      } : null,
       demo: {
         recording: Boolean(this.demoRecorder),
         tick: this.demoTick,
@@ -4704,6 +5049,8 @@ export class GameEngine {
       message: this.message,
       objective: this.currentObjective(),
       ...(interaction ? { interaction } : {}),
+      ...(this.mode === 'dead' && this.lastDeathReview ? { death: this.lastDeathReview } : {}),
+      ...(this.mode === 'paused' ? { pause: this.pauseDetails() } : {}),
       ...(this.activeDemo ? { replay: {
         currentTick: this.activeDemo.playback.currentTick,
         totalTicks: this.activeDemo.demo.totalTicks,

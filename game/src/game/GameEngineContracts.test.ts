@@ -13,9 +13,11 @@ import {
   GameEngine,
   MAX_DEMO_TICKS,
   RECOVERY_CHECKPOINT_INTERVAL_SECONDS,
+  combatMomentumPresentation,
   createRecoveryCheckpointSchedule,
   hostileSignatureTint,
   isSaveData,
+  mapScoreBreakdown,
   reconcileRestoredTally,
   recoveryCheckpointAllowed,
   recoveryCheckpointDue,
@@ -29,6 +31,56 @@ import {
 import { mapRecordKey, type MapRecord, type RunVariant } from './PersistenceSystem';
 import type { RuntimeActor } from './World';
 import { PRE_PROFILE_E1M1_RUNTIME_FIXTURE } from './__fixtures__/runtimeCompatibilityFixtures';
+
+describe('transparent map score breakdown', () => {
+  it('names every earned and missed clear goal before applying difficulty', () => {
+    const breakdown = mapScoreBreakdown({
+      combatScore: 1234,
+      killsPercent: 100,
+      itemsPercent: 75,
+      secretsPercent: 100,
+      beatPar: false,
+      secretRoute: true,
+      difficulty: 'field-adjuster',
+    });
+
+    expect(breakdown.bonuses.map(({ id, earned, awarded }) => ({ id, earned, awarded }))).toEqual([
+      { id: 'threats', earned: true, awarded: 1000 },
+      { id: 'items', earned: false, awarded: 0 },
+      { id: 'secrets', earned: true, awarded: 1500 },
+      { id: 'par', earned: false, awarded: 0 },
+      { id: 'secret-route', earned: true, awarded: 1000 },
+    ]);
+    expect(breakdown).toMatchObject({
+      combatScore: 1234,
+      bonusSubtotal: 3500,
+      preMultiplierScore: 4734,
+      multiplier: 1,
+      finalScore: 4734,
+    });
+  });
+
+  it('uses the same rounded difficulty scaling as the awarded final score', () => {
+    expect(mapScoreBreakdown({
+      combatScore: 333,
+      killsPercent: 100,
+      itemsPercent: 100,
+      secretsPercent: 100,
+      beatPar: true,
+      secretRoute: true,
+      difficulty: 'orientation',
+    })).toMatchObject({ bonusSubtotal: 5000, preMultiplierScore: 5333, multiplier: .75, finalScore: 4000 });
+    expect(mapScoreBreakdown({
+      combatScore: 200,
+      killsPercent: 99,
+      itemsPercent: 99,
+      secretsPercent: 99,
+      beatPar: false,
+      secretRoute: false,
+      difficulty: 'binding-authority',
+    })).toMatchObject({ bonusSubtotal: 0, preMultiplierScore: 200, multiplier: 1.5, finalScore: 300 });
+  });
+});
 
 const runtimeActor = (
   uid: string,
@@ -528,6 +580,85 @@ describe('long-form replay contract', () => {
     const longestParTicks = Math.max(...Object.values(CAMPAIGN.maps).map((map) => map.parSeconds * 35));
     expect(MAX_DEMO_TICKS).toBe(35 * 60 * 45);
     expect(MAX_DEMO_TICKS).toBeGreaterThan(longestParTicks);
+  });
+});
+
+describe('combat momentum mastery windows', () => {
+  it('earns deterministic longer timing windows only at the authored chain tiers', () => {
+    expect(combatMomentumPresentation(2)).toEqual({
+      tier: 'chain', label: 'Chain', windowSeconds: 4, nextThreshold: 3, thresholdReached: false,
+    });
+    expect(combatMomentumPresentation(3)).toEqual({
+      tier: 'escalation', label: 'Escalation', windowSeconds: 4.75, nextThreshold: 5, thresholdReached: true,
+    });
+    expect(combatMomentumPresentation(4)).toMatchObject({ tier: 'escalation', windowSeconds: 4.75, thresholdReached: false });
+    expect(combatMomentumPresentation(5)).toMatchObject({ tier: 'redline', windowSeconds: 5.5, nextThreshold: 8, thresholdReached: true });
+    expect(combatMomentumPresentation(8)).toMatchObject({ tier: 'authority-rush', windowSeconds: 6.25, nextThreshold: null, thresholdReached: true });
+    expect(combatMomentumPresentation(12)).toMatchObject({ tier: 'authority-rush', windowSeconds: 6.25, thresholdReached: false });
+  });
+
+  it('normalizes invalid presentation input without granting a timing advantage', () => {
+    expect(combatMomentumPresentation(Number.NaN)).toMatchObject({ tier: 'chain', windowSeconds: 4 });
+    expect(combatMomentumPresentation(-20)).toMatchObject({ tier: 'chain', windowSeconds: 4 });
+  });
+});
+
+describe('return-to-title recovery review', () => {
+  const exitReview = (GameEngine.prototype as unknown as {
+    exitReview(this: unknown): ReturnType<GameEngine['exitReview']>;
+  }).exitReview;
+  const saveTime = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+  const checkpoint = (persistence: 'persistent' | 'memory-only', mapId = 'E1M1') => ({
+    status: 'valid' as const,
+    slotId: 'autosave-1',
+    kind: 'autosave' as const,
+    defaultName: 'Autosave 1',
+    persistence,
+    state: { ...validSaveData(), mapId },
+    metadata: {
+      slotId: 'autosave-1',
+      kind: 'autosave' as const,
+      name: 'Autosave 1',
+      savedAt: 1,
+      sequence: 1,
+      episodeId: 'first-notice',
+      mapId,
+      mapTitle: mapId === 'E1M1' ? 'Intake Processing' : 'Parking Liability',
+      difficulty: 'field-adjuster',
+      playSeconds: 90,
+      thumbnail: { kind: 'placeholder' as const, label: mapId, palette: ['#111111', '#cc0000'] as const },
+    },
+  });
+  const harness = (result?: ReturnType<typeof checkpoint>) => ({
+    world: { map: CAMPAIGN.maps.E1M1 },
+    tally: { elapsed: 125 },
+    persistence: { newestValidContinue: vi.fn(() => result) },
+    saveTime,
+  });
+
+  it('states the exact rewind and durable checkpoint selected by Continue', () => {
+    const review = exitReview.call(harness(checkpoint('persistent')));
+    expect(review).toMatchObject({
+      recoveryState: 'persistent',
+      consequenceState: 'rewind',
+      returnPoint: 'Autosave • E1M1 Intake Processing • 1:30',
+      consequence: 'Returning now rewinds 0:35 of progress made after that save.',
+    });
+    expect(review.durability).toContain('survives closing or reloading');
+  });
+
+  it('distinguishes a memory-only return point from an unavailable or different-map save', () => {
+    const session = exitReview.call(harness(checkpoint('memory-only')));
+    expect(session.recoveryState).toBe('session-only');
+    expect(session.durability).toContain('only while this tab remains open');
+
+    const unavailable = exitReview.call(harness());
+    expect(unavailable).toMatchObject({ recoveryState: 'unavailable', consequenceState: 'discard' });
+    expect(unavailable.consequence).toContain('Continue will open New Game');
+
+    const different = exitReview.call(harness(checkpoint('persistent', 'E1M2')));
+    expect(different).toMatchObject({ recoveryState: 'persistent', consequenceState: 'discard' });
+    expect(different.consequence).toContain('Continue resumes the saved E1M2 file');
   });
 });
 

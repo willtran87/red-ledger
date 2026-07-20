@@ -29,13 +29,23 @@ export interface AudioCaptionDetail {
   readonly repeatWindowMs: number;
 }
 
-interface AudioSettings {
+export interface AudioSettings {
   master: number;
   music: number;
   sfx: number;
   muted: boolean;
   profile: AudioPlaybackProfile;
 }
+
+export type AudioPreviewResult = 'played' | 'muted' | 'master-silent' | 'effects-silent' | 'unavailable' | 'superseded';
+
+export const DEFAULT_AUDIO_SETTINGS: Readonly<AudioSettings> = Object.freeze({
+  master: .8,
+  music: .65,
+  sfx: .8,
+  muted: false,
+  profile: 'speakers',
+});
 
 export interface SemanticCueOptions {
   bus?: AudioBus;
@@ -119,6 +129,11 @@ const AUTHORED_SFX_GAIN = .72;
 const MUSIC_FADE_SECONDS = .08;
 const NOISE_BUFFER_SECONDS = 1;
 const SPATIAL_CUE_HISTORY_LIMIT = 16;
+const AUDIO_PREVIEW_SEQUENCE = [
+  { group: 'world/hazard-armed', pan: -.9, priority: 'important', delay: 0 },
+  { group: 'ui/menu-accept', pan: 0, priority: 'routine', delay: 160 },
+  { group: 'attack/denial-beam/windup', pan: .9, priority: 'critical', delay: 320 },
+] as const satisfies ReadonlyArray<{ group: string; pan: number; priority: AudioVoicePriority; delay: number }>;
 const DEFAULT_CAPTION_REPEAT_WINDOWS: Record<AudioVoicePriority, number> = {
   ambient: 1_500,
   routine: 500,
@@ -323,7 +338,9 @@ export class AudioSystem {
   private lastSpatialCue?: SpatialCueDiagnostic;
   private readonly spatialCueHistory: SpatialCueDiagnostic[] = [];
   private readonly lastCaptionAt = new Map<string, number>();
-  private settings: AudioSettings = { master: .8, music: .65, sfx: .8, muted: false, profile: 'speakers' };
+  private settings: AudioSettings = { ...DEFAULT_AUDIO_SETTINGS };
+  private previewToken = 0;
+  private readonly previewTimers: Array<ReturnType<typeof setTimeout>> = [];
 
   constructor() { this.restoreSettings(); }
 
@@ -388,6 +405,33 @@ export class AudioSystem {
     }
   }
 
+  async previewMix(): Promise<AudioPreviewResult> {
+    this.stopPreviewMix();
+    if (this.settings.muted) return 'muted';
+    if (this.settings.master <= .001) return 'master-silent';
+    if (this.settings.sfx <= .001) return 'effects-silent';
+    const token = this.previewToken;
+    this.unlock();
+    if (!this.context || this.lifecycleSuspended) return 'unavailable';
+    await this.prepareCueGroups(AUDIO_PREVIEW_SEQUENCE.map(({ group }) => group));
+    if (token !== this.previewToken) return 'superseded';
+    const first = AUDIO_PREVIEW_SEQUENCE[0];
+    const played = this.playCue(first.group, { pan: first.pan, priority: first.priority });
+    if (!played) return 'unavailable';
+    AUDIO_PREVIEW_SEQUENCE.slice(1).forEach((cue) => {
+      this.previewTimers.push(globalThis.setTimeout(() => {
+        if (token !== this.previewToken) return;
+        this.playCue(cue.group, { pan: cue.pan, priority: cue.priority });
+      }, cue.delay));
+    });
+    return 'played';
+  }
+
+  stopPreviewMix(): void {
+    this.previewToken += 1;
+    this.previewTimers.splice(0).forEach((timer) => globalThis.clearTimeout(timer));
+  }
+
   suspend(): void {
     this.lifecycleSuspended = true;
     if (this.musicElement && !this.musicElement.paused) {
@@ -446,6 +490,7 @@ export class AudioSystem {
   playMusic(trackId: string, loop = true): void {
     if (this.currentTrack === trackId && this.currentTrackLoop === loop
       && (this.musicTimer !== undefined || (this.currentTrackSource === 'authored' && !this.musicElement?.paused))) return;
+    this.stopPreviewMix();
     this.emitCaption(`music/${trackId}`, { priority: 'ambient' }, this.library?.music[trackId]?.title
       ? `${this.library.music[trackId].title} music begins`
       : undefined);
@@ -657,6 +702,7 @@ export class AudioSystem {
   }
 
   stopMusic(): void {
+    this.stopPreviewMix();
     this.musicToken += 1;
     this.stopMusicPlayback();
     this.currentTrack = undefined;

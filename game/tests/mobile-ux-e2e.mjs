@@ -142,7 +142,17 @@ assert((await orientationDifficulty.getAttribute('aria-describedby'))?.includes(
   'Difficulty choice does not own a stable accessible description');
 await orientationDifficulty.tap();
 assert(await page.locator('#difficulty-menu').isVisible(), 'A touch preview committed the difficulty immediately');
-assert((await page.locator('#difficulty-detail').innerText()).includes('Story-focused'), 'Touch preview did not expose the selected difficulty detail');
+const touchDifficultyPreview = await page.evaluate(() => ({
+  detail: document.querySelector('#difficulty-detail')?.textContent ?? '',
+  focusedDifficulty: document.activeElement?.getAttribute('data-difficulty') ?? '',
+  pressed: [...document.querySelectorAll('#difficulty-actions button')]
+    .filter((button) => button.getAttribute('aria-pressed') === 'true')
+    .map((button) => button.getAttribute('data-difficulty')),
+  confirmation: document.querySelector('#difficulty-confirm')?.textContent ?? '',
+}));
+await page.screenshot({ path: 'output/mobile-ux/difficulty-touch-preview.png' });
+assert(touchDifficultyPreview.detail.includes('Story-focused'),
+  `Touch preview did not expose the selected difficulty detail: ${JSON.stringify(touchDifficultyPreview)}`);
 assert(await orientationDifficulty.getAttribute('aria-pressed') === 'true', 'Touch preview did not synchronize the selected difficulty state');
 assert(await page.locator('#difficulty-confirm').isVisible(), 'Touch difficulty preview did not reveal an explicit Continue command');
 assert((await page.locator('#difficulty-confirm').innerText()).includes('Orientation'), 'Touch confirmation does not name the selected difficulty');

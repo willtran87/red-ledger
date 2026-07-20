@@ -649,6 +649,55 @@ describe('AudioSystem production lifecycle', () => {
     expect(context.gains[0].channelCountMode).toBe('max');
   });
 
+  it('preloads and auditions an authored left-center-right critical-cue mix through the active profile', async () => {
+    vi.useFakeTimers();
+    try {
+      useAuthoredFetch();
+      const audio = new AudioSystem();
+
+      expect(await audio.previewMix()).toBe('played');
+      const context = contexts[0];
+      expect(context.sources).toHaveLength(1);
+      expect(context.sources[0].startCalls[0]).toEqual([4, 2.1, .18]);
+      expect(context.panners[0].pan.value).toBeCloseTo(-.702);
+
+      await vi.advanceTimersByTimeAsync(321);
+
+      expect(context.sources.map((source) => source.startCalls[0])).toEqual([
+        [4, 2.1, .18],
+        [4, 2.5, .08],
+        [4, 1.6, .3],
+      ]);
+      expect(context.panners.map((panner) => panner.pan.value)).toEqual([
+        expect.closeTo(-.702),
+        expect.closeTo(.702),
+      ]);
+      expect(captionEvents().map(({ detail }) => ({ cue: detail.cue, direction: detail.direction, priority: detail.priority }))).toEqual([
+        { cue: 'world/hazard-armed', direction: 'left', priority: 'important' },
+        { cue: 'ui/menu-accept', direction: 'center', priority: 'routine' },
+        { cue: 'attack/denial-beam/windup', direction: 'right', priority: 'critical' },
+      ]);
+      expect(audio.diagnostics()).toMatchObject({ source: 'authored', authoredPlays: 3 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('explains silent preview states without unlocking or emitting misleading cues', async () => {
+    const audio = new AudioSystem();
+    audio.setMuted(true);
+    expect(await audio.previewMix()).toBe('muted');
+    audio.setMuted(false);
+    audio.setMasterVolume(0);
+    expect(await audio.previewMix()).toBe('master-silent');
+    audio.setMasterVolume(.8);
+    audio.setSfxVolume(0);
+    expect(await audio.previewMix()).toBe('effects-silent');
+
+    expect(contexts).toHaveLength(0);
+    expect(captionEvents()).toHaveLength(0);
+  });
+
   it('plays authored attack tells as spatial critical voices', async () => {
     useAuthoredFetch();
     const audio = new AudioSystem();

@@ -45,8 +45,80 @@ async function inspectNarrowPointerFine(viewport, name) {
   await context.close();
 }
 
+async function inspectMomentum(page, name) {
+  const staged = await page.evaluate((actorIds) => {
+    let kills = 0;
+    while (kills < 8) {
+      const actorId = actorIds.find((id) => window.__redLedger.defeatActor(id));
+      if (!actorId) break;
+      kills += 1;
+    }
+    window.advanceTime(30);
+    return kills;
+  }, ['returned-mail', 'desk-warden', 'ember-clerk']);
+  assert(staged === 8, `${name}: could not stage Authority Rush`);
+  await page.waitForFunction(() => document.querySelector('#combat-streak').dataset.tier === 'authority-rush');
+  const metrics = await page.evaluate(() => {
+    const box = (element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+    };
+    const shell = box(document.querySelector('#game-shell'));
+    const streakElement = document.querySelector('#combat-streak');
+    const streak = box(streakElement);
+    const objective = box(document.querySelector('#objective'));
+    const horizontalOverlap = Math.max(0, Math.min(streak.right, objective.right) - Math.max(streak.left, objective.left));
+    const verticalOverlap = Math.max(0, Math.min(streak.bottom, objective.bottom) - Math.max(streak.top, objective.top));
+    const touchOverlaps = [...document.querySelectorAll('#touch-controls button, #touch-stick, #touch-look')]
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return getComputedStyle(element).display !== 'none' && rect.width > 0 && rect.height > 0;
+      })
+      .map((element) => ({ id: element.id, rect: box(element) }))
+      .filter(({ rect }) => Math.max(0, Math.min(streak.right, rect.right) - Math.max(streak.left, rect.left))
+        * Math.max(0, Math.min(streak.bottom, rect.bottom) - Math.max(streak.top, rect.top)) > 0)
+      .map(({ id }) => id);
+    return {
+      shell,
+      streak,
+      overlapArea: horizontalOverlap * verticalOverlap,
+      touchOverlaps,
+      fontSize: Number.parseFloat(getComputedStyle(streakElement.querySelector('span')).fontSize),
+      label: streakElement.innerText,
+      accessibleName: streakElement.getAttribute('aria-label'),
+      pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  });
+  assert(metrics.streak.left >= metrics.shell.left - 1 && metrics.streak.top >= metrics.shell.top - 1
+    && metrics.streak.right <= metrics.shell.right + 1 && metrics.streak.bottom <= metrics.shell.bottom + 1,
+  `${name}: Authority Rush HUD escaped the game stage`);
+  assert(metrics.overlapArea === 0, `${name}: Authority Rush HUD overlaps the objective`);
+  assert(metrics.touchOverlaps.length === 0,
+    `${name}: Authority Rush HUD overlaps touch controls (${metrics.touchOverlaps.join(', ')})`);
+  assert(metrics.fontSize >= 10, `${name}: Authority Rush label fell below 10px`);
+  assert(metrics.label.includes('AUTHORITY RUSH') && metrics.label.includes('PTS'),
+    `${name}: Authority Rush label is incomplete`);
+  assert(metrics.accessibleName.includes('Authority Rush') && metrics.accessibleName.includes('chain x8'),
+    `${name}: Authority Rush accessible name is incomplete`);
+  assert(metrics.pageOverflow <= 1, `${name}: Authority Rush introduced horizontal page overflow`);
+  await page.waitForTimeout(180);
+  await page.screenshot({ path: `output/responsive/${name}-momentum-authority-rush.png` });
+}
+
 async function inspectAutomap(page, name, mobile) {
   const compactViewport = (page.viewportSize()?.width ?? 0) <= 700 || (page.viewportSize()?.height ?? 0) <= 500;
+  const credentialSetup = await page.evaluate(() => {
+    const originalMap = JSON.parse(window.render_game_to_text()).map.id;
+    window.__redLedger.loadMap('E1M6');
+    const found = ['red', 'yellow', 'cyan'].map((credential) => {
+      const result = window.__redLedger.teleportToDoor(credential);
+      window.advanceTime(35);
+      return result;
+    });
+    return { found, map: JSON.parse(window.render_game_to_text()).map.id, originalMap };
+  });
+  assert(credentialSetup.map === 'E1M6' && credentialSetup.found.every(Boolean),
+    `${name}: could not stage all three credential routes for automap accessibility`);
   if (mobile) await page.locator('#touch-map').tap();
   else await page.keyboard.press('Tab');
   await page.waitForFunction(() => {
@@ -77,6 +149,7 @@ async function inspectAutomap(page, name, mobile) {
       viewportCellsZ: Number(canvas.dataset.viewportCellsZ),
       playerX: Number(canvas.dataset.playerX),
       playerY: Number(canvas.dataset.playerY),
+      credentialCues: canvas.dataset.credentialCues,
       touchDisplay: getComputedStyle(document.querySelector('#touch-controls')).display,
       full: document.querySelector('#hud').classList.contains('full-automap'),
     };
@@ -90,6 +163,8 @@ async function inspectAutomap(page, name, mobile) {
   assert(Math.abs(metrics.playerX - metrics.rect.width / 2) < 1, `${name}: automap is not centered horizontally on the player`);
   assert(Math.abs(metrics.playerY - (metrics.rect.height - metrics.legendHeight) / 2) < 1, `${name}: automap is not centered vertically on the player`);
   assert(metrics.legendHeight >= 30 && metrics.legendPixels > 20, `${name}: automap legend is missing or clipped`);
+  assert(metrics.credentialCues === 'cyan,red,yellow',
+    `${name}: automap omitted redundant credential cues (${metrics.credentialCues})`);
   if (mobile) assert(metrics.touchDisplay === 'none', `${name}: gameplay touch controls obscure the full automap`);
   await page.screenshot({ path: `output/responsive/${name}-automap.png` });
 
@@ -149,6 +224,12 @@ async function inspectAutomap(page, name, mobile) {
   }
   else await page.keyboard.press('Tab');
   assert(!(await page.locator('#automap').isVisible()), `${name}: automap did not close`);
+  await page.evaluate((mapId) => {
+    window.__redLedger.loadMap(mapId);
+    window.advanceTime(35);
+  }, credentialSetup.originalMap);
+  await page.waitForFunction((mapId) => JSON.parse(window.render_game_to_text()).map.id === mapId,
+    credentialSetup.originalMap);
 }
 
 async function inspectCompactOptions(viewport, name, mobile = false) {
@@ -162,6 +243,12 @@ async function inspectCompactOptions(viewport, name, mobile = false) {
     const panel = element.getBoundingClientRect();
     const heading = element.querySelector('h1').getBoundingClientRect();
     const firstSetting = element.querySelector('label').getBoundingClientRect();
+    const audioDetail = element.querySelector('#audio-profile-detail');
+    const previewRow = element.querySelector('.audio-preview-row');
+    const previewButton = element.querySelector('#audio-preview');
+    const previewStatus = element.querySelector('#audio-preview-status');
+    const previewRowBox = previewRow.getBoundingClientRect();
+    const previewButtonBox = previewButton.getBoundingClientRect();
     const controlsContained = [...element.querySelectorAll('label input, label select, label output')].every((control) => {
       const label = control.closest('label').getBoundingClientRect();
       const rect = control.getBoundingClientRect();
@@ -175,6 +262,16 @@ async function inspectCompactOptions(viewport, name, mobile = false) {
       scrollWidth: element.scrollWidth,
       controlsContained,
       rootFontSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+      audioDetail: {
+        fontSize: Number.parseFloat(getComputedStyle(audioDetail).fontSize),
+        overflow: audioDetail.scrollWidth > audioDetail.clientWidth + 1,
+      },
+      preview: {
+        contained: previewButtonBox.left >= previewRowBox.left - 1 && previewButtonBox.right <= previewRowBox.right + 1,
+        buttonHeight: previewButtonBox.height,
+        statusFontSize: Number.parseFloat(getComputedStyle(previewStatus).fontSize),
+        rowOverflow: previewRow.scrollWidth > previewRow.clientWidth + 1,
+      },
     };
   });
   assert(initial.heading.top >= initial.panel.top && initial.heading.bottom <= initial.panel.bottom, `${name}: Options heading is unreachable at scroll start`);
@@ -182,6 +279,37 @@ async function inspectCompactOptions(viewport, name, mobile = false) {
   assert(initial.scrollWidth <= initial.clientWidth + 1, `${name}: Options overflow horizontally`);
   assert(initial.controlsContained, `${name}: Largest text caused an option control to overlap or escape its label`);
   assert(initial.rootFontSize >= 19.5, `${name}: Largest text preference was not applied`);
+  assert(initial.audioDetail.fontSize >= 10 && !initial.audioDetail.overflow,
+    `${name}: Audio profile guidance is unreadable or clipped`);
+  assert(initial.preview.contained && !initial.preview.rowOverflow && initial.preview.statusFontSize >= 10,
+    `${name}: Audio preview row is unreadable or overflows`);
+  if (mobile) assert(initial.preview.buttonHeight >= 44, `${name}: Audio preview action is smaller than 44px`);
+  if (mobile) {
+    await page.locator('#audio-preview').tap();
+    await page.waitForFunction(() => document.querySelector('#audio-preview-status')?.dataset.result === 'played');
+    await page.waitForTimeout(420);
+    const populatedPreview = await page.locator('.audio-preview-row').evaluate((row) => {
+      const panel = document.querySelector('#options-menu').getBoundingClientRect();
+      const rect = row.getBoundingClientRect();
+      const status = row.querySelector('#audio-preview-status');
+      return {
+        panel: { top: panel.top, bottom: panel.bottom },
+        row: { top: rect.top, bottom: rect.bottom },
+        rowOverflow: row.scrollWidth > row.clientWidth + 1,
+        statusOverflow: status.scrollWidth > status.clientWidth + 1,
+        statusFontSize: Number.parseFloat(getComputedStyle(status).fontSize),
+        status: status.textContent,
+      };
+    });
+    assert(populatedPreview.row.top >= populatedPreview.panel.top
+      && populatedPreview.row.bottom <= populatedPreview.panel.bottom + 1,
+    `${name}: Populated audio preview shifted outside the compact Options viewport`);
+    assert(!populatedPreview.rowOverflow && !populatedPreview.statusOverflow && populatedPreview.statusFontSize >= 10,
+      `${name}: Populated audio preview is clipped or unreadable`);
+    assert(populatedPreview.status.includes('hazard left') && populatedPreview.status.includes('critical attack right'),
+      `${name}: Audio preview status omitted its directional sequence`);
+    await page.screenshot({ path: `output/responsive/${name}-audio-preview.png` });
+  }
   const back = page.locator('#options-menu [data-back]');
   await back.scrollIntoViewIfNeeded();
   const final = await Promise.all([
@@ -189,6 +317,26 @@ async function inspectCompactOptions(viewport, name, mobile = false) {
     back.boundingBox(),
   ]);
   assert(final[0] && final[1] && final[1].y >= final[0].y && final[1].y + final[1].height <= final[0].y + final[0].height + 1, `${name}: Options Back control cannot be scrolled into view`);
+  const actions = await page.locator('.options-actions').evaluate((row) => {
+    const rowBox = row.getBoundingClientRect();
+    return [...row.querySelectorAll('button')].map((button) => {
+      const rect = button.getBoundingClientRect();
+      return {
+        id: button.id,
+        text: button.textContent?.trim(),
+        left: rect.left,
+        right: rect.right,
+        height: rect.height,
+        rowLeft: rowBox.left,
+        rowRight: rowBox.right,
+      };
+    });
+  });
+  assert(actions.some(({ id, text }) => id === 'restore-options' && text === 'Restore Defaults'),
+    `${name}: Options omitted its recoverable defaults action`);
+  assert(actions.every(({ left, right, rowLeft, rowRight }) => left >= rowLeft - 1 && right <= rowRight + 1),
+    `${name}: An Options action escaped its row at the largest text size`);
+  if (mobile) assert(actions.every(({ height }) => height >= 44), `${name}: An Options action is smaller than 44px`);
   await page.screenshot({ path: `output/responsive/${name}-options.png` });
   await context.close();
 }
@@ -277,6 +425,103 @@ async function inspectSmallPersonalizedDeck(handedness) {
   await context.close();
 }
 
+async function inspectPauseDossier(page, name, viewport, mobile) {
+  const state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  assert(state.mode === 'paused' && state.pause, `${name}: text state omitted the active pause dossier`);
+  assert(state.pause.mapId === state.map.id && state.pause.objective === state.objective,
+    `${name}: pause dossier disagrees with the active map or objective`);
+  assert(state.pause.recoveryState === 'persistent' && state.pause.recovery.includes('Checkpoint saved'),
+    `${name}: ordinary pause did not identify its durable checkpoint: ${JSON.stringify(state.pause)}`);
+  const metrics = await page.locator('#pause-menu').evaluate((screen) => {
+    const review = screen.querySelector('#pause-review');
+    const box = review.getBoundingClientRect();
+    const screenBox = screen.getBoundingClientRect();
+    return {
+      box: { left: box.left, top: box.top, right: box.right, bottom: box.bottom, width: box.width },
+      screen: { left: screenBox.left, top: screenBox.top, right: screenBox.right, bottom: screenBox.bottom },
+      overflow: review.scrollWidth > review.clientWidth + 1 || screen.scrollWidth > screen.clientWidth + 1,
+      fonts: [...review.querySelectorAll('strong, b, p, footer')]
+        .map((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
+      recoveryState: review.dataset.recovery,
+      label: review.getAttribute('aria-label'),
+    };
+  });
+  assert(!metrics.overflow, `${name}: pause dossier overflows horizontally`);
+  assert(metrics.box.left >= metrics.screen.left && metrics.box.right <= metrics.screen.right + 1,
+    `${name}: pause dossier escapes the pause screen`);
+  assert(metrics.fonts.every((fontSize) => fontSize >= 10), `${name}: pause dossier contains sub-10px copy`);
+  assert(metrics.recoveryState === 'persistent' && metrics.label.includes(state.map.id),
+    `${name}: pause dossier does not expose its recovery state and accessible map summary`);
+  if (!mobile && viewport.width >= 1920) {
+    assert(metrics.box.width >= 760, `${name}: pause dossier remained undersized at high resolution`);
+    assert(metrics.fonts.every((fontSize) => fontSize >= 12), `${name}: pause dossier did not use its high-resolution type scale`);
+  }
+}
+
+async function inspectExitReview(page, name, viewport, mobile) {
+  const state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  assert(state.exitReview?.mapId === state.map.id, `${name}: text state omitted the return-to-title review`);
+  const trigger = page.locator('#quit-menu');
+  if (mobile) await trigger.tap();
+  else await trigger.click();
+  assert(await page.locator('#confirm-dialog').isVisible(), `${name}: return to title did not open its confirmation`);
+  const metrics = await page.locator('#confirm-dialog').evaluate((dialog) => {
+    const review = dialog.querySelector('#confirm-review');
+    const dialogBox = dialog.getBoundingClientRect();
+    const reviewBox = review.getBoundingClientRect();
+    const buttons = [...dialog.querySelectorAll('button')].map((button) => {
+      const box = button.getBoundingClientRect();
+      return { width: box.width, height: box.height, fontSize: Number.parseFloat(getComputedStyle(button).fontSize) };
+    });
+    return {
+      title: dialog.querySelector('#confirm-title').textContent,
+      copy: dialog.querySelector('#confirm-copy').textContent,
+      returnPoint: dialog.querySelector('#confirm-return-point').textContent,
+      consequence: dialog.querySelector('#confirm-consequence').textContent,
+      durability: dialog.querySelector('#confirm-durability').textContent,
+      accept: dialog.querySelector('#confirm-accept').textContent,
+      recovery: review.dataset.recovery,
+      consequenceState: review.dataset.consequence,
+      label: review.getAttribute('aria-label'),
+      dialogBox: { left: dialogBox.left, top: dialogBox.top, right: dialogBox.right, bottom: dialogBox.bottom, width: dialogBox.width },
+      reviewBox: { left: reviewBox.left, top: reviewBox.top, right: reviewBox.right, bottom: reviewBox.bottom },
+      overflow: dialog.scrollWidth > dialog.clientWidth + 1 || review.scrollWidth > review.clientWidth + 1,
+      fonts: [...review.querySelectorAll('span, strong, p, small')]
+        .map((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
+      buttons,
+      focused: document.activeElement?.id,
+      selection: window.getSelection()?.toString() ?? '',
+    };
+  });
+  assert(metrics.title === 'Return to title?' && metrics.copy.includes('E1M1'), `${name}: exit review lacks its concrete decision context`);
+  assert(/^(Autosave|Episode recovery|Manual file|Quicksave|Previous tab copy) • E1M1 /.test(metrics.returnPoint),
+    `${name}: exit review obscures the exact Continue return point: ${metrics.returnPoint}`);
+  assert(metrics.returnPoint === state.exitReview.returnPoint && metrics.consequence === state.exitReview.consequence,
+    `${name}: visible exit review disagrees with render_game_to_text`);
+  assert(['safe', 'rewind'].includes(metrics.consequenceState), `${name}: same-map exit review reports the wrong consequence`);
+  assert(metrics.recovery === 'persistent' && metrics.durability.includes('survives closing or reloading'), `${name}: exit review obscures persistent durability`);
+  assert(metrics.accept === 'Return to Title' && metrics.focused === 'confirm-cancel', `${name}: exit review lacks a precise action or safe initial focus`);
+  assert(metrics.selection === '', `${name}: exit review retained accidental text selection: ${metrics.selection}`);
+  assert(metrics.label.includes('Return point') && metrics.label.includes('E1M1'), `${name}: exit review lacks a complete accessible summary`);
+  assert(!metrics.overflow && metrics.dialogBox.left >= 0 && metrics.dialogBox.top >= 0
+    && metrics.dialogBox.right <= viewport.width + 1 && metrics.dialogBox.bottom <= viewport.height + 1,
+  `${name}: exit review overflows the viewport`);
+  assert(metrics.reviewBox.left >= metrics.dialogBox.left && metrics.reviewBox.right <= metrics.dialogBox.right + 1,
+    `${name}: exit review escapes its dialog`);
+  assert(metrics.fonts.every((fontSize) => fontSize >= 10), `${name}: exit review contains sub-10px copy`);
+  if (mobile) assert(metrics.buttons.every((button) => button.height >= 44), `${name}: exit review has a sub-44px touch action`);
+  if (!mobile && viewport.width >= 1920) {
+    assert(metrics.dialogBox.width >= 760, `${name}: exit review remained undersized at high resolution`);
+    assert(metrics.fonts.every((fontSize) => fontSize >= 12), `${name}: exit review did not use its high-resolution type scale`);
+    assert(metrics.buttons.every((button) => button.height >= 48 && button.fontSize >= 18), `${name}: high-resolution exit actions are undersized`);
+  }
+  await page.screenshot({ path: `output/responsive/${name}-exit-review.png`, fullPage: mobile });
+  await page.locator('#confirm-dialog').screenshot({ path: `output/responsive/${name}-exit-review-dialog.png` });
+  if (mobile) await page.locator('#confirm-cancel').tap();
+  else await page.locator('#confirm-cancel').click();
+  assert(await page.locator('#pause-menu').isVisible(), `${name}: canceling the exit review did not return to pause`);
+}
+
 async function run(viewport, name, mobile = false) {
   const context = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
   const page = await context.newPage();
@@ -310,6 +555,7 @@ async function run(viewport, name, mobile = false) {
     assert(episodePresentation.cards.every((card) => card.width >= 280 && card.height >= 175), `${name}: episode cards did not scale for high resolution`);
     assert(episodePresentation.labels.every((label) => label.fontSize >= 14), `${name}: episode labels are too small at high resolution`);
   }
+  assert(episodePresentation.labels.every((label) => label.fontSize >= 10), `${name}: episode labels fell below the compact-copy floor`);
   if (mobile) assert(episodePresentation.back.height >= 44, `${name}: episode Back target is too short`);
   await page.screenshot({ path: `output/responsive/${name}-episodes.png` });
   await page.locator('.episode-card').first().click();
@@ -342,14 +588,23 @@ async function run(viewport, name, mobile = false) {
   await page.screenshot({ path: `output/responsive/${name}-intro.png` });
   if (mobile) await page.locator('#begin-episode').tap();
   else await page.click('#begin-episode');
+  const briefing = await page.locator('#ready-overlay').evaluate((element) => {
+    const font = (selector) => [...element.querySelectorAll(selector)]
+      .map((item) => Number.parseFloat(getComputedStyle(item).fontSize));
+    const controls = element.querySelector('#entry-controls').getBoundingClientRect();
+    return {
+      width: controls.width,
+      mapMeta: font('header span'),
+      activeSeal: font('header small'),
+      labels: font('.entry-controls b'),
+      values: font('.entry-controls small'),
+    };
+  });
+  assert([...briefing.mapMeta, ...briefing.activeSeal, ...briefing.labels, ...briefing.values]
+    .every((fontSize) => fontSize >= 10), `${name}: field briefing contains sub-10px instructional copy`);
   if (!mobile && viewport.width >= 1920) {
-    const briefing = await page.locator('#entry-controls').evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      const value = element.querySelector('small');
-      return { width: rect.width, valueFontSize: Number.parseFloat(getComputedStyle(value).fontSize) };
-    });
     assert(briefing.width >= 720, `${name}: entry briefing is undersized on a high-resolution display`);
-    assert(briefing.valueFontSize >= 14, `${name}: entry briefing values are too small on a high-resolution display`);
+    assert(briefing.values.every((fontSize) => fontSize >= 14), `${name}: entry briefing values are too small on a high-resolution display`);
     await page.screenshot({ path: `output/responsive/${name}-briefing.png` });
   }
   if (await page.locator('#ready-overlay').isVisible()) {
@@ -369,12 +624,23 @@ async function run(viewport, name, mobile = false) {
   else assert(metrics.shell[2] === viewport.width && metrics.shell[3] === viewport.height, `${name}: portrait shell does not use the available viewport`);
   assert(metrics.shell[2] <= viewport.width && metrics.shell[3] <= viewport.height, `${name}: stage exceeds viewport`);
   assert(metrics.status[1] >= metrics.shell[1] && metrics.status[1] + metrics.status[3] <= metrics.shell[1] + metrics.shell[3] + 1, `${name}: status bar escaped stage`);
+  const feedbackFonts = await page.evaluate(() => ({
+    objective: Number.parseFloat(getComputedStyle(document.querySelector('#objective')).fontSize),
+    replay: Number.parseFloat(getComputedStyle(document.querySelector('#replay-controls button')).fontSize),
+    streak: Number.parseFloat(getComputedStyle(document.querySelector('#combat-streak span')).fontSize),
+    boss: Number.parseFloat(getComputedStyle(document.querySelector('#boss-bar small')).fontSize),
+    move: Number.parseFloat(getComputedStyle(document.querySelector('#touch-stick'), '::after').fontSize),
+    look: Number.parseFloat(getComputedStyle(document.querySelector('#touch-look'), '::after').fontSize),
+  }));
+  assert(Object.values(feedbackFonts).every((fontSize) => fontSize >= 10),
+    `${name}: compact gameplay feedback fell below 10px: ${JSON.stringify(feedbackFonts)}`);
   if (!mobile) assert(metrics.weapon[1] >= metrics.reticle[1] + metrics.reticle[3] + metrics.shell[3] * .035, `${name}: weapon art enters the protected aiming lane`);
   else {
     assert(metrics.weapon[2] / metrics.shell[2] >= .67 && metrics.weapon[2] / metrics.shell[2] <= .69, `${name}: portrait weapon width changed`);
     assert(metrics.weapon[3] / metrics.shell[3] >= .45 && metrics.weapon[3] / metrics.shell[3] <= .47, `${name}: portrait weapon height changed`);
   }
   await page.screenshot({ path: `output/responsive/${name}-gameplay.png` });
+  await inspectMomentum(page, name);
   await inspectAutomap(page, name, mobile);
   if (mobile) {
     for (const selector of ['#touch-fire', '#touch-stick', '#touch-look', '#touch-use', '#touch-weapon', '#touch-map', '#touch-pause']) {
@@ -385,20 +651,43 @@ async function run(viewport, name, mobile = false) {
     }
     await page.locator('#touch-pause').tap();
     assert(await page.locator('#pause-menu').isVisible(), 'Touch pause control did not open the pause menu');
+    await inspectPauseDossier(page, name, viewport, mobile);
+    await page.screenshot({ path: `output/responsive/${name}-pause.png`, fullPage: true });
     await page.locator('#pause-options').tap();
     const options = await page.locator('#options-menu').evaluate((element) => ({ scrollHeight: element.scrollHeight, clientHeight: element.clientHeight }));
     assert(options.clientHeight > 700, 'Mobile options overlay is still compressed');
     await page.screenshot({ path: `output/responsive/${name}-options.png`, fullPage: true });
+    await page.locator('#controls-button').tap();
+    const controls = await page.locator('#controls-menu').evaluate((element) => ({
+      overflow: element.scrollWidth > element.clientWidth + 1,
+      rowOverflow: [...element.querySelectorAll('.control-row')].some((row) => row.scrollWidth > row.clientWidth + 1),
+      fonts: [...element.querySelectorAll('.control-row, .control-row button')]
+        .map((item) => Number.parseFloat(getComputedStyle(item).fontSize)),
+    }));
+    assert(!controls.overflow && !controls.rowOverflow, `${name}: mobile control bindings overflow after the readability increase`);
+    assert(controls.fonts.every((fontSize) => fontSize >= 10), `${name}: mobile control bindings fell below 10px`);
+    await page.screenshot({ path: `output/responsive/${name}-controls.png`, fullPage: true });
+    await page.locator('#controls-back').tap();
     await page.locator('#options-menu [data-back]').tap();
+    await page.locator('#save-game').tap();
+    const slots = await page.locator('#save-slots').evaluate((element) => ({
+      overflow: element.scrollWidth > element.clientWidth + 1,
+      rowOverflow: [...element.querySelectorAll('.slot-row')].some((row) => row.scrollWidth > row.clientWidth + 1),
+      fonts: [...element.querySelectorAll('.slot-row, .slot-row button, .slot-copy small')]
+        .map((item) => Number.parseFloat(getComputedStyle(item).fontSize)),
+    }));
+    assert(!slots.overflow && !slots.rowOverflow, `${name}: mobile save files overflow after the readability increase`);
+    assert(slots.fonts.every((fontSize) => fontSize >= 10), `${name}: mobile save-file copy fell below 10px`);
+    await page.screenshot({ path: `output/responsive/${name}-save-slots.png`, fullPage: true });
+    await page.locator('#save-slots .slot-back').tap();
     await page.locator('#resume-game').tap();
     await page.evaluate(() => window.dispatchEvent(new Event('blur')));
     assert(await page.locator('#pause-menu').isVisible(), 'Focus loss did not pause gameplay');
-    await page.locator('#quit-menu').tap();
-    assert(await page.locator('#confirm-dialog').isVisible(), 'Leaving an active session did not request confirmation');
-    await page.locator('#confirm-cancel').tap();
+    await inspectExitReview(page, name, viewport, mobile);
   } else {
     await page.keyboard.press('Escape');
     assert(await page.locator('#pause-menu').isVisible(), `${name}: pause menu did not open`);
+    await inspectPauseDossier(page, name, viewport, mobile);
     const pause = await page.evaluate(() => {
       const geometry = (element) => {
         const rect = element.getBoundingClientRect(); const style = getComputedStyle(element);
@@ -411,6 +700,7 @@ async function run(viewport, name, mobile = false) {
       assert(pause.buttons.every((button) => button.height >= 48 && button.fontSize >= 18), `${name}: pause controls are undersized at high resolution`);
     }
     await page.screenshot({ path: `output/responsive/${name}-pause.png` });
+    await inspectExitReview(page, name, viewport, mobile);
   }
   assert(errors.length === 0, `${name}: ${errors.join(' | ')}`);
   await context.close();

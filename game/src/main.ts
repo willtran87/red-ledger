@@ -92,7 +92,7 @@ function initializeGame(activeGame: GameEngine): void {
     loadMap: (id) => game.loadMap(id),
     teleport: (x, z) => game.debugTeleport(x, z),
     defeatAll: () => game.debugDefeatAll(),
-    defeatPlayer: () => game.debugDefeatPlayer(),
+    defeatPlayer: (sourceId, damageKind) => game.debugDefeatPlayer(sourceId, damageKind),
     damageActor: (id, amount) => game.debugDamageActor(id, amount),
     setAmmo: (type, amount) => game.debugSetAmmo(type, amount),
     defeatEncounter: (id) => game.debugDefeatEncounter(id),
@@ -141,7 +141,10 @@ declare global {
       loadMap: (id: import('./data').MapId) => void;
       teleport: (x: number, z: number) => void;
       defeatAll: () => void;
-      defeatPlayer: () => void;
+      defeatPlayer: (
+        sourceId?: import('./game/World').RuntimeActor['id'],
+        damageKind?: import('./game/EnemyBehaviorSystem').DamageKind,
+      ) => void;
       damageActor: (id: string, amount: number) => boolean;
       setAmmo: (type: Exclude<import('./game/definitions').AmmoType, 'none'>, amount: number) => void;
       defeatEncounter: (id: string) => number;

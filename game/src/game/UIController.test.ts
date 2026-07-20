@@ -4,10 +4,13 @@ import type { CampaignUnlocks, MapPerformance, MapRecord } from './PersistenceSy
 import {
   activeEffectsPresentation,
   advanceAssistiveGameplayGuidance,
+  audioProfilePresentation,
   automapPanDelta,
   boundedReplayEntries,
+  credentialMapCue,
   DIFFICULTY_OPTIONS,
   entryBriefingLabels,
+  entryFieldOrderPresentation,
   entryObjectiveBriefing,
   entryObjectiveCue,
   formatRangeSetting,
@@ -16,13 +19,105 @@ import {
   masteryPresentation,
   milestoneAwardAnnouncement,
   normalizeInterfacePreferences,
+  preferredAnnouncement,
+  recommendedOptionSettings,
   resolveReducedMotionSetting,
+  resolveEquippedMilestoneSeal,
   resolveScreenShakeSetting,
   runVariantUiLabel,
+  shouldPreviewDifficultyOnPointer,
   trackedIntermissionMastery,
   touchBriefingPadLabels,
 } from './UIController';
 import { deriveMilestones } from './Milestones';
+
+describe('difficulty pointer preview', () => {
+  it('ignores stale mouse hover after touch while retaining deliberate desktop hover', () => {
+    expect(shouldPreviewDifficultyOnPointer('mouse', 'touch')).toBe(false);
+    expect(shouldPreviewDifficultyOnPointer('touch', 'touch')).toBe(false);
+    expect(shouldPreviewDifficultyOnPointer('mouse', 'desktop')).toBe(true);
+    expect(shouldPreviewDifficultyOnPointer('pen', 'desktop')).toBe(true);
+    expect(shouldPreviewDifficultyOnPointer('mouse', 'gamepad')).toBe(false);
+  });
+});
+
+describe('audio profile guidance', () => {
+  it('explains the distinct listening tradeoff of every selectable profile', () => {
+    const profiles = ['speakers', 'headphones', 'night', 'mono'] as const;
+    const presentations = profiles.map(audioProfilePresentation);
+    expect(presentations.map(({ label }) => label)).toEqual(['Speakers', 'Headphones', 'Night', 'Mono']);
+    expect(new Set(presentations.map(({ detail }) => detail)).size).toBe(4);
+    expect(presentations[0].detail).toContain('Balanced stereo');
+    expect(presentations[1].detail).toContain('Full stereo direction');
+    expect(presentations[2].detail).toContain('Compressed dynamics');
+    expect(presentations[3].detail).toContain('one compatible channel');
+  });
+});
+
+describe('recommended option recovery', () => {
+  it('restores one complete authored baseline across input, interface, display, feedback, and audio', () => {
+    const defaults = recommendedOptionSettings(false);
+    expect(defaults.input).toEqual({
+      mouseSensitivity: 1.2,
+      controllerSensitivity: 1.2,
+      touchSensitivity: 1.2,
+      invertY: false,
+      controllerDeadzone: .18,
+    });
+    expect(defaults.presentation).toEqual({
+      touchControlSize: 'standard',
+      touchControlOpacity: .78,
+      touchHandedness: 'right',
+      uiTextScale: 'standard',
+    });
+    expect(defaults).toMatchObject({
+      renderScale: 1,
+      hudMode: 'classic',
+      classicInput: false,
+      verticalAutoAim: true,
+      controllerVibration: true,
+      screenShake: true,
+      reducedMotion: false,
+      highContrast: false,
+      reducedEffects: false,
+      flashEffects: true,
+      soundCaptions: false,
+      audio: { master: .8, music: .65, sfx: .8, muted: false, profile: 'speakers' },
+    });
+  });
+
+  it('honors an operating-system reduced-motion preference without changing unrelated defaults', () => {
+    const normal = recommendedOptionSettings(false);
+    const reduced = recommendedOptionSettings(true);
+    expect(reduced).toEqual({ ...normal, screenShake: false, reducedMotion: true });
+  });
+});
+
+describe('credential map redundancy', () => {
+  it('assigns a unique glyph and geometry to every critical route credential', () => {
+    const cues = ['red', 'yellow', 'cyan'].map((credential) => credentialMapCue(credential as 'red' | 'yellow' | 'cyan'));
+    expect(cues.map(({ glyph }) => glyph)).toEqual(['R', 'Y', 'C']);
+    expect(new Set(cues.map(({ shape }) => shape))).toEqual(new Set(['square', 'circle', 'diamond']));
+    expect(new Set(cues.map(({ color }) => color)).size).toBe(3);
+  });
+});
+
+describe('assistive announcement priority', () => {
+  it('keeps the highest-value message when one frame produces competing feedback', () => {
+    const routine = { message: 'Returned Mail closed', priority: 0 };
+    const guidance = { message: 'Objective: Close initial exposures', priority: 1 };
+    const threshold = { message: 'Escalation. Momentum window extended.', priority: 2 };
+    expect(preferredAnnouncement(undefined, routine)).toBe(routine);
+    expect(preferredAnnouncement(routine, threshold)).toBe(threshold);
+    expect(preferredAnnouncement(threshold, guidance)).toBe(threshold);
+  });
+
+  it('allows an equally important later message to describe the latest state', () => {
+    const first = { message: 'Controller disconnected', priority: 3 };
+    const latest = { message: 'Recovery unavailable', priority: 3 };
+    expect(preferredAnnouncement(first, latest)).toBe(latest);
+  });
+});
 
 describe('active timed-effect presentation', () => {
   it('uses a deterministic tactical order with rounded time and progress', () => {
@@ -64,6 +159,24 @@ describe('milestone award announcements', () => {
       'Milestone earned: First Notice. Cosmetic seal: First Notice Seal.',
     );
     expect(milestoneAwardAnnouncement([])).toBe('');
+  });
+});
+
+describe('equippable milestone seals', () => {
+  const milestones = deriveMilestones({
+    unlockedEpisodes: ['first-notice'],
+    completedEpisodes: [],
+    completedMaps: ['E1M1'],
+    discoveredSecretMaps: [],
+    records: {},
+    updatedAt: 1,
+  });
+
+  it('accepts only an earned seal and rejects locked, unknown, or malformed settings', () => {
+    expect(resolveEquippedMilestoneSeal('first-clear', milestones)).toBe('first-clear');
+    expect(resolveEquippedMilestoneSeal('chain-five', milestones)).toBeUndefined();
+    expect(resolveEquippedMilestoneSeal('not-a-seal', milestones)).toBeUndefined();
+    expect(resolveEquippedMilestoneSeal(42, milestones)).toBeUndefined();
   });
 });
 
@@ -171,6 +284,32 @@ describe('session replay library bounds', () => {
 });
 
 describe('persistent mastery presentation', () => {
+  it('shows a returning field order only for the exact run-variant record track', () => {
+    const fresh = mapRecord({ parBeaten: false, masteryProof: undefined });
+    const carry = mapRecord({ runVariant: 'campaign-carry' });
+    const progress = campaignProgress({
+      'E1M1:field-adjuster:fresh-start': fresh,
+      'E1M1:field-adjuster:campaign-carry': carry,
+    });
+
+    const freshOrder = entryFieldOrderPresentation('E1M1', progress, 'field-adjuster', 'fresh-start');
+    expect(freshOrder).toMatchObject({
+      trackLabel: 'Fresh Start',
+      complete: false,
+    });
+    expect(freshOrder?.target).toMatch(/^Priority: Beat par /);
+    expect(freshOrder?.summary).toContain('Fresh Start field order.');
+    expect(freshOrder?.summary).toContain('Threats 100%');
+
+    const carryOrder = entryFieldOrderPresentation('E1M1', progress, 'field-adjuster', 'campaign-carry');
+    expect(carryOrder).toMatchObject({
+      trackLabel: 'Campaign Carry',
+      target: 'Priority: Beat PB 2:00 or 9000 pts',
+      complete: true,
+    });
+    expect(entryFieldOrderPresentation('E1M1', progress, 'desk-adjuster', 'fresh-start')).toBeUndefined();
+  });
+
   it('keeps a mastered record complete when the current run is imperfect', () => {
     const presentation = masteryPresentation('E1M1', mapRecord(), mapPerformance());
 

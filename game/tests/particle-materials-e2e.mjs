@@ -47,7 +47,53 @@ await page.evaluate(() => {
 await page.waitForTimeout(160);
 const completionParticles = await page.locator('.completion-particle').count();
 assert(completionParticles > 0 && completionParticles <= 10, `Map completion feedback was missing or excessive: ${completionParticles}`);
+const completionGeometry = async () => page.locator('#intermission').evaluate((screen) => {
+  const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  const particles = [...screen.querySelectorAll('.completion-particle')].map((element) => element.getBoundingClientRect());
+  const protectedCopy = ['#intermission-grade', '#tally', '#result-bests', '#intermission-mastery',
+    '#intermission-milestone-awards', '#intermission-milestones', '#episode-mastery', '#episode-progress', '.intermission-actions']
+    .map((selector) => screen.querySelector(selector))
+    .filter((element) => element && !element.hidden)
+    .map((element) => ({ selector: element.id ? `#${element.id}` : '.intermission-actions', rect: element.getBoundingClientRect() }));
+  const collisions = [];
+  particles.forEach((particle, index) => protectedCopy.forEach(({ selector, rect }) => {
+    if (overlaps(particle, rect)) collisions.push(`${index}:${selector}`);
+  }));
+  const layerElement = screen.querySelector('#completion-burst');
+  const layer = layerElement.getBoundingClientRect();
+  return {
+    collisions,
+    clipped: getComputedStyle(layerElement).overflow === 'hidden',
+    layerBottom: layer.bottom,
+    tallyTop: screen.querySelector('#tally').getBoundingClientRect().top,
+  };
+});
+for (let sample = 0; sample < 4; sample += 1) {
+  const geometry = await completionGeometry();
+  assert(geometry.collisions.length === 0, `Completion burst obscured result copy: ${geometry.collisions.join(', ')}`);
+  assert(geometry.clipped, 'Completion burst layer does not clip decorative overflow');
+  assert(geometry.layerBottom <= geometry.tallyTop, `Completion layer reaches the tally: ${JSON.stringify(geometry)}`);
+  await page.waitForTimeout(90);
+}
 await page.screenshot({ path: fileURLToPath(new URL('map-completion.png', output)) });
+
+await page.evaluate(() => {
+  const reducedMotion = document.querySelector('#reduced-motion');
+  reducedMotion.checked = true;
+  reducedMotion.dispatchEvent(new Event('change', { bubbles: true }));
+  window.__redLedger.resume();
+  window.__redLedger.loadMap('E1M1');
+  window.__redLedger.defeatAll();
+  window.__redLedger.teleportToExit();
+  window.__redLedger.use();
+});
+await page.waitForTimeout(40);
+assert(await page.locator('.completion-particle').count() === 1, 'Reduced Motion did not constrain completion feedback to one static mark');
+assert(await page.locator('.completion-particle').evaluate((element) => element.getAnimations().length) === 0,
+  'Reduced Motion completion feedback still animates');
+assert((await completionGeometry()).collisions.length === 0, 'Reduced Motion completion mark obscures result copy');
+await page.waitForTimeout(180);
+assert(await page.locator('.completion-particle').count() === 0, 'Reduced Motion completion mark did not clear promptly');
 
 assert((await state()).combatEffects.particles.capacity === 192, 'Particle pool capacity changed');
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);

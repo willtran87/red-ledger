@@ -11,5 +11,18 @@ export default defineConfig({
     target: 'es2022',
     assetsInlineLimit: 0,
     copyPublicDir: true,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'three',
+              test: /node_modules[\\/]three[\\/]/,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
   },
 });

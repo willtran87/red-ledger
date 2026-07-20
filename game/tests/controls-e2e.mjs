@@ -4,7 +4,7 @@ import fs from 'node:fs';
 const url = process.env.GAME_URL ?? 'http://127.0.0.1:5400';
 fs.mkdirSync('output/controls', { recursive: true });
 const browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader'] });
-const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('pageerror', (error) => errors.push(String(error)));
 page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
@@ -14,6 +14,11 @@ await page.goto(url, { waitUntil: 'networkidle' });
 await page.click('#options-button');
 
 assert(await page.locator('#vertical-auto-aim').isChecked(), 'Vertical auto-aim did not default on');
+assert(await page.locator('#controller-vibration').isChecked(), 'Controller vibration did not default on');
+assert((await page.locator('#audio-profile-detail').textContent())?.includes('Balanced stereo direction'),
+  'Default audio profile did not explain its listening behavior');
+assert((await page.locator('#audio-profile').getAttribute('aria-describedby')) === 'audio-profile-detail',
+  'Audio profile selection is not associated with its explanation');
 await page.locator('#vertical-auto-aim').uncheck();
 await page.locator('#classic-input').check();
 
@@ -33,7 +38,56 @@ await page.locator('#touch-sensitivity').fill('0.7');
 await page.locator('#controller-deadzone').fill('0.22');
 await page.locator('#invert-y').check();
 await page.locator('#sound-captions').check();
+await page.locator('#high-contrast').check();
+await page.locator('#master-volume').fill('0.35');
+await page.locator('#music-volume').fill('0.25');
+await page.locator('#sfx-volume').fill('0.45');
+await page.selectOption('#audio-profile', 'night');
 await page.waitForTimeout(520);
+assert(await page.locator('#audio-profile-detail').getAttribute('data-profile') === 'night'
+  && (await page.locator('#audio-profile-detail').textContent())?.includes('Compressed dynamics'),
+'Night profile did not expose its low-volume listening tradeoff');
+await page.evaluate(() => {
+  window.__audioPreviewCaptions = [];
+  window.addEventListener('audio-caption', (event) => {
+    if (['world/hazard-armed', 'ui/menu-accept', 'attack/denial-beam/windup'].includes(event.detail?.cue)) {
+      window.__audioPreviewCaptions.push(event.detail);
+    }
+  });
+});
+const authoredBeforePreview = JSON.parse(await page.evaluate(() => window.render_game_to_text())).audio.authoredPlays;
+await page.click('#audio-preview');
+await page.waitForFunction(() => document.querySelector('#audio-preview-status')?.dataset.result === 'played');
+await page.waitForTimeout(520);
+const audioPreview = await page.evaluate(() => ({
+  captions: window.__audioPreviewCaptions,
+  audio: JSON.parse(window.render_game_to_text()).audio,
+  status: document.querySelector('#audio-preview-status')?.textContent ?? '',
+  role: document.querySelector('#audio-preview-status')?.getAttribute('role'),
+  busy: document.querySelector('#audio-preview')?.getAttribute('aria-busy'),
+}));
+assert(audioPreview.status === 'Night preview: hazard left, confirmation center, critical attack right.',
+  `Audio preview did not describe its deliberate sequence: ${audioPreview.status}`);
+assert(audioPreview.role === 'status' && audioPreview.busy === null, 'Audio preview did not expose stable polite completion feedback');
+assert(audioPreview.audio.authoredPlays >= authoredBeforePreview + 3 && audioPreview.audio.profile === 'night',
+  'Audio preview did not play all three authored cues through the selected Night profile');
+assert(JSON.stringify(audioPreview.captions.map(({ cue, direction, priority }) => ({ cue, direction, priority }))) === JSON.stringify([
+  { cue: 'world/hazard-armed', direction: 'left', priority: 'important' },
+  { cue: 'ui/menu-accept', direction: 'center', priority: 'routine' },
+  { cue: 'attack/denial-beam/windup', direction: 'right', priority: 'critical' },
+]), `Audio preview captions lost semantic direction or priority: ${JSON.stringify(audioPreview.captions)}`);
+await page.screenshot({ path: 'output/controls/audio-preview-night.png' });
+
+await page.locator('#mute-audio').check();
+const authoredBeforeMutedPreview = JSON.parse(await page.evaluate(() => window.render_game_to_text())).audio.authoredPlays;
+await page.click('#audio-preview');
+await page.waitForFunction(() => document.querySelector('#audio-preview-status')?.dataset.result === 'muted');
+await page.waitForTimeout(360);
+assert((await page.locator('#audio-preview-status').textContent()) === 'Preview is silent because Mute audio is on.',
+  'Muted audio preview did not explain why no sound played');
+assert(JSON.parse(await page.evaluate(() => window.render_game_to_text())).audio.authoredPlays === authoredBeforeMutedPreview,
+  'Muted audio preview emitted a misleading authored cue');
+await page.locator('#mute-audio').uncheck();
 await page.selectOption('#text-scale', 'largest');
 const scaledText = await page.locator('#options-menu label').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
 assert(scaledText >= 19.5, 'Largest text setting did not increase inherited UI text');
@@ -96,6 +150,36 @@ if (await page.locator('#ready-overlay').isVisible()) {
   await page.click('#enter-file');
 }
 await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
+const hapticFeedback = await page.evaluate(async () => {
+  const calls = [];
+  const buttons = Array.from({ length: 16 }, () => ({ pressed: false, touched: false, value: 0 }));
+  const actuator = {
+    playEffect: async (type, parameters) => { calls.push({ type, parameters }); return 'complete'; },
+    reset: async () => { calls.push({ type: 'reset' }); return 'complete'; },
+  };
+  const gamepad = { connected: true, buttons, axes: [0, 0, 0, 0], vibrationActuator: actuator };
+  Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [gamepad] });
+  window.dispatchEvent(new CustomEvent('input-device-change', { detail: { source: 'gamepad' } }));
+  window.dispatchEvent(new CustomEvent('weapon-fire', {
+    detail: { weapon: 'staple-driver', duration: .2, recoil: .018 },
+  }));
+  window.dispatchEvent(new CustomEvent('player-hurt', { detail: { amount: 12, direction: 'center' } }));
+  await Promise.resolve();
+  const enabledCalls = calls.filter((call) => call.type === 'dual-rumble');
+  const checkbox = document.querySelector('#controller-vibration');
+  checkbox.checked = false;
+  checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+  const afterDisable = calls.length;
+  window.dispatchEvent(new CustomEvent('player-hurt', { detail: { amount: 12, direction: 'center' } }));
+  await Promise.resolve();
+  return { enabledCalls, afterDisable, finalCalls: calls.length };
+});
+assert(hapticFeedback.enabledCalls.length === 2, `Controller cues did not reach the active actuator: ${JSON.stringify(hapticFeedback)}`);
+assert(hapticFeedback.enabledCalls[0].parameters.weakMagnitude > hapticFeedback.enabledCalls[0].parameters.strongMagnitude,
+  'Light weapon haptic did not favor the crisp weak motor');
+assert(hapticFeedback.enabledCalls[1].parameters.strongMagnitude > hapticFeedback.enabledCalls[0].parameters.strongMagnitude,
+  'Damage haptic did not override weapon feedback with a stronger cue');
+assert(hapticFeedback.finalCalls === hapticFeedback.afterDisable, 'Disabled controller vibration still emitted gameplay feedback');
 await page.evaluate(() => {
   for (let index = 0; index < 12; index += 1) window.advanceTime(250);
 });
@@ -221,9 +305,91 @@ assert(await page.locator('#touch-sensitivity').inputValue() === '0.7', 'Touch s
 assert(await page.locator('#controller-deadzone').inputValue() === '0.22', 'Controller deadzone did not persist');
 assert(await page.locator('#invert-y').isChecked(), 'Y inversion did not persist');
 assert(!(await page.locator('#vertical-auto-aim').isChecked()), 'Vertical auto-aim preference did not persist');
+assert(!(await page.locator('#controller-vibration').isChecked()), 'Controller vibration opt-out did not persist');
 assert(await page.locator('#classic-input').isChecked(), '1993 input preference did not persist');
 assert(await page.locator('#text-scale').inputValue() === 'largest', 'Text size did not persist');
 assert(await page.locator('#sound-captions').isChecked(), 'Sound caption preference did not persist');
+assert(await page.locator('#high-contrast').isChecked(), 'High-contrast attack preference did not persist');
+assert(await page.locator('#master-volume').inputValue() === '0.35', 'Master volume did not persist');
+assert(await page.locator('#music-volume').inputValue() === '0.25', 'Music volume did not persist');
+assert(await page.locator('#sfx-volume').inputValue() === '0.45', 'Effects volume did not persist');
+assert(await page.locator('#audio-profile').inputValue() === 'night', 'Audio playback profile did not persist');
+
+await page.click('#restore-options');
+assert(await page.locator('#confirm-dialog').isVisible(), 'Restore option defaults did not request confirmation');
+assert((await page.locator('#confirm-copy').textContent())?.includes('Custom control bindings'),
+  'Restore confirmation did not explain that custom bindings are retained');
+assert((await page.locator('#confirm-copy').textContent())?.includes('milestone seals'),
+  'Restore confirmation did not explain that earned cosmetics are retained');
+assert(await page.evaluate(() => document.activeElement?.id === 'confirm-cancel'),
+  'Restore confirmation did not begin on its safe Cancel action');
+await page.click('#confirm-cancel');
+assert(await page.locator('#controller-sensitivity').inputValue() === '2.3',
+  'Canceling option recovery changed a customized setting');
+assert(await page.evaluate(() => document.activeElement?.id === 'restore-options'),
+  'Canceling option recovery did not restore focus to its trigger');
+
+await page.click('#restore-options');
+await page.click('#confirm-accept');
+await page.waitForFunction(() => document.querySelector('#options-feedback')?.textContent?.includes('Recommended defaults restored'));
+const restoredOptions = await page.evaluate(() => ({
+  settings: JSON.parse(localStorage.getItem('red-ledger-settings-v1') ?? '{}'),
+  audio: JSON.parse(localStorage.getItem('red-ledger-audio-v1') ?? '{}'),
+  feedback: document.querySelector('#options-feedback')?.textContent ?? '',
+  feedbackRole: document.querySelector('#options-feedback')?.getAttribute('role'),
+  focused: document.activeElement?.id,
+  geometry: (() => {
+    const screen = document.querySelector('#options-menu').getBoundingClientRect();
+    const feedback = document.querySelector('#options-feedback').getBoundingClientRect();
+    const actions = document.querySelector('.options-actions').getBoundingClientRect();
+    return {
+      screen: { top: screen.top, bottom: screen.bottom },
+      feedback: { top: feedback.top, bottom: feedback.bottom },
+      actions: { top: actions.top, bottom: actions.bottom },
+    };
+  })(),
+}));
+assert(await page.locator('#sensitivity').inputValue() === '1.2', 'Option recovery did not restore mouse sensitivity');
+assert(await page.locator('#controller-sensitivity').inputValue() === '1.2', 'Option recovery did not restore controller sensitivity');
+assert(await page.locator('#touch-sensitivity').inputValue() === '1.2', 'Option recovery did not restore touch sensitivity');
+assert(await page.locator('#controller-deadzone').inputValue() === '0.18', 'Option recovery did not restore controller deadzone');
+assert(!(await page.locator('#invert-y').isChecked()), 'Option recovery did not restore normal look direction');
+assert(await page.locator('#vertical-auto-aim').isChecked(), 'Option recovery did not restore recommended vertical auto-aim');
+assert(await page.locator('#controller-vibration').isChecked(), 'Option recovery did not restore controller vibration');
+assert(!(await page.locator('#classic-input').isChecked()), 'Option recovery did not disable the 1993 input preset');
+assert(await page.locator('#text-scale').inputValue() === 'standard', 'Option recovery did not restore standard text size');
+assert(await page.locator('#render-scale').inputValue() === '1', 'Option recovery did not restore the baseline render scale');
+assert(await page.locator('#hud-mode').inputValue() === 'classic', 'Option recovery did not restore the classic HUD');
+assert(await page.locator('#screen-shake').isChecked() && !(await page.locator('#reduced-motion').isChecked()),
+  'Option recovery did not restore the normal browser motion baseline');
+assert(!(await page.locator('#high-contrast').isChecked()) && !(await page.locator('#reduced-effects').isChecked())
+  && await page.locator('#flash-effects').isChecked(), 'Option recovery did not restore visual feedback defaults');
+assert(await page.locator('#master-volume').inputValue() === '0.8'
+  && await page.locator('#music-volume').inputValue() === '0.65'
+  && await page.locator('#sfx-volume').inputValue() === '0.8', 'Option recovery did not restore audio levels');
+assert(await page.locator('#audio-profile').inputValue() === 'speakers'
+  && !(await page.locator('#mute-audio').isChecked())
+  && !(await page.locator('#sound-captions').isChecked()), 'Option recovery did not restore audio mode defaults');
+assert(await page.locator('#audio-profile-detail').getAttribute('data-profile') === 'speakers'
+  && (await page.locator('#audio-profile-detail').textContent())?.includes('Balanced stereo direction'),
+'Option recovery did not restore the matching audio profile guidance');
+assert(restoredOptions.feedback.includes('Custom bindings and milestone seals were kept.'),
+  'Option recovery feedback did not state what player data was preserved');
+assert(restoredOptions.feedbackRole === 'status' && restoredOptions.focused === 'restore-options',
+  'Option recovery lacked polite status feedback or stable post-confirm focus');
+assert(restoredOptions.geometry.feedback.top >= restoredOptions.geometry.screen.top
+  && restoredOptions.geometry.actions.bottom <= restoredOptions.geometry.screen.bottom + 1
+  && restoredOptions.geometry.feedback.bottom <= restoredOptions.geometry.actions.top,
+'Option recovery feedback shifted the focused action row outside the 720px viewport');
+assert(restoredOptions.settings.controllerSensitivity === 1.2
+  && restoredOptions.settings.uiTextScale === 'standard'
+  && restoredOptions.settings['vertical-auto-aim'] === true,
+'Recommended option defaults were not persisted to the interface settings record');
+assert(restoredOptions.audio.master === .8 && restoredOptions.audio.music === .65
+  && restoredOptions.audio.sfx === .8 && restoredOptions.audio.profile === 'speakers' && restoredOptions.audio.muted === false,
+'Recommended audio defaults were not persisted to the audio settings record');
+await page.screenshot({ path: 'output/controls/options-restored.png' });
+
 await page.click('#controls-button');
 const restoredRow = page.locator('.control-row', { has: page.getByText('Automap', { exact: true }) }).first();
 assert(await restoredRow.count() === 1, 'Remapped binding did not persist across reload');
@@ -379,6 +545,26 @@ await page.waitForTimeout(100);
 recoveryAnnouncements = await page.evaluate(() => window.__announcements
   .filter((message) => message === 'Controller reconnected. Controller input is available.'));
 assert(recoveryAnnouncements.length === 2, 'A duplicate reconnect event announced recovery without a disconnect warning');
+
+const reducedContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+await reducedContext.addInitScript(() => localStorage.setItem('red-ledger-settings-v1', JSON.stringify({
+  'reduced-motion': false,
+  'screen-shake': true,
+})));
+const reducedPage = await reducedContext.newPage();
+const reducedErrors = [];
+reducedPage.on('pageerror', (error) => reducedErrors.push(String(error)));
+reducedPage.on('console', (message) => { if (message.type() === 'error') reducedErrors.push(message.text()); });
+await reducedPage.goto(url, { waitUntil: 'networkidle' });
+await reducedPage.click('#options-button');
+assert(!(await reducedPage.locator('#reduced-motion').isChecked()) && await reducedPage.locator('#screen-shake').isChecked(),
+  'Explicit motion preferences were not loaded before recovery');
+await reducedPage.click('#restore-options');
+await reducedPage.click('#confirm-accept');
+assert(await reducedPage.locator('#reduced-motion').isChecked() && !(await reducedPage.locator('#screen-shake').isChecked()),
+  'Option recovery ignored the operating-system reduced-motion preference');
+assert(reducedErrors.length === 0, `Reduced-motion option recovery errors: ${reducedErrors.join(' | ')}`);
+await reducedContext.close();
 
 assert(errors.length === 0, `Console errors: ${errors.join(' | ')}`);
 console.log('Controls/remapping E2E passed');

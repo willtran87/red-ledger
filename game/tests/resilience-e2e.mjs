@@ -264,6 +264,13 @@ const deniedStorageScenario = async () => {
     await startNewGame(page);
     await page.evaluate(() => window.__redLedger.pause());
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'paused');
+    const pausedFallback = await state(page);
+    assert(pausedFallback.pause?.recoveryState === 'session-only',
+      `Denied storage did not identify its session-only checkpoint: ${JSON.stringify(pausedFallback.pause)}`);
+    assert(pausedFallback.pause.recovery.includes('Session-only checkpoint'),
+      `Denied storage pause dossier obscured checkpoint durability: ${pausedFallback.pause.recovery}`);
+    assert(await page.locator('#pause-review').getAttribute('data-recovery') === 'session-only',
+      'Denied storage pause dossier lacks its visible session-only state');
     await page.click('#save-game');
     await page.locator('#save-slot-list .slot-action').first().click();
     assert(await page.locator('#pause-menu').isVisible(), 'In-session manual save did not return to pause');
@@ -276,6 +283,25 @@ const deniedStorageScenario = async () => {
     await savedSlot.locator('.slot-action').click();
     const restored = await state(page);
     assert(restored.mode === 'paused' && restored.map.id === 'E1M1', 'Fallback manual save did not restore in-session');
+    assert(restored.exitReview?.recoveryState === 'session-only',
+      `Denied storage text state hid its session-only exit review: ${JSON.stringify(restored.exitReview)}`);
+    await page.click('#quit-menu');
+    const exitFallback = await page.locator('#confirm-review').evaluate((review) => ({
+      recovery: review.dataset.recovery,
+      consequence: review.dataset.consequence,
+      returnPoint: review.querySelector('#confirm-return-point').textContent,
+      durability: review.querySelector('#confirm-durability').textContent,
+      label: review.getAttribute('aria-label'),
+    }));
+    assert(exitFallback.recovery === 'session-only', `Denied storage exit review hid its tab-only return point: ${JSON.stringify(exitFallback)}`);
+    assert(exitFallback.returnPoint.includes('Manual file') && exitFallback.returnPoint.includes('E1M1'),
+      `Denied storage exit review did not name the exact Continue file: ${exitFallback.returnPoint}`);
+    assert(exitFallback.durability.includes('only while this tab remains open'),
+      `Denied storage exit review misstated durability: ${exitFallback.durability}`);
+    assert(exitFallback.label.includes('Return point') && exitFallback.label.includes('E1M1'),
+      'Denied storage exit review lacks a complete accessible summary');
+    await page.click('#confirm-cancel');
+    assert(await page.locator('#pause-menu').isVisible(), 'Canceling the session-only exit review did not return to pause');
 
     await page.click('#resume-game');
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');

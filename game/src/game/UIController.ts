@@ -1,17 +1,31 @@
-import { CAMPAIGN, type CampaignMap, type MapId } from '../data';
+import { CAMPAIGN, type CampaignMap, type Credential, type MapId } from '../data';
 import { INPUT_ACTIONS, bindingLabel, type CaptureResult, type InputAction } from './InputBindings';
 import {
+  DEFAULT_INPUT_PREFERENCES,
   normalizeInputPreferences,
   type InputActionEvent,
   type InputPreferences,
   type MenuNavigationEvent,
 } from './InputSystem';
 import { WEAPONS, type GameDifficulty } from './definitions';
-import { GameEngine, type GameSnapshot } from './GameEngine';
+import { ControllerHaptics } from './ControllerHaptics';
+import {
+  GameEngine,
+  combatMomentumPresentation,
+  type CombatMomentumEventDetail,
+  type ContinueDetails,
+  type DeathReview,
+  type ExitReview,
+  type GameSnapshot,
+  type MapResult,
+  type PauseDetails,
+} from './GameEngine';
 import { ASSET_DEGRADED_EVENT, runtimeUrl } from './AssetCatalog';
 import {
   AUDIO_CAPTION_EVENT,
+  DEFAULT_AUDIO_SETTINGS,
   type AudioCaptionDetail,
+  type AudioSettings,
   type AudioPlaybackProfile,
 } from './AudioSystem';
 import {
@@ -32,10 +46,15 @@ import {
   milestoneHighlights,
   newlyEarnedMilestones,
   type MilestoneFilter,
+  type MilestoneId,
   type MilestoneStatus,
 } from './Milestones';
 
 type PortraitState = 'neutral' | 'pain-center' | 'pain-left' | 'pain-right' | 'glance-left' | 'glance-right' | 'weapon-acquired' | 'overcharge' | 'invulnerable' | 'dead';
+export type EntryInputDevice = 'desktop' | 'gamepad' | 'touch';
+
+export const shouldPreviewDifficultyOnPointer = (pointerType: string, activeDevice: EntryInputDevice): boolean =>
+  pointerType !== 'touch' && activeDevice === 'desktop';
 
 interface ReplayLibraryEntry {
   id: string;
@@ -96,6 +115,67 @@ export const normalizeInterfacePreferences = (value: unknown): InterfacePreferen
   };
 };
 
+export interface RecommendedOptionSettings {
+  input: InputPreferences;
+  presentation: InterfacePreferences;
+  renderScale: 1;
+  hudMode: 'classic';
+  classicInput: false;
+  verticalAutoAim: true;
+  controllerVibration: true;
+  screenShake: boolean;
+  reducedMotion: boolean;
+  highContrast: false;
+  reducedEffects: false;
+  flashEffects: true;
+  soundCaptions: false;
+  audio: AudioSettings;
+}
+
+export const recommendedOptionSettings = (systemPrefersReducedMotion: boolean): RecommendedOptionSettings => ({
+  input: { ...DEFAULT_INPUT_PREFERENCES },
+  presentation: { ...DEFAULT_INTERFACE_PREFERENCES },
+  renderScale: 1,
+  hudMode: 'classic',
+  classicInput: false,
+  verticalAutoAim: true,
+  controllerVibration: true,
+  screenShake: !systemPrefersReducedMotion,
+  reducedMotion: systemPrefersReducedMotion,
+  highContrast: false,
+  reducedEffects: false,
+  flashEffects: true,
+  soundCaptions: false,
+  audio: { ...DEFAULT_AUDIO_SETTINGS },
+});
+
+export interface AudioProfilePresentation {
+  label: string;
+  detail: string;
+}
+
+const AUDIO_PROFILE_PRESENTATIONS: Readonly<Record<AudioPlaybackProfile, AudioProfilePresentation>> = Object.freeze({
+  speakers: {
+    label: 'Speakers',
+    detail: 'Balanced stereo direction with full music and effects range.',
+  },
+  headphones: {
+    label: 'Headphones',
+    detail: 'Full stereo direction with slightly restrained music and effects for close listening.',
+  },
+  night: {
+    label: 'Night',
+    detail: 'Compressed dynamics and quieter music help critical cues stay readable at low volume.',
+  },
+  mono: {
+    label: 'Mono',
+    detail: 'Centers directional cues in one compatible channel while retaining semantic captions.',
+  },
+});
+
+export const audioProfilePresentation = (profile: AudioPlaybackProfile): AudioProfilePresentation =>
+  AUDIO_PROFILE_PRESENTATIONS[profile];
+
 export const DIFFICULTY_OPTIONS: ReadonlyArray<{ id: GameDifficulty; label: string; detail: string }> = [
   { id: 'orientation', label: 'Orientation', detail: 'Story-focused: 50% more ammo from pickups, fewer and slower threats, and forgiving damage.' },
   { id: 'desk-adjuster', label: 'Desk Adjuster', detail: 'Measured: 25% more ammo from pickups, fewer threats, and reduced threat speed and damage.' },
@@ -110,6 +190,16 @@ const CONTROLLER_DISCONNECTED_WARNING = 'Controller disconnected. Reconnect it o
 const CONTROLLER_RECONNECTED_ANNOUNCEMENT = 'Controller reconnected. Controller input is available.';
 
 type ActiveEffectKey = keyof GameSnapshot['player']['powerups'];
+
+export interface AnnouncementCandidate {
+  readonly message: string;
+  readonly priority: number;
+}
+
+export const preferredAnnouncement = (
+  current: AnnouncementCandidate | undefined,
+  next: AnnouncementCandidate,
+): AnnouncementCandidate => !current || next.priority >= current.priority ? next : current;
 
 export interface ActiveEffectPresentation {
   readonly key: ActiveEffectKey;
@@ -204,6 +294,39 @@ export const runVariantUiLabel = (runVariant: RunVariant): string => ({
   'campaign-carry': 'Campaign Carry',
   'legacy-unclassified': 'Legacy Run (retained)',
 })[runVariant];
+
+export interface EntryFieldOrderPresentation {
+  readonly trackLabel: string;
+  readonly target: string;
+  readonly comparison: string;
+  readonly metrics: readonly string[];
+  readonly complete: boolean;
+  readonly summary: string;
+}
+
+/** A returning briefing only shows goals backed by the exact record track being played. */
+export const entryFieldOrderPresentation = (
+  mapId: MapId,
+  progress: CampaignUnlocks,
+  difficulty: GameDifficulty,
+  runVariant: RunVariant,
+): EntryFieldOrderPresentation | undefined => {
+  const record = progress.records[mapRecordKey(mapId, difficulty, runVariant)];
+  if (!record) return undefined;
+  const mastery = masteryPresentation(mapId, record);
+  const trackLabel = runVariantUiLabel(runVariant);
+  const target = mastery.complete
+    ? `Priority: Beat PB ${formatTime(record.bestTime)} or ${record.highScore} pts`
+    : mastery.target.replace('Retry goal: ', 'Priority: ');
+  return {
+    trackLabel,
+    target,
+    comparison: mastery.comparison,
+    metrics: mastery.metrics,
+    complete: mastery.complete,
+    summary: `${trackLabel} field order. ${target}. Record: ${mastery.comparison}. ${mastery.metrics.join('. ')}.`,
+  };
+};
 
 export interface LevelSelectRecordTracks {
   readonly freshStart?: MapRecord;
@@ -379,6 +502,13 @@ export const milestoneAwardAnnouncement = (awards: readonly MilestoneStatus[]): 
   .map((milestone) => `Milestone earned: ${milestone.name}. Cosmetic seal: ${milestone.reward.label}.`)
   .join(' ');
 
+export const resolveEquippedMilestoneSeal = (
+  value: unknown,
+  milestones: readonly MilestoneStatus[],
+): MilestoneId | undefined => typeof value === 'string'
+  ? milestones.find((milestone) => milestone.id === value && milestone.earned)?.id
+  : undefined;
+
 const updateText = (element: Element, value: string): void => {
   if (element.textContent !== value) element.textContent = value;
 };
@@ -399,6 +529,24 @@ const $ = <T extends Element>(selector: string): T => {
 
 export const automapPanDelta = (pixels: number, renderedCellSize: number): number =>
   Number.isFinite(renderedCellSize) && renderedCellSize > 0 ? pixels / renderedCellSize : 0;
+
+export type CredentialMapCueShape = 'square' | 'circle' | 'diamond';
+
+export interface CredentialMapCue {
+  readonly credential: Credential;
+  readonly glyph: 'R' | 'Y' | 'C';
+  readonly shape: CredentialMapCueShape;
+  readonly color: string;
+}
+
+const CREDENTIAL_MAP_CUES: Readonly<Record<Credential, CredentialMapCue>> = {
+  red: { credential: 'red', glyph: 'R', shape: 'square', color: '#ff5964' },
+  yellow: { credential: 'yellow', glyph: 'Y', shape: 'circle', color: '#ffe17a' },
+  cyan: { credential: 'cyan', glyph: 'C', shape: 'diamond', color: '#53d7df' },
+};
+
+/** Critical route locks always carry color, shape, and text redundancy. */
+export const credentialMapCue = (credential: Credential): CredentialMapCue => CREDENTIAL_MAP_CUES[credential];
 
 export const boundedReplayEntries = <T extends { id: string; createdAt: number }>(
   entries: readonly T[],
@@ -460,10 +608,11 @@ export class UIController {
   private levelSelectReturn: 'menu' | 'intermission' = 'menu';
   private milestoneReturn: 'menu' | 'level-select' | 'intermission' = 'menu';
   private milestoneFilter: MilestoneFilter = 'all';
+  private equippedMilestoneSeal?: MilestoneId;
   private readonly knownEarnedMilestoneIds = new Set<string>();
   private replayReturn: 'menu' | 'pause-menu' = 'menu';
   private sessionReplays: ReplayLibraryEntry[] = [];
-  private entryDevice: 'desktop' | 'gamepad' | 'touch' = 'desktop';
+  private entryDevice: EntryInputDevice = 'desktop';
   private entryContinuation?: () => void;
   private readonly runtimeWarnings = new Set<string>();
   private readonly screenFocusHistory = new Map<string, HTMLElement>();
@@ -477,6 +626,9 @@ export class UIController {
   private audioReadyRequested = false;
   private entryPreparationToken = 0;
   private soundCaptionTimer?: number;
+  private announcementFrame?: number;
+  private pendingAnnouncement?: AnnouncementCandidate;
+  private readonly controllerHaptics = new ControllerHaptics();
 
   constructor(readonly game: GameEngine) {
     window.addEventListener(PERSISTENCE_DEGRADED_EVENT, () => this.showRuntimeWarning(
@@ -499,21 +651,35 @@ export class UIController {
     this.game.onChange = (snapshot) => this.update(snapshot);
     this.game.onIntermission = () => this.showIntermission();
     this.updateContinue();
-    window.addEventListener('weapon-fire', (event) => this.flashWeapon((event as CustomEvent).detail));
+    window.addEventListener('weapon-fire', (event) => {
+      const detail = (event as CustomEvent<{ weapon: keyof typeof WEAPONS; duration: number; recoil: number }>).detail;
+      this.flashWeapon(detail);
+      this.controllerHaptics.cue(detail.recoil >= .04 ? 'weapon-heavy' : 'weapon-light');
+    });
     window.addEventListener('view-recoil', (event) => this.viewRecoil((event as CustomEvent<{ amount: number }>).detail));
     window.addEventListener('weapon-impact', (event) => this.impactFeedback((event as CustomEvent<{ kind: 'wall' | 'actor'; killed?: boolean }>).detail));
-    window.addEventListener('weapon-dry', (event) => this.dryWeapon((event as CustomEvent<{ weapon: keyof typeof WEAPONS }>).detail));
+    window.addEventListener('weapon-dry', (event) => {
+      this.dryWeapon((event as CustomEvent<{ weapon: keyof typeof WEAPONS }>).detail);
+      this.controllerHaptics.cue('failure');
+    });
     window.addEventListener('player-portrait', (event) => this.specialPortrait((event as CustomEvent<{ state: PortraitState }>).detail.state));
     window.addEventListener('weapon-switch', (event) => this.animateWeaponSwitch((event as CustomEvent<{
       state: 'lowering' | 'raising' | 'ready'; duration: number;
     }>).detail));
-    window.addEventListener('player-hurt', (event) => this.hurtFlash((event as CustomEvent<{ direction?: 'left' | 'right' | 'center' }>).detail));
-    window.addEventListener('use-failed', (event) => this.useFailure((event as CustomEvent<{
-      reason: 'credential' | 'encounter' | 'nothing';
-      direction: 'left' | 'right' | 'center';
-      icon: string;
-      credential?: string;
-    }>).detail));
+    window.addEventListener('player-hurt', (event) => {
+      this.hurtFlash((event as CustomEvent<{ direction?: 'left' | 'right' | 'center' }>).detail);
+      this.controllerHaptics.cue('damage');
+    });
+    window.addEventListener('use-failed', (event) => {
+      this.useFailure((event as CustomEvent<{
+        reason: 'credential' | 'encounter' | 'nothing';
+        direction: 'left' | 'right' | 'center';
+        icon: string;
+        credential?: string;
+      }>).detail);
+      this.controllerHaptics.cue('failure');
+    });
+    window.addEventListener('pickup-collected', () => this.controllerHaptics.cue('pickup'));
     window.addEventListener('demo-recording-complete', (event) => {
       const detail = (event as CustomEvent<{ demo: unknown; reason: string }>).detail;
       const result = this.storeReplay(detail.demo);
@@ -574,7 +740,9 @@ export class UIController {
       description.textContent = copy;
       button.setAttribute('aria-describedby', description.id);
       button.addEventListener('focus', () => describe(copy));
-      button.addEventListener('mouseenter', () => describe(copy));
+      button.addEventListener('pointerenter', (event) => {
+        if (shouldPreviewDifficultyOnPointer(event.pointerType, this.entryDevice)) describe(copy);
+      });
       button.addEventListener('pointerdown', (event) => { activationPointer = event.pointerType; });
       button.addEventListener('keydown', () => { activationPointer = 'keyboard'; });
       button.addEventListener('click', () => {
@@ -618,6 +786,7 @@ export class UIController {
     document.addEventListener('click', (event) => {
       const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('button') : null;
       if (!button || button.disabled || !button.closest('.screen, dialog, #ready-overlay')) return;
+      if (button.id === 'audio-preview') return;
       const isBack = button.matches('[data-back], #confirm-cancel, #controls-back, .slot-back, #replay-back, #replay-exit');
       this.game.audio.uiCue(isBack ? 'menu-back' : 'menu-accept');
     }, { capture: true });
@@ -638,18 +807,35 @@ export class UIController {
         this.announce(message);
       }
     });
-    $('#options-button').addEventListener('click', () => { this.optionsReturn = 'menu'; this.showScreen('options-menu'); });
-    $('#pause-options').addEventListener('click', () => { this.optionsReturn = 'pause-menu'; this.showScreen('options-menu'); });
+    $('#options-button').addEventListener('click', () => {
+      $('#options-feedback').textContent = '';
+      this.optionsReturn = 'menu';
+      this.showScreen('options-menu');
+    });
+    $('#pause-options').addEventListener('click', () => {
+      $('#options-feedback').textContent = '';
+      this.optionsReturn = 'pause-menu';
+      this.showScreen('options-menu');
+    });
     $('#credits-button').addEventListener('click', () => this.showScreen('credits'));
     $('#quit-game').addEventListener('click', () => this.confirm(
       'Quit game?', 'This browser session will end. Unsaved progress will be lost.', 'Quit', () => this.endSession(),
     ));
     $('#session-return').addEventListener('click', () => location.reload());
     $('#controls-button').addEventListener('click', () => {
+      this.game.audio.stopPreviewMix();
+      this.clearAudioPreviewStatus();
       $('#controls-feedback').textContent = '';
       this.buildControls();
       this.showScreen('controls-menu');
     });
+    $('#audio-preview').addEventListener('click', () => void this.previewAudioMix());
+    $('#restore-options').addEventListener('click', () => this.confirm(
+      'Restore option defaults?',
+      'Input, display, and audio options will return to their recommended defaults. Custom control bindings and earned or equipped milestone seals will stay unchanged.',
+      'Restore Defaults',
+      () => this.restoreRecommendedOptions(),
+    ));
     $('#controls-back').addEventListener('click', () => { this.cancelBindingCapture(); this.showScreen('options-menu'); });
     $('#reset-controls').addEventListener('click', () => this.confirm(
       'Reset controls?',
@@ -757,16 +943,23 @@ export class UIController {
       this.updateContinue();
       this.showScreen('menu');
     });
+    const commitOptionChange = () => {
+      this.game.audio.stopPreviewMix();
+      this.clearAudioPreviewStatus();
+      $('#options-feedback').textContent = '';
+      this.applySettings(true);
+    };
     ['sensitivity', 'controller-sensitivity', 'touch-sensitivity', 'invert-y', 'vertical-auto-aim', 'controller-deadzone',
       'touch-size', 'touch-opacity', 'touch-handedness', 'text-scale', 'render-scale', 'hud-mode', 'classic-input',
-      'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects',
+      'controller-vibration', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects',
       'master-volume', 'music-volume', 'sfx-volume', 'audio-profile', 'mute-audio', 'sound-captions'].forEach((id) => {
-      $(`#${id}`).addEventListener('change', () => this.applySettings(true));
+      $(`#${id}`).addEventListener('change', commitOptionChange);
     });
     for (const id of ['sensitivity', 'controller-sensitivity', 'touch-sensitivity', 'controller-deadzone',
       'touch-opacity', 'master-volume', 'music-volume', 'sfx-volume']) {
-      $(`#${id}`).addEventListener('input', () => this.applySettings(true));
+      $(`#${id}`).addEventListener('input', commitOptionChange);
     }
+    $('#audio-profile').addEventListener('change', () => this.renderAudioProfilePresentation());
     window.addEventListener('keydown', (event) => {
       if (this.automapVisible && (event.code === 'Equal' || event.code === 'NumpadAdd')) this.automapZoom = Math.min(3, this.automapZoom + .25);
       if (this.automapVisible && (event.code === 'Minus' || event.code === 'NumpadSubtract')) this.automapZoom = Math.max(.6, this.automapZoom - .25);
@@ -832,19 +1025,27 @@ export class UIController {
     window.addEventListener('input-device-change', (event) => {
       const source = (event as CustomEvent<{ source: InputActionEvent['source'] }>).detail.source;
       this.setEntryDevice(source === 'gamepad' ? 'gamepad' : source === 'touch' ? 'touch' : 'desktop');
+      this.controllerHaptics.setActive(source === 'gamepad');
     });
     window.addEventListener('input-controller-disconnected', () => {
+      this.controllerHaptics.setActive(false);
       this.showRuntimeWarning(CONTROLLER_DISCONNECTED_WARNING);
-      this.announce(CONTROLLER_DISCONNECTED_WARNING);
+      this.announce(CONTROLLER_DISCONNECTED_WARNING, 3);
       if (this.game.mode === 'playing') this.game.pause();
     });
     window.addEventListener('input-controller-reconnected', () => {
       if (this.clearRuntimeWarning(CONTROLLER_DISCONNECTED_WARNING)) {
-        this.announce(CONTROLLER_RECONNECTED_ANNOUNCEMENT);
+        this.announce(CONTROLLER_RECONNECTED_ANNOUNCEMENT, 2);
       }
     });
     window.addEventListener(AUDIO_CAPTION_EVENT, (event) => {
       this.showSoundCaption((event as CustomEvent<AudioCaptionDetail>).detail);
+    });
+    window.addEventListener('combat-momentum', (event) => {
+      const detail = (event as CustomEvent<CombatMomentumEventDetail>).detail;
+      if (!detail.thresholdReached) return;
+      this.controllerHaptics.cue('momentum');
+      this.announce(`${detail.label}. Momentum window extended to ${detail.windowSeconds} seconds at chain x${detail.chain}.`, 2);
     });
     window.addEventListener('input-binding-cancelled', () => this.cancelBindingCapture());
     window.addEventListener('input-lifecycle-pause', () => {
@@ -910,12 +1111,17 @@ export class UIController {
       ...(interaction ? { interaction: { signature: interactionSignature, label: interaction.label, state: interaction.state } } : {}),
     }, this.assistiveGuidanceState);
     this.assistiveGuidanceState = guidance.state;
-    if (guidance.announcement) this.announce(guidance.announcement);
+    if (guidance.announcement) this.announce(guidance.announcement, 1);
     const streak = $<HTMLElement>('#combat-streak');
+    const momentumPresentation = combatMomentumPresentation(snapshot.momentum.chain);
     streak.toggleAttribute('hidden', snapshot.momentum.chain < 2);
+    streak.dataset.tier = momentumPresentation.tier;
     updateText(streak.querySelector<HTMLElement>('strong')!, `x${snapshot.momentum.chain}`);
-    updateText(streak.querySelector<HTMLElement>('span')!, `${snapshot.momentum.score} pts`);
-    updateStyle(streak, '--momentum', `${Math.max(0, Math.min(100, snapshot.momentum.timer / 4 * 100))}%`);
+    updateText(streak.querySelector<HTMLElement>('span')!, `${momentumPresentation.label} \u2022 ${snapshot.momentum.score} pts`);
+    updateStyle(streak, '--momentum', `${Math.max(0, Math.min(100, snapshot.momentum.timer / momentumPresentation.windowSeconds * 100))}%`);
+    updateAttribute(streak, 'aria-label', snapshot.momentum.chain < 2
+      ? 'No active momentum'
+      : `${momentumPresentation.label}, chain x${snapshot.momentum.chain}, ${snapshot.momentum.score} points, ${snapshot.momentum.timer.toFixed(1)} seconds remaining`);
     if (snapshot.mode === 'dead') this.setPortrait('dead');
     else if (performance.now() >= this.portraitUntil) this.setPortrait('neutral');
     if (this.currentWeapon !== weapon.id) {
@@ -978,8 +1184,12 @@ export class UIController {
       this.hideScreens();
     }
     $('#hud').classList.toggle('active', snapshot.mode === 'playing' || snapshot.mode === 'paused');
+    if (snapshot.mode === 'paused') this.renderPauseDetails(snapshot.pause);
     if (!snapshot.replay && snapshot.mode === 'paused' && this.lastMode !== 'paused') this.showScreen('pause-menu');
-    if (!snapshot.replay && snapshot.mode === 'dead' && this.lastMode !== 'dead') this.showScreen('death-menu');
+    if (!snapshot.replay && snapshot.mode === 'dead' && this.lastMode !== 'dead') {
+      this.renderDeathReview(snapshot.death);
+      this.showScreen('death-menu');
+    }
     if (!snapshot.replay && snapshot.mode === 'complete') {
       const art = $<HTMLImageElement>('#epilogue-art');
       art.src ||= runtimeUrl(art.dataset.src ?? 'public_runtime/ui/illustrations/final-epilogue.png');
@@ -994,6 +1204,37 @@ export class UIController {
       if (this.playerTrail.length > 180) this.playerTrail.shift();
     }
     this.lastMode = snapshot.mode;
+  }
+
+  private renderDeathReview(review: DeathReview | undefined): void {
+    const details = review ?? {
+      cause: 'Unidentified exposure • review the surrounding threats',
+      progress: 'No run summary is available.',
+      objective: 'Review the current route before reopening the file.',
+      recovery: 'Choose a recovery option below.',
+      restartLabel: 'Restart Map',
+      advice: 'Use available cover and reopen when ready.',
+    };
+    updateText($('#death-cause'), details.cause);
+    updateText($('#death-progress'), details.progress);
+    updateText($('#death-objective'), details.objective);
+    updateText($('#death-recovery'), details.recovery);
+    updateText($('#death-advice'), details.advice);
+    updateText($<HTMLButtonElement>('#restart-checkpoint'), details.restartLabel);
+    $('#death-menu').setAttribute('aria-label', `Claim denied. ${details.cause}`);
+  }
+
+  private renderPauseDetails(details: PauseDetails | undefined): void {
+    if (!details) return;
+    updateText($('#pause-map'), `${details.mapId}: ${details.mapTitle}`);
+    updateText($('#pause-difficulty'), details.difficulty);
+    updateText($('#pause-run'), details.runVariant);
+    updateText($('#pause-objective'), details.objective);
+    updateText($('#pause-progress'), details.progress);
+    updateText($('#pause-recovery'), details.recovery);
+    const review = $<HTMLElement>('#pause-review');
+    review.dataset.recovery = details.recoveryState;
+    review.setAttribute('aria-label', details.summary);
   }
 
   private renderActiveEffects(powerups: Readonly<GameSnapshot['player']['powerups']>): void {
@@ -1129,11 +1370,17 @@ export class UIController {
     context.lineTo(px - Math.sin(snapshot.player.yaw) * 7, pz - Math.cos(snapshot.player.yaw) * 7); context.stroke();
 
     const mapPoint = (x: number, z: number) => ({ x: ox + x / snapshot.map.cellSize * scale, y: oy + z / snapshot.map.cellSize * scale });
+    const visibleCredentialCues = new Set<Credential>();
     this.game.world.doors.forEach((door) => {
       if (!snapshot.player.floorPlan && !this.game.world.visitedTiles.has(`${door.x},${door.z}`)) return;
       const point = mapPoint((door.x + .5) * snapshot.map.cellSize, (door.z + .5) * snapshot.map.cellSize);
-      context.fillStyle = door.open ? '#646a70' : door.credential === 'red' ? '#d9232e' : door.credential === 'yellow' ? '#e2b93b' : door.credential === 'cyan' ? '#47bcd1' : '#f4f1ea';
-      context.fillRect(point.x - 2, point.y - (door.open ? 1 : 3), 4, door.open ? 2 : 6);
+      if (!door.open && door.credential) {
+        visibleCredentialCues.add(door.credential);
+        this.drawCredentialMapCue(context, point, credentialMapCue(door.credential), scale);
+      } else {
+        context.fillStyle = door.open ? '#646a70' : '#f4f1ea';
+        context.fillRect(point.x - 2, point.y - (door.open ? 1 : 3), 4, door.open ? 2 : 6);
+      }
     });
     const exit = mapPoint(snapshot.map.exit.x * snapshot.map.cellSize, snapshot.map.exit.z * snapshot.map.cellSize);
     context.strokeStyle = '#ffe17a'; context.lineWidth = 1.5; context.beginPath();
@@ -1143,8 +1390,14 @@ export class UIController {
       const tile = `${Math.floor(pickup.position.x / snapshot.map.cellSize)},${Math.floor(pickup.position.z / snapshot.map.cellSize)}`;
       if (!snapshot.player.floorPlan && !this.game.world.visitedTiles.has(tile)) return;
       const point = mapPoint(pickup.position.x, pickup.position.z);
-      context.fillStyle = pickup.kind === 'credential' ? '#ffe17a' : pickup.kind === 'weapon' ? '#d9232e' : '#47bcd1';
-      context.fillRect(point.x - 1.5, point.y - 1.5, 3, 3);
+      if (pickup.kind === 'credential' && ['red', 'yellow', 'cyan'].includes(String(pickup.id))) {
+        const credential = pickup.id as Credential;
+        visibleCredentialCues.add(credential);
+        this.drawCredentialMapCue(context, point, credentialMapCue(credential), scale * .72);
+      } else {
+        context.fillStyle = pickup.kind === 'weapon' ? '#d9232e' : '#47bcd1';
+        context.fillRect(point.x - 1.5, point.y - 1.5, 3, 3);
+      }
     });
     if (snapshot.player.powerups.forensic > 0) this.game.world.actors.filter((actor) => !actor.dead && !actor.phaseLocked).forEach((actor) => {
       const point = mapPoint(actor.position.x, actor.position.z);
@@ -1162,15 +1415,48 @@ export class UIController {
       const point = mapPoint(secret.at.x * snapshot.map.cellSize, secret.at.z * snapshot.map.cellSize);
       context.strokeStyle = '#fffdf7'; context.strokeRect(point.x - 3, point.y - 3, 6, 6);
     });
+    canvas.dataset.credentialCues = [...visibleCredentialCues].sort().join(',');
     if (full) {
-      const fontSize = Math.max(9, Math.min(13, Math.floor(width / 48)));
+      const fontSize = Math.max(10, Math.min(13, Math.floor(width / 48)));
       context.fillStyle = 'rgba(17,18,20,.97)';
       context.fillRect(0, mapHeight, width, legendHeight);
       context.strokeStyle = '#646a70'; context.lineWidth = 1;
       context.beginPath(); context.moveTo(0, mapHeight + .5); context.lineTo(width, mapHeight + .5); context.stroke();
       context.fillStyle = '#d4d2cb'; context.font = `${fontSize}px monospace`; context.textAlign = 'center';
-      context.fillText('EXIT X   DOOR |   RESOURCE []   CONTROL []', width / 2, mapHeight + legendHeight / 2 + fontSize * .35);
+      context.fillText('EXIT X | LOCK R□ Y○ C◇ | RESOURCE □ | CONTROL □', width / 2, mapHeight + legendHeight / 2 + fontSize * .35);
     }
+  }
+
+  private drawCredentialMapCue(
+    context: CanvasRenderingContext2D,
+    point: Readonly<{ x: number; y: number }>,
+    cue: CredentialMapCue,
+    renderedCellSize: number,
+  ): void {
+    const radius = Math.max(5, Math.min(8, renderedCellSize * .24));
+    context.save();
+    context.translate(point.x, point.y);
+    context.beginPath();
+    if (cue.shape === 'square') context.rect(-radius, -radius, radius * 2, radius * 2);
+    else if (cue.shape === 'circle') context.arc(0, 0, radius, 0, Math.PI * 2);
+    else {
+      context.moveTo(0, -radius - 1);
+      context.lineTo(radius + 1, 0);
+      context.lineTo(0, radius + 1);
+      context.lineTo(-radius - 1, 0);
+      context.closePath();
+    }
+    context.fillStyle = 'rgba(8, 9, 10, .9)';
+    context.fill();
+    context.strokeStyle = cue.color;
+    context.lineWidth = 2;
+    context.stroke();
+    context.fillStyle = '#fffdf7';
+    context.font = `bold ${Math.max(10, Math.min(11, renderedCellSize * .32))}px monospace`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(cue.glyph, 0, .5);
+    context.restore();
   }
 
   private renderMastery(container: HTMLElement, presentation: TrackedIntermissionMastery): void {
@@ -1223,6 +1509,7 @@ export class UIController {
     const milestones = deriveMilestones(this.game.campaignProgress());
     const filtered = filterMilestones(milestones, this.milestoneFilter);
     const earned = milestones.filter((milestone) => milestone.earned).length;
+    const equipped = milestones.find((milestone) => milestone.id === this.equippedMilestoneSeal && milestone.earned);
     document.querySelectorAll<HTMLButtonElement>('[data-milestone-filter]').forEach((button) => {
       const selected = button.dataset.milestoneFilter === this.milestoneFilter;
       button.setAttribute('aria-selected', String(selected));
@@ -1230,7 +1517,7 @@ export class UIController {
     });
     const panel = $('#milestone-ledger-panel');
     panel.setAttribute('aria-labelledby', `milestone-filter-${this.milestoneFilter}`);
-    $('#milestone-ledger-summary').textContent = `Showing ${filtered.length} of ${milestones.length}. ${earned} earned.`;
+    $('#milestone-ledger-summary').textContent = `Showing ${filtered.length} of ${milestones.length}. ${earned} earned. ${equipped ? `Active seal: ${equipped.reward.label}.` : 'No active seal.'}`;
     const list = $('#milestone-ledger-list');
     list.setAttribute('aria-label', `${formatLabel(this.milestoneFilter)} milestones`);
     list.replaceChildren(...filtered.map((milestone) => this.buildMilestoneLedgerItem(milestone)));
@@ -1275,8 +1562,16 @@ export class UIController {
     progress.setAttribute('aria-describedby', progressCopy.id);
     progress.setAttribute('aria-valuetext', milestone.progress);
 
-    const reward = document.createElement('div');
+    const reward = document.createElement('button');
+    reward.type = 'button';
     reward.className = 'milestone-ledger-reward';
+    const equipped = milestone.earned && this.equippedMilestoneSeal === milestone.id;
+    reward.disabled = !milestone.earned;
+    reward.setAttribute('aria-pressed', String(equipped));
+    reward.setAttribute('aria-label', milestone.earned
+      ? `${equipped ? 'Remove' : 'Equip'} ${milestone.reward.label}`
+      : `${milestone.reward.label} is locked`);
+    reward.addEventListener('click', () => this.toggleMilestoneSeal(milestone));
     const seal = document.createElement('span');
     seal.className = 'milestone-seal-mark';
     seal.textContent = 'SEAL';
@@ -1285,12 +1580,45 @@ export class UIController {
     const rewardLabel = document.createElement('strong');
     rewardLabel.textContent = `Seal: ${milestone.reward.label}`;
     const rewardRule = document.createElement('small');
-    rewardRule.textContent = 'Cosmetic only | No gameplay effect';
+    rewardRule.textContent = milestone.earned
+      ? equipped ? 'Equipped | Select to remove' : 'Select to equip | Cosmetic only'
+      : 'Earn to equip | Cosmetic only';
     rewardCopy.append(rewardLabel, rewardRule);
     reward.append(seal, rewardCopy);
 
     item.append(header, condition, progressCopy, progress, reward);
     return item;
+  }
+
+  private toggleMilestoneSeal(milestone: MilestoneStatus): void {
+    if (!milestone.earned) return;
+    const removing = this.equippedMilestoneSeal === milestone.id;
+    this.equippedMilestoneSeal = removing ? undefined : milestone.id;
+    this.updateEquippedMilestonePresentation();
+    this.applySettings(true);
+    this.renderMilestoneLedger();
+    this.announce(removing
+      ? `${milestone.reward.label} removed.`
+      : `${milestone.reward.label} equipped. Cosmetic only; gameplay remains unchanged.`);
+  }
+
+  private updateEquippedMilestonePresentation(): void {
+    const milestones = deriveMilestones(this.game.campaignProgress());
+    const equipped = milestones.find((milestone) => milestone.id === this.equippedMilestoneSeal && milestone.earned);
+    if (!equipped) this.equippedMilestoneSeal = undefined;
+    const profile = $('#profile-seal');
+    const ready = $('#ready-seal');
+    profile.toggleAttribute('hidden', !equipped);
+    ready.toggleAttribute('hidden', !equipped);
+    if (!equipped) {
+      profile.removeAttribute('aria-label');
+      profile.querySelector('strong')!.textContent = '';
+      ready.textContent = '';
+      return;
+    }
+    profile.setAttribute('aria-label', `Active milestone seal: ${equipped.reward.label}`);
+    profile.querySelector('strong')!.textContent = equipped.reward.label;
+    ready.textContent = `ACTIVE SEAL  ${equipped.reward.label}`;
   }
 
   private renderMilestoneAwards(awards: readonly MilestoneStatus[]): void {
@@ -1303,13 +1631,34 @@ export class UIController {
     const title = document.createElement('strong');
     title.textContent = awards.length === 1 ? 'Milestone Earned' : `${awards.length} Milestones Earned`;
     const list = document.createElement('div');
+    list.className = 'milestone-award-list';
     awards.forEach((milestone) => {
-      const item = document.createElement('span');
+      const item = document.createElement('article');
+      item.className = 'milestone-award-item';
+      const mark = document.createElement('span');
+      mark.className = 'milestone-seal-mark';
+      mark.textContent = 'SEAL';
+      mark.setAttribute('aria-hidden', 'true');
+      const copy = document.createElement('span');
       const name = document.createElement('b');
       name.textContent = milestone.name;
       const seal = document.createElement('small');
       seal.textContent = `Seal: ${milestone.reward.label}`;
-      item.append(name, seal);
+      copy.append(name, seal);
+      const equip = document.createElement('button');
+      equip.type = 'button';
+      equip.className = 'milestone-award-equip';
+      equip.dataset.milestoneAward = milestone.id;
+      const equipped = this.equippedMilestoneSeal === milestone.id;
+      equip.setAttribute('aria-pressed', String(equipped));
+      equip.setAttribute('aria-label', `${equipped ? 'Remove' : 'Equip'} ${milestone.reward.label}`);
+      equip.textContent = equipped ? 'Equipped' : 'Equip Seal';
+      equip.addEventListener('click', () => {
+        this.toggleMilestoneSeal(milestone);
+        this.renderMilestoneAwards(awards);
+        container.querySelector<HTMLButtonElement>(`[data-milestone-award="${milestone.id}"]`)?.focus();
+      });
+      item.append(mark, copy, equip);
       list.append(item);
     });
     container.replaceChildren(title, list);
@@ -1363,6 +1712,7 @@ export class UIController {
       `Time    ${formatTime(tally.elapsed)} / Par ${formatTime(this.game.world.map.parSeconds)}`,
       ...(result ? [`Record (${runVariantUiLabel(result.record.runVariant)})  ${formatTime(result.record.bestTime)} / ${result.record.highScore} pts / ${result.record.completions} clear${result.record.completions === 1 ? '' : 's'}`] : []),
     ].join('\n');
+    this.renderScoreBreakdown(result);
     $('#result-bests').textContent = result
       ? `${runVariantUiLabel(result.record.runVariant)}: ${result.newBests.length ? `NEW: ${result.newBests.join(' / ')}` : 'Record held'}`
       : 'Record held';
@@ -1405,25 +1755,76 @@ export class UIController {
     }));
     this.showScreen('intermission');
     const awardAnnouncement = milestoneAwardAnnouncement(milestoneAwards);
-    if (awardAnnouncement) this.announce(awardAnnouncement);
+    if (awardAnnouncement) this.announce(awardAnnouncement, 3);
     this.playCompletionBurst();
   }
 
+  private renderScoreBreakdown(result: MapResult | undefined): void {
+    const details = $<HTMLDetailsElement>('#score-breakdown');
+    details.open = false;
+    details.toggleAttribute('hidden', !result);
+    if (!result) return;
+    const breakdown = result.scoreBreakdown;
+    details.dataset.multiplier = String(breakdown.multiplier);
+    details.querySelector('summary')!.textContent = `Score details • ${breakdown.finalScore.toLocaleString()} pts`;
+    details.setAttribute('aria-label', `Score details. Combat ${breakdown.combatScore} points. Clear goals ${breakdown.bonusSubtotal} points. Difficulty multiplier ${breakdown.multiplier} times. Final score ${breakdown.finalScore} points.`);
+    const totals = $<HTMLElement>('#score-breakdown-totals');
+    const difficulty = DIFFICULTY_OPTIONS.find(({ id }) => id === this.game.difficulty)?.label ?? formatLabel(this.game.difficulty);
+    const totalRows: readonly [string, string][] = [
+      ['Combat', breakdown.combatScore.toLocaleString()],
+      ['Clear goals', `+${breakdown.bonusSubtotal.toLocaleString()}`],
+      [difficulty, `×${breakdown.multiplier}`],
+      ['Final', breakdown.finalScore.toLocaleString()],
+    ];
+    totals.replaceChildren(...totalRows.map(([label, value], index) => {
+      const row = document.createElement('span');
+      if (index === totalRows.length - 1) row.className = 'final';
+      const title = document.createElement('b');
+      title.textContent = label;
+      const amount = document.createElement('output');
+      amount.textContent = value;
+      row.append(title, amount);
+      return row;
+    }));
+    const bonuses = $<HTMLElement>('#score-breakdown-bonuses');
+    bonuses.replaceChildren(...breakdown.bonuses.map((bonus) => {
+      const item = document.createElement('span');
+      item.className = bonus.earned ? 'earned' : 'missed';
+      item.dataset.scoreBonus = bonus.id;
+      item.setAttribute('role', 'listitem');
+      item.setAttribute('aria-label', `${bonus.label}. ${bonus.requirement}. ${bonus.earned ? `Earned ${bonus.awarded} points` : `Missed; ${bonus.available} points available`}.`);
+      const label = document.createElement('b');
+      label.textContent = bonus.label;
+      const amount = document.createElement('small');
+      amount.textContent = bonus.earned ? `+${bonus.awarded}` : `0 / +${bonus.available}`;
+      item.append(label, amount);
+      return item;
+    }));
+  }
+
   private playCompletionBurst(): void {
-    const screen = $('#intermission');
-    screen.querySelectorAll('.completion-particle').forEach((element) => element.remove());
+    const layer = $<HTMLElement>('#completion-burst');
+    layer.replaceChildren();
+    layer.style.height = `${Math.max(44, $<HTMLElement>('#tally').offsetTop - 4)}px`;
     const texture = runtimeUrl('public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_08.png');
     const reducedMotion = $<HTMLInputElement>('#reduced-motion').checked;
     const restrained = $<HTMLInputElement>('#reduced-effects').checked
       || !$<HTMLInputElement>('#flash-effects').checked
       || reducedMotion;
     const count = restrained ? 1 : 10;
+    const anchors = [
+      [8, 70], [92, 70], [18, 42], [82, 42], [29, 24],
+      [71, 24], [41, 12], [59, 12], [25, 82], [75, 82],
+    ] as const;
     for (let index = 0; index < count; index += 1) {
       const particle = document.createElement('i');
       particle.className = 'completion-particle';
       particle.setAttribute('aria-hidden', 'true');
       particle.style.backgroundImage = `url('${texture}')`;
-      screen.append(particle);
+      const [x, y] = restrained ? [12, 50] : anchors[index];
+      particle.style.left = `${x}%`;
+      particle.style.top = `${y}%`;
+      layer.append(particle);
       if (reducedMotion) {
         particle.style.opacity = '1';
         particle.style.transform = 'translate(-50%, -50%)';
@@ -1440,13 +1841,13 @@ export class UIController {
         continue;
       }
       const side = index % 2 ? 1 : -1;
-      const spread = side * (70 + (index * 43) % 250);
-      const rise = -90 - (index * 29) % 140;
-      const fall = 120 + (index * 31) % 150;
+      const drift = side * (24 + (index * 17) % 54);
+      const rise = -18 - (index * 13) % 44;
+      const settle = 8 + (index * 11) % 28;
       const animation = particle.animate([
         { opacity: 0, transform: 'translate(-50%, -50%) scale(.45) rotate(0deg)' },
-        { opacity: 1, transform: `translate(calc(-50% + ${spread * .55}px), calc(-50% + ${rise}px)) scale(1) rotate(${side * 120}deg)`, offset: .28 },
-        { opacity: 0, transform: `translate(calc(-50% + ${spread}px), calc(-50% + ${fall}px)) scale(.68) rotate(${side * 520}deg)` },
+        { opacity: 1, transform: `translate(calc(-50% + ${drift * .55}px), calc(-50% + ${rise}px)) scale(1) rotate(${side * 120}deg)`, offset: .28 },
+        { opacity: 0, transform: `translate(calc(-50% + ${drift}px), calc(-50% + ${settle}px)) scale(.68) rotate(${side * 520}deg)` },
       ], { duration: 900 + (index % 4) * 110, easing: 'cubic-bezier(.18,.7,.32,1)', fill: 'forwards' });
       void animation.finished.then(() => particle.remove(), () => particle.remove());
     }
@@ -1650,6 +2051,37 @@ export class UIController {
     $('#ready-overlay').setAttribute('data-briefing', initialOrientation ? 'orientation' : 'context');
     $('#ready-map').textContent = `${this.game.world.map.id} ${this.game.world.map.title}`;
     $('#ready-briefing-kind').textContent = initialOrientation ? 'INITIAL ORIENTATION' : 'FIELD BRIEFING';
+    this.updateEquippedMilestonePresentation();
+    const fieldOrder = initialOrientation ? undefined : entryFieldOrderPresentation(
+      this.game.world.map.id,
+      progress,
+      this.game.difficulty,
+      this.game.runVariant,
+    );
+    const fieldOrderElement = $<HTMLElement>('#entry-field-order');
+    fieldOrderElement.toggleAttribute('hidden', !fieldOrder);
+    $('#ready-overlay').setAttribute('aria-describedby', fieldOrder ? 'entry-objective entry-field-order' : 'entry-objective');
+    if (fieldOrder) {
+      fieldOrderElement.dataset.state = fieldOrder.complete ? 'mastered' : 'open';
+      fieldOrderElement.dataset.track = this.game.runVariant;
+      fieldOrderElement.setAttribute('aria-label', fieldOrder.summary);
+      $('#entry-field-order-label').textContent = `${fieldOrder.trackLabel} field order`;
+      $('#entry-field-order-target').textContent = fieldOrder.target;
+      $('#entry-field-order-comparison').textContent = `Record: ${fieldOrder.comparison}`;
+      $('#entry-field-order-metrics').replaceChildren(...fieldOrder.metrics.map((metric) => {
+        const item = document.createElement('span');
+        item.textContent = metric;
+        return item;
+      }));
+    } else {
+      delete fieldOrderElement.dataset.state;
+      delete fieldOrderElement.dataset.track;
+      fieldOrderElement.removeAttribute('aria-label');
+      $('#entry-field-order-label').textContent = '';
+      $('#entry-field-order-target').textContent = '';
+      $('#entry-field-order-comparison').textContent = '';
+      $('#entry-field-order-metrics').replaceChildren();
+    }
     const snapshot = this.latestSnapshot?.map.id === this.game.world.map.id
       ? this.latestSnapshot
       : { map: this.game.world.map, objective: '' };
@@ -2470,6 +2902,51 @@ export class UIController {
     });
   }
 
+  private clearAudioPreviewStatus(): void {
+    const status = $<HTMLElement>('#audio-preview-status');
+    status.textContent = '';
+    delete status.dataset.result;
+  }
+
+  private renderAudioProfilePresentation(): void {
+    const profile = $<HTMLSelectElement>('#audio-profile').value as AudioPlaybackProfile;
+    const presentation = audioProfilePresentation(profile);
+    const detail = $<HTMLElement>('#audio-profile-detail');
+    detail.dataset.profile = profile;
+    detail.textContent = presentation.detail;
+  }
+
+  private async previewAudioMix(): Promise<void> {
+    const button = $<HTMLButtonElement>('#audio-preview');
+    const status = $<HTMLElement>('#audio-preview-status');
+    const profile = $<HTMLSelectElement>('#audio-profile').value as AudioPlaybackProfile;
+    const presentation = audioProfilePresentation(profile);
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    status.textContent = `Preparing ${presentation.label} preview...`;
+    try {
+      const result = await this.game.audio.previewMix();
+      if (result === 'superseded') return;
+      status.dataset.result = result;
+      status.textContent = result === 'played'
+        ? `${presentation.label} preview: hazard left, confirmation center, critical attack right.`
+        : result === 'muted'
+          ? 'Preview is silent because Mute audio is on.'
+          : result === 'master-silent'
+            ? 'Preview is silent because Master volume is 0%.'
+            : result === 'effects-silent'
+              ? 'Preview is silent because Effects volume is 0%.'
+              : 'Audio preview is unavailable. Interact with the page, then try again.';
+    } catch {
+      status.dataset.result = 'unavailable';
+      status.textContent = 'Audio preview is unavailable. Settings still apply; try again after interacting with the page.';
+    } finally {
+      if (!button.isConnected) return;
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+    }
+  }
+
   private loadSettings(): void {
     let settings: Record<string, unknown> = {};
     try {
@@ -2477,6 +2954,10 @@ export class UIController {
       settings = stored !== null && typeof stored === 'object' && !Array.isArray(stored)
         ? stored as Record<string, unknown>
         : {};
+      this.equippedMilestoneSeal = resolveEquippedMilestoneSeal(
+        settings.equippedMilestoneSeal,
+        deriveMilestones(this.game.campaignProgress()),
+      );
       const input = normalizeInputPreferences(settings);
       const presentation = normalizeInterfacePreferences(settings);
       $<HTMLInputElement>('#sensitivity').value = String(input.mouseSensitivity);
@@ -2490,7 +2971,7 @@ export class UIController {
       $<HTMLSelectElement>('#text-scale').value = presentation.uiTextScale;
       if (typeof settings.renderScale === 'number') $<HTMLSelectElement>('#render-scale').value = String(settings.renderScale);
       if (settings.hudMode === 'minimal') $<HTMLSelectElement>('#hud-mode').value = 'minimal';
-      for (const id of ['classic-input', 'vertical-auto-aim', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects', 'sound-captions']) {
+      for (const id of ['classic-input', 'vertical-auto-aim', 'controller-vibration', 'screen-shake', 'reduced-motion', 'high-contrast', 'reduced-effects', 'flash-effects', 'sound-captions']) {
         if (typeof settings[id] === 'boolean') $<HTMLInputElement>(`#${id}`).checked = Boolean(settings[id]);
       }
     } catch {
@@ -2511,7 +2992,52 @@ export class UIController {
     $<HTMLInputElement>('#sfx-volume').value = String(this.game.audio.sfxVolume);
     $<HTMLSelectElement>('#audio-profile').value = this.game.audio.playbackProfile;
     $<HTMLInputElement>('#mute-audio').checked = this.game.audio.muted;
+    this.renderAudioProfilePresentation();
+    this.updateEquippedMilestonePresentation();
     this.applySettings(false);
+  }
+
+  private restoreRecommendedOptions(): void {
+    this.game.audio.stopPreviewMix();
+    this.clearAudioPreviewStatus();
+    let systemPrefersReducedMotion = false;
+    try {
+      systemPrefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    } catch {
+      // A blocked media-query API should retain the authored motion default.
+    }
+    const defaults = recommendedOptionSettings(systemPrefersReducedMotion);
+    $<HTMLInputElement>('#sensitivity').value = String(defaults.input.mouseSensitivity);
+    $<HTMLInputElement>('#controller-sensitivity').value = String(defaults.input.controllerSensitivity);
+    $<HTMLInputElement>('#touch-sensitivity').value = String(defaults.input.touchSensitivity);
+    $<HTMLInputElement>('#invert-y').checked = defaults.input.invertY;
+    $<HTMLInputElement>('#controller-deadzone').value = String(defaults.input.controllerDeadzone);
+    $<HTMLSelectElement>('#touch-size').value = defaults.presentation.touchControlSize;
+    $<HTMLInputElement>('#touch-opacity').value = String(defaults.presentation.touchControlOpacity);
+    $<HTMLSelectElement>('#touch-handedness').value = defaults.presentation.touchHandedness;
+    $<HTMLSelectElement>('#text-scale').value = defaults.presentation.uiTextScale;
+    $<HTMLSelectElement>('#render-scale').value = String(defaults.renderScale);
+    $<HTMLSelectElement>('#hud-mode').value = defaults.hudMode;
+    $<HTMLInputElement>('#classic-input').checked = defaults.classicInput;
+    $<HTMLInputElement>('#vertical-auto-aim').checked = defaults.verticalAutoAim;
+    $<HTMLInputElement>('#controller-vibration').checked = defaults.controllerVibration;
+    $<HTMLInputElement>('#screen-shake').checked = defaults.screenShake;
+    $<HTMLInputElement>('#reduced-motion').checked = defaults.reducedMotion;
+    $<HTMLInputElement>('#high-contrast').checked = defaults.highContrast;
+    $<HTMLInputElement>('#reduced-effects').checked = defaults.reducedEffects;
+    $<HTMLInputElement>('#flash-effects').checked = defaults.flashEffects;
+    $<HTMLInputElement>('#master-volume').value = String(defaults.audio.master);
+    $<HTMLInputElement>('#music-volume').value = String(defaults.audio.music);
+    $<HTMLInputElement>('#sfx-volume').value = String(defaults.audio.sfx);
+    $<HTMLSelectElement>('#audio-profile').value = defaults.audio.profile;
+    $<HTMLInputElement>('#mute-audio').checked = defaults.audio.muted;
+    $<HTMLInputElement>('#sound-captions').checked = defaults.soundCaptions;
+    const retainedReplayAutoAim = this.game.isDemoRecording() && this.game.verticalAutoAim !== defaults.verticalAutoAim;
+    this.applySettings(true);
+    this.renderAudioProfilePresentation();
+    $('#options-feedback').textContent = retainedReplayAutoAim
+      ? 'Recommended defaults restored. Replay-locked vertical auto-aim was retained until recording ends; custom bindings and milestone seals were kept.'
+      : 'Recommended defaults restored. Custom bindings and milestone seals were kept.';
   }
 
   private applySettings(persist: boolean): void {
@@ -2531,6 +3057,7 @@ export class UIController {
     const renderScale = Number($<HTMLSelectElement>('#render-scale').value);
     const hudMode = $<HTMLSelectElement>('#hud-mode').value;
     this.game.classicInput = $<HTMLInputElement>('#classic-input').checked;
+    this.controllerHaptics.setEnabled($<HTMLInputElement>('#controller-vibration').checked);
     const verticalAutoAim = $<HTMLInputElement>('#vertical-auto-aim');
     if (this.game.isDemoRecording()) verticalAutoAim.checked = this.game.verticalAutoAim;
     else this.game.verticalAutoAim = verticalAutoAim.checked;
@@ -2576,12 +3103,14 @@ export class UIController {
         hudMode,
         'classic-input': $<HTMLInputElement>('#classic-input').checked,
         'vertical-auto-aim': $<HTMLInputElement>('#vertical-auto-aim').checked,
+        'controller-vibration': $<HTMLInputElement>('#controller-vibration').checked,
         'screen-shake': $<HTMLInputElement>('#screen-shake').checked,
         'reduced-motion': $<HTMLInputElement>('#reduced-motion').checked,
         'high-contrast': $<HTMLInputElement>('#high-contrast').checked,
         'reduced-effects': $<HTMLInputElement>('#reduced-effects').checked,
         'flash-effects': $<HTMLInputElement>('#flash-effects').checked,
         'sound-captions': $<HTMLInputElement>('#sound-captions').checked,
+        ...(this.equippedMilestoneSeal ? { equippedMilestoneSeal: this.equippedMilestoneSeal } : {}),
       }));
     } catch {
       this.showRuntimeWarning('Browser storage is unavailable. Settings apply for this session only.');
@@ -2605,15 +3134,52 @@ export class UIController {
     button.dataset.available = String(available);
     button.setAttribute('aria-describedby', 'menu-feedback');
     button.title = available ? 'Continue the newest valid save' : 'Start a new game';
-    $('#menu-feedback').textContent = this.continuePreview();
+    this.renderContinuePreview(this.game.continueDetails());
   }
-  private continuePreview(): string {
-    return this.game.continueSummary() ?? '';
+  private renderContinuePreview(details: ContinueDetails | undefined): void {
+    const card = $('#menu-feedback');
+    card.replaceChildren();
+    card.toggleAttribute('hidden', !details);
+    if (!details) return;
+
+    card.setAttribute('aria-label', `Continue available. ${details.summary}`);
+    const header = document.createElement('header');
+    const kind = document.createElement('span');
+    kind.className = 'continue-kind';
+    kind.textContent = details.kind;
+    const map = document.createElement('strong');
+    map.className = 'continue-map';
+    map.textContent = `${details.mapId} ${details.mapTitle}`;
+    header.append(kind, map);
+
+    const tags = document.createElement('div');
+    tags.className = 'continue-tags';
+    const difficulty = document.createElement('span');
+    difficulty.textContent = details.difficulty;
+    const runVariant = document.createElement('span');
+    runVariant.textContent = details.runVariant;
+    tags.append(difficulty, runVariant);
+
+    const meta = document.createElement('footer');
+    const playTime = document.createElement('span');
+    playTime.textContent = `Play ${details.playTime}`;
+    const savedAt = document.createElement('time');
+    savedAt.dateTime = details.savedAtIso;
+    savedAt.textContent = `Saved ${details.savedAt}`;
+    meta.append(playTime, savedAt);
+    card.append(header, tags, meta);
   }
-  private announce(message: string): void {
+  private announce(message: string, priority = 0): void {
     const announcer = $('#announcer');
+    this.pendingAnnouncement = preferredAnnouncement(this.pendingAnnouncement, { message, priority });
+    if (this.announcementFrame !== undefined) return;
     announcer.textContent = '';
-    requestAnimationFrame(() => { announcer.textContent = message; });
+    this.announcementFrame = requestAnimationFrame(() => {
+      const pending = this.pendingAnnouncement;
+      this.pendingAnnouncement = undefined;
+      this.announcementFrame = undefined;
+      if (pending) announcer.textContent = pending.message;
+    });
   }
   private showSoundCaption(detail: AudioCaptionDetail): void {
     if (!$<HTMLInputElement>('#sound-captions').checked || !detail?.text) return;
@@ -2677,6 +3243,10 @@ export class UIController {
   }
 
   private returnFromScreen(id: string): void {
+    if (id === 'options-menu') {
+      this.game.audio.stopPreviewMix();
+      this.clearAudioPreviewStatus();
+    }
     const target = id === 'level-select' ? this.levelSelectReturn
       : id === 'milestone-ledger' ? this.milestoneReturn
       : id === 'difficulty-menu' ? 'episode-menu'
@@ -2691,13 +3261,31 @@ export class UIController {
     this.showScreen(target);
   }
 
-  private confirm(title: string, copy: string, acceptLabel: string, action: () => void): void {
+  private confirm(title: string, copy: string, acceptLabel: string, action: () => void, review?: ExitReview): void {
     const dialog = $<HTMLDialogElement>('#confirm-dialog');
     this.focusBeforeDialog = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     this.confirmAction = action;
     $('#confirm-title').textContent = title;
     $('#confirm-copy').textContent = copy;
     $('#confirm-accept').textContent = acceptLabel;
+    const reviewElement = $<HTMLElement>('#confirm-review');
+    reviewElement.toggleAttribute('hidden', !review);
+    if (review) {
+      reviewElement.dataset.recovery = review.recoveryState;
+      reviewElement.dataset.consequence = review.consequenceState;
+      reviewElement.setAttribute('aria-label', review.summary);
+      $('#confirm-return-point').textContent = review.returnPoint;
+      $('#confirm-consequence').textContent = review.consequence;
+      $('#confirm-durability').textContent = review.durability;
+    } else {
+      delete reviewElement.dataset.recovery;
+      delete reviewElement.dataset.consequence;
+      reviewElement.removeAttribute('aria-label');
+      $('#confirm-return-point').textContent = '';
+      $('#confirm-consequence').textContent = '';
+      $('#confirm-durability').textContent = '';
+    }
+    window.getSelection()?.removeAllRanges();
     if (!dialog.open) dialog.showModal();
     $<HTMLButtonElement>('#confirm-cancel').focus();
   }
@@ -2719,11 +3307,12 @@ export class UIController {
   }
 
   private confirmMainMenu(): void {
-    this.confirm('Return to main menu?', 'Unsaved progress since the last save will be lost.', 'Main Menu', () => {
+    const review = this.game.exitReview();
+    this.confirm('Return to title?', `Review what Continue will restore before leaving ${review.mapId}.`, 'Return to Title', () => {
       this.game.audio.stopMusic();
       this.game.returnToMenu();
       this.showScreen('menu');
-    });
+    }, review);
   }
 
   private endSession(): void {

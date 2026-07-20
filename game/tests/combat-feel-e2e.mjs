@@ -31,6 +31,7 @@ for (const deferred of ['WEAPON', 'MAP']) assert(!briefing.includes(deferred), `
 assert(briefing.includes('W') && briefing.includes('Mouse 1'), 'Entry briefing does not expose the active movement/fire bindings');
 assert((await page.locator('#entry-objective').innerText()).includes('Red credential'), 'Initial orientation has no contextual objective');
 assert(await page.locator('#ready-overlay').getAttribute('data-briefing') === 'orientation', 'Fresh E1M1 did not use initial orientation');
+assert(await page.locator('#entry-field-order').isHidden(), 'Fresh E1M1 onboarding was overloaded with a returning-player field order');
 await page.waitForTimeout(250);
 state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(state.tally.elapsed === frozenAt, 'Simulation advanced behind the entry overlay');
@@ -67,9 +68,10 @@ await page.evaluate(() => {
   const setting = document.querySelector('#reduced-motion');
   setting.checked = true;
   setting.dispatchEvent(new Event('change', { bubbles: true }));
-  window.advanceTime(120);
+  window.advanceTime(260);
 });
 const reducedReticleBefore = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
+const reducedAmmoBefore = JSON.parse(await page.evaluate(() => window.render_game_to_text())).player.ammo.staples;
 await page.evaluate(() => {
   document.querySelector('#muzzle-flash').getAnimations().forEach((animation) => animation.cancel());
   document.querySelector('#reticle').getAnimations().forEach((animation) => animation.cancel());
@@ -83,7 +85,9 @@ const reducedMotionFeedback = await page.evaluate(() => ({
   muzzleAnimations: document.querySelector('#muzzle-flash').getAnimations().length,
   reticleAnimations: document.querySelector('#reticle').getAnimations().length,
   muzzleOpacity: Number.parseFloat(document.querySelector('#muzzle-flash').style.opacity),
+  ammo: JSON.parse(window.render_game_to_text()).player.ammo.staples,
 }));
+assert(reducedMotionFeedback.ammo === reducedAmmoBefore - 1, 'Reduced Motion feedback check did not actually fire the ready weapon');
 assert(reducedMotionFeedback.muzzleAnimations === 0, 'Reduced Motion still animated the muzzle flash');
 assert(reducedMotionFeedback.reticleAnimations === 0, 'Reduced Motion still animated the wall-impact reticle');
 assert(reducedMotionFeedback.muzzleOpacity === 1, 'Reduced Motion removed the static muzzle cue');
@@ -99,18 +103,82 @@ assert(await page.locator('#context-prompt').isVisible(), 'Context prompt did no
 assert(await page.locator('#context-prompt').evaluate((element) => element.classList.contains('locked')), 'Credential prompt is not visibly locked');
 await page.screenshot({ path: fileURLToPath(new URL('context.png', output)) });
 
+const openingRoster = ['returned-mail', 'desk-warden', 'ember-clerk'];
+const defeatNextOpeningActor = async () => page.evaluate((actorIds) => {
+  for (const actorId of actorIds) {
+    if (window.__redLedger.defeatActor(actorId)) return actorId;
+  }
+  return null;
+}, openingRoster);
+const refreshMomentum = () => page.evaluate(() => window.advanceTime(30));
 let kills = 0;
-for (const id of ['returned-mail', 'desk-warden', 'ember-clerk', 'exposure-hound']) {
-  if (await page.evaluate((actorId) => window.__redLedger.defeatActor(actorId), id)) kills += 1;
-  if (kills === 2) break;
-}
+while (kills < 2 && await defeatNextOpeningActor()) kills += 1;
 assert(kills === 2, 'Could not stage a two-kill momentum chain');
-await page.evaluate(() => window.advanceTime(30));
+await refreshMomentum();
 await page.waitForTimeout(900);
 state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(state.momentum.chain === 2 && state.momentum.score > 0, 'Momentum chain did not score consecutive kills');
+assert(state.momentum.presentation.tier === 'chain' && state.momentum.presentation.windowSeconds === 4,
+  'Base momentum did not expose its deterministic four-second window');
 assert(await page.locator('#combat-streak').isVisible(), 'Momentum HUD did not appear');
 await page.screenshot({ path: fileURLToPath(new URL('momentum.png', output)) });
+
+assert(await defeatNextOpeningActor(), 'Could not stage the escalation threshold');
+await page.waitForFunction(() => document.querySelector('#announcer').textContent.includes('Escalation'));
+const escalationAnnouncement = await page.locator('#announcer').innerText();
+await refreshMomentum();
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+assert(state.momentum.chain === 3 && state.momentum.presentation.tier === 'escalation',
+  'Three-kill chain did not enter Escalation');
+assert(state.momentum.presentation.windowSeconds === 4.75 && state.momentum.timer > 4.5,
+  'Escalation did not earn its 4.75-second tactical window');
+assert(escalationAnnouncement.includes('Escalation') && escalationAnnouncement.includes('4.75 seconds'),
+  'Escalation threshold was not announced accessibly');
+assert(await page.locator('#combat-streak').getAttribute('data-tier') === 'escalation',
+  'Momentum HUD did not expose the Escalation visual tier');
+assert((await page.locator('#combat-streak').getAttribute('aria-label')).includes('Escalation'),
+  'Momentum HUD accessible name omitted the active tier');
+await page.screenshot({ path: fileURLToPath(new URL('momentum-escalation.png', output)) });
+
+for (let chain = 4; chain <= 5; chain += 1) {
+  assert(await defeatNextOpeningActor(), `Could not stage momentum chain x${chain}`);
+}
+await page.waitForFunction(() => document.querySelector('#announcer').textContent.includes('Redline'));
+const redlineAnnouncement = await page.locator('#announcer').innerText();
+await refreshMomentum();
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+assert(state.momentum.chain === 5 && state.momentum.presentation.tier === 'redline'
+  && state.momentum.presentation.windowSeconds === 5.5,
+  'Five-kill chain did not enter Redline with its earned window');
+assert(redlineAnnouncement.includes('Redline') && redlineAnnouncement.includes('5.5 seconds'),
+  'Redline threshold was not announced accessibly');
+assert(await page.locator('#combat-streak').getAttribute('data-tier') === 'redline',
+  'Momentum HUD did not expose the Redline visual tier');
+
+for (let chain = 6; chain <= 8; chain += 1) {
+  assert(await defeatNextOpeningActor(), `Could not stage momentum chain x${chain}`);
+}
+await page.waitForFunction(() => document.querySelector('#announcer').textContent.includes('Authority Rush'));
+const authorityRushAnnouncement = await page.locator('#announcer').innerText();
+await refreshMomentum();
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+assert(state.momentum.chain === 8 && state.momentum.presentation.tier === 'authority-rush'
+  && state.momentum.presentation.windowSeconds === 6.25,
+  'Eight-kill chain did not enter Authority Rush with its earned window');
+assert(authorityRushAnnouncement.includes('Authority Rush') && authorityRushAnnouncement.includes('6.25 seconds'),
+  'Authority Rush threshold was not announced accessibly');
+assert(await page.locator('#combat-streak').getAttribute('data-tier') === 'authority-rush',
+  'Momentum HUD did not expose the Authority Rush visual tier');
+await page.waitForTimeout(180);
+await page.screenshot({ path: fileURLToPath(new URL('momentum-authority-rush.png', output)) });
+
+await page.evaluate(() => { for (let tick = 0; tick < 16; tick += 1) window.advanceTime(250); });
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+assert(state.momentum.chain === 8, 'Authority Rush expired at the base four-second momentum window');
+await page.evaluate(() => { for (let tick = 0; tick < 12; tick += 1) window.advanceTime(250); });
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+assert(state.momentum.chain === 0 && state.momentum.timer === 0, 'Momentum did not expire cleanly after its earned window');
+assert(await page.locator('#combat-streak').isHidden(), 'Expired momentum HUD remained visible');
 
 assert(state.tally.totalKills >= 35 && state.tally.totalKills <= 65,
   `Opening map fell outside the canonical 35-65 enemy budget (${state.tally.totalKills})`);

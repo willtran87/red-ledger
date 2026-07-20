@@ -80,6 +80,7 @@ const browserTests = [
   ['deterministic demos', 'tests/demo-runtime-e2e.mjs'],
   ['player replay library', 'tests/replay-library-e2e.mjs'],
   ['navigation and session continuity', 'tests/navigation-continuity-e2e.mjs'],
+  ['death review and recovery clarity', 'tests/death-review-e2e.mjs'],
   ['startup and storage resilience', 'tests/resilience-e2e.mjs'],
   ['critical map texture readiness', 'tests/asset-readiness-e2e.mjs'],
   ['hostile telegraphs', 'tests/hostile-telegraph-e2e.mjs'],
