@@ -17,6 +17,14 @@ export interface VerticalAimCylinder {
 
 const EPSILON = 1e-8;
 export const VERTICAL_AUTO_AIM_RADIANS = Math.PI / 30;
+export const AIM_VIEWPORT_Y_RATIO = .42;
+export const PORTRAIT_TOUCH_AIM_VIEWPORT_Y_RATIO = .4;
+
+export function aimProjectionOffsetY(viewportHeight: number, portraitTouch: boolean): number {
+  if (!Number.isFinite(viewportHeight) || viewportHeight <= 0) return 0;
+  const ratio = portraitTouch ? PORTRAIT_TOUCH_AIM_VIEWPORT_Y_RATIO : AIM_VIEWPORT_Y_RATIO;
+  return viewportHeight * (.5 - ratio);
+}
 
 export function sampleShotSpread(spread: number, random: () => number): ShotSpread {
   return {

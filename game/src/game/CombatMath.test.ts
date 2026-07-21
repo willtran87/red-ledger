@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { PerspectiveCamera, Vector3 } from 'three';
 import {
+  AIM_VIEWPORT_Y_RATIO,
+  PORTRAIT_TOUCH_AIM_VIEWPORT_Y_RATIO,
+  aimProjectionOffsetY,
   directionFromView,
   rayVerticalCylinderDistance,
   sampleShotSpread,
@@ -9,6 +13,26 @@ import {
 } from './CombatMath';
 
 describe('combat ray math', () => {
+  it('projects the forward firing ray through the authored desktop and portrait reticles', () => {
+    for (const scenario of [
+      { width: 320, height: 200, portraitTouch: false, ratio: AIM_VIEWPORT_Y_RATIO },
+      { width: 200, height: 356, portraitTouch: true, ratio: PORTRAIT_TOUCH_AIM_VIEWPORT_Y_RATIO },
+    ]) {
+      const camera = new PerspectiveCamera(72, scenario.width / scenario.height, .05, 110);
+      camera.setViewOffset(
+        scenario.width,
+        scenario.height,
+        0,
+        aimProjectionOffsetY(scenario.height, scenario.portraitTouch),
+        scenario.width,
+        scenario.height,
+      );
+      const projected = new Vector3(0, 0, -10).project(camera);
+      const viewportY = (1 - projected.y) / 2;
+      expect(viewportY).toBeCloseTo(scenario.ratio, 8);
+    }
+  });
+
   it('samples deterministic horizontal and vertical spread', () => {
     const values = [.25, .75];
     const spread = sampleShotSpread(.12, () => values.shift() ?? 0);

@@ -51,6 +51,39 @@ assert(await page.locator('#reticle').getAttribute('data-weapon') === 'staple-dr
 
 assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 3)), 'Could not stage weapon feedback target');
 await page.evaluate(() => window.advanceTime(60));
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+const damageTarget = state.visibleActors.find((actor) => actor.id === 'returned-mail');
+assert(damageTarget, 'Centered starter target is not visible before real-input fire');
+const damageAmmoBefore = state.player.ammo.staples;
+await page.mouse.down({ button: 'left' });
+await page.waitForTimeout(55);
+await page.mouse.up({ button: 'left' });
+await page.evaluate(() => window.advanceTime(35));
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+const damagedTarget = state.visibleActors.find((actor) => actor.id === 'returned-mail');
+assert(state.player.ammo.staples === damageAmmoBefore - 1, 'Real mouse fire did not consume one staple');
+assert(damagedTarget && damagedTarget.health < damageTarget.health,
+  'A centered real-input shot consumed ammunition without damaging its target');
+const confirmedDamage = Math.round(damageTarget.health - damagedTarget.health);
+assert(await page.locator('#hit-marker').getAttribute('data-label') === `HIT ${confirmedDamage}`,
+  'A damaging real-input shot did not report the health actually removed');
+await page.waitForTimeout(220);
+assert(await page.locator('#hit-marker').getAttribute('data-label') === `HIT ${confirmedDamage}`,
+  'Ordinary hit confirmation vanished before it could be read');
+await page.evaluate(() => window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { kind: 'wall' } })));
+assert(await page.locator('#hit-marker').getAttribute('data-label') === null
+  && !await page.locator('#hit-marker').evaluate((element) => element.classList.contains('active')),
+  'A miss left stale damage confirmation on screen');
+await page.evaluate(() => { for (let shot = 0; shot < 6; shot += 1) window.__redLedger.fire(); });
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+assert(state.visibleCorpses.some((actor) => actor.id === 'returned-mail'), 'Repeated centered shots did not kill the starter target');
+assert(state.tally.kills === 1 && state.momentum.chain === 1, 'The shooting kill did not update tally and momentum');
+assert(await page.locator('#hit-marker').getAttribute('data-label') === 'CLOSED', 'A lethal hit did not show distinct closure feedback');
+await page.screenshot({ path: fileURLToPath(new URL('weapon-kill.png', output)) });
+
+await page.evaluate(() => window.__redLedger.loadMap('E1M1'));
+assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 3)), 'Could not restage weapon feedback target');
+await page.evaluate(() => window.advanceTime(60));
 const reticleGapBeforeFire = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));
 await page.evaluate(() => window.__redLedger.fire());
 await page.evaluate(() => window.advanceTime(35));
@@ -112,6 +145,13 @@ const defeatNextOpeningActor = async () => page.evaluate((actorIds) => {
   return null;
 }, openingRoster);
 const refreshMomentum = () => page.evaluate(() => window.advanceTime(30));
+const waitForMomentumAnnouncement = async (label, seconds) => {
+  const handle = await page.waitForFunction(({ expectedLabel, expectedSeconds }) => {
+    const text = document.querySelector('#announcer').textContent;
+    return text.includes(expectedLabel) && text.includes(`${expectedSeconds} seconds`) ? text : null;
+  }, { expectedLabel: label, expectedSeconds: seconds });
+  return handle.jsonValue();
+};
 let kills = 0;
 while (kills < 2 && await defeatNextOpeningActor()) kills += 1;
 assert(kills === 2, 'Could not stage a two-kill momentum chain');
@@ -125,8 +165,7 @@ assert(await page.locator('#combat-streak').isVisible(), 'Momentum HUD did not a
 await page.screenshot({ path: fileURLToPath(new URL('momentum.png', output)) });
 
 assert(await defeatNextOpeningActor(), 'Could not stage the escalation threshold');
-await page.waitForFunction(() => document.querySelector('#announcer').textContent.includes('Escalation'));
-const escalationAnnouncement = await page.locator('#announcer').innerText();
+const escalationAnnouncement = await waitForMomentumAnnouncement('Escalation', 4.75);
 await refreshMomentum();
 state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(state.momentum.chain === 3 && state.momentum.presentation.tier === 'escalation',
@@ -144,8 +183,7 @@ await page.screenshot({ path: fileURLToPath(new URL('momentum-escalation.png', o
 for (let chain = 4; chain <= 5; chain += 1) {
   assert(await defeatNextOpeningActor(), `Could not stage momentum chain x${chain}`);
 }
-await page.waitForFunction(() => document.querySelector('#announcer').textContent.includes('Redline'));
-const redlineAnnouncement = await page.locator('#announcer').innerText();
+const redlineAnnouncement = await waitForMomentumAnnouncement('Redline', 5.5);
 await refreshMomentum();
 state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(state.momentum.chain === 5 && state.momentum.presentation.tier === 'redline'
@@ -159,8 +197,7 @@ assert(await page.locator('#combat-streak').getAttribute('data-tier') === 'redli
 for (let chain = 6; chain <= 8; chain += 1) {
   assert(await defeatNextOpeningActor(), `Could not stage momentum chain x${chain}`);
 }
-await page.waitForFunction(() => document.querySelector('#announcer').textContent.includes('Authority Rush'));
-const authorityRushAnnouncement = await page.locator('#announcer').innerText();
+const authorityRushAnnouncement = await waitForMomentumAnnouncement('Authority Rush', 6.25);
 await refreshMomentum();
 state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(state.momentum.chain === 8 && state.momentum.presentation.tier === 'authority-rush'

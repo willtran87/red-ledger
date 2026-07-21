@@ -28,6 +28,8 @@ import {
   shouldPreviewDifficultyOnPointer,
   trackedIntermissionMastery,
   touchBriefingPadLabels,
+  weaponImpactFeedbackDuration,
+  weaponImpactLabel,
 } from './UIController';
 import { deriveMilestones } from './Milestones';
 
@@ -38,6 +40,19 @@ describe('difficulty pointer preview', () => {
     expect(shouldPreviewDifficultyOnPointer('mouse', 'desktop')).toBe(true);
     expect(shouldPreviewDifficultyOnPointer('pen', 'desktop')).toBe(true);
     expect(shouldPreviewDifficultyOnPointer('mouse', 'gamepad')).toBe(false);
+  });
+});
+
+describe('weapon impact confirmation', () => {
+  it('reports only confirmed damage and distinguishes a kill', () => {
+    expect(weaponImpactLabel({ damage: 8.6 })).toBe('HIT 9');
+    expect(weaponImpactLabel({ damage: 0 })).toBe('HIT');
+    expect(weaponImpactLabel({ damage: 30, killed: true })).toBe('CLOSED');
+  });
+
+  it('holds ordinary and lethal confirmation long enough to read', () => {
+    expect(weaponImpactFeedbackDuration()).toBeGreaterThanOrEqual(400);
+    expect(weaponImpactFeedbackDuration(true)).toBeGreaterThan(weaponImpactFeedbackDuration());
   });
 });
 

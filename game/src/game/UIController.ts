@@ -19,6 +19,7 @@ import {
   type GameSnapshot,
   type MapResult,
   type PauseDetails,
+  type WeaponImpactEventDetail,
 } from './GameEngine';
 import { ASSET_DEGRADED_EVENT, runtimeUrl } from './AssetCatalog';
 import {
@@ -55,6 +56,14 @@ export type EntryInputDevice = 'desktop' | 'gamepad' | 'touch';
 
 export const shouldPreviewDifficultyOnPointer = (pointerType: string, activeDevice: EntryInputDevice): boolean =>
   pointerType !== 'touch' && activeDevice === 'desktop';
+
+export const weaponImpactLabel = (detail: Pick<WeaponImpactEventDetail, 'damage' | 'killed'>): string => {
+  if (detail.killed) return 'CLOSED';
+  const damage = Math.max(0, Math.round(detail.damage ?? 0));
+  return damage > 0 ? `HIT ${damage}` : 'HIT';
+};
+
+export const weaponImpactFeedbackDuration = (killed = false): number => killed ? 900 : 650;
 
 interface ReplayLibraryEntry {
   id: string;
@@ -657,7 +666,7 @@ export class UIController {
       this.controllerHaptics.cue(detail.recoil >= .04 ? 'weapon-heavy' : 'weapon-light');
     });
     window.addEventListener('view-recoil', (event) => this.viewRecoil((event as CustomEvent<{ amount: number }>).detail));
-    window.addEventListener('weapon-impact', (event) => this.impactFeedback((event as CustomEvent<{ kind: 'wall' | 'actor'; killed?: boolean }>).detail));
+    window.addEventListener('weapon-impact', (event) => this.impactFeedback((event as CustomEvent<WeaponImpactEventDetail>).detail));
     window.addEventListener('weapon-dry', (event) => {
       this.dryWeapon((event as CustomEvent<{ weapon: keyof typeof WEAPONS }>).detail);
       this.controllerHaptics.cue('failure');
@@ -1886,19 +1895,27 @@ export class UIController {
     ], { duration: 125, easing: 'cubic-bezier(.2,.8,.2,1)' });
   }
 
-  private impactFeedback(detail: { kind: 'wall' | 'actor'; killed?: boolean }): void {
+  private impactFeedback(detail: WeaponImpactEventDetail): void {
+    const marker = $<HTMLElement>('#hit-marker');
     if (detail.kind === 'actor') {
-      const marker = $('#hit-marker');
       marker.classList.remove('active', 'kill');
+      marker.dataset.label = weaponImpactLabel(detail);
       if (detail.killed) marker.classList.add('kill');
       void (marker as HTMLElement).offsetWidth;
       marker.classList.add('active');
       if (this.hitMarkerTimer) window.clearTimeout(this.hitMarkerTimer);
       this.hitMarkerTimer = window.setTimeout(() => {
         marker.classList.remove('active', 'kill');
+        delete marker.dataset.label;
         this.hitMarkerTimer = undefined;
-      }, 160);
+      }, weaponImpactFeedbackDuration(detail.killed));
       return;
+    }
+    if (!marker.classList.contains('kill')) {
+      if (this.hitMarkerTimer) window.clearTimeout(this.hitMarkerTimer);
+      this.hitMarkerTimer = undefined;
+      marker.classList.remove('active');
+      delete marker.dataset.label;
     }
     if ($<HTMLInputElement>('#reduced-effects').checked || !$<HTMLInputElement>('#flash-effects').checked) return;
     if ($<HTMLInputElement>('#reduced-motion').checked) return;

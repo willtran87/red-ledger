@@ -21,6 +21,7 @@ import { AssetCatalog } from './AssetCatalog';
 import { AudioSystem } from './AudioSystem';
 import { ambientAudioGroups, pickupAudioFeedbackCue, surfaceAudioFeedbackGroup } from './AudioSemantics';
 import {
+  aimProjectionOffsetY,
   directionFromView,
   rayVerticalCylinderDistance,
   sampleShotSpread,
@@ -113,6 +114,15 @@ import {
 } from './World';
 
 export type GameMode = 'menu' | 'playing' | 'paused' | 'intermission' | 'dead' | 'complete';
+
+export interface WeaponImpactEventDetail {
+  readonly weapon: WeaponId;
+  readonly kind: 'wall' | 'actor';
+  readonly hitCount?: number;
+  readonly damage?: number;
+  readonly targetUid?: string;
+  readonly killed?: boolean;
+}
 
 const SAVE_KIND_LABELS: Readonly<Record<SaveKind, string>> = Object.freeze({
   manual: 'Manual file',
@@ -1458,7 +1468,14 @@ export class GameEngine {
     const baseHeight = portrait ? Math.round(baseWidth / aspect) : 200;
     this.renderer.setSize(baseWidth * this.renderScale, baseHeight * this.renderScale, false);
     this.camera.aspect = aspect;
-    this.camera.updateProjectionMatrix();
+    this.camera.setViewOffset(
+      baseWidth,
+      baseHeight,
+      0,
+      aimProjectionOffsetY(baseHeight, portrait),
+      baseWidth,
+      baseHeight,
+    );
     if (this.world?.map && this.mode !== 'playing') this.render();
   }
 
@@ -1923,6 +1940,7 @@ export class GameEngine {
       return;
     }
     let hitCount = 0;
+    let damageDealt = 0;
     let killedAny = false;
     let actorImpact: Vector3 | undefined;
     let wallImpact: Vector3 | undefined;
@@ -1945,7 +1963,9 @@ export class GameEngine {
         }
         continue;
       }
+      const healthBefore = target.health;
       this.damageActor(target, this.rollWeaponDamage(weapon.id), 'player');
+      damageDealt += Math.max(0, healthBefore - target.health);
       const impact = target.position.clone().add(new Vector3(0, ENEMIES[target.id].height * .55, 0));
       this.emitParticles('ink', impact, weapon.pellets > 1 ? 1 : 4, impactParticleDirection(direction));
       actorImpact ??= impact;
@@ -1954,10 +1974,11 @@ export class GameEngine {
     }
     if (actorImpact) this.playWeaponImpact(weapon.id, actorImpact, true);
     else if (wallImpact) this.playWeaponImpact(weapon.id, wallImpact);
-    window.dispatchEvent(new CustomEvent('weapon-impact', { detail: {
+    window.dispatchEvent(new CustomEvent<WeaponImpactEventDetail>('weapon-impact', { detail: {
       weapon: weapon.id,
       kind: actorImpact ? 'actor' : 'wall',
       hitCount,
+      damage: damageDealt,
       killed: killedAny,
     } }));
   }
@@ -1999,10 +2020,17 @@ export class GameEngine {
       const target = this.findTarget(direction, WEAPONS['binding-engine'].range, this.verticalAutoAimTolerance());
       let endpoint = this.traceWorldImpact(direction, WEAPONS['binding-engine'].range);
       if (target) {
+        const healthBefore = target.health;
         this.damageActor(target, this.rollWeaponDamage('binding-engine'), 'player');
         endpoint = this.targetRayPoint(direction, target);
         this.emitParticles('energy', endpoint, 2, impactParticleDirection(direction));
-        window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: 'binding-engine', kind: 'actor', targetUid: target.uid, killed: target.dead } }));
+        window.dispatchEvent(new CustomEvent<WeaponImpactEventDetail>('weapon-impact', { detail: {
+          weapon: 'binding-engine',
+          kind: 'actor',
+          damage: Math.max(0, healthBefore - target.health),
+          targetUid: target.uid,
+          killed: target.dead,
+        } }));
       }
       else {
         const breakable = this.findBreakableTarget(direction, WEAPONS['binding-engine'].range, this.verticalAutoAimTolerance());
@@ -2277,6 +2305,7 @@ export class GameEngine {
       projectile.remaining -= dt;
       if (Number.isFinite(bestT)) {
         projectile.position.copy(from).addScaledVector(delta, bestT);
+        const targetHealthBefore = target?.health;
         if (target) this.damageActor(target, projectile.damage, 'player');
         else {
           const breakable = this.world.closestBreakable(projectile.position, projectile.radius + .9);
@@ -2297,7 +2326,13 @@ export class GameEngine {
           impactParticleDirection(projectile.velocity),
         );
         if (projectile.weapon === 'catastrophe-launcher') this.emitParticles('smoke', projectile.position, 7);
-        window.dispatchEvent(new CustomEvent('weapon-impact', { detail: { weapon: projectile.weapon, kind: target ? 'actor' : 'wall', targetUid: target?.uid, killed: target?.dead ?? false } }));
+        window.dispatchEvent(new CustomEvent<WeaponImpactEventDetail>('weapon-impact', { detail: {
+          weapon: projectile.weapon,
+          kind: target ? 'actor' : 'wall',
+          damage: target && targetHealthBefore !== undefined ? Math.max(0, targetHealthBefore - target.health) : 0,
+          targetUid: target?.uid,
+          killed: target?.dead ?? false,
+        } }));
         this.removePlayerProjectile(index);
         continue;
       }
