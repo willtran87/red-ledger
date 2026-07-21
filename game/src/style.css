@@ -490,6 +490,22 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
 .entry-controls > span { min-width: 0; min-height: 42px; display: grid; align-content: center; gap: 4px; padding: 5px 7px; border-block: 1px solid #4b5055; text-align: center; }
 .entry-controls b { color: #b7b8b4; font-size: .625rem; }
 .entry-controls small { overflow: hidden; color: #fffdf7; font-size: .625rem; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 701px) and (min-height: 501px) {
+  #ready-overlay { gap: 15px; padding: 20px; }
+  #ready-overlay header { gap: 12px; }
+  #ready-overlay header strong { font-size: 1.125rem; }
+  #ready-overlay header span, #ready-overlay header small { font-size: .75rem; }
+  #ready-overlay img { width: 56px; height: 56px; }
+  #entry-objective { width: min(700px, calc(100vw - 40px)); font-size: .8125rem; line-height: 1.5; }
+  .entry-field-order { width: min(700px, calc(100vw - 40px)); padding: 9px 11px; }
+  .entry-field-order > strong, .entry-field-order > small, #entry-field-order-metrics span { font-size: .6875rem; }
+  .entry-field-order > span { font-size: .8125rem; }
+  .entry-controls { width: min(600px, calc(100vw - 40px)); gap: 7px; }
+  #ready-overlay[data-briefing="orientation"] .entry-controls { width: min(700px, calc(100vw - 40px)); }
+  .entry-controls > span { min-height: 50px; gap: 5px; padding: 7px 9px; }
+  .entry-controls b { font-size: .6875rem; }
+  .entry-controls small { font-size: .8125rem; }
+}
 #intermission { gap: 6px; }
 .intermission-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .intermission-actions button { min-width: 124px; }
@@ -549,9 +565,9 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
   #ready-overlay { gap: 18px; padding: 24px; }
   #ready-overlay header { gap: 15px; }
   #ready-overlay header strong { font-size: 1.375rem; }
-  #ready-overlay header span { font-size: .6875rem; }
+  #ready-overlay header span, #ready-overlay header small { font-size: .8125rem; }
   #ready-overlay img { width: 72px; height: 72px; }
-  #entry-objective { width: min(880px, calc(100vw - 64px)); font-size: .9375rem; }
+  #entry-objective { width: min(880px, calc(100vw - 64px)); font-size: 1rem; }
   .entry-field-order { width: min(880px, calc(100vw - 64px)); gap: 6px 16px; padding: 10px 13px; }
   .entry-field-order > strong, .entry-field-order > small, #entry-field-order-metrics span { font-size: .75rem; }
   .entry-field-order > span { font-size: .9375rem; }
@@ -560,8 +576,8 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
   .entry-controls { width: min(780px, calc(100vw - 64px)); gap: 8px; }
   #ready-overlay[data-briefing="orientation"] .entry-controls { width: min(960px, calc(100vw - 64px)); }
   .entry-controls > span { min-height: 62px; gap: 6px; padding: 8px 10px; }
-  .entry-controls b { font-size: .75rem; }
-  .entry-controls small { font-size: .9375rem; }
+  .entry-controls b { font-size: .8125rem; }
+  .entry-controls small { font-size: 1rem; }
   #ready-overlay > button { min-width: 160px; min-height: 46px; font-size: .9375rem; }
   .death-review { width: min(900px, 96%); gap: 12px; padding: 14px 16px; }
   #death-cause { font-size: 1rem; }

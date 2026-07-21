@@ -594,6 +594,8 @@ async function run(viewport, name, mobile = false) {
     const controls = element.querySelector('#entry-controls').getBoundingClientRect();
     return {
       width: controls.width,
+      objective: font('#entry-objective'),
+      mapTitle: font('header strong'),
       mapMeta: font('header span'),
       activeSeal: font('header small'),
       labels: font('.entry-controls b'),
@@ -602,11 +604,18 @@ async function run(viewport, name, mobile = false) {
   });
   assert([...briefing.mapMeta, ...briefing.activeSeal, ...briefing.labels, ...briefing.values]
     .every((fontSize) => fontSize >= 10), `${name}: field briefing contains sub-10px instructional copy`);
+  if (!mobile && viewport.width >= 701 && viewport.height >= 501) {
+    assert(briefing.mapTitle.every((fontSize) => fontSize >= 18), `${name}: field briefing map title is too small at a normal desktop viewport`);
+    assert(briefing.objective.every((fontSize) => fontSize >= 13), `${name}: field briefing objective is too small at a normal desktop viewport`);
+    assert(briefing.mapMeta.every((fontSize) => fontSize >= 12), `${name}: field briefing metadata is too small at a normal desktop viewport`);
+    assert(briefing.labels.every((fontSize) => fontSize >= 11), `${name}: field briefing control labels are too small at a normal desktop viewport`);
+    assert(briefing.values.every((fontSize) => fontSize >= 13), `${name}: field briefing control values are too small at a normal desktop viewport`);
+  }
   if (!mobile && viewport.width >= 1920) {
     assert(briefing.width >= 720, `${name}: entry briefing is undersized on a high-resolution display`);
-    assert(briefing.values.every((fontSize) => fontSize >= 14), `${name}: entry briefing values are too small on a high-resolution display`);
-    await page.screenshot({ path: `output/responsive/${name}-briefing.png` });
+    assert(briefing.values.every((fontSize) => fontSize >= 16), `${name}: entry briefing values are too small on a high-resolution display`);
   }
+  await page.screenshot({ path: `output/responsive/${name}-briefing.png` });
   if (await page.locator('#ready-overlay').isVisible()) {
     if (mobile) await page.locator('#enter-file').tap();
     else await page.click('#enter-file');

@@ -32,7 +32,9 @@ const collectBinder = async (page) => page.evaluate(() => {
   return found;
 });
 
-const stageRapidEffectForLayout = async (page) => page.locator('[data-effect="binder"]').evaluate((binder) => {
+const stageRapidEffectForLayout = async (page) => page.locator('#active-effects').evaluate((strip) => {
+  const binder = strip.querySelector('[data-effect="binder"]');
+  if (!binder) throw new Error('Temporary Binder card was replaced before the layout fixture could be staged');
   const rapid = binder.cloneNode(true);
   rapid.dataset.effect = 'rapid';
   rapid.setAttribute('aria-label', 'Rapid Authority, weapons fire faster, 30 seconds remaining');
@@ -43,7 +45,7 @@ const stageRapidEffectForLayout = async (page) => page.locator('[data-effect="bi
   rapid.querySelector('small').textContent = 'Weapons fire faster.';
   rapid.querySelector('time').textContent = '30s';
   rapid.querySelector('time').dateTime = 'PT30S';
-  binder.parentElement.append(rapid);
+  strip.append(rapid);
   return new Promise((resolve) => {
     if (icon.complete && icon.naturalWidth > 0) resolve(true);
     else {
