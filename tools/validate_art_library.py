@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from statistics import mean
 
-from PIL import Image
+from PIL import Image, ImageChops, ImageFilter, ImageMath
 
 from prepare_runtime_image import PALETTE_HEX
 
@@ -235,7 +235,35 @@ def alpha_grid_spacing(path: Path, columns: int, rows: int) -> dict:
     }
 
 
-def alpha_extraction(path: Path) -> dict:
+def key_spill_boundary_pixels(image: Image.Image, key_name: str) -> int:
+    # The current cleanup request and approved source constraints concern the
+    # magenta-keyed families. Green can be a deliberate subject color in older
+    # sheets, so keep the existing exact-key check for those assets.
+    if key_name != "magenta":
+        return 0
+    red, green, blue, alpha = image.split()
+    spill = ImageMath.lambda_eval(
+        lambda channel: (
+            (channel["red"] >= 96)
+            & (channel["blue"] >= 96)
+            & (channel["red"] - channel["green"] >= 28)
+            & (channel["blue"] - channel["green"] >= 28)
+            & (channel["red"] - channel["blue"] <= 96)
+            & (channel["blue"] - channel["red"] <= 96)
+            & (channel["alpha"] > 32)
+        ),
+        red=red,
+        green=green,
+        blue=blue,
+        alpha=alpha,
+    ).convert("L")
+    transparent_neighbor = alpha.point(lambda value: 255 if value <= 32 else 0).filter(ImageFilter.MaxFilter(3))
+    boundary_spill = ImageChops.multiply(spill, transparent_neighbor)
+    histogram = boundary_spill.histogram()
+    return sum(histogram[1:])
+
+
+def alpha_extraction(path: Path, key_name: str) -> dict:
     source = Image.open(path)
     image = source.convert("RGBA")
     visible = 0
@@ -252,15 +280,18 @@ def alpha_extraction(path: Path) -> dict:
     for y in range(1, image.height - 1):
         border.extend((alpha.getpixel((0, y)), alpha.getpixel((image.width - 1, y))))
     corners = [alpha.getpixel(point) for point in ((0, 0), (image.width - 1, 0), (0, image.height - 1), (image.width - 1, image.height - 1))]
+    boundary_spill = key_spill_boundary_pixels(image, key_name)
     return {
         "file": path.as_posix(),
+        "key": key_name,
         "size": list(image.size),
         "mode_ok": source.mode == "RGBA",
         "visible_coverage": round(visible / (image.width * image.height), 4),
         "transparent_corners": corners,
         "border_max_alpha": max(border),
         "key_like_visible_pixels": key_like,
-        "passed": source.mode == "RGBA" and max(corners) == 0 and max(border) == 0 and key_like == 0,
+        "key_spill_boundary_pixels": boundary_spill,
+        "passed": source.mode == "RGBA" and max(corners) == 0 and max(border) == 0 and key_like == 0 and boundary_spill == 0,
     }
 
 
@@ -451,11 +482,12 @@ def main() -> None:
         item = classify_border(Image.open(path))
         item["file"] = path.relative_to(root).as_posix()
         chroma.append(item)
+    key_names = {Path(item["file"]).name: item["key"] for item in chroma}
 
     alpha_sources = []
     alpha_root = root / "art/source/alpha/normalized"
     for path in sorted(alpha_root.glob("*.png")):
-        item = alpha_extraction(path)
+        item = alpha_extraction(path, key_names[path.name])
         item["file"] = path.relative_to(root).as_posix()
         alpha_sources.append(item)
 

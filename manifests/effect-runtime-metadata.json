@@ -2472,6 +2472,54 @@
     ]
   },
   {
+    "family": "ember-impact",
+    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_01.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "ember-impact",
+    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_02.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "ember-impact",
+    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_03.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "ember-impact",
+    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_04.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "ember-impact",
+    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_05.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
+    "family": "ember-impact",
+    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_06.png",
+    "size": [
+      64,
+      64
+    ]
+  },
+  {
     "family": "particle-weapon-feedback",
     "file": "assets/public_runtime/effects/particle-weapon-feedback/fx_particle-weapon-feedback_F_01.png",
     "size": [
@@ -2789,54 +2837,6 @@
     "size": [
       32,
       32
-    ]
-  },
-  {
-    "family": "ember-impact",
-    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_01.png",
-    "size": [
-      64,
-      64
-    ]
-  },
-  {
-    "family": "ember-impact",
-    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_02.png",
-    "size": [
-      64,
-      64
-    ]
-  },
-  {
-    "family": "ember-impact",
-    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_03.png",
-    "size": [
-      64,
-      64
-    ]
-  },
-  {
-    "family": "ember-impact",
-    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_04.png",
-    "size": [
-      64,
-      64
-    ]
-  },
-  {
-    "family": "ember-impact",
-    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_05.png",
-    "size": [
-      64,
-      64
-    ]
-  },
-  {
-    "family": "ember-impact",
-    "file": "assets/public_runtime/effects/ember-impact/fx_ember-impact_F_06.png",
-    "size": [
-      64,
-      64
     ]
   }
 ]

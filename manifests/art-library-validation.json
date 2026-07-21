@@ -1432,12 +1432,13 @@
   "alpha_sources": [
     {
       "file": "art/source/alpha/normalized/boss_aggregate_anchor-v01.png",
+      "key": "magenta",
       "size": [
         1770,
         887
       ],
       "mode_ok": true,
-      "visible_coverage": 0.1965,
+      "visible_coverage": 0.1872,
       "transparent_corners": [
         0,
         0,
@@ -1446,16 +1447,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/boss_chief-actuary_anchor-v01.png",
+      "key": "magenta",
       "size": [
         1770,
         887
       ],
       "mode_ok": true,
-      "visible_coverage": 0.0963,
+      "visible_coverage": 0.0895,
       "transparent_corners": [
         0,
         0,
@@ -1464,10 +1467,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/boss_regional-director_anchor-v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -1482,10 +1487,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/boss_regional-director_canister-master-v01.png",
+      "key": "green",
       "size": [
         1976,
         793
@@ -1500,10 +1507,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/boss_regional-director_collapse-v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -1518,10 +1527,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/boss_regional-director_walk-master-v01.png",
+      "key": "green",
       "size": [
         1976,
         793
@@ -1536,10 +1547,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/boss_uninsurable_states-v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -1554,10 +1567,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/decal_environment-grid_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -1572,10 +1587,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/door_archive-red_v01.png",
+      "key": "green",
       "size": [
         1923,
         818
@@ -1590,10 +1607,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/door_catastrophe-cyan_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -1608,10 +1627,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/door_elevator_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -1626,10 +1647,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/door_executive-yellow_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -1644,10 +1667,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/door_fire-shutter_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -1662,10 +1687,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/door_loading-bay_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -1680,10 +1707,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/door_office-standard_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -1698,10 +1727,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/door_vault_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -1716,10 +1747,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/door_wax-gate_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -1734,10 +1767,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_bad-faith-counsel_anchor-v01.png",
+      "key": "green",
       "size": [
         1770,
         887
@@ -1752,16 +1787,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_cat-model_anchor-v01.png",
+      "key": "magenta",
       "size": [
         1770,
         887
       ],
       "mode_ok": true,
-      "visible_coverage": 0.1884,
+      "visible_coverage": 0.1795,
       "transparent_corners": [
         0,
         0,
@@ -1770,16 +1807,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_coverage-drone_anchor-v01.png",
+      "key": "magenta",
       "size": [
         1980,
         793
       ],
       "mode_ok": true,
-      "visible_coverage": 0.1282,
+      "visible_coverage": 0.1223,
       "transparent_corners": [
         0,
         0,
@@ -1788,16 +1827,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_coverage-drone_attack-master-v01.png",
+      "key": "magenta",
       "size": [
         1976,
         793
       ],
       "mode_ok": true,
-      "visible_coverage": 0.108,
+      "visible_coverage": 0.1019,
       "transparent_corners": [
         0,
         0,
@@ -1806,16 +1847,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_coverage-drone_death-v01.png",
+      "key": "magenta",
       "size": [
         1980,
         793
       ],
       "mode_ok": true,
-      "visible_coverage": 0.0835,
+      "visible_coverage": 0.0827,
       "transparent_corners": [
         0,
         0,
@@ -1824,16 +1867,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_coverage-drone_walk-master-v01.png",
+      "key": "magenta",
       "size": [
         1976,
         793
       ],
       "mode_ok": true,
-      "visible_coverage": 0.0765,
+      "visible_coverage": 0.0735,
       "transparent_corners": [
         0,
         0,
@@ -1842,10 +1887,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_denial-officer_anchor-v01.png",
+      "key": "green",
       "size": [
         2168,
         724
@@ -1860,10 +1907,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_desk-warden_anchor-v01.png",
+      "key": "green",
       "size": [
         2168,
         724
@@ -1878,10 +1927,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_ember-clerk_anchor-v01.png",
+      "key": "green",
       "size": [
         1715,
         916
@@ -1896,10 +1947,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_exposure-hound_anchor-v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -1914,10 +1967,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_exposure-hound_attack-master-v01.png",
+      "key": "green",
       "size": [
         1976,
         793
@@ -1932,10 +1987,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_exposure-hound_death-v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -1950,10 +2007,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_exposure-hound_gib-v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -1968,10 +2027,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_exposure-hound_pain-master-v01.png",
+      "key": "green",
       "size": [
         1976,
         793
@@ -1986,10 +2047,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_exposure-hound_walk-master-v01.png",
+      "key": "green",
       "size": [
         1976,
         793
@@ -2004,16 +2067,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_fraud-apparition_anchor-v02.png",
+      "key": "magenta",
       "size": [
         1976,
         793
       ],
       "mode_ok": true,
-      "visible_coverage": 0.2809,
+      "visible_coverage": 0.2542,
       "transparent_corners": [
         0,
         0,
@@ -2022,10 +2087,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_liability-mass_anchor-v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -2040,10 +2107,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_liability-mass_attack-master-v01.png",
+      "key": "green",
       "size": [
         1976,
         793
@@ -2058,10 +2127,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_liability-mass_death-v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -2076,10 +2147,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_liability-mass_gib-v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -2094,10 +2167,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_liability-mass_walk-master-v01.png",
+      "key": "green",
       "size": [
         1976,
         793
@@ -2112,16 +2187,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_reserve-eater_anchor-v01.png",
+      "key": "magenta",
       "size": [
         2168,
         724
       ],
       "mode_ok": true,
-      "visible_coverage": 0.165,
+      "visible_coverage": 0.1571,
       "transparent_corners": [
         0,
         0,
@@ -2130,10 +2207,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_returned-mail_anchor-v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -2148,10 +2227,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/enemy_subrogator_anchor-v01.png",
+      "key": "green",
       "size": [
         2168,
         724
@@ -2166,10 +2247,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_canister-explosion_v01.png",
+      "key": "green",
       "size": [
         2168,
         724
@@ -2184,10 +2267,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_death-feedback_v01.png",
+      "key": "green",
       "size": [
         1976,
         793
@@ -2202,10 +2287,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_ember-impact_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2220,16 +2307,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_environment-material-feedback_v01.png",
+      "key": "magenta",
       "size": [
         1912,
         820
       ],
       "mode_ok": true,
-      "visible_coverage": 0.0686,
+      "visible_coverage": 0.0622,
       "transparent_corners": [
         0,
         0,
@@ -2238,10 +2327,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_hit-ink-large_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2256,16 +2347,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_impact-lineup_v01.png",
+      "key": "magenta",
       "size": [
         2172,
         724
       ],
       "mode_ok": true,
-      "visible_coverage": 0.0685,
+      "visible_coverage": 0.0514,
       "transparent_corners": [
         0,
         0,
@@ -2274,16 +2367,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_projectile-lineup_v01.png",
+      "key": "magenta",
       "size": [
         2168,
         724
       ],
       "mode_ok": true,
-      "visible_coverage": 0.0749,
+      "visible_coverage": 0.0664,
       "transparent_corners": [
         0,
         0,
@@ -2292,10 +2387,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_status-feedback_v01.png",
+      "key": "magenta",
       "size": [
         1768,
         887
@@ -2310,10 +2407,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_support-debris-lineup_v01.png",
+      "key": "magenta",
       "size": [
         2172,
         724
@@ -2328,10 +2427,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_teleport-approval-ring_v01.png",
+      "key": "green",
       "size": [
         2168,
         724
@@ -2346,10 +2447,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_weapon-feedback_v01.png",
+      "key": "green",
       "size": [
         2168,
         724
@@ -2364,10 +2467,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/fx_world-feedback_v01.png",
+      "key": "magenta",
       "size": [
         2168,
         724
@@ -2382,10 +2487,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/guide_adjuster-hand_anchor_v01.png",
+      "key": "green",
       "size": [
         1774,
         887
@@ -2400,10 +2507,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/overlay_environment-grid_v01.png",
+      "key": "green",
       "size": [
         1772,
         887
@@ -2418,10 +2527,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/pickup_ammo-lineup_v01.png",
+      "key": "green",
       "size": [
         2168,
         724
@@ -2436,10 +2547,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/pickup_credentials-powerups-lineup_v01.png",
+      "key": "green",
       "size": [
         2170,
         724
@@ -2454,10 +2567,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/pickup_missing-lineup_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2472,10 +2587,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/pickup_recovery-lineup_v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -2490,16 +2607,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/pickup_weapon-lineup-late_v01.png",
+      "key": "magenta",
       "size": [
         1980,
         793
       ],
       "mode_ok": true,
-      "visible_coverage": 0.2272,
+      "visible_coverage": 0.2251,
       "transparent_corners": [
         0,
         0,
@@ -2508,10 +2627,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/pickup_weapon-lineup_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2526,10 +2647,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_archive-lineup_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2544,10 +2667,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_copier-bank_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2562,10 +2687,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_court-actuarial-lineup_v01.png",
+      "key": "green",
       "size": [
         2070,
         758
@@ -2580,10 +2707,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_flood-lineup_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2598,10 +2727,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_hotel-data-lineup_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2616,10 +2747,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_industrial-lineup_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2634,10 +2767,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_office-lineup_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2652,10 +2787,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_paper-desk-hvac-lineup_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2670,10 +2807,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_suppression-cylinder_v01.png",
+      "key": "green",
       "size": [
         2146,
         733
@@ -2688,10 +2827,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/prop_train-salvage-lineup_v01.png",
+      "key": "green",
       "size": [
         2046,
         768
@@ -2706,10 +2847,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/switch_actuarial_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -2724,10 +2867,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/switch_archive_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -2742,10 +2887,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/switch_executive_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -2760,10 +2907,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/switch_pump_v01.png",
+      "key": "green",
       "size": [
         1536,
         1024
@@ -2778,10 +2927,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/switch_wall-basic_v01.png",
+      "key": "green",
       "size": [
         2048,
         768
@@ -2796,10 +2947,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/ui_adjuster-portrait_anchor_v01.png",
+      "key": "green",
       "size": [
         1254,
         1254
@@ -2814,10 +2967,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/ui_portrait_damage-0_states_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2832,10 +2987,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/ui_portrait_damage-1_states_v01.png",
+      "key": "green",
       "size": [
         1980,
         793
@@ -2850,10 +3007,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/ui_portrait_damage-2_states_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2868,10 +3027,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/ui_portrait_damage-3_states_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2886,10 +3047,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/ui_portrait_damage-4_states_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -2904,10 +3067,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/ui_portrait_global_states_v01.png",
+      "key": "green",
       "size": [
         2048,
         768
@@ -2922,10 +3087,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_audit-repeater_states_v01.png",
+      "key": "green",
       "size": [
         1981,
         793
@@ -2940,16 +3107,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_binding-engine_fire-states_v01.png",
+      "key": "magenta",
       "size": [
         2172,
         724
       ],
       "mode_ok": true,
-      "visible_coverage": 0.205,
+      "visible_coverage": 0.195,
       "transparent_corners": [
         0,
         0,
@@ -2958,16 +3127,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_binding-engine_idle-states_v01.png",
+      "key": "magenta",
       "size": [
         1773,
         887
       ],
       "mode_ok": true,
-      "visible_coverage": 0.219,
+      "visible_coverage": 0.2179,
       "transparent_corners": [
         0,
         0,
@@ -2976,10 +3147,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_catastrophe-launcher_states_v01.png",
+      "key": "green",
       "size": [
         2170,
         724
@@ -2994,10 +3167,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_claim-stamp_states_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -3012,16 +3187,18 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_plasma-copier_states_v01.png",
+      "key": "magenta",
       "size": [
         1771,
         887
       ],
       "mode_ok": true,
-      "visible_coverage": 0.1508,
+      "visible_coverage": 0.147,
       "transparent_corners": [
         0,
         0,
@@ -3030,10 +3207,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_staple-driver_states_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -3048,10 +3227,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_twin-bore-riveter_states_v01.png",
+      "key": "green",
       "size": [
         2135,
         735
@@ -3066,10 +3247,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_umbra-saw_fire-states_v01.png",
+      "key": "green",
       "size": [
         2172,
         724
@@ -3084,10 +3267,12 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     },
     {
       "file": "art/source/alpha/normalized/weapon_umbra-saw_idle-states_v01.png",
+      "key": "green",
       "size": [
         1774,
         887
@@ -3102,6 +3287,7 @@
       ],
       "border_max_alpha": 0,
       "key_like_visible_pixels": 0,
+      "key_spill_boundary_pixels": 0,
       "passed": true
     }
   ],
@@ -3548,13 +3734,13 @@
           "index": 0,
           "bbox": [
             47,
-            377,
+            378,
             348,
             730
           ],
           "gaps": [
             47,
-            377,
+            378,
             48,
             63
           ],
@@ -3565,13 +3751,13 @@
           "index": 1,
           "bbox": [
             47,
-            399,
+            402,
             348,
             730
           ],
           "gaps": [
             47,
-            399,
+            402,
             48,
             63
           ],
@@ -3581,15 +3767,15 @@
         {
           "index": 2,
           "bbox": [
-            54,
-            287,
-            342,
+            55,
+            291,
+            341,
             730
           ],
           "gaps": [
-            54,
-            287,
-            54,
+            55,
+            291,
+            55,
             63
           ],
           "center_offset": 0,
@@ -3599,13 +3785,13 @@
           "index": 3,
           "bbox": [
             47,
-            391,
+            393,
             348,
             730
           ],
           "gaps": [
             47,
-            391,
+            393,
             48,
             63
           ],
@@ -3616,13 +3802,13 @@
           "index": 4,
           "bbox": [
             47,
-            374,
+            375,
             348,
             730
           ],
           "gaps": [
             47,
-            374,
+            375,
             48,
             63
           ],
@@ -4529,13 +4715,13 @@
           "index": 0,
           "bbox": [
             32,
-            408,
+            407,
             238,
             666
           ],
           "gaps": [
             32,
-            408,
+            407,
             33,
             58
           ],
@@ -4546,13 +4732,13 @@
           "index": 1,
           "bbox": [
             32,
-            390,
+            388,
             238,
             666
           ],
           "gaps": [
             32,
-            390,
+            388,
             33,
             58
           ],
@@ -4562,15 +4748,15 @@
         {
           "index": 2,
           "bbox": [
-            34,
-            365,
-            237,
+            38,
+            369,
+            233,
             666
           ],
           "gaps": [
-            34,
-            365,
-            34,
+            38,
+            369,
+            38,
             58
           ],
           "center_offset": 0,
@@ -4580,13 +4766,13 @@
           "index": 3,
           "bbox": [
             32,
-            401,
+            399,
             238,
             666
           ],
           "gaps": [
             32,
-            401,
+            399,
             33,
             58
           ],
@@ -4597,13 +4783,13 @@
           "index": 4,
           "bbox": [
             32,
-            409,
+            408,
             238,
             666
           ],
           "gaps": [
             32,
-            409,
+            408,
             33,
             58
           ],
@@ -4614,13 +4800,13 @@
           "index": 5,
           "bbox": [
             32,
-            377,
+            376,
             238,
             666
           ],
           "gaps": [
             32,
-            377,
+            376,
             33,
             58
           ],
@@ -4631,13 +4817,13 @@
           "index": 6,
           "bbox": [
             32,
-            435,
+            436,
             238,
             666
           ],
           "gaps": [
             32,
-            435,
+            436,
             33,
             58
           ],
@@ -4648,13 +4834,13 @@
           "index": 7,
           "bbox": [
             32,
-            401,
+            400,
             238,
             666
           ],
           "gaps": [
             32,
-            401,
+            400,
             33,
             58
           ],
@@ -4675,13 +4861,13 @@
           "index": 0,
           "bbox": [
             29,
-            101,
+            96,
             217,
             730
           ],
           "gaps": [
             29,
-            101,
+            96,
             30,
             63
           ],
@@ -4692,13 +4878,13 @@
           "index": 1,
           "bbox": [
             29,
-            201,
+            204,
             217,
             730
           ],
           "gaps": [
             29,
-            201,
+            204,
             30,
             63
           ],
@@ -4709,13 +4895,13 @@
           "index": 2,
           "bbox": [
             29,
-            202,
+            208,
             217,
             730
           ],
           "gaps": [
             29,
-            202,
+            208,
             30,
             63
           ],
@@ -4726,13 +4912,13 @@
           "index": 3,
           "bbox": [
             29,
-            163,
+            162,
             217,
             730
           ],
           "gaps": [
             29,
-            163,
+            162,
             30,
             63
           ],
@@ -4743,13 +4929,13 @@
           "index": 4,
           "bbox": [
             29,
-            185,
+            184,
             217,
             730
           ],
           "gaps": [
             29,
-            185,
+            184,
             30,
             63
           ],
@@ -4760,13 +4946,13 @@
           "index": 5,
           "bbox": [
             29,
-            189,
+            188,
             217,
             730
           ],
           "gaps": [
             29,
-            189,
+            188,
             30,
             63
           ],
@@ -4777,13 +4963,13 @@
           "index": 6,
           "bbox": [
             29,
-            197,
+            195,
             217,
             730
           ],
           "gaps": [
             29,
-            197,
+            195,
             30,
             63
           ],
@@ -4793,15 +4979,15 @@
         {
           "index": 7,
           "bbox": [
-            29,
+            30,
             64,
-            217,
+            216,
             730
           ],
           "gaps": [
-            29,
-            64,
             30,
+            64,
+            31,
             63
           ],
           "center_offset": -1,
@@ -4821,13 +5007,13 @@
           "index": 0,
           "bbox": [
             42,
-            359,
+            357,
             311,
             816
           ],
           "gaps": [
             42,
-            359,
+            357,
             43,
             71
           ],
@@ -4855,13 +5041,13 @@
           "index": 2,
           "bbox": [
             42,
-            399,
+            403,
             311,
             816
           ],
           "gaps": [
             42,
-            399,
+            403,
             43,
             71
           ],
@@ -4872,13 +5058,13 @@
           "index": 3,
           "bbox": [
             42,
-            392,
+            394,
             311,
             816
           ],
           "gaps": [
             42,
-            392,
+            394,
             43,
             71
           ],
@@ -4889,13 +5075,13 @@
           "index": 4,
           "bbox": [
             42,
-            301,
+            297,
             311,
             816
           ],
           "gaps": [
             42,
-            301,
+            297,
             43,
             71
           ],
@@ -5011,13 +5197,13 @@
           "index": 0,
           "bbox": [
             42,
-            441,
+            438,
             311,
             816
           ],
           "gaps": [
             42,
-            441,
+            438,
             43,
             71
           ],
@@ -5028,13 +5214,13 @@
           "index": 1,
           "bbox": [
             42,
-            439,
+            441,
             311,
             816
           ],
           "gaps": [
             42,
-            439,
+            441,
             43,
             71
           ],
@@ -5045,13 +5231,13 @@
           "index": 2,
           "bbox": [
             42,
-            434,
+            435,
             311,
             816
           ],
           "gaps": [
             42,
-            434,
+            435,
             43,
             71
           ],
@@ -5062,13 +5248,13 @@
           "index": 3,
           "bbox": [
             42,
-            411,
+            408,
             311,
             816
           ],
           "gaps": [
             42,
-            411,
+            408,
             43,
             71
           ],
@@ -5079,13 +5265,13 @@
           "index": 4,
           "bbox": [
             42,
-            427,
+            425,
             311,
             816
           ],
           "gaps": [
             42,
-            427,
+            425,
             43,
             71
           ],
@@ -5106,13 +5292,13 @@
           "index": 0,
           "bbox": [
             42,
-            546,
+            549,
             311,
             816
           ],
           "gaps": [
             42,
-            546,
+            549,
             43,
             71
           ],
@@ -5123,13 +5309,13 @@
           "index": 1,
           "bbox": [
             42,
-            546,
+            550,
             311,
             816
           ],
           "gaps": [
             42,
-            546,
+            550,
             43,
             71
           ],
@@ -5140,13 +5326,13 @@
           "index": 2,
           "bbox": [
             42,
-            583,
+            565,
             311,
             816
           ],
           "gaps": [
             42,
-            583,
+            565,
             43,
             71
           ],
@@ -5157,13 +5343,13 @@
           "index": 3,
           "bbox": [
             42,
-            549,
+            550,
             311,
             816
           ],
           "gaps": [
             42,
-            549,
+            550,
             43,
             71
           ],
@@ -5173,18 +5359,18 @@
         {
           "index": 4,
           "bbox": [
-            43,
-            496,
-            311,
+            45,
+            502,
+            308,
             816
           ],
           "gaps": [
-            43,
-            496,
-            43,
+            45,
+            502,
+            46,
             71
           ],
-          "center_offset": 0,
+          "center_offset": -1,
           "passed": true
         }
       ],
@@ -5313,13 +5499,13 @@
           "index": 0,
           "bbox": [
             29,
-            450,
+            451,
             217,
             730
           ],
           "gaps": [
             29,
-            450,
+            451,
             30,
             63
           ],
@@ -5330,13 +5516,13 @@
           "index": 1,
           "bbox": [
             29,
-            474,
+            477,
             217,
             730
           ],
           "gaps": [
             29,
-            474,
+            477,
             30,
             63
           ],
@@ -5347,13 +5533,13 @@
           "index": 2,
           "bbox": [
             29,
-            467,
+            468,
             217,
             730
           ],
           "gaps": [
             29,
-            467,
+            468,
             30,
             63
           ],
@@ -5364,13 +5550,13 @@
           "index": 3,
           "bbox": [
             29,
-            436,
+            437,
             217,
             730
           ],
           "gaps": [
             29,
-            436,
+            437,
             30,
             63
           ],
@@ -5381,13 +5567,13 @@
           "index": 4,
           "bbox": [
             29,
-            471,
+            474,
             217,
             730
           ],
           "gaps": [
             29,
-            471,
+            474,
             30,
             63
           ],
@@ -5398,13 +5584,13 @@
           "index": 5,
           "bbox": [
             29,
-            471,
+            474,
             217,
             730
           ],
           "gaps": [
             29,
-            471,
+            474,
             30,
             63
           ],
@@ -5415,13 +5601,13 @@
           "index": 6,
           "bbox": [
             29,
-            462,
+            463,
             217,
             730
           ],
           "gaps": [
             29,
-            462,
+            463,
             30,
             63
           ],
@@ -5432,13 +5618,13 @@
           "index": 7,
           "bbox": [
             29,
-            430,
+            429,
             217,
             730
           ],
           "gaps": [
             29,
-            430,
+            429,
             30,
             63
           ],
@@ -5459,13 +5645,13 @@
           "index": 0,
           "bbox": [
             39,
-            440,
+            441,
             290,
             730
           ],
           "gaps": [
             39,
-            440,
+            441,
             40,
             63
           ],
@@ -5476,13 +5662,13 @@
           "index": 1,
           "bbox": [
             39,
-            473,
+            475,
             290,
             730
           ],
           "gaps": [
             39,
-            473,
+            475,
             40,
             63
           ],
@@ -5493,13 +5679,13 @@
           "index": 2,
           "bbox": [
             39,
-            501,
+            503,
             290,
             730
           ],
           "gaps": [
             39,
-            501,
+            503,
             40,
             63
           ],
@@ -5510,13 +5696,13 @@
           "index": 3,
           "bbox": [
             39,
-            556,
+            558,
             290,
             730
           ],
           "gaps": [
             39,
-            556,
+            558,
             40,
             63
           ],
@@ -5527,13 +5713,13 @@
           "index": 4,
           "bbox": [
             39,
-            612,
+            604,
             290,
             730
           ],
           "gaps": [
             39,
-            612,
+            604,
             40,
             63
           ],
@@ -5544,13 +5730,13 @@
           "index": 5,
           "bbox": [
             39,
-            640,
+            641,
             290,
             730
           ],
           "gaps": [
             39,
-            640,
+            641,
             40,
             63
           ],
@@ -5571,30 +5757,30 @@
           "index": 0,
           "bbox": [
             34,
-            482,
-            213,
+            484,
+            212,
             730
           ],
           "gaps": [
             34,
-            482,
-            34,
+            484,
+            35,
             63
           ],
-          "center_offset": 0,
+          "center_offset": -1,
           "passed": true
         },
         {
           "index": 1,
           "bbox": [
             29,
-            546,
+            547,
             217,
             730
           ],
           "gaps": [
             29,
-            546,
+            547,
             30,
             63
           ],
@@ -5605,13 +5791,13 @@
           "index": 2,
           "bbox": [
             29,
-            544,
+            545,
             217,
             730
           ],
           "gaps": [
             29,
-            544,
+            545,
             30,
             63
           ],
@@ -5622,13 +5808,13 @@
           "index": 3,
           "bbox": [
             29,
-            523,
+            525,
             217,
             730
           ],
           "gaps": [
             29,
-            523,
+            525,
             30,
             63
           ],
@@ -5673,13 +5859,13 @@
           "index": 6,
           "bbox": [
             29,
-            544,
+            547,
             217,
             730
           ],
           "gaps": [
             29,
-            544,
+            547,
             30,
             63
           ],
@@ -5690,17 +5876,17 @@
           "index": 7,
           "bbox": [
             33,
-            482,
-            214,
+            486,
+            213,
             730
           ],
           "gaps": [
             33,
-            482,
-            33,
+            486,
+            34,
             63
           ],
-          "center_offset": 0,
+          "center_offset": -1,
           "passed": true
         }
       ],
@@ -7506,13 +7692,13 @@
           "index": 0,
           "bbox": [
             30,
-            528,
+            527,
             222,
             816
           ],
           "gaps": [
             30,
-            528,
+            527,
             31,
             71
           ],
@@ -7523,13 +7709,13 @@
           "index": 1,
           "bbox": [
             30,
-            536,
+            527,
             222,
             816
           ],
           "gaps": [
             30,
-            536,
+            527,
             31,
             71
           ],
@@ -7540,13 +7726,13 @@
           "index": 2,
           "bbox": [
             30,
-            544,
+            533,
             222,
             816
           ],
           "gaps": [
             30,
-            544,
+            533,
             31,
             71
           ],
@@ -7557,13 +7743,13 @@
           "index": 3,
           "bbox": [
             30,
-            544,
+            548,
             222,
             816
           ],
           "gaps": [
             30,
-            544,
+            548,
             31,
             71
           ],
@@ -7574,13 +7760,13 @@
           "index": 4,
           "bbox": [
             30,
-            492,
+            512,
             222,
             816
           ],
           "gaps": [
             30,
-            492,
+            512,
             31,
             71
           ],
@@ -7591,13 +7777,13 @@
           "index": 5,
           "bbox": [
             30,
-            495,
+            501,
             222,
             816
           ],
           "gaps": [
             30,
-            495,
+            501,
             31,
             71
           ],
@@ -7652,13 +7838,13 @@
           "index": 1,
           "bbox": [
             71,
-            366,
+            359,
             520,
             816
           ],
           "gaps": [
             71,
-            366,
+            359,
             71,
             71
           ],
@@ -7669,13 +7855,13 @@
           "index": 2,
           "bbox": [
             71,
-            371,
+            372,
             520,
             816
           ],
           "gaps": [
             71,
-            371,
+            372,
             71,
             71
           ],
@@ -7713,13 +7899,13 @@
           "index": 1,
           "bbox": [
             43,
-            336,
+            340,
             318,
             666
           ],
           "gaps": [
             43,
-            336,
+            340,
             44,
             58
           ],
@@ -7730,13 +7916,13 @@
           "index": 2,
           "bbox": [
             43,
-            337,
+            341,
             318,
             666
           ],
           "gaps": [
             43,
-            337,
+            341,
             44,
             58
           ],
@@ -7747,13 +7933,13 @@
           "index": 3,
           "bbox": [
             43,
-            174,
+            176,
             318,
             666
           ],
           "gaps": [
             43,
-            174,
+            176,
             44,
             58
           ],
@@ -7764,13 +7950,13 @@
           "index": 4,
           "bbox": [
             43,
-            361,
+            362,
             318,
             666
           ],
           "gaps": [
             43,
-            361,
+            362,
             44,
             58
           ],
@@ -7781,13 +7967,13 @@
           "index": 5,
           "bbox": [
             43,
-            206,
+            202,
             318,
             666
           ],
           "gaps": [
             43,
-            206,
+            202,
             44,
             58
           ],
@@ -8463,13 +8649,13 @@
           "index": 2,
           "bbox": [
             59,
-            411,
+            412,
             435,
             730
           ],
           "gaps": [
             59,
-            411,
+            412,
             60,
             63
           ],
@@ -8480,13 +8666,13 @@
           "index": 3,
           "bbox": [
             59,
-            390,
+            391,
             435,
             730
           ],
           "gaps": [
             59,
-            390,
+            391,
             60,
             63
           ],
@@ -9515,13 +9701,13 @@
           "index": 0,
           "bbox": [
             32,
-            579,
+            582,
             238,
             666
           ],
           "gaps": [
             32,
-            579,
+            582,
             33,
             58
           ],
@@ -9532,13 +9718,13 @@
           "index": 1,
           "bbox": [
             32,
-            525,
+            528,
             238,
             666
           ],
           "gaps": [
             32,
-            525,
+            528,
             33,
             58
           ],
@@ -9549,13 +9735,13 @@
           "index": 2,
           "bbox": [
             32,
-            528,
+            533,
             238,
             666
           ],
           "gaps": [
             32,
-            528,
+            533,
             33,
             58
           ],
@@ -9566,13 +9752,13 @@
           "index": 3,
           "bbox": [
             32,
-            508,
+            512,
             238,
             666
           ],
           "gaps": [
             32,
-            508,
+            512,
             33,
             58
           ],
@@ -9583,13 +9769,13 @@
           "index": 4,
           "bbox": [
             32,
-            547,
+            572,
             238,
             666
           ],
           "gaps": [
             32,
-            547,
+            572,
             33,
             58
           ],
@@ -9600,13 +9786,13 @@
           "index": 5,
           "bbox": [
             32,
-            601,
+            604,
             238,
             666
           ],
           "gaps": [
             32,
-            601,
+            604,
             33,
             58
           ],
@@ -9616,15 +9802,15 @@
         {
           "index": 6,
           "bbox": [
-            43,
-            471,
-            227,
+            45,
+            477,
+            225,
             666
           ],
           "gaps": [
-            43,
-            471,
-            44,
+            45,
+            477,
+            46,
             58
           ],
           "center_offset": -1,
@@ -9633,15 +9819,15 @@
         {
           "index": 7,
           "bbox": [
-            41,
-            480,
-            229,
+            43,
+            484,
+            227,
             666
           ],
           "gaps": [
-            41,
-            480,
-            42,
+            43,
+            484,
+            44,
             58
           ],
           "center_offset": -1,
@@ -9655,19 +9841,19 @@
       "count": 6,
       "cell_width": 362,
       "divisible_width": true,
-      "baseline_spread": 1,
+      "baseline_spread": 0,
       "cells": [
         {
           "index": 0,
           "bbox": [
             43,
-            403,
+            421,
             318,
             666
           ],
           "gaps": [
             43,
-            403,
+            421,
             44,
             58
           ],
@@ -9678,15 +9864,15 @@
           "index": 1,
           "bbox": [
             43,
-            464,
+            468,
             318,
-            665
+            666
           ],
           "gaps": [
             43,
-            464,
+            468,
             44,
-            59
+            58
           ],
           "center_offset": -1,
           "passed": true
@@ -9694,15 +9880,15 @@
         {
           "index": 2,
           "bbox": [
-            66,
-            503,
-            296,
+            68,
+            510,
+            294,
             666
           ],
           "gaps": [
-            66,
-            503,
-            66,
+            68,
+            510,
+            68,
             58
           ],
           "center_offset": 0,
@@ -9711,15 +9897,15 @@
         {
           "index": 3,
           "bbox": [
-            43,
-            441,
-            318,
+            65,
+            415,
+            296,
             666
           ],
           "gaps": [
-            43,
-            441,
-            44,
+            65,
+            415,
+            66,
             58
           ],
           "center_offset": -1,
@@ -9729,13 +9915,13 @@
           "index": 4,
           "bbox": [
             43,
-            448,
+            445,
             318,
             666
           ],
           "gaps": [
             43,
-            448,
+            445,
             44,
             58
           ],
@@ -9746,13 +9932,13 @@
           "index": 5,
           "bbox": [
             43,
-            373,
+            377,
             318,
             666
           ],
           "gaps": [
             43,
-            373,
+            377,
             44,
             58
           ],
@@ -10726,15 +10912,15 @@
         {
           "index": 0,
           "bbox": [
-            42,
-            600,
-            196,
+            43,
+            602,
+            195,
             754
           ],
           "gaps": [
-            42,
-            600,
             43,
+            602,
+            44,
             66
           ],
           "center_offset": -1,
@@ -10743,15 +10929,15 @@
         {
           "index": 1,
           "bbox": [
-            37,
-            584,
-            202,
+            38,
+            586,
+            201,
             754
           ],
           "gaps": [
-            37,
-            584,
-            37,
+            38,
+            586,
+            38,
             66
           ],
           "center_offset": 0,
@@ -10760,15 +10946,15 @@
         {
           "index": 2,
           "bbox": [
-            35,
-            578,
-            203,
+            36,
+            580,
+            202,
             754
           ],
           "gaps": [
-            35,
-            578,
             36,
+            580,
+            37,
             66
           ],
           "center_offset": -1,
@@ -10794,15 +10980,15 @@
         {
           "index": 4,
           "bbox": [
-            47,
-            590,
-            192,
+            48,
+            593,
+            191,
             754
           ],
           "gaps": [
-            47,
-            590,
-            47,
+            48,
+            593,
+            48,
             66
           ],
           "center_offset": 0,
@@ -10811,15 +10997,15 @@
         {
           "index": 5,
           "bbox": [
-            39,
-            589,
-            200,
+            40,
+            591,
+            199,
             754
           ],
           "gaps": [
-            39,
-            589,
-            39,
+            40,
+            591,
+            40,
             66
           ],
           "center_offset": 0,
@@ -10828,15 +11014,15 @@
         {
           "index": 6,
           "bbox": [
-            36,
-            584,
-            202,
+            37,
+            586,
+            201,
             754
           ],
           "gaps": [
-            36,
-            584,
             37,
+            586,
+            38,
             66
           ],
           "center_offset": -1,
@@ -10845,15 +11031,15 @@
         {
           "index": 7,
           "bbox": [
-            42,
-            605,
-            197,
+            43,
+            607,
+            196,
             754
           ],
           "gaps": [
-            42,
-            605,
-            42,
+            43,
+            607,
+            43,
             66
           ],
           "center_offset": 0,

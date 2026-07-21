@@ -14,6 +14,11 @@ def visible_bbox(image: Image.Image) -> tuple[int, int, int, int] | None:
     return image.getchannel("A").point(lambda value: 255 if value > 24 else 0).getbbox()
 
 
+def resize_rgba(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """Resample premultiplied RGBA so hidden chroma RGB cannot bleed into edges."""
+    return image.convert("RGBa").resize(size, Image.Resampling.LANCZOS).convert("RGBA")
+
+
 def transparent_gutter_regions(image: Image.Image, count: int) -> list[tuple[int, int]]:
     """Split a generated lineup at its actual transparent gutters.
 
@@ -64,9 +69,9 @@ def normalize_spacing(image: Image.Image, count: int, actual_gutters: bool = Fal
         subject = region.crop(bbox)
         scale = min(max_width / subject.width, max_height / subject.height, 1.0)
         if scale < 1.0:
-            subject = subject.resize(
+            subject = resize_rgba(
+                subject,
                 (max(1, round(subject.width * scale)), max(1, round(subject.height * scale))),
-                Image.Resampling.LANCZOS,
             )
         x = index * cell_width + (cell_width - subject.width) // 2
         y = baseline - subject.height
@@ -89,9 +94,9 @@ def normalize_single(image: Image.Image) -> Image.Image:
         1.0,
     )
     if scale < 1.0:
-        subject = subject.resize(
+        subject = resize_rgba(
+            subject,
             (max(1, round(subject.width * scale)), max(1, round(subject.height * scale))),
-            Image.Resampling.LANCZOS,
         )
     output = Image.new("RGBA", image.size, (0, 0, 0, 0))
     output.alpha_composite(subject, ((image.width - subject.width) // 2, (image.height - subject.height) // 2))
@@ -113,7 +118,7 @@ def normalize_grid(image: Image.Image, columns: int, rows: int) -> Image.Image:
             subject = region.crop(bbox)
             scale = min(max_width / subject.width, max_height / subject.height, 1.0)
             if scale < 1.0:
-                subject = subject.resize((max(1, round(subject.width * scale)), max(1, round(subject.height * scale))), Image.Resampling.LANCZOS)
+                subject = resize_rgba(subject, (max(1, round(subject.width * scale)), max(1, round(subject.height * scale))))
             x = column * cell_width + (cell_width - subject.width) // 2
             y = row * cell_height + (cell_height - subject.height) // 2
             output.alpha_composite(subject, (x, y))

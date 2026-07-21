@@ -89,7 +89,8 @@ python "$env:USERPROFILE\.codex\skills\.system\imagegen\scripts\remove_chroma_ke
   --soft-matte `
   --transparent-threshold 12 `
   --opaque-threshold 220 `
-  --despill
+  --despill `
+  --edge-contract 1
 
 python tools/normalize_chroma_sheets.py
 python tools/validate_art_library.py
@@ -97,6 +98,12 @@ python tools/validate_art_library.py
 python tools/build_particle_seed_library.py
 python tools/build_particle_contact_sheet.py
 ```
+
+Start magenta-keyed sheets with the one-pixel matte contraction. It removes the
+antialiased key-colored rim before normalization and downscaling; the art
+validator rejects any remaining visible magenta spill pixel touching
+transparency. If it reports a residual, increase contraction only for that
+sheet until the boundary passes, then inspect the silhouette before approval.
 
 `tools/build_particle_seed_library.py` is the sole shipping builder. It slices the normalized alpha authorities, applies fixed center pivots, quantizes to the locked 40-color palette without dithering, writes all 40 runtime files, and refreshes effect metadata. Its family occupancies are `.72` for weapon/world/death, `.68` for environment material, and `.64` for status. Preserve intentional detached flecks during review.
 
