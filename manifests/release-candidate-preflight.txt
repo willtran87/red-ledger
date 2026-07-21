@@ -1,8 +1,8 @@
 RED LEDGER RELEASE CANDIDATE PREFLIGHT
-RecordedAtUtc: 2026-07-16T15:57:26Z
-CandidateCommit: 3575cdd45eaa7ce880704d393ee895ce6453dbf4
+RecordedAtUtc: 2026-07-21T23:21:04Z
+CandidateCommit: ac5e4d6290502366f487f6c4d9cd171126019500
 ProductionUrl: https://willtran87.github.io/red-ledger/
-PagesRun: 29513277796
+PagesRun: 29876702723
 
 TOOLCHAIN
 Node: 20.20.2
@@ -19,42 +19,42 @@ Production vulnerabilities reported during install: 0
 
 COMMAND: npm run test:release
 RESULT: PASS
-Unit/data/public-package test files: 32
-Unit/data/public-package tests: 314
+Unit/data/public-package test files: 36
+Unit/data/public-package tests: 397
 Nested production package: PASS
-Registered browser scenarios: 32
+Registered browser scenarios: 36
 Browser engines: Chromium, Firefox, WebKit
 Campaign maps: 27
 Credential routes: 24
 Maximum campaign draw calls: 38
-Vite JavaScript: assets/index-kbW9Uzxu.js
-Vite CSS: assets/index-D9L8raFI.css
+Vite JavaScript: assets/index-0Z4wl1ui.js and assets/three-BmJz_r64.js
+Vite CSS: assets/index-CX8V7-EA.css
 
 ACTIVE-COMBAT PERFORMANCE SAMPLE
 Renderer: Playwright Chromium SwiftShader
-Ready milliseconds: 4201
+Ready milliseconds: 5836
 Active hostiles: 28
-Frames: 535
-Mean frame milliseconds: 18.7
-P95 frame milliseconds: 33.3
+Frames: 298
+Mean frame milliseconds: 33.7
+P95 frame milliseconds: 66.6
 Resident textures: 98
 Particle baseline draw calls: 28
 Particle stress draw calls: 30
 
 LOCAL PLAYTEST REPORT SAMPLE FROM RELEASE GATE
 Map: E2M8
-Frames: 519
+Frames: 554
 Median frame milliseconds: 16.5
-P95 frame milliseconds: 50
-Worst frame milliseconds: 166.6
+P95 frame milliseconds: 33.5
+Worst frame milliseconds: 216.7
 Candidate asset fingerprint: 6de4f26b2050bf578c57be101bcf9e180f1d995fdfc4a9d054fd497e66651dad
 Transport: none
 Persistent: false
 
 COMMAND: npm run pages:sync && npm run pages:verify
 RESULT: PASS
-Production dist files: 3659
-Pages files compared with dist: 3659
+Production dist files: 3660
+Pages files compared with dist: 3660
 Pages parity: exact
 
 COMMAND: npm audit --omit=dev --audit-level=high
@@ -70,6 +70,7 @@ COMMAND: node implementation/generate-runtime-catalog.mjs --check
 RESULT: PASS
 Runtime PNG entries: 3547
 Runtime files: 3614
+Runtime catalog raw-candidate SHA-256: f412225cf2defc46d704f6976f6da6256b2ab16580386a39d014c7feb69de8f6
 
 ART / CHROMA / SPACING VALIDATION
 RESULT: PASS
@@ -82,7 +83,7 @@ Spacing checks: 87
 Other runtime PNGs: 1383
 Generated particle families: 5
 Generated particle seeds: 40
-Art report raw-candidate SHA-256: 325b37968187d352004a96a924f535fa03d3e6d442e0fea25a403da808175748
+Art report raw-candidate SHA-256: 56b64e3c225866efb934e4581c4a548ad62b7dbb5f762c0e61a4175760fd1114
 
 AUTHORED AUDIO PACKAGE
 RESULT: PASS
@@ -95,41 +96,42 @@ Runtime manifest raw-candidate SHA-256: 943be26b32095f00229cc8185048283bfc6a6460
 Validation report raw-candidate SHA-256: a1c91c82aac5884605fbe8fc78bf997ffa2e763707eb3cf1866f457d6ddaddce
 
 PUBLISHED ARTIFACT
-Candidate commit: 3575cdd45eaa7ce880704d393ee895ce6453dbf4
-Published files including .nojekyll: 3660
-Published raw Git-blob bytes: 74365769
-Artifact manifest bytes: 503473
-Artifact manifest SHA-256: d7ff385a0224b9de92d1b170312ff3d26f995ee7d50cb336cb5ca7dd77638646
+Candidate commit: ac5e4d6290502366f487f6c4d9cd171126019500
+Published files including .nojekyll: 3661
+Published raw Git-blob bytes: 73841450
+Artifact manifest bytes: 503564
+Artifact manifest SHA-256: 6176cfaa40d9ddde11dcdd3c9492730d1845a089d312d71a937a938c55c19f23
 Manifest authority: raw committed Git tree bytes with checkout conversion disabled
 
 GITHUB PAGES DEPLOYMENT
 RESULT: PASS
-Run: https://github.com/willtran87/red-ledger/actions/runs/29513277796
-Deployed commit: 3575cdd45eaa7ce880704d393ee895ce6453dbf4
+Run: https://github.com/willtran87/red-ledger/actions/runs/29876702723
+Deployed commit: ac5e4d6290502366f487f6c4d9cd171126019500
 HTTPS enforced: true
 
 LIVE RAW-CANDIDATE BYTE CHECKS
-PASS 19079 18d1de653dc281b1595d10c6ec28257f8f49c60182968526e4e02eaa58d9a2f8 index.html
-PASS 988874 84eb87eb61712dbb81f345081761a8b5f984834ba1accff4174bb085f63af35b assets/index-kbW9Uzxu.js
-PASS 37142 795cdb3a40923a4b1f7f0257b8ea3e216c6359880e41f4f737c14050eed90cc5 assets/index-D9L8raFI.css
+PASS 24096 a7fab93aa50761c1ca8bf0d85f3aeaab3481b189707416a8854b3e5d967fa4c5 index.html
+PASS 510826 1bff61762215697874fca8790d13e33a17ff5ae7394805fb51dad87d1d2e7988 assets/index-0Z4wl1ui.js
+PASS 57634 d4370de26ba5065baab42e56cfaaa7b6f79f4f9f234187eb8b06e1b0ec48d236 assets/index-CX8V7-EA.css
+PASS 534853 4891e96193037f1b8ae6a3d5391d36d93cd0e4c3f586e09f12425a5fb6d0c399 assets/three-BmJz_r64.js
 PASS 80464 943be26b32095f00229cc8185048283bfc6a6460703c80e28601c4e3209d0478 audio/audio-library.json
 PASS 1232814 e993aed53291562f17cb5f71b75a35876c447348399a606bb5baaa5015ea5737 audio/music/e1m1.mp3
 PASS 522 87430e9865b2f9c880d934ea08c351037d1ace32d91f24db36d58f8ffc56f1a7 public_runtime/effects/particle-status-feedback/fx_particle-status-feedback_F_07.png
 
-LIVE CHROMIUM SMOKE
+LOCAL AND LIVE INSTALLED-CLIENT SMOKE
 RESULT: PASS
 Map: E1M1
 Mode: playing
 Visible actors: 1
-Movement distance: 4.57
-Movement: PASS
-Fire: PASS
+Runtime halted: false
+Candidate assets: complete
 Audio source: authored
-Loaded SFX shards: 5
+Loaded SFX shards: 4 of 5 (lazy loading)
 Decoded long-form tracks: 0
-Console or network failures: 0
-Development debug API exposed: false
+Console/page error files: absent
+Screenshots: output/web-game/local-candidate/shot-0.png and output/web-game/live-candidate/shot-0.png
+Visual inspection: enemy and weapon silhouettes are clean; no magenta fringe is visible
 
 FINAL AUTOMATED DISPOSITION
-PASS: immutable candidate, clean-install release gate, production package, dependency audit, public scan, complete art validation, exact Pages inventory, live bytes, and live browser smoke.
+PASS: immutable candidate, clean-install release gate, production package, dependency audit, public scan, current runtime catalog, complete magenta-boundary/art validation, exact Pages inventory, exact-candidate deployment, live bytes, and local/live browser smoke.
 OPEN: blind onboarding, continuous/fresh-start human campaign play, representative real hardware/audio matrix, and formal rights/public-build review.

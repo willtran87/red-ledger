@@ -1,13 +1,13 @@
 # Release Playtest Protocol
 
-- Protocol revision: 2026-07-16
-- Previous automated software baseline: `be7b49e02a1a0907f409199473d2abee8b50cef9` (`be7b49e`)
-- Candidate under review: `3575cdd45eaa7ce880704d393ee895ce6453dbf4` (`3575cdd`)
-- Automated preflight and live deployment: **Pass**; exact output, structured evidence, committed-file hashes, and Pages run `29513277796` are archived under `manifests/`
+- Protocol revision: 2026-07-21
+- Previous automated software candidate: `3575cdd45eaa7ce880704d393ee895ce6453dbf4` (`3575cdd`)
+- Candidate under review: `ac5e4d6290502366f487f6c4d9cd171126019500` (`ac5e4d6`)
+- Automated preflight and exact-candidate live deployment: **Pass**; exact output, structured evidence, committed-file hashes, and Pages run `29876702723` are archived under `manifests/`
 
 This protocol closes the four release gates that cannot be truthfully certified by automated tests. Record raw observations and hardware details; do not replace failures with subjective summaries. Automated results are prerequisites, not substitutes for these records. The authored-audio content target is implemented; its subjective listening, device, and provenance checks are part of the representative-hardware and rights gates below.
 
-The current candidate passed a clean `npm ci`, 314 tests across 32 files, the nested production package, 32 registered browser scenarios, Chromium/Firefox/WebKit smoke, exact 3,659-file `dist`/Pages parity, a zero-vulnerability production audit, 11 focused public/audio tests across three files, and the complete art/chroma/spacing validator. GitHub Pages then deployed the committed 3,660-file tree including `.nojekyll`; sampled live HTML, JS, CSS, audio, and generated-particle bytes match that tree, and Chromium reaches E1M1, moves, fires, streams authored audio, exposes no debug API, and reports no console or network failures. Use `manifests/release-candidate-evidence.json`, `manifests/release-candidate-preflight.txt`, and `manifests/pages-artifact-sha256.txt` as the candidate header evidence for every human record below.
+The current candidate includes the later combat-hit, contextual route-hint, grounded-defeat, and chroma-fringe fixes, plus the corrected runtime asset catalog. It passed a clean `npm ci`, 397 tests across 36 files, the nested production package, 36 registered browser scenarios, Chromium/Firefox/WebKit smoke, exact 3,660-file `dist`/Pages parity, a zero-vulnerability production audit, 11 focused public/audio tests across three files, a current 3,547-PNG runtime catalog, and the complete alpha-boundary/chroma/spacing validator. GitHub Pages then deployed the committed 3,661-file tree including `.nojekyll`; seven sampled live HTML, JS, CSS, audio, music, and particle-art byte streams match that tree. The installed browser-game client reaches E1M1 locally and live with complete assets, authored audio, a running simulation, no captured page errors, and visually clean sprite edges. Use `manifests/release-candidate-evidence.json`, `manifests/release-candidate-preflight.txt`, and `manifests/pages-artifact-sha256.txt` as the candidate header evidence for every human record below.
 
 ## Current Signoff Status
 

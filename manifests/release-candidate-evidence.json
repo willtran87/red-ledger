@@ -1,7 +1,7 @@
 {
-  "schema": 2,
-  "recordedAtUtc": "2026-07-16T15:57:26Z",
-  "candidateCommit": "3575cdd45eaa7ce880704d393ee895ce6453dbf4",
+  "schema": 3,
+  "recordedAtUtc": "2026-07-21T23:21:04Z",
+  "candidateCommit": "ac5e4d6290502366f487f6c4d9cd171126019500",
   "productionUrl": "https://willtran87.github.io/red-ledger/",
   "toolchain": {
     "node": "20.20.2",
@@ -27,13 +27,13 @@
     },
     "log": {
       "path": "manifests/release-candidate-preflight.txt",
-      "sha256": "b32a4a8ba6ee98f981ef62e20f9a5b6932662b5343121393665c968dfeab0b7e"
+      "sha256": "ee8913be2fe2166ac87c206e01e249d59752d42c47801ae3c4281929028243b5"
     }
   },
   "automatedCoverage": {
-    "unitAndDataTestFiles": 32,
-    "unitAndDataTests": 314,
-    "registeredBrowserScenarios": 32,
+    "unitAndDataTestFiles": 36,
+    "unitAndDataTests": 397,
+    "registeredBrowserScenarios": 36,
     "browserEngines": [
       "chromium",
       "firefox",
@@ -45,34 +45,40 @@
   },
   "performanceSample": {
     "renderer": "Playwright Chromium SwiftShader",
-    "readyMilliseconds": 4201,
+    "readyMilliseconds": 5836,
     "activeHostiles": 28,
-    "frames": 535,
-    "meanFrameMilliseconds": 18.7,
-    "p95FrameMilliseconds": 33.3,
+    "frames": 298,
+    "meanFrameMilliseconds": 33.7,
+    "p95FrameMilliseconds": 66.6,
     "residentTextures": 98,
     "particleBaselineDrawCalls": 28,
     "particleStressDrawCalls": 30
   },
   "localPlaytestReportSample": {
     "map": "E2M8",
-    "frames": 519,
+    "frames": 554,
     "medianFrameMilliseconds": 16.5,
-    "p95FrameMilliseconds": 50,
-    "worstFrameMilliseconds": 166.6,
+    "p95FrameMilliseconds": 33.5,
+    "worstFrameMilliseconds": 216.7,
     "candidateAssetStatus": "ready",
     "localServedBuildFingerprint": "6de4f26b2050bf578c57be101bcf9e180f1d995fdfc4a9d054fd497e66651dad",
     "transport": "none",
     "persistent": false
   },
+  "runtimeCatalog": {
+    "result": "pass",
+    "pngEntries": 3547,
+    "runtimeFiles": 3614,
+    "rawCandidateSha256": "f412225cf2defc46d704f6976f6da6256b2ab16580386a39d014c7feb69de8f6"
+  },
   "publishedArtifact": {
-    "gitTreeCommit": "3575cdd45eaa7ce880704d393ee895ce6453dbf4",
-    "distFiles": 3659,
-    "publishedFilesIncludingNojekyll": 3660,
-    "publishedBytes": 74365769,
+    "gitTreeCommit": "ac5e4d6290502366f487f6c4d9cd171126019500",
+    "distFiles": 3660,
+    "publishedFilesIncludingNojekyll": 3661,
+    "publishedBytes": 73841450,
     "sha256Manifest": "manifests/pages-artifact-sha256.txt",
     "manifestAuthority": "raw committed Git tree bytes with checkout conversion disabled",
-    "sha256": "d7ff385a0224b9de92d1b170312ff3d26f995ee7d50cb336cb5ca7dd77638646",
+    "sha256": "6176cfaa40d9ddde11dcdd3c9492730d1845a089d312d71a937a938c55c19f23",
     "generator": "tools/generate_pages_artifact_manifest.mjs"
   },
   "authoredAudio": {
@@ -89,7 +95,7 @@
   "artValidation": {
     "result": "pass",
     "report": "manifests/art-library-validation.json",
-    "reportSha256": "325b37968187d352004a96a924f535fa03d3e6d442e0fea25a403da808175748",
+    "reportSha256": "56b64e3c225866efb934e4581c4a548ad62b7dbb5f762c0e61a4175760fd1114",
     "generationSourcesPassed": 14,
     "actorFamiliesPassed": 16,
     "registeredSheetFamilies": 93,
@@ -102,25 +108,30 @@
   },
   "deployment": {
     "result": "pass",
-    "pagesRunId": 29513277796,
-    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29513277796",
-    "deployedCommit": "3575cdd45eaa7ce880704d393ee895ce6453dbf4",
+    "pagesRunId": 29876702723,
+    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29876702723",
+    "deployedCommit": "ac5e4d6290502366f487f6c4d9cd171126019500",
     "httpsEnforced": true,
     "liveByteChecks": [
       {
         "path": "index.html",
-        "bytes": 19079,
-        "sha256": "18d1de653dc281b1595d10c6ec28257f8f49c60182968526e4e02eaa58d9a2f8"
+        "bytes": 24096,
+        "sha256": "a7fab93aa50761c1ca8bf0d85f3aeaab3481b189707416a8854b3e5d967fa4c5"
       },
       {
-        "path": "assets/index-kbW9Uzxu.js",
-        "bytes": 988874,
-        "sha256": "84eb87eb61712dbb81f345081761a8b5f984834ba1accff4174bb085f63af35b"
+        "path": "assets/index-0Z4wl1ui.js",
+        "bytes": 510826,
+        "sha256": "1bff61762215697874fca8790d13e33a17ff5ae7394805fb51dad87d1d2e7988"
       },
       {
-        "path": "assets/index-D9L8raFI.css",
-        "bytes": 37142,
-        "sha256": "795cdb3a40923a4b1f7f0257b8ea3e216c6359880e41f4f737c14050eed90cc5"
+        "path": "assets/index-CX8V7-EA.css",
+        "bytes": 57634,
+        "sha256": "d4370de26ba5065baab42e56cfaaa7b6f79f4f9f234187eb8b06e1b0ec48d236"
+      },
+      {
+        "path": "assets/three-BmJz_r64.js",
+        "bytes": 534853,
+        "sha256": "4891e96193037f1b8ae6a3d5391d36d93cd0e4c3f586e09f12425a5fb6d0c399"
       },
       {
         "path": "audio/audio-library.json",
@@ -138,19 +149,24 @@
         "sha256": "87430e9865b2f9c880d934ea08c351037d1ace32d91f24db36d58f8ffc56f1a7"
       }
     ],
-    "liveBrowserSmoke": {
+    "installedClientSmoke": {
       "browser": "chromium",
+      "localAndProduction": true,
       "map": "E1M1",
       "mode": "playing",
       "visibleActors": 1,
-      "movementDistance": 4.57,
-      "movementPassed": true,
-      "firePassed": true,
+      "runtimeHalted": false,
+      "candidateAssetStatus": "complete",
       "audioSource": "authored",
-      "loadedSfxShards": 5,
+      "loadedSfxShards": 4,
+      "sfxShardCount": 5,
       "decodedLongFormTracks": 0,
-      "consoleOrNetworkFailures": 0,
-      "developmentDebugApiExposed": false
+      "consoleOrPageErrorFiles": 0,
+      "visualMagentaFringeObserved": false,
+      "screenshots": [
+        "game/output/web-game/local-candidate/shot-0.png",
+        "game/output/web-game/live-candidate/shot-0.png"
+      ]
     }
   },
   "humanGates": [
