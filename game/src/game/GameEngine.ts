@@ -77,6 +77,12 @@ import {
   shouldSnapPresentation,
 } from './PresentationInterpolation';
 import {
+  buildRouteHint,
+  routeHintTier,
+  type RouteGuidanceDescriptor,
+  type RouteHint,
+} from './RouteGuidance';
+import {
   DemoPlayback,
   DemoRecorder,
   DEMO_STORAGE_BUDGET_BYTES,
@@ -355,6 +361,7 @@ export interface GameSnapshot {
   boss?: RuntimeActor;
   message: string;
   objective: string;
+  routeHint?: RouteHint;
   interaction?: InteractionHint;
   death?: DeathReview;
   pause?: PauseDetails;
@@ -1348,6 +1355,9 @@ export class GameEngine {
   private weaponCooldown = 0;
   private damageCooldown = 0;
   private messageTimer = 0;
+  private routeGuidanceElapsed = 0;
+  private routeGuidanceSignature = '';
+  private routeHint?: RouteHint;
   private lastDamageContext?: LastDamageContext;
   private lastDeathReview?: DeathReview;
   private rngState = 0x4d595df4;
@@ -1551,6 +1561,7 @@ export class GameEngine {
     this.mode = 'playing';
     this.nextMap = undefined;
     this.triggered.clear();
+    this.resetRouteGuidance();
     this.scene.fog = new FogExp2(Number(map.id[1]) === 1 ? 0x34383d : Number(map.id[1]) === 2 ? 0x18342f : 0x33070b, .012);
     this.audio.playMusic(map.music);
     const firstActor = this.world.actors[0];
@@ -1686,6 +1697,7 @@ export class GameEngine {
       this.weaponSelection(command);
       if (command.fire) this.fireWeapon();
       if (command.use) this.use();
+      this.updateRouteGuidance(dt);
       this.updateCamera();
       if (this.player.health <= 0) this.die();
       completed = true;
@@ -4891,6 +4903,7 @@ export class GameEngine {
       tally: this.tally,
       momentum: { ...this.momentum, presentation: combatMomentumPresentation(this.momentum.chain) },
       objective: this.currentObjective(),
+      routeHint: this.routeHint ?? null,
       interaction: this.interactionHint() ?? null,
       message: this.message,
       death: this.mode === 'dead' ? this.lastDeathReview ?? null : null,
@@ -5059,17 +5072,113 @@ export class GameEngine {
       const phase = encounter === 'entry' ? 'initial' : encounter === 'transformation' ? 'control' : encounter === 'climax' ? 'final' : 'required';
       return `Close ${phase} exposures | ${remaining} left`;
     }
-    const missingCredential = this.world.pickups.find((pickup) => pickup.kind === 'credential' && !pickup.collected
-      && !this.player.credentials.has(pickup.id as Credential))?.id as Credential | undefined;
-    if (missingCredential) return `Recover ${this.pretty(missingCredential)} credential`;
     const nextMechanism = [...this.world.map.mechanisms]
       .sort((left, right) => left.activationOrder - right.activationOrder)
       .find((mechanism) => !this.world.activatedMechanisms.has(mechanism.id)
         && mechanism.requires.every((requirement) => this.world.activatedMechanisms.has(requirement)));
-    if (nextMechanism) return `Activate ${nextMechanism.label}`;
-    const climax = this.world.actors.filter((actor) => actor.encounter === 'climax' && actor.mandatory && !actor.dead && !actor.phaseLocked).length;
-    if (climax > 0) return `Close final exposures | ${climax} left`;
-    return 'Proceed to the exit';
+    if (!nextMechanism) return 'Proceed to the exit';
+    const unopenedCredentialRoute = this.world.map.triggers.find((trigger) => trigger.action === 'open-door'
+      && trigger.requiresCredential && this.player.credentials.has(trigger.requiresCredential)
+      && !this.triggered.has(trigger.id));
+    if (unopenedCredentialRoute?.requiresCredential) return `Open ${this.pretty(unopenedCredentialRoute.requiresCredential)} access route`;
+    const missingCredential = this.world.pickups.find((pickup) => pickup.kind === 'credential' && !pickup.collected
+      && !this.player.credentials.has(pickup.id as Credential))?.id as Credential | undefined;
+    if (missingCredential) return `Recover ${this.pretty(missingCredential)} credential`;
+    return `Activate ${nextMechanism.label}`;
+  }
+  private routeProgressSignature(): string {
+    const routeTriggers = this.world.map.triggers
+      .filter((trigger) => trigger.action !== 'reveal-secret' && this.triggered.has(trigger.id))
+      .map((trigger) => trigger.id)
+      .sort();
+    const openDoors = [...this.world.doors.values()].filter((door) => door.open).map((door) => door.key).sort();
+    return [
+      this.currentObjective(),
+      [...this.player.credentials].sort().join(','),
+      [...this.world.activatedMechanisms].sort().join(','),
+      routeTriggers.join(','),
+      openDoors.join(','),
+    ].join('|');
+  }
+  private resetRouteGuidance(): void {
+    this.routeGuidanceElapsed = 0;
+    this.routeGuidanceSignature = this.routeProgressSignature();
+    this.routeHint = undefined;
+  }
+  private routeGuidanceDescriptor(): RouteGuidanceDescriptor {
+    const activeAnchors = this.world.actors.filter((actor) => actor.mandatory && !actor.dead && !actor.phaseLocked);
+    if (activeAnchors.length) {
+      const target = [...activeAnchors].sort((left, right) =>
+        this.horizontalDistance(left.position, this.player.position) - this.horizontalDistance(right.position, this.player.position))[0];
+      return {
+        kind: 'combat',
+        label: 'required exposure',
+        mapId: this.world.map.id,
+        target: { x: target.position.x, z: target.position.z },
+      };
+    }
+    const nextMechanism = [...this.world.map.mechanisms]
+      .sort((left, right) => left.activationOrder - right.activationOrder)
+      .find((mechanism) => !this.world.activatedMechanisms.has(mechanism.id)
+        && mechanism.requires.every((requirement) => this.world.activatedMechanisms.has(requirement)));
+    if (!nextMechanism) {
+      return {
+        kind: 'exit',
+        label: 'exit',
+        mapId: this.world.map.id,
+        target: { x: this.world.map.exit.x * this.world.map.cellSize, z: this.world.map.exit.z * this.world.map.cellSize },
+      };
+    }
+    const unopenedCredentialRoute = this.world.map.triggers.find((trigger) => trigger.action === 'open-door'
+      && trigger.requiresCredential && this.player.credentials.has(trigger.requiresCredential)
+      && !this.triggered.has(trigger.id));
+    if (unopenedCredentialRoute?.requiresCredential) {
+      return {
+        kind: 'access',
+        label: `${this.pretty(unopenedCredentialRoute.requiresCredential)} credential`,
+        mapId: this.world.map.id,
+        credential: unopenedCredentialRoute.requiresCredential,
+        target: {
+          x: unopenedCredentialRoute.x * this.world.map.cellSize,
+          z: unopenedCredentialRoute.z * this.world.map.cellSize,
+        },
+      };
+    }
+    const missingCredential = this.world.pickups.find((pickup) => pickup.kind === 'credential' && !pickup.collected
+      && !this.player.credentials.has(pickup.id as Credential));
+    if (missingCredential) {
+      const credential = missingCredential.id as Credential;
+      return {
+        kind: 'credential',
+        label: `${this.pretty(credential)} credential`,
+        mapId: this.world.map.id,
+        credential,
+        target: { x: missingCredential.position.x, z: missingCredential.position.z },
+      };
+    }
+    const trigger = this.world.map.triggers.find((candidate) => !this.triggered.has(candidate.id)
+      && candidate.targets.includes(nextMechanism.id));
+    return {
+      kind: 'mechanism',
+      label: nextMechanism.label,
+      mapId: this.world.map.id,
+      ...(trigger ? { target: { x: trigger.x * this.world.map.cellSize, z: trigger.z * this.world.map.cellSize } } : {}),
+    };
+  }
+  private updateRouteGuidance(dt: number): void {
+    const signature = this.routeProgressSignature();
+    if (signature !== this.routeGuidanceSignature) {
+      this.resetRouteGuidance();
+      return;
+    }
+    this.routeGuidanceElapsed += dt;
+    const tier = routeHintTier(this.routeGuidanceElapsed);
+    if (tier === 0 || tier <= (this.routeHint?.tier ?? 0)) return;
+    this.routeHint = buildRouteHint(this.routeGuidanceDescriptor(), tier, {
+      x: this.player.position.x,
+      z: this.player.position.z,
+      yaw: this.player.yaw,
+    });
   }
   private emit(): void {
     if (!this.world.map) return;
@@ -5083,6 +5192,7 @@ export class GameEngine {
       boss: this.world.actors.find((actor) => actor.kind === 'boss' && !actor.dead && !actor.phaseLocked),
       message: this.message,
       objective: this.currentObjective(),
+      ...(this.routeHint ? { routeHint: this.routeHint } : {}),
       ...(interaction ? { interaction } : {}),
       ...(this.mode === 'dead' && this.lastDeathReview ? { death: this.lastDeathReview } : {}),
       ...(this.mode === 'paused' ? { pause: this.pauseDetails() } : {}),

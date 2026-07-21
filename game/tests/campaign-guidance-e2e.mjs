@@ -20,6 +20,47 @@ try {
   if (await page.locator('#ready-overlay').isVisible()) await page.click('#enter-file');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
 
+  await page.evaluate(() => {
+    window.__redLedger.loadMap('E1M1');
+    window.__redLedger.defeatAll();
+    for (let index = 0; index < 96; index += 1) window.advanceTime(250);
+  });
+  let guidance = await state();
+  assert(guidance.objective === 'Recover Red credential', `Cleared E1M1 objective was ${guidance.objective}`);
+  assert(guidance.routeHint?.tier === 1, 'E1M1 did not reveal its gentle stuck clue');
+  assert(guidance.routeHint.text.includes('visible through glass'), `Unexpected E1M1 clue: ${guidance.routeHint.text}`);
+  assert(await page.locator('#route-hint').isVisible(), 'Visible field hint did not render in the HUD');
+  await page.evaluate(() => {
+    for (let index = 0; index < 96; index += 1) window.advanceTime(250);
+  });
+  guidance = await state();
+  assert(guidance.routeHint?.tier === 2, 'E1M1 did not escalate to directional guidance');
+  assert(/paces away/.test(guidance.routeHint.text), `Directional guidance lacked a distance: ${guidance.routeHint.text}`);
+  await page.evaluate(() => {
+    window.__redLedger.teleportToPickup('credential', 'red');
+    window.advanceTime(50);
+  });
+  guidance = await state();
+  assert(guidance.player.credentials.includes('red'), 'E1M1 red credential was not collected');
+  assert(guidance.objective === 'Open Red access route', `Credential route objective was ${guidance.objective}`);
+  assert(guidance.routeHint === null, 'Stale route guidance remained after objective progress');
+  assert(await page.locator('#route-hint').isHidden(), 'Field hint remained visible after objective progress');
+  await page.evaluate(() => {
+    for (let index = 0; index < 96; index += 1) window.advanceTime(250);
+  });
+  guidance = await state();
+  assert(guidance.routeHint?.text.includes('matching access door'), `Credential access hint was ${guidance.routeHint?.text}`);
+  await page.evaluate(() => {
+    window.__redLedger.teleportToTrigger('open-door', 'red-route');
+    window.__redLedger.use();
+    window.advanceTime(50);
+    window.__redLedger.use();
+    window.advanceTime(50);
+  });
+  guidance = await state();
+  assert(guidance.objective.startsWith('Activate Credential return loop'), `Access route did not advance to the mechanism: ${guidance.objective}`);
+  assert(guidance.routeHint === null, 'Credential access hint remained after opening the route');
+
   let credentialMaps = 0;
   for (const id of maps) {
     await page.evaluate((mapId) => window.__redLedger.loadMap(mapId), id);

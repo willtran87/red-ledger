@@ -326,6 +326,9 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #hud { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 10; }
 #hud.active { display: block; }
 #objective { position: absolute; z-index: 5; top: 3.5%; left: 2.5%; max-width: 38%; color: #d4d2cb; font-size: clamp(.625rem, 1.5cqh, .875rem); text-shadow: 2px 2px #08090a; }
+#route-hint { position: absolute; z-index: 6; top: 8%; left: 2.5%; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 4px 8px; width: min(460px, 46%); padding: 6px 8px; color: #d4d2cb; border: 1px solid #646a70; border-left: 4px solid #ffe17a; background: rgba(8,9,10,.88); font-size: clamp(.625rem, 1.35cqh, .8125rem); line-height: 1.3; text-shadow: 1px 1px #08090a; pointer-events: none; }
+#route-hint[hidden] { display: none; }
+#route-hint strong { color: #ffe17a; font-size: .625rem; letter-spacing: .08em; white-space: nowrap; }
 #message { position: absolute; z-index: 5; top: 6%; left: 50%; transform: translateX(-50%); color: #ffe17a; text-shadow: 2px 2px #08090a; }
 #combat-streak { position: absolute; z-index: 5; top: 3.5%; right: 2.5%; width: 148px; display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 0 7px; color: #fffdf7; text-align: right; text-shadow: 2px 2px #08090a; }
 #recording-indicator { position: absolute; z-index: 7; top: 3.5%; right: 2.5%; padding: 3px 6px; border: 1px solid #d9232e; color: #fffdf7; background: #7a1018; font-size: .625rem; animation: recording-pulse 1s steps(2, end) infinite; }
@@ -407,6 +410,8 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 #sound-caption[hidden] { display: none; }
 html[data-ui-text-scale="large"] #objective { font-size: clamp(.625rem, 1.75cqh, 1rem); }
 html[data-ui-text-scale="largest"] #objective { font-size: clamp(.6875rem, 2cqh, 1.125rem); }
+html[data-ui-text-scale="large"] #route-hint { font-size: clamp(.6875rem, 1.6cqh, .9375rem); }
+html[data-ui-text-scale="largest"] #route-hint { font-size: clamp(.75rem, 1.85cqh, 1.0625rem); }
 html[data-ui-text-scale="large"] #status { font-size: clamp(.8125rem, 3cqh, 1.75rem); }
 html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 1.875rem); }
 #portrait { position: absolute; left: 50%; bottom: 4%; width: auto; height: 88%; transform: translateX(-50%); image-rendering: pixelated; }
@@ -448,7 +453,7 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
 #game-shell:has(#active-effects:not([hidden])) #sound-caption { left: auto; right: 2.5%; max-width: min(62%, 680px); transform: none; }
 #automap { position: absolute; inset: 0; width: 100%; height: 84%; background: rgba(8, 9, 10, .9); image-rendering: pixelated; pointer-events: auto; touch-action: none; }
 #automap.overlay { inset: 10px 10px auto auto; width: 42%; height: 42%; border: 1px solid #b7b8b4; background: rgba(8, 9, 10, .76); }
-#hud.full-automap #objective, #hud.full-automap #message, #hud.full-automap #combat-streak, #hud.full-automap #reticle,
+#hud.full-automap #objective, #hud.full-automap #route-hint, #hud.full-automap #message, #hud.full-automap #combat-streak, #hud.full-automap #reticle,
 #hud.full-automap #hit-marker, #hud.full-automap #context-prompt, #hud.full-automap #muzzle-flash, #hud.full-automap #weapon-view,
 #hud.full-automap #use-feedback, #hud.full-automap #damage-flash { display: none; }
 #hud.full-automap ~ #touch-controls { display: none; }
@@ -823,6 +828,7 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
   #status { top: 0; bottom: auto; }
   #message { top: 160px; width: 75%; min-height: 2.3em; max-width: calc(100% - 24px); line-height: 1.15; text-align: center; }
   #objective { top: 120px; left: 12px; max-width: 72%; }
+  #route-hint { top: 196px; left: 12px; width: min(420px, calc(100% - 24px)); }
   #combat-streak { top: 62px; right: 76px; }
   #boss-bar { top: 58px; }
   #active-effects, #hud.minimal #active-effects { top: auto; right: auto; bottom: max(210px, 31%); left: max(8px, env(safe-area-inset-left)); width: min(190px, 48%); transform: none; }

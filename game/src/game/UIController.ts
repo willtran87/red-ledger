@@ -1098,6 +1098,9 @@ export class UIController {
     } else if (!snapshot.message) this.lastAnnouncedMessage = '';
     updateText($('#map-name'), `${snapshot.map.id} ${snapshot.map.title}`);
     updateText($('#objective'), snapshot.objective);
+    const routeHint = $('#route-hint');
+    routeHint.toggleAttribute('hidden', !snapshot.routeHint);
+    if (snapshot.routeHint) updateText(routeHint.querySelector<HTMLElement>('span')!, snapshot.routeHint.text);
     this.renderActiveEffects(snapshot.player.powerups);
     const interaction = snapshot.interaction;
     const interactionSignature = interaction ? `${interaction.state}|${interaction.icon}|${interaction.label}` : '';
