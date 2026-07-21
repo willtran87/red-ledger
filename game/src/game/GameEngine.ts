@@ -4803,10 +4803,10 @@ export class GameEngine {
     const point = candidates.find((candidate) => !this.world.isSolid(candidate) && this.world.hasLineOfSight(candidate, actor.position));
     if (!point) return false;
     this.player.position.copy(point);
-    this.player.yaw = Math.atan2(actor.position.x - point.x, actor.position.z - point.z) + Math.PI + .04;
+    this.player.yaw = Math.atan2(actor.position.x - point.x, actor.position.z - point.z) + Math.PI;
     const horizontal = Math.hypot(actor.position.x - point.x, actor.position.z - point.z);
     const targetY = actor.position.y + ENEMIES[actor.id].height * .5;
-    this.player.pitch = Math.atan2(point.y - targetY, horizontal);
+    this.player.pitch = Math.atan2(targetY - point.y, horizontal);
     if (!actor.dead) actor.awake = true;
     this.movementParticleDistance = 0;
     this.updateCamera();

@@ -74,7 +74,10 @@ await page.evaluate(() => window.dispatchEvent(new CustomEvent('weapon-impact', 
 assert(await page.locator('#hit-marker').getAttribute('data-label') === null
   && !await page.locator('#hit-marker').evaluate((element) => element.classList.contains('active')),
   'A miss left stale damage confirmation on screen');
-await page.evaluate(() => { for (let shot = 0; shot < 6; shot += 1) window.__redLedger.fire(); });
+await page.evaluate(() => {
+  if (!window.__redLedger.teleportNearActor('returned-mail', 3)) throw new Error('Could not recenter moving kill target');
+  for (let shot = 0; shot < 6; shot += 1) window.__redLedger.fire();
+});
 state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
 assert(state.visibleCorpses.some((actor) => actor.id === 'returned-mail'), 'Repeated centered shots did not kill the starter target');
 assert(state.tally.kills === 1 && state.momentum.chain === 1, 'The shooting kill did not update tally and momentum');
@@ -82,6 +85,29 @@ assert(await page.locator('#hit-marker').getAttribute('data-label') === 'CLOSED'
 await page.screenshot({ path: fileURLToPath(new URL('weapon-kill.png', output)) });
 
 await page.evaluate(() => window.__redLedger.loadMap('E1M1'));
+assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 18)), 'Could not stage distant shooting target');
+await page.evaluate(() => {
+  window.__redLedger.setVerticalAutoAim(false);
+  window.advanceTime(35);
+});
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+const distantTarget = state.visibleActors.find((actor) => actor.id === 'returned-mail');
+assert(distantTarget?.distance >= 12, `Distant shooting target was only ${distantTarget?.distance ?? 'not'} units away`);
+assert(Math.abs(state.player.pitch) > .02, 'Distant shooting target did not exercise nonzero camera pitch');
+const distantHealthBefore = distantTarget.health;
+await page.evaluate(() => window.__redLedger.fire());
+state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+const distantTargetAfter = state.visibleActors.find((actor) => actor.id === 'returned-mail');
+assert(distantTargetAfter && distantTargetAfter.health < distantHealthBefore,
+  'A distant enemy centered under the reticle was not hit with vertical auto-aim disabled');
+assert((await page.locator('#hit-marker').getAttribute('data-label'))?.startsWith('HIT '),
+  'A confirmed distant hit did not produce damage feedback');
+await page.screenshot({ path: fileURLToPath(new URL('weapon-distant-hit.png', output)) });
+
+await page.evaluate(() => {
+  window.__redLedger.setVerticalAutoAim(true);
+  window.__redLedger.loadMap('E1M1');
+});
 assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 3)), 'Could not restage weapon feedback target');
 await page.evaluate(() => window.advanceTime(60));
 const reticleGapBeforeFire = await page.locator('#reticle').evaluate((element) => Number.parseFloat(element.style.getPropertyValue('--reticle-gap')));

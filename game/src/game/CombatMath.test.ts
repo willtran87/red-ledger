@@ -33,6 +33,25 @@ describe('combat ray math', () => {
     }
   });
 
+  it('keeps nonzero camera pitch and yaw aligned with the firing ray at range', () => {
+    for (const { yaw, pitch } of [
+      { yaw: -.8, pitch: -.24 },
+      { yaw: .65, pitch: .31 },
+    ]) {
+      const width = 1280;
+      const height = 720;
+      const camera = new PerspectiveCamera(72, width / height, .05, 110);
+      camera.rotation.order = 'YXZ';
+      camera.rotation.set(pitch, yaw, 0);
+      camera.setViewOffset(width, height, 0, aimProjectionOffsetY(height, false), width, height);
+      camera.updateMatrixWorld(true);
+      const direction = directionFromView(yaw, pitch);
+      const projected = new Vector3(direction.x, direction.y, direction.z).multiplyScalar(40).project(camera);
+      expect((projected.x + 1) / 2).toBeCloseTo(.5, 8);
+      expect((1 - projected.y) / 2).toBeCloseTo(AIM_VIEWPORT_Y_RATIO, 8);
+    }
+  });
+
   it('samples deterministic horizontal and vertical spread', () => {
     const values = [.25, .75];
     const spread = sampleShotSpread(.12, () => values.shift() ?? 0);

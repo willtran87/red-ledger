@@ -38,7 +38,7 @@ export function directionFromView(yaw: number, pitch: number, yawOffset = 0, pit
   const cosPitch = Math.cos(resolvedPitch);
   return {
     x: -Math.sin(yaw + yawOffset) * cosPitch,
-    y: -Math.sin(resolvedPitch),
+    y: Math.sin(resolvedPitch),
     z: -Math.cos(yaw + yawOffset) * cosPitch,
   };
 }
