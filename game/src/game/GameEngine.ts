@@ -20,6 +20,7 @@ import { CAMPAIGN, type CampaignMap, type Credential, type MapId, type PickupId,
 import { AssetCatalog } from './AssetCatalog';
 import { AudioSystem } from './AudioSystem';
 import { ambientAudioGroups, pickupAudioFeedbackCue, surfaceAudioFeedbackGroup } from './AudioSemantics';
+import { DEFEATED_ACTOR_FLOOR_OFFSET, defeatedActorScale } from './ActorPresentation';
 import {
   aimProjectionOffsetY,
   directionFromView,
@@ -2608,6 +2609,8 @@ export class GameEngine {
 
   private setActorDeadVisual(actor: RuntimeActor, restart: boolean): void {
     if (restart) actor.animationTime = 0;
+    actor.position.y = this.world.floorHeightAt(actor.position);
+    actor.sprite.position.y = actor.position.y + DEFEATED_ACTOR_FLOOR_OFFSET;
     actor.visualKey = '';
     actor.visualState = 'death';
     actor.sprite.scale.set(ENEMIES[actor.id].height, ENEMIES[actor.id].height, 1);
@@ -2848,6 +2851,8 @@ export class GameEngine {
         target.visualKey = '';
         target.visualState = 'resurrect';
         target.sprite.visible = true;
+        target.position.y = this.world.floorHeightAt(target.position);
+        target.sprite.position.y = target.position.y;
         target.sprite.material.opacity = 1;
         (target as RuntimeActor & { redacted?: boolean }).redacted = event.redacted;
         this.enemyBehavior.markResurrected(target.uid, event.redacted);
@@ -3274,6 +3279,10 @@ export class GameEngine {
   }
 
   private updateActorVisual(actor: RuntimeActor, refreshVisibility = true): void {
+    if (actor.dead) {
+      actor.position.y = this.world.floorHeightAt(actor.position);
+      actor.sprite.position.y = actor.position.y + DEFEATED_ACTOR_FLOOR_OFFSET;
+    }
     const redacted = Boolean((actor as RuntimeActor & { redacted?: boolean }).redacted);
     const forensicSignature = this.player.powerups.forensic > 0 && !actor.dead;
     actor.sprite.material.color.set(hostileSignatureTint(forensicSignature, redacted, actor.dead));
@@ -3301,6 +3310,8 @@ export class GameEngine {
       const deathFrame = Math.floor(actor.animationTime * 10);
       state = deathFrame < deathFrames ? 'death' : 'corpse';
       frameRate = 10;
+      const scale = defeatedActorScale(ENEMIES[actor.id].height, deathFrame / Math.max(1, deathFrames), state === 'corpse');
+      actor.sprite.scale.set(scale.width, scale.height, 1);
     }
     actor.visualState = state;
     const dx = this.player.position.x - actor.position.x;
@@ -4817,7 +4828,7 @@ export class GameEngine {
     this.player.position.copy(point);
     this.player.yaw = Math.atan2(actor.position.x - point.x, actor.position.z - point.z) + Math.PI;
     const horizontal = Math.hypot(actor.position.x - point.x, actor.position.z - point.z);
-    const targetY = actor.position.y + ENEMIES[actor.id].height * .5;
+    const targetY = actor.position.y + (actor.dead ? actor.sprite.scale.y : ENEMIES[actor.id].height) * .5;
     this.player.pitch = Math.atan2(targetY - point.y, horizontal);
     if (!actor.dead) actor.awake = true;
     this.movementParticleDistance = 0;
@@ -4845,11 +4856,36 @@ export class GameEngine {
   renderText(): string {
     const visibleActors = this.world.actors.filter((actor) => !actor.dead && !actor.phaseLocked
       && this.horizontalDistance(actor.position, this.player.position) < 22
-      && this.world.hasLineOfSight(this.player.position, actor.position)).map((actor) => ({ id: actor.id, kind: actor.kind, x: +actor.position.x.toFixed(2), z: +actor.position.z.toFixed(2), health: Math.ceil(actor.health), visual: actor.visualState, distance: +this.horizontalDistance(actor.position, this.player.position).toFixed(2) }));
+      && this.world.hasLineOfSight(this.player.position, actor.position)).map((actor) => ({
+        id: actor.id,
+        kind: actor.kind,
+        x: +actor.position.x.toFixed(2),
+        z: +actor.position.z.toFixed(2),
+        y: +actor.position.y.toFixed(3),
+        floorY: +this.world.floorHeightAt(actor.position).toFixed(3),
+        health: Math.ceil(actor.health),
+        visual: actor.visualState,
+        distance: +this.horizontalDistance(actor.position, this.player.position).toFixed(2),
+      }));
     const visibleCorpses = this.world.actors.filter((actor) => actor.dead && !actor.phaseLocked
       && this.horizontalDistance(actor.position, this.player.position) < 22
       && this.world.hasLineOfSight(this.player.position, actor.position)).slice(0, 16)
-      .map((actor) => ({ id: actor.id, kind: actor.kind, visual: actor.visualState, frame: Math.floor(actor.animationTime * 10) }));
+      .map((actor) => {
+        const floorY = this.world.floorHeightAt(actor.position);
+        return {
+          id: actor.id,
+          kind: actor.kind,
+          x: +actor.position.x.toFixed(2),
+          z: +actor.position.z.toFixed(2),
+          y: +actor.sprite.position.y.toFixed(3),
+          floorY: +floorY.toFixed(3),
+          groundClearance: +(actor.sprite.position.y - floorY).toFixed(3),
+          visualWidth: +actor.sprite.scale.x.toFixed(3),
+          visualHeight: +actor.sprite.scale.y.toFixed(3),
+          visual: actor.visualState,
+          frame: Math.floor(actor.animationTime * 10),
+        };
+      });
     const nearbyPickups = this.world.pickups.filter((pickup) => !pickup.collected && !pickup.phaseLocked && this.horizontalDistance(pickup.position, this.player.position) < 14).map((pickup) => ({ id: pickup.id, kind: pickup.kind, x: +pickup.position.x.toFixed(2), z: +pickup.position.z.toFixed(2) }));
     return JSON.stringify({
       coordinateSystem: 'world units; x increases east/right on automap, z increases south/down; yaw 0 faces north (-z)',

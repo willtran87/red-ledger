@@ -57,6 +57,69 @@ assert(await page.evaluate(() => window.__redLedger.defeatActor('returned-mail')
 particles = (await state()).combatEffects.particles;
 assert(particles.byKind.ink > 0 && particles.byKind.paper > 0, 'Enemy death omitted ink or paper particles');
 await page.screenshot({ path: 'output/particles/enemy-death.png' });
+await page.evaluate(() => {
+  for (let index = 0; index < 4; index += 1) window.advanceTime(250);
+});
+const settledCorpse = (await state()).visibleCorpses.find((corpse) => corpse.id === 'returned-mail');
+assert(settledCorpse?.visual === 'corpse', `Enemy did not reach its floor pose: ${settledCorpse?.visual}`);
+assert(settledCorpse.groundClearance > 0 && settledCorpse.groundClearance < .03,
+  `Enemy corpse floated ${settledCorpse.groundClearance} above the floor`);
+assert(settledCorpse.visualHeight < .5 && settledCorpse.visualWidth > 1.45,
+  `Enemy corpse retained a blocking silhouette: ${settledCorpse.visualWidth}x${settledCorpse.visualHeight}`);
+assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 6, true)),
+  'Could not frame the settled enemy corpse');
+await page.evaluate(() => window.advanceTime(35));
+await page.screenshot({ path: 'output/particles/enemy-corpse-grounded.png' });
+await page.keyboard.press('F6');
+await page.evaluate(() => window.advanceTime(50));
+await page.evaluate(() => window.__redLedger.loadMap('E1M2'));
+await page.keyboard.press('F9');
+await page.evaluate(() => window.advanceTime(50));
+const restoredCorpse = (await state()).visibleCorpses.find((corpse) => corpse.id === 'returned-mail');
+assert(restoredCorpse?.visual === 'corpse' && restoredCorpse.groundClearance < .03 && restoredCorpse.visualHeight < .5,
+  `Saved corpse did not restore on the floor: ${JSON.stringify(restoredCorpse)}`);
+assert(await page.evaluate(() => window.__redLedger.teleportNearActor('returned-mail', 1.4, true)),
+  'Could not stage corpse traversal');
+const traversalBefore = await state();
+await page.keyboard.down('KeyW');
+await page.evaluate(() => {
+  for (let index = 0; index < 2; index += 1) window.advanceTime(250);
+});
+await page.keyboard.up('KeyW');
+const traversalAfter = await state();
+const startSideX = traversalBefore.player.x - settledCorpse.x;
+const startSideZ = traversalBefore.player.z - settledCorpse.z;
+const endSideX = traversalAfter.player.x - settledCorpse.x;
+const endSideZ = traversalAfter.player.z - settledCorpse.z;
+assert(startSideX * endSideX + startSideZ * endSideZ < 0,
+  `Player did not pass through the non-blocking corpse: ${JSON.stringify({ before: traversalBefore.player, after: traversalAfter.player })}`);
+
+const droneMap = await page.evaluate(() => {
+  const maps = Array.from({ length: 3 }, (_, episode) => Array.from({ length: 9 }, (_unused, map) => `E${episode + 1}M${map + 1}`)).flat();
+  for (const map of maps) {
+    window.__redLedger.loadMap(map);
+    if (!window.__redLedger.activateActor('coverage-drone')) continue;
+    if (!window.__redLedger.teleportNearActor('coverage-drone', 5)) continue;
+    return map;
+  }
+  return '';
+});
+assert(droneMap, 'No coverage drone was available for airborne death coverage');
+await page.evaluate(() => {
+  for (let index = 0; index < 4; index += 1) window.advanceTime(250);
+});
+const hoveringDrone = (await state()).visibleActors.find((actor) => actor.id === 'coverage-drone');
+assert(hoveringDrone && hoveringDrone.y - hoveringDrone.floorY > .5,
+  `Coverage drone did not reach an airborne pose on ${droneMap}`);
+assert(await page.evaluate(() => window.__redLedger.defeatActor('coverage-drone')), 'Could not defeat the airborne coverage drone');
+await page.evaluate(() => {
+  window.__redLedger.defeatAll();
+  for (let index = 0; index < 4; index += 1) window.advanceTime(250);
+});
+const groundedDrone = (await state()).visibleCorpses.find((corpse) => corpse.id === 'coverage-drone');
+assert(groundedDrone?.visual === 'corpse' && groundedDrone.groundClearance < .03,
+  `Coverage drone remained airborne after defeat: ${JSON.stringify(groundedDrone)}`);
+await page.screenshot({ path: 'output/particles/airborne-enemy-corpse-grounded.png' });
 
 const tonerMap = await page.evaluate(() => {
   const maps = Array.from({ length: 3 }, (_, episode) => Array.from({ length: 9 }, (_unused, map) => `E${episode + 1}M${map + 1}`)).flat();
