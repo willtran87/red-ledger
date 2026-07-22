@@ -81,6 +81,21 @@ const REPLAY_LIBRARY_KEY = 'red-ledger-replays-v3';
 const LEGACY_REPLAY_LIBRARY_KEYS = ['red-ledger-replays-v2', 'red-ledger-replays-v1'] as const;
 const REPLAY_LIBRARY_BYTES = 3_500_000;
 const REPLAY_LIBRARY_LIMIT = 6;
+const EPISODE_INTRO_ART_DESCRIPTIONS = [
+  'Storm clouds gathering over a dark regional office campus',
+  'Flooded city blocks filled with red-lit response vehicles',
+  'A vast archive city of stacked paper towers and golden machinery',
+] as const;
+const INTERMISSION_ART_DESCRIPTIONS = [
+  'A traced red route through the regional office campus',
+  'A red route through the flooded city response network',
+  'A circular records engine surrounding a blue-lit core',
+] as const;
+const EPISODE_OUTRO_ART_DESCRIPTIONS = [
+  'A shattered office floor exposing machinery and red cables',
+  'A red-lit breach collapsing through stacked paper records',
+  'A red authority core wrapped in torn records',
+] as const;
 
 export type TouchControlSize = 'small' | 'standard' | 'large';
 export type TouchHandedness = 'right' | 'left';
@@ -1707,8 +1722,12 @@ export class UIController {
 
   private showIntermission(): void {
     const episode = Number(this.game.world.map.id[1]);
-    const art = this.game.world.map.index === 8 ? `episode-${episode}-outro` : `intermission-episode-${episode}`;
-    $('#intermission-art').setAttribute('src', runtimeUrl(`public_runtime/ui/illustrations/${art}.png`));
+    const episodeOutro = this.game.world.map.index === 8;
+    const art = episodeOutro ? `episode-${episode}-outro` : `intermission-episode-${episode}`;
+    const artDescriptions = episodeOutro ? EPISODE_OUTRO_ART_DESCRIPTIONS : INTERMISSION_ART_DESCRIPTIONS;
+    const intermissionArt = $<HTMLImageElement>('#intermission-art');
+    intermissionArt.src = runtimeUrl(`public_runtime/ui/illustrations/${art}.png`);
+    intermissionArt.alt = artDescriptions[episode - 1] ?? 'Completed field route';
     const tally = this.game.tally;
     const result = this.game.mapResult;
     const percent = (value: number, total: number) => total ? Math.round(value / total * 100) : 100;
@@ -2268,7 +2287,9 @@ export class UIController {
       'The loss has escaped the campus. Response infrastructure now stretches across a flooded city where every exclusion has become physical.',
       'The trail descends beneath accounting and architecture into the machinery that decides which futures are affordable.',
     ][this.pendingEpisode];
-    $('#episode-intro-art').setAttribute('src', runtimeUrl(`public_runtime/ui/illustrations/episode-${this.pendingEpisode + 1}-intro.png`));
+    const art = $<HTMLImageElement>('#episode-intro-art');
+    art.src = runtimeUrl(`public_runtime/ui/illustrations/episode-${this.pendingEpisode + 1}-intro.png`);
+    art.alt = EPISODE_INTRO_ART_DESCRIPTIONS[this.pendingEpisode] ?? 'Episode introduction';
     $('#episode-intro-copy').textContent = copy;
     this.showScreen('episode-intro');
   }

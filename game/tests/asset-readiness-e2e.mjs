@@ -62,6 +62,107 @@ await verifyTitleLayout('high-resolution-2560', { width: 2560, height: 1440 });
 await verifyTitleLayout('mobile-portrait-390', { width: 390, height: 844 });
 await verifyTitleLayout('mobile-landscape-568', { width: 568, height: 320 });
 
+const verifyTransitionLayout = async (name, viewport, screenshot = false) => {
+  const page = await browser.newPage({ viewport });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error)));
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  let releaseIntro;
+  const introGate = new Promise((resolve) => { releaseIntro = resolve; });
+  let delayedIntroSeen = false;
+  await page.route('**/public_runtime/ui/illustrations/episode-1-intro.png', async (route) => {
+    delayedIntroSeen = true;
+    await introGate;
+    await route.continue();
+  });
+  let releaseIntermission;
+  const intermissionGate = new Promise((resolve) => { releaseIntermission = resolve; });
+  let delayedIntermissionSeen = false;
+  await page.route('**/public_runtime/ui/illustrations/intermission-episode-1.png', async (route) => {
+    delayedIntermissionSeen = true;
+    await intermissionGate;
+    await route.continue();
+  });
+
+  const geometry = async (imageSelector, dependentSelectors) => page.evaluate(({ imageSelector, dependentSelectors }) => {
+    const image = document.querySelector(imageSelector);
+    return {
+      naturalWidth: image.naturalWidth,
+      width: image.getAttribute('width'),
+      height: image.getAttribute('height'),
+      imageHeight: image.getBoundingClientRect().height,
+      dependents: dependentSelectors.map((selector) => document.querySelector(selector).getBoundingClientRect().y),
+    };
+  }, { imageSelector, dependentSelectors });
+
+  await page.goto(url, { waitUntil: 'networkidle' });
+  const imageDimensions = await page.evaluate(() => Object.fromEntries([
+    ['#episode-intro-art', ['320', '200']],
+    ['#intermission-art', ['320', '200']],
+    ['#pause-menu > img', ['128', '24']],
+    ['#epilogue-art', ['320', '200']],
+    ['#portrait', ['28', '28']],
+  ].map(([selector, expected]) => {
+    const image = document.querySelector(selector);
+    return [selector, { expected, actual: [image.getAttribute('width'), image.getAttribute('height')] }];
+  })));
+  for (const [selector, dimensions] of Object.entries(imageDimensions)) {
+    assert(JSON.stringify(dimensions.actual) === JSON.stringify(dimensions.expected),
+      `${name}: ${selector} omits its intrinsic dimensions`);
+  }
+  await page.click('#new-game');
+  await page.locator('.episode-card').first().click();
+  await page.locator('#difficulty-actions button').nth(2).click();
+  await page.locator('#episode-intro').waitFor({ state: 'visible' });
+  const introBefore = await geometry('#episode-intro-art', ['#episode-intro-copy', '#begin-episode']);
+  assert(delayedIntroSeen && introBefore.naturalWidth === 0, `${name}: episode-intro response was not held`);
+  assert(introBefore.width === '320' && introBefore.height === '200', `${name}: episode-intro art omits its intrinsic dimensions`);
+  assert(introBefore.imageHeight > 0, `${name}: episode-intro art did not reserve vertical space before decode`);
+  assert(await page.locator('#episode-intro-art').getAttribute('alt') === 'Storm clouds gathering over a dark regional office campus',
+    `${name}: episode-intro art lacks a specific description`);
+  releaseIntro();
+  await page.waitForFunction(() => document.querySelector('#episode-intro-art')?.naturalWidth > 0);
+  await page.waitForTimeout(100);
+  const introAfter = await geometry('#episode-intro-art', ['#episode-intro-copy', '#begin-episode']);
+  assert(Math.abs(introAfter.imageHeight - introBefore.imageHeight) <= .5, `${name}: episode-intro image height changed after decode`);
+  introAfter.dependents.forEach((position, index) => assert(Math.abs(position - introBefore.dependents[index]) <= .5,
+    `${name}: episode-intro content shifted after image decode`));
+  if (screenshot) await page.screenshot({ path: 'output/asset-readiness/episode-intro-layout-stability.png' });
+
+  await page.click('#begin-episode');
+  await page.locator('#ready-overlay').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => !document.querySelector('#enter-file')?.disabled);
+  await page.click('#enter-file');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).mode === 'playing');
+  await page.evaluate(() => {
+    window.__redLedger.defeatAll();
+    window.__redLedger.teleportToExit();
+    window.__redLedger.use();
+  });
+  await page.locator('#intermission').waitFor({ state: 'visible' });
+  const intermissionBefore = await geometry('#intermission-art', ['#intermission-grade', '#tally', '.intermission-actions']);
+  assert(delayedIntermissionSeen && intermissionBefore.naturalWidth === 0, `${name}: intermission response was not held`);
+  assert(intermissionBefore.width === '320' && intermissionBefore.height === '200', `${name}: intermission art omits its intrinsic dimensions`);
+  assert(intermissionBefore.imageHeight > 0, `${name}: intermission art did not reserve vertical space before decode`);
+  assert(await page.locator('#intermission-art').getAttribute('alt') === 'A traced red route through the regional office campus',
+    `${name}: intermission art lacks a specific description`);
+  releaseIntermission();
+  await page.waitForFunction(() => document.querySelector('#intermission-art')?.naturalWidth > 0);
+  await page.waitForTimeout(100);
+  const intermissionAfter = await geometry('#intermission-art', ['#intermission-grade', '#tally', '.intermission-actions']);
+  assert(Math.abs(intermissionAfter.imageHeight - intermissionBefore.imageHeight) <= .5, `${name}: intermission image height changed after decode`);
+  intermissionAfter.dependents.forEach((position, index) => assert(Math.abs(position - intermissionBefore.dependents[index]) <= .5,
+    `${name}: intermission content shifted after image decode`));
+  assert(errors.length === 0, `${name}: delayed transition scenario errors: ${errors.join(' | ')}`);
+  if (screenshot) await page.screenshot({ path: 'output/asset-readiness/transition-layout-stability.png' });
+  await page.close();
+};
+
+await verifyTransitionLayout('desktop-transition-1280', { width: 1280, height: 720 }, true);
+await verifyTransitionLayout('high-resolution-transition-2560', { width: 2560, height: 1440 });
+await verifyTransitionLayout('mobile-transition-390', { width: 390, height: 844 });
+await verifyTransitionLayout('landscape-transition-568', { width: 568, height: 320 });
+
 const delayedPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const delayedErrors = [];
 delayedPage.on('pageerror', (error) => delayedErrors.push(String(error)));
@@ -102,5 +203,5 @@ await failedPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).
 await failedPage.screenshot({ path: 'output/asset-readiness/fallback-gameplay.png' });
 assert(failedErrors.length === 0, `Failed texture scenario errors: ${failedErrors.join(' | ')}`);
 
-console.log('Title layout stability and critical map texture readiness E2E passed');
+console.log('Title/transition layout stability and critical map texture readiness E2E passed');
 await browser.close();

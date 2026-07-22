@@ -300,6 +300,7 @@ button:disabled { cursor: not-allowed; opacity: .46; border-color: #646a70; }
 .automatic-kind { color: #ffe17a; font-size: .625rem; text-align: center; }
 .slot-row .slot-delete { min-width: 32px; width: 32px; padding: 0; color: #ffe17a; font-size: 1.25rem; }
 
+#pause-menu > img { width: 128px; height: auto; image-rendering: pixelated; }
 .pause-review { width: min(560px, 96%); display: grid; gap: 6px; padding: 8px 10px; border: 1px solid #646a70; border-left: 3px solid #47bcd1; background: #1d2023; }
 .pause-review header { min-width: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .pause-review header strong { min-width: 0; overflow: hidden; color: #fffdf7; font-size: .75rem; text-overflow: ellipsis; white-space: nowrap; }
@@ -512,7 +513,7 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
 .intermission-actions button.recommended { border-color: #ffe17a; color: #fffdf7; background: #7a1018; }
 .completion-burst { position: absolute; inset: 0 0 auto; z-index: 5; height: min(30%, 210px); overflow: hidden; pointer-events: none; }
 .completion-particle { position: absolute; width: 42px; height: 42px; pointer-events: none; background: center / contain no-repeat; image-rendering: pixelated; }
-#intermission-art { width: min(70vw, 560px); max-height: 31%; object-fit: contain; image-rendering: pixelated; }
+#intermission-art { width: min(70vw, 560px); height: auto; max-height: 31%; object-fit: contain; image-rendering: pixelated; }
 .score-breakdown { width: min(620px, 94%); border-block: 1px solid #4b5055; color: #d4d2cb; background: rgba(17, 18, 20, .82); }
 .score-breakdown[hidden] { display: none; }
 .score-breakdown summary { min-height: 30px; display: grid; place-items: center; padding: 5px 8px; color: #ffe17a; font-size: .6875rem; font-weight: bold; cursor: pointer; }
@@ -605,11 +606,10 @@ html[data-ui-text-scale="largest"] #status { font-size: clamp(.875rem, 3.25cqh, 
 #episode-progress span { min-width: 34px; padding: 4px; border: 1px solid #4b5055; color: #777d82; font-size: .625rem; }
 #episode-progress span.complete { color: #b7b8b4; background: #34383d; }
 #episode-progress span.current { color: #fffdf7; border-color: #d9232e; background: #7a1018; }
-.intro-art { width: min(62%, var(--ui-intro-max-width)); max-height: 56%; object-fit: contain; image-rendering: pixelated; }
+.intro-art { width: min(62%, var(--ui-intro-max-width)); height: auto; max-height: 56%; object-fit: contain; image-rendering: pixelated; }
 #episode-intro p, #epilogue p { max-width: 680px; margin: 0 24px; color: #d4d2cb; line-height: 1.45; text-align: center; }
 .intro-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 #tally { white-space: pre-line; line-height: 1.35; text-align: left; }
-
 @media (min-width: 1920px) and (min-height: 1080px) and (pointer: fine) {
   #tally { font-size: 1.125rem; }
   .score-breakdown { width: min(880px, 94%); }
