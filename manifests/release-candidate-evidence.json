@@ -1,7 +1,7 @@
 {
   "schema": 3,
-  "recordedAtUtc": "2026-07-22T00:11:04Z",
-  "candidateCommit": "e708749138333697a187be091485461f56ec246e",
+  "recordedAtUtc": "2026-07-22T01:27:57Z",
+  "candidateCommit": "2ed9f0f804653c42a26cb4ebfeba9ae84f36f1a0",
   "productionUrl": "https://willtran87.github.io/red-ledger/",
   "toolchain": {
     "node": "20.20.2",
@@ -27,7 +27,7 @@
     },
     "log": {
       "path": "manifests/release-candidate-preflight.txt",
-      "sha256": "46f691889ae79f83461d080bb8c2c964a4c520e41d6e8019c86c30ca4598af60"
+      "sha256": "1035bc1f97ea10d6191a0ccadb1a411c4f47dd1d455c0624c2f9ae151dc77cea"
     }
   },
   "automatedCoverage": {
@@ -45,21 +45,21 @@
   },
   "performanceSample": {
     "renderer": "Playwright Chromium SwiftShader",
-    "readyMilliseconds": 4001,
+    "readyMilliseconds": 4608,
     "activeHostiles": 28,
-    "frames": 515,
-    "meanFrameMilliseconds": 19.4,
-    "p95FrameMilliseconds": 33.4,
+    "frames": 384,
+    "meanFrameMilliseconds": 26.1,
+    "p95FrameMilliseconds": 50,
     "residentTextures": 98,
     "particleBaselineDrawCalls": 28,
     "particleStressDrawCalls": 30
   },
   "localPlaytestReportSample": {
     "map": "E2M8",
-    "frames": 527,
+    "frames": 532,
     "medianFrameMilliseconds": 16.5,
     "p95FrameMilliseconds": 50,
-    "worstFrameMilliseconds": 216.7,
+    "worstFrameMilliseconds": 166.7,
     "candidateAssetStatus": "ready",
     "localServedBuildFingerprint": "6de4f26b2050bf578c57be101bcf9e180f1d995fdfc4a9d054fd497e66651dad",
     "transport": "none",
@@ -72,13 +72,13 @@
     "rawCandidateSha256": "f412225cf2defc46d704f6976f6da6256b2ab16580386a39d014c7feb69de8f6"
   },
   "publishedArtifact": {
-    "gitTreeCommit": "e708749138333697a187be091485461f56ec246e",
+    "gitTreeCommit": "2ed9f0f804653c42a26cb4ebfeba9ae84f36f1a0",
     "distFiles": 3660,
     "publishedFilesIncludingNojekyll": 3661,
-    "publishedBytes": 73842325,
+    "publishedBytes": 73842362,
     "sha256Manifest": "manifests/pages-artifact-sha256.txt",
     "manifestAuthority": "raw committed Git tree bytes with checkout conversion disabled",
-    "sha256": "da0cc7b21150b8a89c08567c12be0644e24c23d4b90b8a4967639c0620ab5bc4",
+    "sha256": "d286c8ab612aded11db556f87aa8d3a28408f495790525374ffdfca62eef15e3",
     "generator": "tools/generate_pages_artifact_manifest.mjs"
   },
   "authoredAudio": {
@@ -108,25 +108,25 @@
   },
   "deployment": {
     "result": "pass",
-    "pagesRunId": 29879441618,
-    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29879441618",
-    "deployedCommit": "e708749138333697a187be091485461f56ec246e",
+    "pagesRunId": 29882893317,
+    "pagesRunUrl": "https://github.com/willtran87/red-ledger/actions/runs/29882893317",
+    "deployedCommit": "2ed9f0f804653c42a26cb4ebfeba9ae84f36f1a0",
     "httpsEnforced": true,
     "liveByteChecks": [
       {
         "path": "index.html",
-        "bytes": 24096,
-        "sha256": "dcc9a14a0e40e91a3017a6d9ada0f40febfd6271adcfa66ce5bbc173303c8f8d"
+        "bytes": 24121,
+        "sha256": "08f104629c75fe962797a3224f42da1776c8a0d119836cde204e6aed199b6699"
       },
       {
-        "path": "assets/index-Cs_Rrd0v.js",
+        "path": "assets/index-BmQzW4Z8.js",
         "bytes": 510826,
         "sha256": "1bff61762215697874fca8790d13e33a17ff5ae7394805fb51dad87d1d2e7988"
       },
       {
-        "path": "assets/index-CAF1wA4x.css",
-        "bytes": 58509,
-        "sha256": "e34c8482eedf636e9dea2a34d4895b9f964f04f6fcd6470ec63bb5611f762056"
+        "path": "assets/index-CwpVBiqi.css",
+        "bytes": 58521,
+        "sha256": "91cf92653ce1b834e6a55277037f798d6e783e27a84bcb1046dc21f23d6758e4"
       },
       {
         "path": "assets/three-BmJz_r64.js",
@@ -153,12 +153,12 @@
       "browser": "chromium",
       "localAndProduction": true,
       "map": "E1M1",
-      "mode": "paused",
+      "mode": "playing",
       "visibleActors": 1,
       "runtimeHalted": false,
       "candidateAssetStatus": "complete",
       "audioLibraryStatus": "ready",
-      "loadedSfxShards": 4,
+      "loadedSfxShards": 5,
       "sfxShardCount": 5,
       "decodedLongFormTracks": 0,
       "consoleOrPageErrorFiles": 0,
@@ -170,9 +170,20 @@
         "actionLabelPixels": 11,
         "responsiveMatrix": "pass"
       },
+      "titleLayoutStability": {
+        "delayedImageViewports": [
+          "1280x720",
+          "2560x1440",
+          "390x844",
+          "568x320"
+        ],
+        "maximumMenuActionShiftPixels": 0.5
+      },
       "screenshots": [
-        "game/output/web-game/orientation-readable/shot-0.png",
-        "game/output/web-game/published-readable-orientation/shot-0.png"
+        "game/output/web-game/title-layout-client/shot-0.png",
+        "game/output/web-game/title-layout-gameplay-client/shot-0.png",
+        "game/output/web-game/published-title-layout/shot-0.png",
+        "game/output/web-game/published-title-layout-gameplay/shot-0.png"
       ]
     }
   },
