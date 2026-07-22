@@ -157,6 +157,8 @@ export interface RuntimeDoor {
   x: number;
   z: number;
   mesh: Mesh;
+  height: number;
+  slabAxis: 'x' | 'z';
   credential?: Credential;
   open: boolean;
   progress: number;
@@ -272,6 +274,17 @@ const PICKUP_IDS: Record<PickupId, string> = {
   'temporary-binder': 'temporary-binder', 'night-inspection-goggles': 'night-goggles',
   'hazard-endorsement': 'hazard-endorsement', 'rapid-authority': 'rapid-authority',
   'floor-plan': 'floor-plan', 'forensic-lens': 'forensic-lens',
+};
+
+export const doorSlabAxisForCell = (map: CampaignMap, x: number, z: number): 'x' | 'z' => {
+  const traversable = (cellX: number, cellZ: number): boolean => {
+    const tile = map.legend[map.grid[cellZ]?.[cellX]];
+    return Boolean(tile && !tile.solid);
+  };
+  const horizontalPassage = Number(traversable(x - 1, z)) + Number(traversable(x + 1, z));
+  const verticalPassage = Number(traversable(x, z - 1)) + Number(traversable(x, z + 1));
+  // The slab spans across the passage, perpendicular to its travel axis.
+  return horizontalPassage > verticalPassage ? 'z' : 'x';
 };
 
 // Item mastery tracks deliberate exploration rewards, mirroring the classic
@@ -446,13 +459,16 @@ export class World {
           continue;
         }
         if (char !== '#') continue;
-        const adjacent = [[x + 1, z], [x - 1, z], [x, z + 1], [x, z - 1]]
+        const adjacentTiles = [[x + 1, z], [x - 1, z], [x, z + 1], [x, z - 1]]
           .map(([nx, nz]) => this.map.legend[this.map.grid[nz]?.[nx]])
-          .find((tile) => tile && !tile.solid) ?? this.map.legend['#'];
-        const height = adjacent.ceilingHeight - adjacent.floorHeight;
-        const key = `${adjacent.wallMaterial}|${adjacent.light}|${height}|${adjacent.floorHeight}`;
+          .filter((tile) => tile && !tile.solid);
+        const adjacent = adjacentTiles[0] ?? this.map.legend['#'];
+        const floor = Math.min(...(adjacentTiles.length ? adjacentTiles : [adjacent]).map((tile) => tile.floorHeight));
+        const ceiling = Math.max(...(adjacentTiles.length ? adjacentTiles : [adjacent]).map((tile) => tile.ceilingHeight));
+        const height = ceiling - floor;
+        const key = `${adjacent.wallMaterial}|${adjacent.light}|${height}|${floor}`;
         const group = groups.get(key) ?? [];
-        group.push({ x, z, height, floor: adjacent.floorHeight, material: adjacent.wallMaterial, light: adjacent.light });
+        group.push({ x, z, height, floor, material: adjacent.wallMaterial, light: adjacent.light });
         groups.set(key, group);
       }
     }
@@ -460,7 +476,7 @@ export class World {
       const wall = walls[0];
       const mesh = new InstancedMesh(
         new BoxGeometry(cell, wall.height, cell),
-        new MeshLambertMaterial({ map: this.assets.texture(resolveMaterialAsset(wall.material), true), color: new Color(wall.light, wall.light, wall.light) }),
+        new MeshLambertMaterial({ map: this.assets.texture(resolveMaterialAsset(wall.material), true), color: new Color(wall.light, wall.light, wall.light), transparent: false, depthWrite: true }),
         walls.length,
       );
       walls.forEach((item, instanceIndex) => mesh.setMatrixAt(instanceIndex,
@@ -473,15 +489,21 @@ export class World {
   private createDoor(x: number, z: number, char: string): void {
     const cell = this.map.cellSize;
     const tile = this.map.legend[char];
+    const height = tile.ceilingHeight - tile.floorHeight;
+    const slabAxis = doorSlabAxisForCell(this.map, x, z);
     const mesh = new Mesh(
-      new BoxGeometry(cell * .9, 3.4, .28),
-      new MeshLambertMaterial({ map: this.assets.texture(resolveMaterialAsset(tile.wallMaterial)), transparent: true, color: new Color(tile.light, tile.light, tile.light) }),
+      new BoxGeometry(cell * .9, height, .28),
+      // Door art is authored over transparent charcoal. Closed doors are solid
+      // barriers, so render that RGB backing opaquely instead of punching holes
+      // through the wall wherever the source alpha is zero.
+      new MeshLambertMaterial({ map: this.assets.texture(resolveMaterialAsset(tile.wallMaterial)), transparent: false, depthWrite: true, color: new Color(tile.light, tile.light, tile.light) }),
     );
     const baseY = this.map.legend[char]?.floorHeight ?? 0;
-    mesh.position.set((x + .5) * cell, baseY + 1.7, (z + .5) * cell);
+    mesh.position.set((x + .5) * cell, baseY + height / 2, (z + .5) * cell);
+    mesh.rotation.y = slabAxis === 'z' ? Math.PI / 2 : 0;
     this.root.add(mesh);
     const credential = char === 'R' ? 'red' : char === 'Y' ? 'yellow' : char === 'C' ? 'cyan' : undefined;
-    this.doors.set(`${x},${z}`, { key: `${x},${z}`, x, z, mesh, credential, open: false, progress: 0, baseY });
+    this.doors.set(`${x},${z}`, { key: `${x},${z}`, x, z, mesh, height, slabAxis, credential, open: false, progress: 0, baseY });
   }
 
   private buildExit(): void {
@@ -681,7 +703,7 @@ export class World {
     if (instant) {
       const wasBlockingNavigation = door.progress < .72;
       door.progress = 1;
-      door.mesh.position.y = door.baseY + 5.1;
+      door.mesh.position.y = door.baseY + door.height * 1.5;
       door.mesh.visible = false;
       if (wasBlockingNavigation) this.bumpNavigationTopology();
     }
@@ -694,7 +716,7 @@ export class World {
       if (!door.open || door.progress >= 1) continue;
       const wasBlockingNavigation = door.progress < .72;
       door.progress = Math.min(1, door.progress + dt * 1.25);
-      door.mesh.position.y = door.baseY + 1.7 + 3.4 * door.progress;
+      door.mesh.position.y = door.baseY + door.height * (.5 + door.progress);
       door.mesh.visible = door.progress < 1;
       if (wasBlockingNavigation && door.progress >= .72) navigationChanged = true;
       if (door.progress >= 1) {
@@ -746,7 +768,7 @@ export class World {
     const wasBlockingNavigation = door.progress < .72;
     door.open = open;
     door.progress = Math.max(0, Math.min(1, progress));
-    door.mesh.position.y = door.baseY + 1.7 + 3.4 * door.progress;
+    door.mesh.position.y = door.baseY + door.height * (.5 + door.progress);
     door.mesh.visible = door.progress < 1;
     if (wasBlockingNavigation !== (door.progress < .72)) this.bumpNavigationTopology();
   }

@@ -4916,7 +4916,12 @@ export class GameEngine {
       visibleActors,
       visibleCorpses,
       nearbyPickups,
-      closedDoors: [...this.world.doors.values()].filter((door) => !door.open).map((door) => ({ x: door.x, z: door.z, credential: door.credential ?? null })),
+      closedDoors: [...this.world.doors.values()].filter((door) => !door.open).map((door) => ({
+        x: door.x,
+        z: door.z,
+        credential: door.credential ?? null,
+        slabAxis: door.slabAxis,
+      })),
       world: {
         hazardsEnabled: this.world.hazardsEnabled,
         triggered: [...this.triggered],

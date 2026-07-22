@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { InstancedMesh, Matrix4, PerspectiveCamera, Scene, Texture, Vector3 } from 'three';
+import { InstancedMesh, Matrix4, MeshLambertMaterial, PerspectiveCamera, Scene, Texture, Vector3 } from 'three';
 import { CAMPAIGN_MAPS } from '../data';
 import { resolveMaterialAsset, resolveSkyAsset } from '../data/tiles';
 import type { AssetCatalog } from './AssetCatalog';
@@ -10,6 +10,7 @@ import {
   findMatchingRuntimePickupIdentity,
   findUniqueRuntimeActorIdentity,
   isDynamicSummonUid,
+  doorSlabAxisForCell,
   resolveRestoredActorAwake,
   savedActorMatchesRuntime,
   savedPickupMatchesRuntime,
@@ -52,6 +53,53 @@ describe('authored world content', () => {
     const restored = worldFor('E1M5');
     restored.restoreBreakables(snapshot);
     expect(restored.breakables.get(item.key)?.destroyed).toBe(true);
+  });
+
+  it('renders every closed door as an opaque full-height slab across its corridor', () => {
+    Object.values(CAMPAIGN_MAPS).forEach((map) => {
+      const world = worldFor(map.id);
+      for (const door of world.doors.values()) {
+        const tile = map.legend[map.grid[door.z][door.x]];
+        const expectedAxis = doorSlabAxisForCell(map, door.x, door.z);
+        expect(door.slabAxis, `${map.id} door ${door.key}`).toBe(expectedAxis);
+        expect(door.mesh.rotation.y, `${map.id} door ${door.key}`).toBeCloseTo(expectedAxis === 'z' ? Math.PI / 2 : 0);
+        expect(door.height, `${map.id} door ${door.key}`).toBe(tile.ceilingHeight - tile.floorHeight);
+        expect(door.mesh.position.y, `${map.id} door ${door.key}`).toBe(tile.floorHeight + door.height / 2);
+        const material = door.mesh.material as MeshLambertMaterial;
+        expect(material.transparent, `${map.id} door ${door.key}`).toBe(false);
+        expect(material.depthWrite, `${map.id} door ${door.key}`).toBe(true);
+      }
+    });
+  });
+
+  it('covers every exposed wall column across adjacent floor and ceiling transitions', () => {
+    Object.values(CAMPAIGN_MAPS).forEach((map) => {
+      const world = worldFor(map.id);
+      const spans = new Map<string, { floor: number; ceiling: number }>();
+      world.root.children.filter((child): child is InstancedMesh => child instanceof InstancedMesh && child.geometry.type === 'BoxGeometry')
+        .forEach((mesh) => {
+          const height = (mesh.geometry as unknown as { parameters: { height: number } }).parameters.height;
+          for (let index = 0; index < mesh.count; index += 1) {
+            const matrix = new Matrix4();
+            mesh.getMatrixAt(index, matrix);
+            const position = new Vector3().setFromMatrixPosition(matrix);
+            const x = Math.floor(position.x / map.cellSize);
+            const z = Math.floor(position.z / map.cellSize);
+            spans.set(`${x},${z}`, { floor: position.y - height / 2, ceiling: position.y + height / 2 });
+          }
+        });
+      map.grid.forEach((row, z) => [...row].forEach((cell, x) => {
+        if (cell !== '#') return;
+        const adjacent = [[x + 1, z], [x - 1, z], [x, z + 1], [x, z - 1]]
+          .map(([cellX, cellZ]) => map.legend[map.grid[cellZ]?.[cellX]])
+          .filter((tile) => tile && !tile.solid);
+        if (!adjacent.length) return;
+        const span = spans.get(`${x},${z}`);
+        expect(span, `${map.id} wall ${x},${z}`).toBeDefined();
+        expect(span!.floor, `${map.id} wall ${x},${z} floor`).toBeLessThanOrEqual(Math.min(...adjacent.map((tile) => tile.floorHeight)));
+        expect(span!.ceiling, `${map.id} wall ${x},${z} ceiling`).toBeGreaterThanOrEqual(Math.max(...adjacent.map((tile) => tile.ceilingHeight)));
+      }));
+    });
   });
 
   it('applies authored mover profiles and serializes boss arena mechanisms', () => {
