@@ -43,7 +43,10 @@ assert((await state()).world.hazardsEnabled === false, 'Transformation switch di
 
 await page.evaluate(() => { window.__redLedger.loadMap('E1M8'); window.__redLedger.teleportToExit(); window.__redLedger.use(); });
 let bossGate = await state();
-assert(bossGate.mode === 'playing' && bossGate.message.includes('authority'), 'Boss gate allowed premature exit');
+assert(bossGate.mode === 'playing', 'Boss gate allowed premature exit');
+assert(bossGate.message === 'Entry remains active', `Boss gate named an invisible future phase: ${bossGate.message}`);
+assert(bossGate.routeHint?.tier === 2 && /required exposure.*paces away/.test(bossGate.routeHint.text),
+  `Boss gate did not direct the player to the active blockers: ${bossGate.routeHint?.text}`);
 await page.evaluate(() => { window.__redLedger.defeatAll(); window.__redLedger.use(); });
 bossGate = await state();
 assert(bossGate.mode === 'intermission', 'Boss defeat did not unlock exit');

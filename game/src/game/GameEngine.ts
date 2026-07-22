@@ -3439,20 +3439,18 @@ export class GameEngine {
         this.rejectUse(`${this.pretty(trigger.requiresCredential)} credential required`, 'credential', trigger.requiresCredential);
         return;
       }
-      if (trigger.requiresEncounter && this.isEncounterActive(trigger.requiresEncounter)) {
-        this.rejectUse(trigger.requiresEncounter.startsWith('boss-')
-          ? 'Binding authority remains active'
-          : `${this.pretty(trigger.requiresEncounter)} remains active`, 'encounter');
+      const threatLock = trigger.requiresEncounter ? this.controlThreatLock(trigger.requiresEncounter) : undefined;
+      if (threatLock) {
+        this.rejectUse(this.threatLockMessage(threatLock.encounter), 'encounter');
         return;
       }
       this.triggered.add(trigger.id);
       if (trigger.action === 'complete-map') {
         const exitControl = this.world.map.triggers.find((candidate) => candidate.action === 'open-exit');
-        if (exitControl?.requiresEncounter && this.isEncounterActive(exitControl.requiresEncounter)) {
+        const exitThreatLock = exitControl?.requiresEncounter ? this.controlThreatLock(exitControl.requiresEncounter) : undefined;
+        if (exitThreatLock) {
           this.triggered.delete(trigger.id);
-          this.showMessage(exitControl.requiresEncounter.startsWith('boss-')
-            ? 'Binding authority remains active'
-            : `${this.pretty(exitControl.requiresEncounter)} remains active`);
+          this.rejectUse(this.threatLockMessage(exitThreatLock.encounter), 'encounter');
         } else this.completeMap(trigger.targets[0] as MapId | undefined ?? this.world.map.nextMap);
         return;
       }
@@ -3523,8 +3521,10 @@ export class GameEngine {
     }
     const exit = new Vector3(this.world.map.exit.x * this.world.map.cellSize, 0, this.world.map.exit.z * this.world.map.cellSize);
     if (interaction.exit || this.horizontalDistance(this.player.position, exit) <= 2.2) {
-      if (this.world.actors.some((actor) => actor.kind === 'boss' && !actor.dead)) {
-        this.rejectUse('Binding authority remains active', 'encounter', undefined, exit);
+      const pendingBoss = this.world.actors.find((actor) => actor.kind === 'boss' && !actor.dead);
+      if (pendingBoss) {
+        const threatLock = this.controlThreatLock(pendingBoss.encounter ?? 'boss-1');
+        this.rejectUse(this.threatLockMessage(threatLock?.encounter ?? pendingBoss.encounter ?? 'boss-1'), 'encounter', undefined, exit);
         return;
       }
       this.completeMap(this.world.map.nextMap);
@@ -3564,7 +3564,7 @@ export class GameEngine {
       if (trigger.requiresCredential && !this.player.credentials.has(trigger.requiresCredential)) {
         return { label: `${this.pretty(trigger.requiresCredential)} credential`, icon: `credential-${trigger.requiresCredential}`, state: 'locked' };
       }
-      if (trigger.requiresEncounter && this.isEncounterActive(trigger.requiresEncounter)) {
+      if (trigger.requiresEncounter && this.controlThreatLock(trigger.requiresEncounter)) {
         return { label: 'Threat lock', icon: 'minimal-alert', state: 'locked' };
       }
       const label = trigger.action === 'complete-map' || trigger.action === 'open-exit' ? 'Exit'
@@ -3601,11 +3601,31 @@ export class GameEngine {
       if (reason === 'credential') this.playSemanticCue('rejection', cuePoint);
       else this.emitParticles('spark', cuePoint, 2);
     }
+    if (reason === 'encounter') this.escalateRouteGuidance();
     window.dispatchEvent(new CustomEvent('use-failed', { detail: { reason, direction, icon: credential ?? (reason === 'encounter' ? 'authority' : 'use'), ...(credential ? { credential } : {}) } }));
   }
 
   private isEncounterActive(id: string): boolean {
-    return this.world.actors.some((actor) => !actor.dead && actor.encounter === id && (actor.mandatory || actor.kind === 'boss'));
+    return this.world.actors.some((actor) => !actor.dead && !actor.phaseLocked && actor.encounter === id && (actor.mandatory || actor.kind === 'boss'));
+  }
+
+  private controlThreatLock(requiredEncounter: string): { readonly encounter: string; readonly threats: readonly RuntimeActor[] } | undefined {
+    const directThreats = this.world.actors.filter((actor) => !actor.dead && !actor.phaseLocked
+      && actor.encounter === requiredEncounter && (actor.mandatory || actor.kind === 'boss'));
+    if (directThreats.length) return { encounter: requiredEncounter, threats: directThreats };
+
+    const requiredPhasePending = this.world.actors.some((actor) => !actor.dead && actor.phaseLocked
+      && actor.encounter === requiredEncounter && (actor.mandatory || actor.kind === 'boss'));
+    if (!requiredPhasePending) return undefined;
+
+    const activeThreats = this.world.actors.filter((actor) => !actor.dead && !actor.phaseLocked
+      && (actor.mandatory || actor.kind === 'boss'));
+    if (!activeThreats.length) return undefined;
+    return { encounter: activeThreats[0].encounter ?? requiredEncounter, threats: activeThreats };
+  }
+
+  private threatLockMessage(encounter: string): string {
+    return encounter.startsWith('boss-') ? 'Binding authority remains active' : `${this.pretty(encounter)} remains active`;
   }
 
   private teleportTell(position: Vector3): void {
@@ -5211,6 +5231,16 @@ export class GameEngine {
     const tier = routeHintTier(this.routeGuidanceElapsed);
     if (tier === 0 || tier <= (this.routeHint?.tier ?? 0)) return;
     this.routeHint = buildRouteHint(this.routeGuidanceDescriptor(), tier, {
+      x: this.player.position.x,
+      z: this.player.position.z,
+      yaw: this.player.yaw,
+    });
+  }
+  private escalateRouteGuidance(): void {
+    const activeThreats = this.world.actors.filter((actor) => actor.mandatory && !actor.dead && !actor.phaseLocked);
+    activeThreats.forEach((actor) => { actor.awake = true; });
+    this.routeGuidanceSignature = this.routeProgressSignature();
+    this.routeHint = buildRouteHint(this.routeGuidanceDescriptor(), 2, {
       x: this.player.position.x,
       z: this.player.position.z,
       yaw: this.player.yaw,

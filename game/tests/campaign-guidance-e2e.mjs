@@ -22,6 +22,18 @@ try {
 
   await page.evaluate(() => {
     window.__redLedger.loadMap('E1M1');
+    window.__redLedger.teleportToTrigger('open-door', 'e1m1-mechanism-1');
+    window.__redLedger.use();
+    window.advanceTime(50);
+  });
+  const threatLock = await state();
+  assert(threatLock.message === 'Entry remains active', `Early control named an invisible future phase: ${threatLock.message}`);
+  assert(threatLock.routeHint?.tier === 2, 'Threat lock did not immediately escalate to directional guidance');
+  assert(/nearest required exposure.*paces away/.test(threatLock.routeHint.text), `Threat lock guidance was not actionable: ${threatLock.routeHint.text}`);
+  assert(await page.locator('#route-hint').isVisible(), 'Threat lock directional guidance did not render in the HUD');
+
+  await page.evaluate(() => {
+    window.__redLedger.loadMap('E1M1');
     window.__redLedger.defeatAll();
     for (let index = 0; index < 96; index += 1) window.advanceTime(250);
   });
