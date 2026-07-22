@@ -14,6 +14,54 @@ const enterEpisode = async (page) => {
   await page.click('#begin-episode');
 };
 
+const verifyTitleLayout = async (name, viewport, screenshot = false) => {
+  const page = await browser.newPage({ viewport });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error)));
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  let releaseTitle;
+  const titleGate = new Promise((resolve) => { releaseTitle = resolve; });
+  let delayedTitleSeen = false;
+  await page.route('**/public_runtime/ui/title-screen.png', async (route) => {
+    delayedTitleSeen = true;
+    await titleGate;
+    await route.continue();
+  });
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelector('#game-shell')?.getAttribute('aria-busy') === 'false');
+  const before = await page.evaluate(() => {
+    const image = document.querySelector('.title-art');
+    const actions = document.querySelector('.menu-actions').getBoundingClientRect();
+    return {
+      naturalWidth: image.naturalWidth,
+      width: image.getAttribute('width'),
+      height: image.getAttribute('height'),
+      imageHeight: image.getBoundingClientRect().height,
+      actionsY: actions.y,
+    };
+  });
+  assert(delayedTitleSeen && before.naturalWidth === 0, `${name}: title response was not held`);
+  assert(before.width === '320' && before.height === '200', `${name}: title art omits its intrinsic dimensions`);
+  assert(before.imageHeight > 0, `${name}: title art did not reserve vertical space before decode`);
+  releaseTitle();
+  await page.waitForFunction(() => document.querySelector('.title-art')?.naturalWidth > 0);
+  await page.waitForTimeout(200);
+  const after = await page.evaluate(() => ({
+    imageHeight: document.querySelector('.title-art').getBoundingClientRect().height,
+    actionsY: document.querySelector('.menu-actions').getBoundingClientRect().y,
+  }));
+  assert(Math.abs(after.imageHeight - before.imageHeight) <= .5, `${name}: title image height changed after decode`);
+  assert(Math.abs(after.actionsY - before.actionsY) <= .5, `${name}: main-menu actions shifted after title image decode`);
+  assert(errors.length === 0, `${name}: delayed title scenario errors: ${errors.join(' | ')}`);
+  if (screenshot) await page.screenshot({ path: 'output/asset-readiness/title-layout-stability.png' });
+  await page.close();
+};
+
+await verifyTitleLayout('desktop-1280', { width: 1280, height: 720 }, true);
+await verifyTitleLayout('high-resolution-2560', { width: 2560, height: 1440 });
+await verifyTitleLayout('mobile-portrait-390', { width: 390, height: 844 });
+await verifyTitleLayout('mobile-landscape-568', { width: 568, height: 320 });
+
 const delayedPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const delayedErrors = [];
 delayedPage.on('pageerror', (error) => delayedErrors.push(String(error)));
@@ -54,5 +102,5 @@ await failedPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).
 await failedPage.screenshot({ path: 'output/asset-readiness/fallback-gameplay.png' });
 assert(failedErrors.length === 0, `Failed texture scenario errors: ${failedErrors.join(' | ')}`);
 
-console.log('Critical map texture readiness E2E passed');
+console.log('Title layout stability and critical map texture readiness E2E passed');
 await browser.close();

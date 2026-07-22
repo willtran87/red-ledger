@@ -81,7 +81,7 @@ const browserTests = [
   ['player replay library', 'tests/replay-library-e2e.mjs'],
   ['navigation and session continuity', 'tests/navigation-continuity-e2e.mjs'],
   ['death review and recovery clarity', 'tests/death-review-e2e.mjs'],
-  ['critical map texture readiness', 'tests/asset-readiness-e2e.mjs'],
+  ['title layout stability and critical map texture readiness', 'tests/asset-readiness-e2e.mjs'],
   ['hostile telegraphs', 'tests/hostile-telegraph-e2e.mjs'],
   ['input remapping', 'tests/controls-e2e.mjs'],
   ['weapon selection and fallback', 'tests/weapon-selection-e2e.mjs'],

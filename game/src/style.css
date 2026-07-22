@@ -137,7 +137,7 @@ dialog:focus-visible { outline: 0; }
 .screen.compact { inset: 8% 22%; padding: 12px; overflow-y: auto; border: 2px solid #646a70; background: rgba(17, 18, 20, 0.97); }
 .screen-copy { max-width: 480px; margin: 0; text-align: center; color: #d4d2cb; }
 .screen h1 { margin: 0 0 12px; color: #fffdf7; font-size: clamp(1.25rem, 4vh, var(--ui-heading-max)); letter-spacing: 0; }
-.title-art { width: min(78%, 960px); max-height: 58%; object-fit: contain; image-rendering: pixelated; }
+.title-art { width: min(78%, 960px); height: auto; max-height: 58%; object-fit: contain; image-rendering: pixelated; }
 #menu .game-title { margin: 0; color: #fffdf7; font-size: 4rem; line-height: 1; text-shadow: 4px 4px #7a1018; }
 .profile-seal { display: flex; align-items: center; gap: 8px; padding: 4px 9px; border: 1px double #ffe17a; color: #fffdf7; background: #7a1018; font-size: .625rem; }
 .profile-seal[hidden] { display: none; }
